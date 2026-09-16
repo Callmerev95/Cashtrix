@@ -2,8 +2,18 @@
 
 ## Repo state
 
-- **Pre-code planning repo.** Only `PRD.md`, `DESIGN.md`, `AGENTS.md`, `specs/`, and `docs/agents/` exist. No package manifest, no build/test/lint tooling yet — do not invent or assume any; commands come later, when scaffolding starts.
+- **Expo + Expo Router app** (`app/`, `src/`) scaffolded by T1 (#3). `PRD.md`, `DESIGN.md`, `AGENTS.md`, `specs/`, and `docs/agents/` remain the planning/binding docs.
 - Git repo on `main`, remote `https://github.com/Callmerev95/Cashtrix.git`. Only commit/push when the user explicitly asks.
+
+### Commands
+
+- Install: `npm install`
+- Lint: `npm run lint` (`eslint .`)
+- Typecheck: `npm run typecheck` (`tsc --noEmit`)
+- Test: `npm run test` (`jest`, jest-expo preset)
+- Run app: `npm run ios` / `npm run android` / `npm run start`
+- Bundle check (no device needed): `npx expo export --platform ios|android --output-dir /tmp/out`
+- **No native folders are committed** — `ios/`/`android/` are generated; use Expo Go / dev builds.
 
 ## Binding documents
 
@@ -14,7 +24,9 @@
 
 - **Never color-pick from Stitch screens.** Stitch renders M3-derived greys (`#131313` bg, `#1C1B1B` cards) because its API derives all named colors server-side from seeds — `namedColors` is read-only and writes are rejected. Canonical colors are `#0A0A0A` background, `#1C1C1E` cards, `#D4AF37` gold accent, `#E5E5E5` text (design.md §1).
 - **Currency numerals = JetBrains Mono** (design.md §2). Stitch's design system v2 shows Public Sans on `currency-*` tokens — that is accepted drift (Stitch API rejected `JETBRAINS_MONO` for `labelFont`); ignore it.
-- When code exists: hex literals are allowed only in the theme file (one `theme.ts`), not in components (PRD §4.5).
+- When code exists: hex literals are allowed only in the theme file (one `theme.ts`), not in components (PRD §4.5). **Enforced by lint**: `no-restricted-syntax` in `eslint.config.mjs` errors on hex literals everywhere except `src/theme/theme.ts` (and tests).
+- Theme tokens are consumed via the `@/theme` alias (`src/theme/theme.ts` → `src/theme/index.ts`). `@/*` maps to `src/*` in both `tsconfig.json` and `jest.config.js`.
+- Currency numerals load from `@expo-google-fonts/jetbrains-mono/<weight>` subpaths, not the package root — the root pulls every weight into the bundle.
 
 ## Implementation rules (from PRD §4, easy to violate)
 
