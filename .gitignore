@@ -1,4 +1,31 @@
+# dependencies
+node_modules/
+
+# local state
 .DS_Store
 .scratch/
-node_modules/
 .env*
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+.metro-health-check*
+
+# Native build artifacts (managed by expo prebuild)
+/ios
+/android
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# debug / build caches
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.tsbuildinfo
