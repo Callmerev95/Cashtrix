@@ -1,0 +1,366 @@
+# PRD — Cashtrix
+
+**Versi:** 1.0 · **Status:** Approved for development · **Tanggal:** 2026-09-17
+**Dokumen pendamping:** `design.md` (Obsidian Luxury / Minimalist Obsidian design system) — sumber kebenaran visual.
+
+---
+
+## 0. Keputusan Terkunci (Resolved Decisions)
+
+Semua area abu-abu telah diputuskan oleh owner. Ini tidak bisa dinegosiasikan ulang tanpa review baru.
+
+| # | Keputusan | Nilai |
+|---|---|---|
+| D1 | Platform | React Native + Expo (iOS & Android) |
+| D2 | Backend | Supabase (Postgres + Auth + RLS + Storage) |
+| D3 | Sumber data | Manual entry; skema siap ekspansi bank (v2) |
+| D4 | Cakupan MVP | Core + Analytics + Budget & Alert + Profile & Settings |
+| D5 | Mata uang | Single (IDR default), skema siap multi-currency |
+| D6 | Dompet | Personal, multi-wallet per akun |
+| D7 | Budget | Batas per kategori, reset otomatis tiap tanggal 1 |
+| D8 | Alert | In-app (progress ring berubah warna) + local push notification |
+| D9 | KPI | Gabungan adopsi/retensi + keandalan teknis |
+| D10 | Warna kanonik | `#0A0A0A` bg, `#1C1C1E` card, `#D4AF37` aksen, `#E5E5E5` teks — dari `design.md` §1, bukan dari layar Stitch |
+| D11 | Font angka | JetBrains Mono (kanonik); drift Public Sans di Stitch diabaikan |
+
+---
+
+## 1. Executive Summary
+
+**Problem Statement:** Aplikasi pencatat keuangan consumer umumnya ramai, penuh iklan, dan memaksa pengguna ke pola kategori bawaan yang tidak mencerminkan gaya hidup mereka. Pengguna yang disiplin secara finansial tidak punya alat yang tenang, cepat, dan privat untuk melihat posisi keuangannya dalam hitungan detik.
+
+**Proposed Solution:** Cashtrix — aplikasi mobile personal finance dengan estetika *private wealth* (obsidian + champagne gold), input transaksi <20 detik, multi-wallet, analitik visual, dan budget per kategori dengan alert ambang batas. Semua data milik pengguna (RLS-scoped), siap diperluas ke agregasi bank di v2.
+
+### Success Criteria (KPI)
+
+| KPI | Target | Cara Ukur |
+|---|---|---|
+| Aktivasi | ≥60% user baru mencatat ≥5 transaksi dalam 7 hari pertama | Event analytics (`tx_created`) |
+| Retensi | D7 retention ≥40% | Analytics cohort |
+| Kecepatan input | Median waktu Add Transaction → tersimpan <20 detik | Timer in-app dari buka form sampai commit |
+| Stabilitas | Crash-free sessions ≥99.5% | Sentry / expo crash reporting |
+| Responsivitas | Cold start p95 <2s; round-trip Supabase p95 <2s; query analytics p95 <300ms | Instrumentasi + Supabase Logs |
+| Alert latency | Notifikasi budget terkirim ≤5s sejak transaksi yang melewati threshold di-commit | Log lokal + telemetry |
+
+---
+
+## 2. User Experience & Functionality
+
+### 2.1 User Persona
+
+**Evelyn Vance — "The Discreet Wealth Builder"** (28–45, profesional urban, income menengah-atas)
+- Mengelola 3–6 dompet: rekening bank, e-wallet, kartu kredit, cash.
+- Kriteria keputusan: kecepatan input, ketenangan visual, privasi. **Anti-kriteria:** iklan, notifikasi spam, warna mencolok.
+- Frustrasi utama dengan aplikasi sejenis: 4 langkah untuk input 1 transaksi; laporan yang tidak bisa di-filter per wallet.
+
+### 2.2 Informasi Arsitektur & Navigasi
+
+Struktur navigasi = **floating bottom bar** (per `design.md` §5 Navigation), 4 tab + FAB tengah:
+
+```
+[Dashboard]  [Analytics]  (+ FAB: Add Transaction)  [Budgets]  [Profile]
+```
+
+- Auth (Login/Register) berada di luar tab, sebagai gate. Session persisten; tidak ada logout otomatis kecuali token revoked.
+- Semua screen list-heavy wajib menyisakan clearance bawah ≥96px + `env(safe-area-inset-bottom)` (aturan `design.md` §3).
+
+### 2.3 User Stories & Acceptance Criteria
+
+#### Epic A — Autentikasi
+
+| ID | Story |
+|---|---|
+| A1 | Sebagai pengguna baru, saya ingin mendaftar dengan email + password agar data saya terikat pada akun yang hanya saya akses. |
+| A2 | Sebagai pengguna kembali, saya ingin login agar melanjutkan data saya sebelumnya. |
+
+**AC:**
+- Register: email valid (format + verifikasi klik link via Supabase Auth), password ≥8 karakter, ≥1 huruf + ≥1 angka. Gagal validasi → pesan inline, tidak ada request ke Supabase.
+- Setelah verifikasi email & login pertama: otomatis di-*seed* 1 wallet "Cash" (opening balance 0) + set kategori default (lihat §4.2). Proses seed idempotent (aman diulang).
+- Login gagal (email/password salah) → pesan generik "Email atau password salah" (tidak membocorkan mana yang salah).
+- Session persisten via refresh token; app re-open → langsung ke Dashboard tanpa login ulang.
+- Sign out (Profile) → hapus session lokal, kembali ke Login, clear cache lokal.
+
+#### Epic B — Multi-Wallet
+
+| ID | Story |
+|---|---|
+| B1 | Sebagai pengguna, saya ingin membuat beberapa wallet (bank, e-wallet, cash, kartu kredit) agar posisi tiap sumber dana terlihat terpisah. |
+| B2 | Sebagai pengguna, saya ingin saldo total gabungan di Dashboard tanpa harus membuka tiap wallet. |
+
+**AC:**
+- Wallet punya: `name`, `type` (enum: `bank`, `ewallet`, `cash`, `card`), `opening_balance`, warna/icon dari token design (tanpa custom color picker di MVP).
+- Maksimum 10 wallet per user (konstrain DB + validasi client).
+- Saldo wallet = `opening_balance + Σ(income) − Σ(expense)` — dihitung via SQL view, **tidak pernah disimpan sebagai kolom mutable** (mencegah drift).
+- Saldo total Dashboard = Σ saldo semua wallet, dirender `currency-display` JetBrains Mono.
+- **Transfer antar-wallet bukan bagian MVP** (lihat Non-Goals); skema `transactions.type` menyediakan enum `transfer` untuk v1.1.
+- Hapus wallet hanya boleh jika memiliki 0 transaksi; jika ada transaksi → UI menawarkan reassign ke wallet lain (bulk update) atau tolak.
+
+#### Epic C — Transaksi
+
+| ID | Story |
+|---|---|
+| C1 | Sebagai pengguna, saya ingin mencatat pengeluaran/pemasukan <20 detik agar pencatatan tidak terasa seperti kerjaan. |
+| C2 | Sebagai pengguna, saya ingin melihat riwayat transaksi terbaru di Dashboard agar tahu arus kas hari ini. |
+| C3 | Sebagai pengguna, saya ingin mengedit/menghapus transaksi agar data akurat. |
+
+**AC (logika fungsional Add Transaction):**
+- Toggle segmented **Expense/Income** — pilihan terakhir diingat (persist lokal), default `expense`.
+- Entry amount: keyboard numerik kustom; validasi: `0 < amount ≤ 999,999,999,999` (12 digit), maks 2 desimal; bukan NaN/Infinity. Live-format `id-ID` saat mengetik; glyph `Rp` statis warna gold.
+- Kategori: grid ikon (Material Symbols) dari kategori yang aktif **sesuai tipe transaksi** — income hanya melihat kategori income, dst.
+- Tanggal: default *now*, bisa diubah via date picker, maksimal hari ini (tidak boleh future date untuk income/expense).
+- Catatan (note): opsional, maks 200 karakter, di-trim.
+- Wallet: default = wallet yang dipakai pada transaksi terakhir; bisa diganti.
+- Simpan → optimistic insert + idempotency key (UUID v4 dibuat saat form dibuka; dikirim sebagai header `x-idempotency-key`); retry aman.
+- Hapus → konfirmasi modal (destructive, pakai token error `#FFB4AB`), soft-delete (`deleted_at`), 30 hari retention lalu hard-delete oleh cron.
+- Daftar transaksi: infinite scroll 20/halaman, grouped per tanggal (`label-uppercase` divider), row = ikon kategori dalam lingkaran `#2C2C2E`, nama `body-md #E5E5E5`, timestamp `body-sm #8E8E93`, amount `currency-md` — income `+#D4AF37`, expense `#E5E5E5` tanpa tanda minus di warna merah (aturan `design.md` §1).
+
+#### Epic D — Analytics ("Financial Intelligence")
+
+| ID | Story |
+|---|---|
+| D1 | Sebagai pengguna, saya ingin melihat distribusi pengeluaran per kategori agar tahu ke mana uang mengalir. |
+| D2 | Sebagai pengguna, saya ingin membandingkan tren antar periode agar tahu apakah saya membaik. |
+
+**AC (logika fungsional):**
+- Segmented range: `1M` (bulan berjalan), `3M`, `6M`, `1Y`, `ALL` — aktif = gold pill dengan glow (token `design.md` §5).
+- KPI header: Total Expense, Total Income, Net (income − expense) untuk range aktif, dibandingkan dengan periode sebelumnya yang sama panjang → delta % (naik = gold, turun = `#8E8E93`; tidak ada merah).
+- Donut wheel: top 8 kategori expense, sisa digabung "Other". Sudut ≥0.5% baru dirender; center = total expense range.
+- Bar chart: agregat harian (range ≤1M) atau bulanan (range >1M). Bar = gradien gold + glow per `design.md` §4.
+- Semua agregasi dihitung di Postgres (view / RPC), **bukan** di-fetch mentah lalu dihitung di client. Target p95 <300ms untuk 10k transaksi.
+- Filter tambahan (opsional di UI): per wallet.
+- Range `ALL` dengan 0 transaksi → empty state (bukan NaN/Infinity).
+
+#### Epic E — Budget & Alert ("Budget Architecture")
+
+| ID | Story |
+|---|---|
+| E1 | Sebagai pengguna, saya ingin menetapkan batas belanja per kategori per bulan agar tidak overspend. |
+| E2 | Sebagai pengguna, saya ingin diberi tahu saat mendekati/melewati batas agar bisa menahan diri. |
+
+**AC (logika fungsional):**
+- Budget = baris `(user_id, category_id, amount_limit, month)`; `month` = tanggal 1 UTC dari bulan kalender di **timezone profil user** (default `Asia/Jakarta`).
+- Set budget hanya untuk kategori expense. Satu budget per kategori per bulan (unique constraint). Update budget di bulan berjalan diperbolehkan.
+- Spent = Σ expense transaksi kategori tsb dalam bulan budget (dihitung server-side).
+- Progress ring/bars: fill gradien gold → `#F3E5AB`; track `#2C2C2E` (per `design.md` §5).
+- **Threshold logic:**
+  - `spent/limit ≥ 80%` dan `< 100%` → state `warning`: ring berubah ke gold penuh + label persentase; push lokal **sekali** per budget per bulan.
+  - `spent/limit ≥ 100%` → state `exceeded`: ring bergaris penuh gold; push lokal **sekali** per budget per bulan.
+  - Dedup alert disimpan di tabel `budget_alerts (budget_month, category_id, threshold, fired_at)`; transaksi edit/hapus yang menurunkan % tidak menghapus alert yang sudah fired, dan tidak double-fire di bulan yang sama.
+- Push = **local notification** (expo-notifications), trigger dievaluasi client-side tepat setelah commit transaksi + saat app foreground; body sesuai bahasa OS (ID/EN).
+- Reset bulanan: tidak ada pekerjaan cron — karena `month` adalah dimensi data, budget bulan baru otomatis "kosong" (0 spent). View Analytics/Budget selalu query `month = current_month(tz)`.
+
+#### Epic F — Profile & Settings
+
+| ID | Story |
+|---|---|
+| F1 | Sebagai pengguna, saya ingin mengatur nama, avatar, dan kategori agar app terasa milik saya. |
+| F2 | Sebagai pengguna, saya ingin mengekspor data saya agar tidak terkunci vendor. |
+| F3 | Sebagai pengguna, saya ingin menghapus akun & data saya sepenuhnya. |
+
+**AC:**
+- Profil: nama (maks 60 char), avatar (upload ke Supabase Storage, maks 2MB, PNG/JPG, di-resize 512×512 sebelum upload).
+- Kategori kustom: buat/edit/arsip kategori (nama + ikon dari katalog Material Symbols; warna ikon hanya dari token design — tidak ada custom color). Kategori bawaan tidak bisa dihapus, hanya diarsipkan.
+- Pengaturan mata uang: pilihan currency disimpan di profil (default `IDR`, tampilan mengikuti `Intl.NumberFormat`) — **belum ada konversi** (D5).
+- Ekspor CSV: query semua transaksi user → file CSV (kolom: date, type, category, wallet, amount, currency, note) → share sheet. Generasi via Edge Function agar tidak membebani memori client.
+- Hapus akun: konfirmasi dua langkah (ketik "HAPUS") → Edge Function (service role) menghapus semua baris user + storage avatar; Auth user dihapus. **Tidak reversible** — UI harus menyatakannya eksplisit.
+
+### 2.4 Non-Goals (Tidak dibangun di MVP)
+
+- ❌ Sinkronisasi/agregasi bank (open banking) — v2; hanya skema yang disiapkan.
+- ❌ Multi-currency dengan konversi kurs — hanya field `currency_code` di skema.
+- ❌ Transfer antar-wallet — v1.1 (enum `transfer` sudah disiapkan).
+- ❌ Recurring/subscription transactions — v1.1.
+- ❌ Offline write queue (outbox) — v1.1. MVP: tulis butuh koneksi; baca dari cache lokal terakhir.
+- ❌ App lock biometrik (Face ID/PIN) — v1.1.
+- ❌ Shared/household budget, web version, widget, email digest, AI insights, import CSV.
+
+---
+
+## 3. AI System Requirements
+
+**Tidak berlaku untuk MVP.** Cashtrix MVP tidak memakai fitur AI/ML. Bagian ini direservasi kosong dengan sengaja; kategori "smart insight" (v2+) akan mendokumentasikan evaluasinya sendiri.
+
+---
+
+## 4. Technical Specifications
+
+### 4.1 Architecture Overview
+
+```
+┌─────────────────────────────┐
+│  Expo App (iOS/Android)     │
+│  - Expo Router (tabs)       │
+│  - TanStack Query (cache)   │
+│  - expo-notifications       │
+│  - expo-sqlite (read cache) │
+└──────────┬──────────────────┘
+           │ HTTPS / supabase-js
+           ▼
+┌─────────────────────────────┐     ┌────────────────────┐
+│  Supabase                   │     │  Edge Functions    │
+│  - Auth (email+password)    │     │  - seed-user       │
+│  - Postgres + RLS           │◄────│  - export-csv      │
+│  - Views/RPC (agregasi)     │     │  - delete-account  │
+│  - Storage (avatar)         │     └────────────────────┘
+└─────────────────────────────┘
+```
+
+- **State:** TanStack Query sebagai single source untuk data remote; `expo-sqlite` hanya read-through cache untuk list & dashboard (agar app terasa instan saat re-open).
+- **Tidak ada state saldo di client yang persisten** — saldo selalu berasal dari SQL view saat fetch; cache hanya untuk render awal.
+- **Agregasi** (analytics, budget spent, saldo) semuanya di Postgres via view/RPC. Client tidak pernah menghitung agregat finansial.
+
+### 4.2 Data Model (Postgres)
+
+```sql
+-- Semua tabel punya: id uuid pk default gen_random_uuid(), created_at, updated_at timestamptz
+-- dan RLS: user_id = auth.uid() (kecuali profiles: id = auth.uid())
+
+profiles (
+  id uuid pk references auth.users on delete cascade,
+  display_name text not null default 'Pengguna',
+  avatar_url text,
+  currency_code char(3) not null default 'IDR',
+  timezone text not null default 'Asia/Jakarta',
+  locale text not null default 'id-ID'
+)
+
+wallets (
+  id, user_id fk,
+  name text not null,
+  type text not null check (type in ('bank','ewallet','cash','card')),
+  opening_balance numeric(18,2) not null default 0,
+  archived_at timestamptz,
+  unique (user_id, name)
+)
+
+categories (
+  id, user_id fk nullable,        -- null = kategori bawaan sistem
+  name text not null,
+  icon text not null,             -- nama Material Symbols
+  kind text not null check (kind in ('income','expense')),
+  is_system bool not null default false,
+  archived_at timestamptz,
+  unique (user_id, name, kind)
+)
+
+transactions (
+  id, user_id fk,
+  wallet_id fk wallets,
+  category_id fk categories,
+  type text not null check (type in ('income','expense','transfer')), -- 'transfer' reserved v1.1
+  amount numeric(18,2) not null check (amount > 0),
+  currency_code char(3) not null default 'IDR',   -- siap multi (D5)
+  occurred_at timestamptz not null,
+  note text check (char_length(note) <= 200),
+  idempotency_key uuid not null,
+  deleted_at timestamptz,
+  unique (user_id, idempotency_key)
+)
+create index on transactions (user_id, occurred_at desc);
+create index on transactions (user_id, category_id, occurred_at);
+
+budgets (
+  id, user_id fk,
+  category_id fk categories,
+  month date not null,            -- selalu hari-1 UTC dari bulan tz user
+  amount_limit numeric(18,2) not null check (amount_limit > 0),
+  unique (user_id, category_id, month)
+)
+
+budget_alerts (
+  id, user_id fk,
+  category_id fk categories,
+  month date not null,
+  threshold text not null check (threshold in ('warning_80','exceeded_100')),
+  fired_at timestamptz not null default now(),
+  unique (category_id, month, threshold)
+)
+```
+
+**View wajib (agregasi server-side):**
+- `v_wallet_balances` — saldo per wallet (`opening_balance + Σ income − Σ expense`, exclude soft-delete).
+- `v_monthly_summary(user_id, month, tz)` — income/expense/net bulanan.
+- `v_category_breakdown(user_id, range_start, range_end)` — untuk donut & bar chart.
+- `v_budget_status(user_id, month, tz)` — join budget × spent × % × state (`ok`/`warning`/`exceeded`).
+
+**Seed default (idempotent, via Edge Function `seed-user` saat login pertama):**
+- Wallet: "Cash" (type `cash`, opening 0).
+- Kategori expense: Makanan (`restaurant`), Transportasi (`directions_car`), Belanja (`shopping_bag`), Tagihan (`receipt_long`), Hiburan (`movie`), Kesehatan (`medical_services`), Investasi (`show_chart`), Lainnya (`category`).
+- Kategori income: Gaji (`payments`), Bonus (`redeem`), Investasi (`trending_up`), Lainnya (`add_circle`).
+
+### 4.3 Integration Points
+
+| Integrasi | Kegunaan | Catatan |
+|---|---|---|
+| Supabase Auth | Register/login/session | Email verification wajib |
+| Supabase Postgres | Semua data domain | RLS aktif di semua tabel |
+| Supabase Storage | Avatar | Bucket privat, path `avatars/{user_id}` |
+| Supabase Edge Functions | seed-user, export-csv, delete-account | Service role, dipanggil dengan JWT user |
+| expo-notifications | Local push budget alert | Tidak butuh server push di MVP |
+| Sentry (atau setara) | Crash + performance | Wajib sebelum rilis |
+| Analytics event | KPI §1 | Event minimal: `tx_created`, `budget_threshold_reached`, `screen_view` |
+
+### 4.4 Security & Privacy
+
+- **RLS di 100% tabel**; deny-by-default. Tidak ada satu pun tabel policy `USING (true)`. Verifikasi dengan test suite khusus RLS (user A tidak bisa SELECT/UPDATE/DELETE baris user B) — coverage wajib 100% tabel.
+- Service role key **hanya** di Edge Functions, tidak pernah di bundle client.
+- Tidak ada data finansial di log (client maupun server); Sentry scrubbing untuk field `amount`/`note`.
+- Transport: HTTPS wajib (default supabase-js); tanpa cleartext fallback.
+- Storage avatar: policy `user_id = auth.uid()` untuk read/write path miliknya.
+- Hapus akun (F3) memenuhi hak penghapusan data; ekspor CSV (F2) memenuhi hak portabilitas.
+- Idempotency key per transaksi mencegah duplikasi saat retry jaringan.
+
+### 4.5 Design System Compliance (binding ke `design.md`)
+
+Kode UI **wajib** mengonsumsi token berikut — dilarang hardcode hex di komponen:
+
+| Sumber | Wajib dipakai |
+|---|---|
+| `design.md` §1 | Semua warna (`#0A0A0A`, `#1C1C1E`, `#2C2C2E`, `#3A3A3C`, `#D4AF37`, `#F3E5AB`, `#E5E5E5`, `#8E8E93`, `#FFB4AB`) |
+| `design.md` §2 | 12 type tokens (Inter / JetBrains Mono) |
+| `design.md` §3 | Skala spacing 4px, margin 20px, clearance nav ≥96px |
+| `design.md` §4 | Radius 16/20/24/32/9999px, glow catalog |
+| `design.md` §5 | Pola komponen (button 52px, row transaksi, chip, ring) |
+
+- Implementasi token: satu file `theme.ts` (atau setara) sebagai satu-satunya definisi; component library internal tipis, bukan UI kit eksternal.
+- Verifikasi visual: setiap screen dibandingkan terhadap render Stitch hanya untuk **layout**; warna mengikuti kanonik (D10), bukan pick dari screenshot.
+
+### 4.6 Testing Strategy
+
+| Lapis | Cakupan | Tool |
+|---|---|---|
+| Unit — domain | Format uang, boundary budget (79.9/80/99.9/100%), boundary bulan tz (31 Des 23:59 WIB), validasi amount, dedup alert | Jest ≥90% coverage di folder domain |
+| Unit — RLS | Matriks akses antar-user, semua tabel | pgTAP / supabase test |
+| Integration | Flow auth→seed→tx→budget→alert (dedup fired) | Testcontainers / Supabase local |
+| E2E happy path | Register → input 3 tx → lihat dashboard & analytics → set budget → trigger alert | Maestro |
+| Visual smoke | Layout vs Stitch (referensi saja) | Manual checklist per rilis |
+
+---
+
+## 5. Risks & Roadmap
+
+### 5.1 Phased Rollout
+
+| Fase | Isi | Kriteria keluar |
+|---|---|---|
+| **MVP (v1.0)** | Epic A–F persis seperti §2.3; TestFlight/internal distribution → Play Store + App Store | Semua AC terpenuhi + KPI instrumentasi hidup |
+| **v1.1** | Transfer antar-wallet, recurring transactions, offline outbox (tulis saat offline, sinkron saat online), biometric app lock, CSV import | Tidak ada regresi KPI stabilitas |
+| **v2.0** | Agregasi bank via aggregator (Open Finance), multi-currency + kurs historis, smart insights | Compliance review selesai sebelum rilis |
+
+### 5.2 Technical Risks
+
+| Risiko | Dampak | Mitigasi |
+|---|---|---|
+| Timezone boundary (bulan budget beda antara server UTC vs user tz) | Budget spent salah hitung / alert salah fire | `month` selalu dihitung dari `profiles.timezone` di satu fungsi SQL (`current_month(tz)`); unit test lintas tz (WIB vs UTC) wajib |
+| Double-fire push alert saat retry transaksi | Spam notifikasi → uninstall | `budget_alerts` unique constraint; insert alert pakai `ON CONFLICT DO NOTHING` |
+| Drift saldo jika ada kode yang menulis saldo langsung | Data korup | Tidak ada kolom saldo mutable; hanya view. Code review melarang `update wallets set balance` |
+| Agregasi lambat saat data besar | Analytics p95 >300ms | Index `(user_id, occurred_at desc)`; view hanya agregasi, pagination di list |
+| Expo push/notification permission ditolak | Alert tidak sampai | Alert in-app (ring state) tetap berfungsi tanpa izin push; minta izin hanya saat budget pertama dibuat |
+| Drift visual ke hex Stitch (bukan kanonik) | Brand tidak konsisten | Lint rule: hex literal di komponen = error; hanya `theme.ts` boleh berisi hex |
+| Supabase downtime | Tidak bisa input | Mode read-only dari cache + banner status; komunikasi jelas, tanpa kehilangan data (tulis ditolak, bukan antrian buta) |
+
+---
+
+## 6. Open Questions
+
+Tidak ada. Semua area ambigu telah diselesaikan di §0. Pertanyaan baru yang muncul selama development wajib ditambahkan ke dokumen ini dengan status `OPEN` sebelum keputusan diambil di kode.
