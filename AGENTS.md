@@ -2,8 +2,8 @@
 
 ## Repo state
 
-- **Pre-code planning repo.** Only `PRD.md` and `design.md` exist. No git, no package manifest, no build/test/lint tooling yet — do not invent or assume any; commands come later, when scaffolding starts.
-- Not a git repository. Only init/commit when the user explicitly asks.
+- **Pre-code planning repo.** Only `PRD.md`, `DESIGN.md`, `AGENTS.md`, `specs/`, and `docs/agents/` exist. No package manifest, no build/test/lint tooling yet — do not invent or assume any; commands come later, when scaffolding starts.
+- Git repo on `main`, remote `https://github.com/Callmerev95/Cashtrix.git`. Only commit/push when the user explicitly asks.
 
 ## Binding documents
 
@@ -26,3 +26,13 @@
 ## External references
 
 - Stitch project `Cashtrix` = `projects/16569655893689994`; design system asset `assets/4b61549b44c64e5f9f2b2ef2437c18dd` (v2). Screens are a **layout** reference only — see the mapping table in design.md §1.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live as GitHub issues in `Callmerev95/Cashtrix`, managed with the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context layout — one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
