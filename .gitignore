@@ -5,6 +5,7 @@ node_modules/
 .DS_Store
 .scratch/
 .env*
+!.env.example
 
 # Expo
 .expo/
