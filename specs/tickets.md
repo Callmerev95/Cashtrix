@@ -20,7 +20,9 @@ Semua ticket diterbitkan sebagai GitHub issue dengan label `ready-for-agent`. Bl
 
 ## Frontier
 
-Ticket tanpa blocker belum selesai: **#3 (T1)**, **#2 (T2)** — keduanya dapat dikerjakan paralel.
+Ticket tanpa blocker yang belum selesai: **#4 (T3 — Auth + seed idempotent)**, **#11 (T10 — Observability)** — keduanya dapat dikerjakan paralel.
+
+Selesai (di-merge ke `main`, squash): T1 — #3 via PR #13 · T2 — #2 via PR #14.
 
 ## Aturan
 
