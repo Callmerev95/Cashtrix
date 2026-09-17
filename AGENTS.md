@@ -2,8 +2,21 @@
 
 ## Repo state
 
-- **Expo + Expo Router app** (`app/`, `src/`) scaffolded by T1 (#3). `PRD.md`, `DESIGN.md`, `AGENTS.md`, `specs/`, and `docs/agents/` remain the planning/binding docs.
+- **Expo + Expo Router app** (`app/`, `src/`) scaffolded by T1 (#3). Postgres schema/RLS/pgTAP lives in `supabase/` (T2, #2). `PRD.md`, `DESIGN.md`, `AGENTS.md`, `specs/`, and `docs/agents/` remain the planning/binding docs.
 - Git repo on `main`, remote `https://github.com/Callmerev95/Cashtrix.git`. Only commit/push when the user explicitly asks.
+
+### Database
+
+- Project Supabase: `Cashtrix` — ref `bklriyyuglwiqczgbqgq`, region `ap-southeast-2`. `supabase/config.toml` `project_id` sudah diisi ref tersebut.
+- Migrations: `supabase/migrations/20260917090000_schema.sql` (6 tabel + RLS + bucket `avatars`), `20260917090001_seed_system_categories.sql` (12 kategori sistem, idempotent).
+- Views agregasi (`v_wallet_balances`, `v_monthly_summary`, `v_category_breakdown`, `v_budget_status`) dan `current_month(tz)` **belum ada** — milik T4/T6/T7 sesuai `specs/tickets.md`.
+- RLS deny-by-default: 24 policy `to authenticated` (4 per tabel), tanpa `USING (true)`. `anon` dicabut. Bonus hardening: FK komposit `transactions(wallet_id, user_id) → wallets(id, user_id)`.
+- `budget_alerts` dedup per-user: `unique(user_id, category_id, month, threshold)` — revisi PRD §6.1 R1 (kategori sistem dipakai bersama, kunci lama `(category_id, month, threshold)` menabrak antar-user).
+- State remote (sudah diverifikasi): 6 tabel, 24 policy public, 4 policy `avatars_*` di `storage.objects`, bucket privat 2MB PNG/JPG, 12 kategori sistem, 87 assertion pgTAP hijau (dijalankan via `psql` karena mesin ini tanpa Docker).
+- Catatan pgTAP portabilitas (semuanya sudah tercermin di `supabase/tests/database/`):
+  - Setup ada di `00_setup.sql` **tanpa assertion** (pgTAP menjalankan semua `.sql` di folder; `\ir` akan menyuntik output setup ke dalam TAP file test).
+  - `reset role` mengembalikan role ke session user dan me-reset `search_path` → sesudahnya perlu `set role postgres` + `set search_path = public, extensions` lagi.
+  - Storage hosted: `path_tokens` = generated column (jangan diisi saat insert); `DELETE` langsung dari SQL ditolak trigger `storage.protect_delete()` (err 42501) untuk semua role; update objek milik user lain = no-op RLS (0 baris).
 
 ### Commands
 
@@ -11,6 +24,8 @@
 - Lint: `npm run lint` (`eslint .`)
 - Typecheck: `npm run typecheck` (`tsc --noEmit`)
 - Test: `npm run test` (`jest`, jest-expo preset)
+- DB migrations (canonical source: `supabase/migrations/*.sql`): apply via `supabase db push --linked` (atau MCP `apply_migration` dengan isi file identik — jangan divergen)
+- DB tests (pgTAP): `npm run db:test` (`supabase test db`). **Butuh Docker/Podman** — `supabase test db --linked` tetap menjalankan `pg_prove` di container. Suite di `supabase/tests/database/` (7 file, 87 assertion) dan bisa juga dijalankan langsung dengan `psql` terhadap DB mana pun (`00_setup.sql` dulu, lalu 01–06; `set role postgres` + `set search_path = public, extensions`).
 - Run app: `npm run ios` / `npm run android` / `npm run start`
 - Bundle check (no device needed): `npx expo export --platform ios|android --output-dir /tmp/out`
 - **No native folders are committed** — `ios/`/`android/` are generated; use Expo Go / dev builds.

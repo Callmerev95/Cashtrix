@@ -145,7 +145,7 @@ Struktur navigasi = **floating bottom bar** (per `design.md` §5 Navigation), 4 
 - **Threshold logic:**
   - `spent/limit ≥ 80%` dan `< 100%` → state `warning`: ring berubah ke gold penuh + label persentase; push lokal **sekali** per budget per bulan.
   - `spent/limit ≥ 100%` → state `exceeded`: ring bergaris penuh gold; push lokal **sekali** per budget per bulan.
-  - Dedup alert disimpan di tabel `budget_alerts (budget_month, category_id, threshold, fired_at)`; transaksi edit/hapus yang menurunkan % tidak menghapus alert yang sudah fired, dan tidak double-fire di bulan yang sama.
+  - Dedup alert disimpan di tabel `budget_alerts (user_id, month, category_id, threshold, fired_at)` — **kunci dedup per-user**: `unique(user_id, category_id, month, threshold)`. Ini disengaja agar kategori sistem yang dipakai bersama banyak akun tidak saling memblokir baris alert; transaksi edit/hapus yang menurunkan % tidak menghapus alert yang sudah fired, dan tidak double-fire di bulan yang sama untuk user tersebut.
 - Push = **local notification** (expo-notifications), trigger dievaluasi client-side tepat setelah commit transaksi + saat app foreground; body sesuai bahasa OS (ID/EN).
 - Reset bulanan: tidak ada pekerjaan cron — karena `month` adalah dimensi data, budget bulan baru otomatis "kosong" (0 spent). View Analytics/Budget selalu query `month = current_month(tz)`.
 
@@ -273,7 +273,7 @@ budget_alerts (
   month date not null,
   threshold text not null check (threshold in ('warning_80','exceeded_100')),
   fired_at timestamptz not null default now(),
-  unique (category_id, month, threshold)
+  unique (user_id, category_id, month, threshold)  -- dedup per-user (revisi §0/§6)
 )
 ```
 
@@ -352,7 +352,7 @@ Kode UI **wajib** mengonsumsi token berikut — dilarang hardcode hex di kompone
 | Risiko | Dampak | Mitigasi |
 |---|---|---|
 | Timezone boundary (bulan budget beda antara server UTC vs user tz) | Budget spent salah hitung / alert salah fire | `month` selalu dihitung dari `profiles.timezone` di satu fungsi SQL (`current_month(tz)`); unit test lintas tz (WIB vs UTC) wajib |
-| Double-fire push alert saat retry transaksi | Spam notifikasi → uninstall | `budget_alerts` unique constraint; insert alert pakai `ON CONFLICT DO NOTHING` |
+| Double-fire push alert saat retry transaksi | Spam notifikasi → uninstall | `budget_alerts` unique `(user_id, category_id, month, threshold)` (dedup per-user); insert alert pakai `ON CONFLICT DO NOTHING` |
 | Drift saldo jika ada kode yang menulis saldo langsung | Data korup | Tidak ada kolom saldo mutable; hanya view. Code review melarang `update wallets set balance` |
 | Agregasi lambat saat data besar | Analytics p95 >300ms | Index `(user_id, occurred_at desc)`; view hanya agregasi, pagination di list |
 | Expo push/notification permission ditolak | Alert tidak sampai | Alert in-app (ring state) tetap berfungsi tanpa izin push; minta izin hanya saat budget pertama dibuat |
@@ -364,3 +364,7 @@ Kode UI **wajib** mengonsumsi token berikut — dilarang hardcode hex di kompone
 ## 6. Open Questions
 
 Tidak ada. Semua area ambigu telah diselesaikan di §0. Pertanyaan baru yang muncul selama development wajib ditambahkan ke dokumen ini dengan status `OPEN` sebelum keputusan diambil di kode.
+
+### 6.1 Revisi tercatat (resolved)
+
+- **R1 — Unique constraint `budget_alerts` (2026-09-17, saat T2/#2).** PRD awal memakai `unique(category_id, month, threshold)`. Karena `categories.user_id` boleh `NULL` (kategori sistem dipakai bersama antar-akun), baris alert pertama akan memblokir user lain: `ON CONFLICT DO NOTHING` membuat user kedua tidak pernah menerima alert-nya. Diputuskan: kunci dedup menjadi **per-user** → `unique(user_id, category_id, month, threshold)`. Berlaku juga di `supabase/migrations/0001_schema.sql`, `specs/cashtrix-mvp.md` §Implementation Decisions, dan acceptance criteria T2 (#2).
