@@ -10,7 +10,9 @@
     "web": "expo start --web",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "db:test": "supabase test db",
+    "db:types": "supabase gen types typescript --local > src/types/database.types.ts"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
