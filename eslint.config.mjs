@@ -53,5 +53,11 @@ export default [
         afterEach: 'readonly',
       },
     },
+    rules: {
+      // Test-only: expo-router's renderRouter takes a route map of components,
+      // and jest.mock factories must not close over out-of-scope bindings.
+      // Both are unsupported by ESM static imports.
+      '@typescript-eslint/no-require-imports': 'off',
+    },
   },
 ];

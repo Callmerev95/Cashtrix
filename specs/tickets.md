@@ -20,9 +20,11 @@ Semua ticket diterbitkan sebagai GitHub issue dengan label `ready-for-agent`. Bl
 
 ## Frontier
 
-Ticket tanpa blocker yang belum selesai: **#4 (T3 — Auth + seed idempotent)**, **#11 (T10 — Observability)** — keduanya dapat dikerjakan paralel.
+Ticket tanpa blocker yang belum selesai: **T10 — Observability (#11)**.
 
-Selesai (di-merge ke `main`, squash): T1 — #3 via PR #13 · T2 — #2 via PR #14.
+Selesai (di-merge ke `main`, squash): T1 — #3 via PR #13 · T2 — #2 via PR #14. Dalam review: T3 — #4 via PR (auth + seed idempotent).
+
+Catatan: T10 (#11) hanya diblokir oleh #3 (sudah closed), jadi ia berdiri sendiri di frontier. Ticket setelahnya (#5 T4 wallets, #9 T8 profile) tetap menunggu T3 (#4) merged.
 
 ## Aturan
 

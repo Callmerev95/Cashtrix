@@ -74,11 +74,11 @@ Struktur navigasi = **floating bottom bar** (per `design.md` §5 Navigation), 4 
 | A2 | Sebagai pengguna kembali, saya ingin login agar melanjutkan data saya sebelumnya. |
 
 **AC:**
-- Register: email valid (format + verifikasi klik link via Supabase Auth), password ≥8 karakter, ≥1 huruf + ≥1 angka. Gagal validasi → pesan inline, tidak ada request ke Supabase.
-- Setelah verifikasi email & login pertama: otomatis di-*seed* 1 wallet "Cash" (opening balance 0) + set kategori default (lihat §4.2). Proses seed idempotent (aman diulang).
+- Register: email valid (format + verifikasi email via Supabase Auth), password ≥8 karakter, ≥1 huruf + ≥1 angka. Gagal validasi → pesan inline, tidak ada request ke Supabase. Teks terkunci: "Email dan password wajib diisi", "Email tidak valid", "Password minimal 8 karakter", "Password harus memuat huruf dan angka" (revisi R2).
+- Setelah verifikasi email & login pertama: otomatis di-*seed* 1 wallet "Cash" (opening balance 0). Proses seed idempotent (aman diulang). Kategori default **tidak** dikopi per-user — kategori sistem §4.2 sudah tersedia untuk semua akun (revisi R2).
 - Login gagal (email/password salah) → pesan generik "Email atau password salah" (tidak membocorkan mana yang salah).
 - Session persisten via refresh token; app re-open → langsung ke Dashboard tanpa login ulang.
-- Sign out (Profile) → hapus session lokal, kembali ke Login, clear cache lokal.
+- Sign out (Profile) → hapus session lokal + seluruh storage lokal aplikasi, kembali ke Login (revisi R2; purge cache persisten menyusul saat cache `expo-sqlite` lahir di T5).
 
 #### Epic B — Multi-Wallet
 
@@ -284,15 +284,16 @@ budget_alerts (
 - `v_budget_status(user_id, month, tz)` — join budget × spent × % × state (`ok`/`warning`/`exceeded`).
 
 **Seed default (idempotent, via Edge Function `seed-user` saat login pertama):**
-- Wallet: "Cash" (type `cash`, opening 0).
-- Kategori expense: Makanan (`restaurant`), Transportasi (`directions_car`), Belanja (`shopping_bag`), Tagihan (`receipt_long`), Hiburan (`movie`), Kesehatan (`medical_services`), Investasi (`show_chart`), Lainnya (`category`).
-- Kategori income: Gaji (`payments`), Bonus (`redeem`), Investasi (`trending_up`), Lainnya (`add_circle`).
+- Wallet: "Cash" (type `cash`, opening 0) — satu-satunya baris yang dibuat `seed-user` (revisi R2).
+- Kategori default **sudah tersedia sebagai kategori sistem** (migrasi T2, `user_id = NULL`, `is_system = true`), terlihat semua akun lewat policy `categories_select_own_or_system` — tidak ada kategori per-user di seed:
+  - expense: Makanan (`restaurant`), Transportasi (`directions_car`), Belanja (`shopping_bag`), Tagihan (`receipt_long`), Hiburan (`movie`), Kesehatan (`medical_services`), Investasi (`show_chart`), Lainnya (`category`).
+  - income: Gaji (`payments`), Bonus (`redeem`), Investasi (`trending_up`), Lainnya (`add_circle`).
 
 ### 4.3 Integration Points
 
 | Integrasi | Kegunaan | Catatan |
 |---|---|---|
-| Supabase Auth | Register/login/session | Email verification wajib |
+| Supabase Auth | Register/login/session | Email verification: auto-confirm untuk pengembangan (R2); wajib konfirmasi manual sebelum rilis publik |
 | Supabase Postgres | Semua data domain | RLS aktif di semua tabel |
 | Supabase Storage | Avatar | Bucket privat, path `avatars/{user_id}` |
 | Supabase Edge Functions | seed-user, export-csv, delete-account | Service role, dipanggil dengan JWT user |
@@ -368,3 +369,4 @@ Tidak ada. Semua area ambigu telah diselesaikan di §0. Pertanyaan baru yang mun
 ### 6.1 Revisi tercatat (resolved)
 
 - **R1 — Unique constraint `budget_alerts` (2026-09-17, saat T2/#2).** PRD awal memakai `unique(category_id, month, threshold)`. Karena `categories.user_id` boleh `NULL` (kategori sistem dipakai bersama antar-akun), baris alert pertama akan memblokir user lain: `ON CONFLICT DO NOTHING` membuat user kedua tidak pernah menerima alert-nya. Diputuskan: kunci dedup menjadi **per-user** → `unique(user_id, category_id, month, threshold)`. Berlaku juga di `supabase/migrations/0001_schema.sql`, `specs/cashtrix-mvp.md` §Implementation Decisions, dan acceptance criteria T2 (#2).
+- **R2 — Isi seed `seed-user` + strategi verifikasi T3 (2026-09-17, saat T3/#4).** Edge Function `seed-user` hanya membuat wallet **"Cash"** (`type=cash`, opening 0). Kategori default **tidak** dikopi per-user: 12 kategori sistem dari migrasi T2 sudah terlihat semua user lewat policy `categories_select_own_or_system`; menyalinnya akan menduplikasi grid kategori (T5) dan mengubah semantik T8 (kategori bawaan harusnya hanya bisa diarsipkan). Verifikasi T3 memakai Jest untuk fungsi domain murni + verifikasi state DB via MCP/psql (pgTAP `supabase test db` butuh Docker yang tidak tersedia di mesin pengembangan); baris "integration flow auth → seed" di spec dianggap tercakup oleh kombinasi ini. Teks validasi inline Auth dikunci di PRD (lihat Epic A): "Email dan password wajib diisi", "Email tidak valid", "Password minimal 8 karakter", "Password harus memuat huruf dan angka". Verifikasi email diatur **auto-confirm** pada project Supabase hosted (pengecualian tercatat terhadap keputusan awal "Email verification wajib" §4.3; dikembalikan ke konfirmasi manual sebelum rilis publik). Sign out sejak T3 menghapus sesi + seluruh storage lokal aplikasi; purge cache persisten (`expo-sqlite`/TanStack Query) menyusul di T5 saat cache benar-benar ada.
