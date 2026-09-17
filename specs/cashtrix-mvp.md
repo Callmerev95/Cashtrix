@@ -16,8 +16,8 @@ Cashtrix — aplikasi mobile personal finance (iOS & Android) dengan estetika *p
 
 1. Sebagai pengguna baru, saya ingin mendaftar dengan email + password, agar data saya terikat pada akun yang hanya saya akses.
 2. Sebagai pengguna baru, saya ingin validasi format email dan aturan password (≥8 karakter, ≥1 huruf + ≥1 angka) dijalankan sebelum request dikirim, agar kesalahan terlihat sebagai pesan inline tanpa menunggu server.
-3. Sebagai pengguna baru, saya ingin memverifikasi email via link dari Supabase Auth, agar akun benar-benar milik saya.
-4. Sebagai pengguna yang baru login pertama kali, saya ingin otomatis di-seed 1 wallet "Cash" (opening balance 0) + set kategori default, agar bisa langsung mencatat tanpa setup manual.
+3. Sebagai pengguna baru, saya ingin memverifikasi email via Supabase Auth (auto-confirm saat pengembangan, konfirmasi manual sebelum rilis — PRD §6.1 R2), agar akun benar-benar milik saya.
+4. Sebagai pengguna yang baru login pertama kali, saya ingin otomatis di-seed 1 wallet "Cash" (opening balance 0) — kategori sistem sudah tersedia untuk semua akun, agar bisa langsung mencatat tanpa setup manual.
 5. Sebagai pengguna kembali, saya ingin sesi persisten via refresh token, agar app re-open langsung ke Dashboard tanpa login ulang.
 6. Sebagai pengguna, saya ingin login gagal menampilkan pesan generik "Email atau password salah", agar tidak terungkap mana yang salah.
 7. Sebagai pengguna, saya ingin sign out menghapus sesi lokal + cache, agar data saya tidak tertinggal di perangkat.
@@ -95,7 +95,7 @@ Cashtrix — aplikasi mobile personal finance (iOS & Android) dengan estetika *p
 - Expo Router (4 tab + FAB tengah: Dashboard, Analytics, [+ Add Transaction], Budgets, Profile); Auth di luar tab sebagai gate.
 - TanStack Query sebagai single source data remote; `expo-sqlite` hanya read-through cache untuk list & dashboard. Tidak ada state saldo yang persisten di client — saldo selalu dari SQL view saat fetch.
 - Semua agregasi finansial (saldo, analytics, budget spent) di Postgres via view/RPC. Client tidak pernah menghitung agregat.
-- Edge Functions (service role, dipanggil dengan JWT user): `seed-user` (idempotent: wallet "Cash" + kategori default saat login pertama), `export-csv`, `delete-account` (hapus semua baris user + storage avatar + auth user).
+- Edge Functions (service role, dipanggil dengan JWT user): `seed-user` (idempotent: wallet "Cash" saat login pertama — kategori default adalah kategori sistem, tidak dikopi per-user, PRD §6.1 R2), `export-csv`, `delete-account` (hapus semua baris user + storage avatar + auth user).
 
 **Skema (Postgres):**
 
@@ -132,7 +132,7 @@ Cashtrix — aplikasi mobile personal finance (iOS & Android) dengan estetika *p
 
 **Pelengkap (bukan seam pengembangan):**
 
-- Integration flow auth → seed → tx → budget → alert (dedup fired) di Supabase local.
+- Integration flow auth → seed → tx → budget → alert (dedup fired). Verifikasi state DB lewat MCP/psql (mesin pengembangan tanpa Docker; pgTAP tetap seam utama untuk logika SQL) — PRD §6.1 R2.
 - E2E happy path (Maestro): register → input 3 tx → dashboard & analytics → set budget → trigger alert. Gerbang rilis, bukan driver desain.
 - Visual smoke manual per rilis: layout dibandingkan render Stitch (referensi), warna selalu dari token kanonik.
 
