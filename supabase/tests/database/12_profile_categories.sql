@@ -52,7 +52,7 @@ select throws_ok(
 
 select lives_ok(
   $$ insert into public.categories (user_id, name, icon, kind, is_system) values
-     ('c80e0000-0000-4000-a000-000000000001', 'Jajan T8', 'trending_up', 'income', false) $$,
+     ('c80e0000-0000-4000-a000-000000000001', 'Jajan T8', 'trending-up', 'income', false) $$,
   'custom: nama sama beda kind diizinkan');
 
 select throws_ok(

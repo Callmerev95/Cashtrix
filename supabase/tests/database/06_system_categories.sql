@@ -8,7 +8,7 @@ set role postgres;
 set search_path = public, extensions;
 
 begin;
-select plan(7);
+select plan(8);
 
 insert into auth.users (id, email)
 values ('23000c90-c136-43d2-81b4-29e162613627', 'alice@test.com');
@@ -32,6 +32,14 @@ select is(
    where user_id is null and is_system and name = 'Makanan' and icon = 'restaurant'),
   1,
   'seed: kategori "Makanan" memakai ikon restaurant');
+
+-- Konvensi strip (bugfix ikon, pra-T11): `@expo/vector-icons@15`
+-- MaterialIcons hanya mengenal nama ber-strip; underscore me-render blank.
+select is(
+  (select count(*)::int from public.categories
+   where user_id is null and is_system and icon like '%\_%' escape '\'),
+  0,
+  'seed: tidak ada ikon sistem ber-underscore');
 
 -- ---------------------------------------------------------------------------
 -- Idempotent: menjalankan ulang insert seed tidak menambah baris/error

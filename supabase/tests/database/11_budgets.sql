@@ -38,8 +38,8 @@ insert into public.wallets (id, user_id, name, type, opening_balance) values
 
 insert into public.categories (id, user_id, name, icon, kind, is_system) values
   ('cb000000-0000-4000-a000-000000000001', null, 'Makan T7', 'restaurant', 'expense', true),
-  ('cb000000-0000-4000-a000-000000000002', null, 'Transport T7', 'directions_car', 'expense', true),
-  ('cb000000-0000-4000-a000-000000000003', null, 'Belanja T7', 'shopping_bag', 'expense', true),
+  ('cb000000-0000-4000-a000-000000000002', null, 'Transport T7', 'directions-car', 'expense', true),
+  ('cb000000-0000-4000-a000-000000000003', null, 'Belanja T7', 'shopping-bag', 'expense', true),
   ('cb000000-0000-4000-a000-000000000004', null, 'Hiburan T7', 'movie', 'expense', true),
   ('cb000000-0000-4000-a000-000000000005', null, 'Gaji T7', 'payments', 'income', true);
 
