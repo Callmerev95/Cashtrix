@@ -8,7 +8,7 @@ set role postgres;
 set search_path = public, extensions;
 
 begin;
-select plan(16);
+select plan(15);
 
 -- ---------------------------------------------------------------------------
 -- Data uji: alice punya wallet asal (berisi 2 transaksi hidup + 1 soft-deleted)
@@ -73,8 +73,8 @@ select is(
 select is(
   (select balance from public.v_wallet_balances
     where wallet_id = '9a000000-0000-4000-a000-000000000002'),
-  (-750000.00)::numeric,
-  'reassign: saldo wallet tujuan menyerap seluruh expense (−750.000)');
+  (-350000.00)::numeric,
+  'reassign: saldo wallet tujuan menyerap expense hidup (soft-deleted tidak dihitung)');
 
 select is(
   (select transaction_count from public.v_wallet_balances
@@ -87,12 +87,22 @@ select ok(
     where id = '9c000000-0000-4000-a000-000000000003'),
   'reassign: transaksi soft-deleted tetap soft-deleted setelah pindah');
 
+-- Baris milik bob tidak terlihat oleh alice lewat RLS, jadi kontrol silang-user
+-- harus diperiksa sebagai postgres (RLS di-bypass) — bukan sebagai alice.
+reset role;
+set local role postgres;
+set local search_path = public, extensions;
+
 select is(
   (select count(*)::int from public.transactions
     where id = '9c000000-0000-4000-a000-000000000004'
       and wallet_id = '9a000000-0000-4000-a000-000000000004'),
   1,
   'reassign: transaksi bob tidak tersentuh');
+
+-- Kembali sebagai alice untuk blok validasi argumen.
+set local role authenticated;
+set local request.jwt.claim.sub = '3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d';
 
 -- ---------------------------------------------------------------------------
 -- Validasi argumen
@@ -125,12 +135,21 @@ select throws_ok(
   'wallet tujuan tidak ditemukan',
   'reassign: wallet tujuan milik user lain → P0002 (RLS + cek kepemilikan)');
 
+-- Kontrol silang-user lagi: baris bob hanya terlihat sebagai postgres.
+reset role;
+set local role postgres;
+set local search_path = public, extensions;
+
 select is(
   (select count(*)::int from public.transactions
     where id = '9c000000-0000-4000-a000-000000000004'
       and wallet_id = '9a000000-0000-4000-a000-000000000004'),
   1,
   'reassign: percobaan menyeberang user tidak mengubah data bob');
+
+-- Kembali sebagai alice: sisa test memanggil RPC yang butuh identitas alice.
+set local role authenticated;
+set local request.jwt.claim.sub = '3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d';
 
 -- wallet tanpa transaksi: 0 baris terpindah, bukan error
 select is(

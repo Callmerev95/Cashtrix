@@ -1,13 +1,14 @@
 /**
- * Dashboard (PRD §2.3 Epic B2, DESIGN.md §6).
+ * Dashboard (PRD §2.3 Epic B2 + Epic C2, DESIGN.md §6).
  *
- * T4 fills the screen with the combined-balance hero card and the wallet list —
- * the two things that make "posisi finansial terlihat dalam hitungan detik"
- * true without opening a single wallet. The greeting comes from the profile
- * display name; the transaction list is T5's, quick actions scale on top.
+ * T4 filled the hero card + wallet list; T5 adds the transaction history — the
+ * "arus kas hari ini" half of the story. History is 20/page and pages in on
+ * scroll end; rows are grouped per day by the shared list component, which
+ * never re-sorts (the DB order and the paging offset must agree).
  *
- * Data comes from `useWallets()` (one `v_wallet_balances` read); the number is
- * rendered `currency-display` JetBrains Mono per the acceptance criteria.
+ * Balances come from `useWallets()` (`v_wallet_balances`) and history from
+ * `useTransactions()` (`v_transactions_feed`) — two server-side reads, no
+ * client aggregation of money.
  */
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
@@ -16,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components';
 import { useAuth } from '@/features/auth';
+import { TransactionHistoryList, useTransactions } from '@/features/transactions';
 import { formatCurrency, useWallets } from '@/features/wallets';
 import { TotalBalanceCard } from '@/features/wallets/components/total-balance-card';
 import { WalletRow } from '@/features/wallets/components/wallet-row';
@@ -31,6 +33,13 @@ function greeting(hour: number): string {
 export default function DashboardScreen() {
   const { session } = useAuth();
   const { wallets, summary, loading } = useWallets();
+  const {
+    transactions,
+    loading: loadingTransactions,
+    loadingMore,
+    hasMore,
+    loadMore,
+  } = useTransactions();
   const insets = useSafeAreaInsets();
 
   const name = (session?.user.user_metadata?.display_name as string | undefined) ??
@@ -46,6 +55,15 @@ export default function DashboardScreen() {
           { paddingTop: insets.top + spacing.xl },
         ]}
         showsVerticalScrollIndicator={false}
+        onScroll={({ nativeEvent }) => {
+          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+          const distanceFromBottom =
+            contentSize.height - (contentOffset.y + layoutMeasurement.height);
+          // 240px lead so the next page is usually already there when the user
+          // arrives at the bottom. `loadMore` itself guards against double-fire.
+          if (distanceFromBottom < 240) void loadMore();
+        }}
+        scrollEventThrottle={16}
       >
         <View style={styles.header}>
           <View>
@@ -125,6 +143,35 @@ export default function DashboardScreen() {
             </Text>
           ) : null}
         </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[typography.labelUppercase, styles.kicker]}>
+              Riwayat
+            </Text>
+            {transactions.length > 0 ? (
+              <Text style={[typography.bodySm, styles.metaInline]}>
+                {transactions.length} transaksi
+              </Text>
+            ) : null}
+          </View>
+
+          {loadingTransactions && transactions.length === 0 ? (
+            <Text style={[typography.bodyMd, styles.empty]}>Memuat riwayat…</Text>
+          ) : (
+            <TransactionHistoryList
+              transactions={transactions}
+              loadingMore={loadingMore}
+              hasMore={hasMore}
+              onPressTransaction={(transaction) =>
+                router.push({
+                  pathname: '/add-transaction',
+                  params: { id: transaction.id },
+                })
+              }
+            />
+          )}
+        </View>
       </ScrollView>
     </Screen>
   );
@@ -179,6 +226,9 @@ const styles = StyleSheet.create({
   },
   meta: {
     marginTop: spacing.sm,
+    color: colors.textSecondary,
+  },
+  metaInline: {
     color: colors.textSecondary,
   },
 });

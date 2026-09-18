@@ -20,11 +20,13 @@ Semua ticket diterbitkan sebagai GitHub issue dengan label `ready-for-agent`. Bl
 
 ## Frontier
 
-Ticket tanpa blocker yang belum selesai: **#6 (T5 — Add Transaction + riwayat)** (terbuka setelah T4), **#9 (T8 — Profile + kategori kustom)**, **#11 (T10 — Observability)** — ketiganya dapat dikerjakan paralel.
+Ticket tanpa blocker yang belum selesai: **#9 (T8 — Profile + kategori kustom)** dan **#11 (T10 — Observability)** — keduanya dapat dikerjakan paralel.
+
+**#6 (T5 — Add Transaction + riwayat)** dinyatakan selesai di branch `feat/t5-add-transaction-history` → **PR #17** (MERGEABLE, "Closes #6", belum di-merge). Membuka antrean berikutnya begitu PR di-merge: #7 (T6 — Analytics), #8 (T7 — Budget + alert), #10 (T9 — Data ownership) — ketiganya hanya menunggu #6.
 
 Selesai (di-merge ke `main`, squash): T1 — #3 via PR #13 · T2 — #2 via PR #14 · T3 — #4 via PR #15 · T4 — #5 via PR #16 (squash `cb3b9df`).
 
-Ticket berikutnya tetap berantai: #7 (T6) & #8 (T7) & #10 (T9) menunggu #6 (T5); #12 (T11) menunggu #7/#8/#9/#10/#11.
+Ticket berikutnya tetap berantai: #12 (T11) menunggu #7/#8/#9/#10/#11.
 
 ## Aturan
 
