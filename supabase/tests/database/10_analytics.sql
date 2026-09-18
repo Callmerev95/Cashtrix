@@ -39,7 +39,7 @@ insert into public.wallets (id, user_id, name, type, opening_balance) values
 
 insert into public.categories (id, user_id, name, icon, kind, is_system) values
   ('bb000000-0000-4000-a000-000000000001', null, 'Makan T6', 'restaurant', 'expense', true),
-  ('bb000000-0000-4000-a000-000000000002', null, 'Transport T6', 'directions_car', 'expense', true),
+  ('bb000000-0000-4000-a000-000000000002', null, 'Transport T6', 'directions-car', 'expense', true),
   ('bb000000-0000-4000-a000-000000000003', null, 'Gaji T6', 'payments', 'income', true);
 
 -- Rentang uji: [2026-09-01 00:00 WIB, 2026-10-01 00:00 WIB)

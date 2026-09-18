@@ -152,17 +152,26 @@ export default function WalletFormScreen() {
           </Text>
           <View style={[styles.amountWell, errors.openingBalance && styles.amountError]}>
             <Text style={[typography.currencyMd, styles.rp]}>Rp</Text>
-            <TextField
-              testID="wallet-opening"
-              value={openingRaw}
-              onChangeText={(text) => {
-                const parsed = text.trim() === '' ? 0 : parseAmountInput(text);
-                setOpeningRaw(parsed === null ? text : formatAmount(parsed));
-              }}
-              placeholder="0"
-              keyboardType="number-pad"
-              style={styles.amountInput}
-            />
+            {/*
+              The flex:1 wrapper is load-bearing: TextField's root View has no
+              flex of its own, so without this it collapses to the placeholder
+              width inside the row and typed digits clip invisibly (the value
+              still saves correctly). The transaction AmountField avoids this
+              by owning the whole row well; here the `Rp` glyph shares it.
+            */}
+            <View style={styles.amountField}>
+              <TextField
+                testID="wallet-opening"
+                value={openingRaw}
+                onChangeText={(text) => {
+                  const parsed = text.trim() === '' ? 0 : parseAmountInput(text);
+                  setOpeningRaw(parsed === null ? text : formatAmount(parsed));
+                }}
+                placeholder="0"
+                keyboardType="number-pad"
+                style={styles.amountInput}
+              />
+            </View>
           </View>
           {errors.openingBalance ? (
             <Text style={[typography.bodySm, styles.error]}>
@@ -245,6 +254,9 @@ const styles = StyleSheet.create({
   },
   rp: {
     color: colors.accent,
+  },
+  amountField: {
+    flex: 1,
   },
   amountInput: {
     fontFamily: fontFamily.monoMedium,

@@ -68,28 +68,30 @@ export function WalletFilterChips({
   if (wallets.length === 0) return null;
 
   return (
-    <ScrollView
-      testID={testID}
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.chips}
-    >
-      <FilterChip
-        label="Semua"
-        active={value === null}
-        testID="wallet-filter-all"
-        onPress={() => onChange(null)}
-      />
-      {wallets.map((wallet) => (
+    <View style={styles.chipsScroll}>
+      <ScrollView
+        testID={testID}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chips}
+      >
         <FilterChip
-          key={wallet.id}
-          label={wallet.name}
-          active={value === wallet.id}
-          testID={`wallet-filter-${wallet.id}`}
-          onPress={() => onChange(wallet.id)}
+          label="Semua"
+          active={value === null}
+          testID="wallet-filter-all"
+          onPress={() => onChange(null)}
         />
-      ))}
-    </ScrollView>
+        {wallets.map((wallet) => (
+          <FilterChip
+            key={wallet.id}
+            label={wallet.name}
+            active={value === wallet.id}
+            testID={`wallet-filter-${wallet.id}`}
+            onPress={() => onChange(wallet.id)}
+          />
+        ))}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -155,9 +157,14 @@ const styles = StyleSheet.create({
   chips: {
     gap: spacing.sm,
     paddingVertical: spacing.xs,
+    alignItems: 'center',
+  },
+  chipsScroll: {
+    height: layout.minTapTarget,
+    flexGrow: 0,
   },
   chip: {
-    minHeight: layout.minTapTarget - spacing.sm,
+    height: layout.minTapTarget - spacing.sm,
     paddingHorizontal: spacing.md,
     alignItems: 'center',
     justifyContent: 'center',

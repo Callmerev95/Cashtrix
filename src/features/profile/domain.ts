@@ -40,32 +40,38 @@ export function isCategoryKind(value: unknown): value is CategoryKind {
  * catalog, no color picker). Rendered with `@expo/vector-icons/MaterialIcons`
  * like every other category surface, so every entry must be a valid
  * Material Icons name — unknown names render as blank wells.
+ *
+ * Naming convention (bugfix ikon, pra-T11): `@expo/vector-icons@15` uses
+ * DASHED names (`shopping-bag`), not underscores. The glyphmap is the ground
+ * truth (`node_modules/@expo/vector-icons/.../glyphmaps/MaterialIcons.json`);
+ * `__tests__/icon-convention.test.ts` pins this convention so a future
+ * catalog addition with underscores fails loudly instead of blank at runtime.
  */
 export const ICON_CATALOG = [
   // System icons, reusable for custom categories too.
   'restaurant',
-  'directions_car',
-  'shopping_bag',
-  'receipt_long',
+  'directions-car',
+  'shopping-bag',
+  'receipt-long',
   'movie',
-  'medical_services',
-  'show_chart',
+  'medical-services',
+  'show-chart',
   'category',
   'payments',
   'redeem',
-  'trending_up',
-  'add_circle',
+  'trending-up',
+  'add-circle',
   // General extras.
   'home',
   'work',
   'school',
   'flight',
   'hotel',
-  'shopping_cart',
+  'shopping-cart',
   'fastfood',
-  'local_cafe',
-  'directions_bike',
-  'music_note',
+  'local-cafe',
+  'directions-bike',
+  'music-note',
   'palette',
   'favorite',
 ] as const;
