@@ -10,8 +10,27 @@
  *
  * Everything here is best-effort and never throws: a notification failure must
  * not break saving a transaction.
+ *
+ * The native module is loaded lazily (never a top-level import): Expo Go
+ * (SDK 53+) removed remote-push registration, and merely *importing*
+ * `expo-notifications` throws at load there. Requiring it inside try/catch
+ * keeps the app running — alerts degrade to in-app banners.
  */
-import * as Notifications from 'expo-notifications';
+import type * as NotificationsType from 'expo-notifications';
+
+let cached: typeof NotificationsType | null | undefined;
+
+/** The native module, or `null` where it cannot load (Expo Go, Jest). */
+function notifications(): typeof NotificationsType | null {
+  if (cached !== undefined) return cached;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    cached = require('expo-notifications') as typeof NotificationsType;
+  } catch {
+    cached = null;
+  }
+  return cached;
+}
 
 let handlerInstalled = false;
 
@@ -21,7 +40,7 @@ export function installNotificationHandler(): void {
   handlerInstalled = true;
 
   try {
-    Notifications.setNotificationHandler({
+    notifications()?.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowBanner: true,
         shouldShowList: true,
@@ -39,7 +58,9 @@ export type PushPermission = 'granted' | 'denied' | 'undetermined';
 /** Current permission without prompting. Never throws. */
 export async function getPushPermission(): Promise<PushPermission> {
   try {
-    const settings = await Notifications.getPermissionsAsync();
+    const mod = notifications();
+    if (!mod) return 'denied';
+    const settings = await mod.getPermissionsAsync();
     if (settings.granted) return 'granted';
     if (!settings.canAskAgain) return 'denied';
     return 'undetermined';
@@ -54,7 +75,9 @@ export async function getPushPermission(): Promise<PushPermission> {
  */
 export async function requestPushPermission(): Promise<boolean> {
   try {
-    const result = await Notifications.requestPermissionsAsync();
+    const mod = notifications();
+    if (!mod) return false;
+    const result = await mod.requestPermissionsAsync();
     return result.granted;
   } catch {
     return false;
@@ -70,7 +93,9 @@ export async function sendBudgetAlert(input: {
   body: string;
 }): Promise<boolean> {
   try {
-    await Notifications.scheduleNotificationAsync({
+    const mod = notifications();
+    if (!mod) return false;
+    await mod.scheduleNotificationAsync({
       content: { title: input.title, body: input.body },
       trigger: null,
     });
