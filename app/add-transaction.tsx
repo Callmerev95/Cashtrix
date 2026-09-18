@@ -37,6 +37,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GhostButton, PrimaryButton, Screen } from '@/components';
 import { useAuth } from '@/features/auth';
 import { useBudgets } from '@/features/budgets';
+import { trackEvent, txCreatedEvent } from '@/features/observability';
 import { useWallets } from '@/features/wallets';
 import {
   AmountField,
@@ -203,6 +204,20 @@ export default function AddTransactionScreen() {
         note: normalizeNote(note),
         idempotencyKey,
       });
+
+      // T10 (issue #11): `tx_created` carries only the kind + whether a note
+      // exists (boolean, never the text or amount). Best-effort — a failure
+      // here must not lose the saved transaction.
+      try {
+        trackEvent(
+          txCreatedEvent({
+            type,
+            hasNote: normalizeNote(note) !== null,
+          }),
+        );
+      } catch {
+        // Analytics never blocks a save.
+      }
 
       // Balances are a separate view owned by the wallet context; the save
       // changed the aggregate, so it must re-read before the Dashboard paints.
