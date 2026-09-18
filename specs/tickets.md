@@ -20,11 +20,11 @@ Semua ticket diterbitkan sebagai GitHub issue dengan label `ready-for-agent`. Bl
 
 ## Frontier
 
-Ticket tanpa blocker yang belum selesai: **#10 (T9 — Data ownership)** dan **#11 (T10 — Observability)** — keduanya dapat dikerjakan paralel sekarang.
+Ticket tanpa blocker yang belum selesai: **#11 (T10 — Observability)**.
 
-Selesai (di-merge ke `main`, squash): T1 — #3 via PR #13 · T2 — #2 via PR #14 · T3 — #4 via PR #15 · T4 — #5 via PR #16 (squash `cb3b9df`) · T5 — #6 via PR #17 (squash `492b8f2`) · T6 — #7 via PR #18 (squash `c688a41`) · T7 — #8 via PR #19 (squash `160f71c`) · T8 — #9 via PR #20 (squash `7d1fb0e`).
+Selesai (di-merge ke `main`, squash): T1 — #3 via PR #13 · T2 — #2 via PR #14 · T3 — #4 via PR #15 · T4 — #5 via PR #16 (squash `cb3b9df`) · T5 — #6 via PR #17 (squash `492b8f2`) · T6 — #7 via PR #18 (squash `c688a41`) · T7 — #8 via PR #19 (squash `160f71c`) · T8 — #9 via PR #20 (squash `7d1fb0e`) · T9 — #10 via PR #21 (squash `38343db`).
 
-Ticket berikutnya tetap berantai: #12 (T11 — E2E Maestro) menunggu #9/#10/#11.
+Ticket berikutnya tetap berantai: #12 (T11 — E2E Maestro) menunggu #11.
 
 ## Aturan
 
