@@ -15,6 +15,7 @@ import { useEffect } from 'react';
 import { appFonts } from '@/fonts';
 import { AuthProvider, useAuth } from '@/features/auth';
 import { AnalyticsProvider } from '@/features/analytics';
+import { BudgetsProvider } from '@/features/budgets';
 import { TransactionsProvider } from '@/features/transactions';
 import { WalletsProvider } from '@/features/wallets';
 import { colors } from '@/theme';
@@ -71,6 +72,7 @@ function RootNavigator() {
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="add-transaction" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="budget-form" options={{ presentation: 'modal' }} />
         <Stack.Screen name="wallets" />
         <Stack.Screen name="wallet-form" options={{ presentation: 'modal' }} />
       </Stack>
@@ -90,9 +92,11 @@ export default function RootLayout() {
     <AuthProvider>
       <WalletsProvider>
         <TransactionsProvider>
-          <AnalyticsProvider>
-            <RootNavigator />
-          </AnalyticsProvider>
+          <BudgetsProvider>
+            <AnalyticsProvider>
+              <RootNavigator />
+            </AnalyticsProvider>
+          </BudgetsProvider>
         </TransactionsProvider>
       </WalletsProvider>
     </AuthProvider>
