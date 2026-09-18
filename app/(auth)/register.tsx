@@ -76,9 +76,7 @@ export default function RegisterScreen() {
     );
   }
 
-  // Same keyboard handling as Login: no KeyboardAvoidingView — its padding
-  // pass re-lays the centered content out from under the focused field and
-  // drops focus. The ScrollView insets itself around the keyboard instead.
+  // Same keyboard handling as Login: no KeyboardAvoidingView (see note there).
   return (
     <View style={styles.flex}>
       <ScrollView

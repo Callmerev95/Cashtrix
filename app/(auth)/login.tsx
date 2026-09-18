@@ -50,10 +50,9 @@ export default function LoginScreen() {
     }
   }
 
-  // No KeyboardAvoidingView here: its padding pass re-lays the centered
-  // content out from under the focused field when the keyboard opens, which
-  // drops focus and dismisses the keyboard instantly. The ScrollView insets
-  // itself around the keyboard instead.
+  // No KeyboardAvoidingView: the ScrollView insets itself around the
+  // keyboard (automaticallyAdjustKeyboardInsets on iOS, adjustResize on
+  // Android), so an extra padding pass would only fight it.
   return (
     <View style={styles.flex}>
       <ScrollView
