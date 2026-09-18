@@ -22,9 +22,7 @@ Semua ticket diterbitkan sebagai GitHub issue dengan label `ready-for-agent`. Bl
 
 Ticket tanpa blocker yang belum selesai: **#6 (T5 — Add Transaction + riwayat)** (terbuka setelah T4), **#9 (T8 — Profile + kategori kustom)**, **#11 (T10 — Observability)** — ketiganya dapat dikerjakan paralel.
 
-Selesai (di-merge ke `main`, squash): T1 — #3 via PR #13 · T2 — #2 via PR #14 · T3 — #4 via PR #15 (auth + seed idempotent).
-
-T4 (#5) selesai secara implementasi + verifikasi; PR dibuka menunggu review user. Yang dikirim: migrasi `20260918090000_wallet_balances_and_reassign.sql` (view `v_wallet_balances` dengan `security_invoker`, RPC `reassign_wallet_transactions`), pgTAP `07_wallet_balances.sql` + `08_wallet_reassign.sql` (hijau lawan hosted via `psql`), fitur klien `src/features/wallets/`, layar `/wallets` + `/wallet-form` + kartu hero Dashboard, dan test Jest domain wallet.
+Selesai (di-merge ke `main`, squash): T1 — #3 via PR #13 · T2 — #2 via PR #14 · T3 — #4 via PR #15 · T4 — #5 via PR #16 (squash `cb3b9df`).
 
 Ticket berikutnya tetap berantai: #7 (T6) & #8 (T7) & #10 (T9) menunggu #6 (T5); #12 (T11) menunggu #7/#8/#9/#10/#11.
 
