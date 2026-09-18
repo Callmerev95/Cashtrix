@@ -14,6 +14,7 @@ import { useEffect } from 'react';
 
 import { appFonts } from '@/fonts';
 import { AuthProvider, useAuth } from '@/features/auth';
+import { TransactionsProvider } from '@/features/transactions';
 import { WalletsProvider } from '@/features/wallets';
 import { colors } from '@/theme';
 
@@ -87,7 +88,9 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <WalletsProvider>
-        <RootNavigator />
+        <TransactionsProvider>
+          <RootNavigator />
+        </TransactionsProvider>
       </WalletsProvider>
     </AuthProvider>
   );
