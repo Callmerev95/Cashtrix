@@ -16,6 +16,7 @@ import { appFonts } from '@/fonts';
 import { AuthProvider, useAuth } from '@/features/auth';
 import { AnalyticsProvider } from '@/features/analytics';
 import { BudgetsProvider } from '@/features/budgets';
+import { ProfileProvider } from '@/features/profile';
 import { TransactionsProvider } from '@/features/transactions';
 import { WalletsProvider } from '@/features/wallets';
 import { colors } from '@/theme';
@@ -75,6 +76,8 @@ function RootNavigator() {
         <Stack.Screen name="budget-form" options={{ presentation: 'modal' }} />
         <Stack.Screen name="wallets" />
         <Stack.Screen name="wallet-form" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="categories" />
+        <Stack.Screen name="category-form" options={{ presentation: 'modal' }} />
       </Stack>
       <StatusBar style="light" />
     </>
@@ -94,7 +97,9 @@ export default function RootLayout() {
         <TransactionsProvider>
           <BudgetsProvider>
             <AnalyticsProvider>
-              <RootNavigator />
+              <ProfileProvider>
+                <RootNavigator />
+              </ProfileProvider>
             </AnalyticsProvider>
           </BudgetsProvider>
         </TransactionsProvider>

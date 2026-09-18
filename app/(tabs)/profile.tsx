@@ -1,68 +1,469 @@
 /**
- * Profile tab — T8 owns the full screen (name, avatar, categories, currency).
+ * Profile tab (T8, issue #9) — "app terasa milik pengguna".
  *
- * T3 adds the sign-out action it is responsible for (PRD §2.3 Epic A): drop the
- * session and all local data, then let the routing gate send the user to Login.
- * The rest stays a scaffold until T8 lands.
+ * Thin renderer over `useProfile()`: avatar (private bucket, signed URL)
+ * + display name + currency setting + a settings list (DESIGN.md §6) that
+ * leads to the category manager. Sign out stays T3's responsibility (PRD
+ * §2.3 Epic A): drop the session and all local data, then the routing gate
+ * sends the user to Login.
  */
+import * as ImagePicker from 'expo-image-picker';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
-import { GhostButton, ScaffoldScreen } from '@/components';
+import { GhostButton, PrimaryButton, Screen, TextField } from '@/components';
 import { signOut, useAuth } from '@/features/auth';
-import { colors, spacing, typography } from '@/theme';
+import {
+  SUPPORTED_CURRENCIES,
+  formatMoney,
+  useProfile,
+  validateDisplayName,
+  type CurrencyCode,
+} from '@/features/profile';
+import { colors, layout, radius, spacing, typography } from '@/theme';
 
 export default function ProfileScreen() {
   const { session } = useAuth();
-  const [busy, setBusy] = useState(false);
+  const {
+    profile,
+    avatarSignedUrl,
+    loading,
+    error,
+    refresh,
+    saveProfile,
+    saveAvatar,
+  } = useProfile();
+
+  const [name, setName] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [savingName, setSavingName] = useState(false);
+  const [savingCurrency, setSavingCurrency] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+
+  const draftName = name ?? profile?.displayName ?? '';
+
+  async function onSaveName() {
+    const message = validateDisplayName(draftName);
+    setNameError(message);
+    if (message) return;
+    setSavingName(true);
+    try {
+      await saveProfile({ displayName: draftName });
+      setName(null);
+    } catch (cause) {
+      setNameError(
+        cause instanceof Error ? cause.message : 'Gagal menyimpan nama',
+      );
+    } finally {
+      setSavingName(false);
+    }
+  }
+
+  async function onSelectCurrency(code: CurrencyCode) {
+    if (code === profile?.currencyCode || savingCurrency) return;
+    setSavingCurrency(true);
+    try {
+      await saveProfile({ currencyCode: code });
+    } catch (cause) {
+      Alert.alert(
+        'Gagal menyimpan mata uang',
+        cause instanceof Error ? cause.message : 'Coba lagi sebentar lagi.',
+      );
+    } finally {
+      setSavingCurrency(false);
+    }
+  }
+
+  async function onChangeAvatar() {
+    const userId = session?.user.id;
+    if (!userId || uploadingAvatar) return;
+
+    const permission =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(
+        'Izin galeri ditolak',
+        'Aktifkan akses foto di pengaturan agar avatar bisa diganti.',
+      );
+      return;
+    }
+
+    const picked = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+    });
+    if (picked.canceled) return;
+
+    const asset = picked.assets[0];
+    if (!asset) return;
+    setUploadingAvatar(true);
+    try {
+      await saveAvatar({ userId, sourceUri: asset.uri });
+    } catch (cause) {
+      Alert.alert(
+        'Gagal mengunggah avatar',
+        cause instanceof Error ? cause.message : 'Coba lagi sebentar lagi.',
+      );
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
 
   async function confirmSignOut() {
-    setBusy(true);
+    setSigningOut(true);
     try {
       await signOut();
       // AuthGate swaps to Login; nothing to navigate here.
     } catch {
-      setBusy(false);
+      setSigningOut(false);
       Alert.alert('Gagal keluar', 'Coba lagi sebentar lagi.');
     }
   }
 
   function onSignOutPress() {
-    Alert.alert('Keluar dari Cashtrix?', 'Sesi dan data lokal di perangkat ini akan dihapus.', [
-      { text: 'Batal', style: 'cancel' },
-      { text: 'Keluar', style: 'destructive', onPress: confirmSignOut },
-    ]);
+    Alert.alert(
+      'Keluar dari Cashtrix?',
+      'Sesi dan data lokal di perangkat ini akan dihapus.',
+      [
+        { text: 'Batal', style: 'cancel' },
+        { text: 'Keluar', style: 'destructive', onPress: confirmSignOut },
+      ],
+    );
   }
 
   return (
-    <View style={styles.container}>
-      <ScaffoldScreen kicker="Account" title="Profile" />
-      <View style={styles.session}>
+    <Screen style={styles.frame} testID="profile-screen">
+      <View style={styles.header}>
+        <Text style={[typography.labelUppercase, styles.kicker]}>Account</Text>
+        <Text style={[typography.headlineLg, styles.title]} numberOfLines={1}>
+          {profile?.displayName ?? 'Profile'}
+        </Text>
         <Text style={[typography.bodySm, styles.email]} numberOfLines={1}>
           {session?.user.email ?? ''}
         </Text>
-        <GhostButton
-          testID="sign-out"
-          label={busy ? 'Keluar…' : 'Keluar'}
-          onPress={onSignOutPress}
-          disabled={busy}
-        />
       </View>
-    </View>
+
+      <ScrollView
+        testID="profile-scroll"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+      >
+        {loading ? (
+          <View testID="profile-loading" style={styles.center}>
+            <ActivityIndicator color={colors.accent} />
+          </View>
+        ) : error ? (
+          <View style={styles.center}>
+            <Text testID="profile-error" style={[typography.bodyMd, styles.errorText]}>
+              {error}
+            </Text>
+            <PrimaryButton label="Coba lagi" onPress={() => void refresh()} />
+          </View>
+        ) : (
+          <>
+            <View style={styles.avatarRow}>
+              <Pressable
+                testID="profile-avatar"
+                accessibilityRole="button"
+                accessibilityLabel="Ubah foto profil"
+                onPress={onChangeAvatar}
+                disabled={uploadingAvatar}
+                style={styles.avatarFrame}
+              >
+                {avatarSignedUrl ? (
+                  <Image
+                    source={{ uri: avatarSignedUrl }}
+                    style={styles.avatar}
+                    testID="profile-avatar-image"
+                  />
+                ) : (
+                  <View style={[styles.avatar, styles.avatarFallback]}>
+                    <Text style={[typography.headlineMd, styles.avatarInitial]}>
+                      {(profile?.displayName ?? 'C').charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.avatarBadge}>
+                  {uploadingAvatar ? (
+                    <ActivityIndicator size="small" color={colors.textOnAccent} />
+                  ) : (
+                    <MaterialIcons
+                      name="verified-user"
+                      size={16}
+                      color={colors.textOnAccent}
+                    />
+                  )}
+                </View>
+              </Pressable>
+              <View style={styles.avatarBody}>
+                <Text style={[typography.headlineSm, styles.avatarName]} numberOfLines={1}>
+                  {profile?.displayName ?? ''}
+                </Text>
+                <GhostButton
+                  testID="profile-change-avatar"
+                  label={uploadingAvatar ? 'Mengunggah…' : 'Ubah foto'}
+                  onPress={onChangeAvatar}
+                  disabled={uploadingAvatar}
+                />
+              </View>
+            </View>
+
+            <Text style={[typography.labelUppercase, styles.kicker]}>
+              Nama tampilan
+            </Text>
+            <TextField
+              testID="profile-name"
+              value={draftName}
+              onChangeText={(text) => {
+                setName(text);
+                if (nameError) setNameError(validateDisplayName(text));
+              }}
+              placeholder="Nama kamu"
+              autoCapitalize="words"
+              maxLength={70}
+              hasError={Boolean(nameError)}
+              returnKeyType="done"
+              onSubmitEditing={() => void onSaveName()}
+            />
+            {nameError ? (
+              <Text testID="profile-name-error" style={[typography.bodySm, styles.errorText]}>
+                {nameError}
+              </Text>
+            ) : null}
+            {name !== null ? (
+              <PrimaryButton
+                testID="profile-save-name"
+                label="Simpan nama"
+                onPress={() => void onSaveName()}
+                loading={savingName}
+              />
+            ) : null}
+
+            <Text style={[typography.labelUppercase, styles.kicker, styles.gap]}>
+              Mata uang tampilan
+            </Text>
+            <Text style={[typography.bodySm, styles.hint]}>
+              Contoh: {formatMoney(1250000, profile?.currencyCode ?? 'IDR', profile?.locale ?? 'id-ID')} — tanpa konversi kurs.
+            </Text>
+            <View style={styles.currencyGrid}>
+              {SUPPORTED_CURRENCIES.map((code) => {
+                const active = code === profile?.currencyCode;
+                return (
+                  <Pressable
+                    key={code}
+                    testID={`profile-currency-${code}`}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    accessibilityLabel={`Mata uang ${code}`}
+                    onPress={() => void onSelectCurrency(code)}
+                    style={[styles.chip, active && styles.chipActive]}
+                  >
+                    <Text
+                      style={[
+                        typography.bodyMd,
+                        styles.chipText,
+                        active && styles.chipTextActive,
+                      ]}
+                    >
+                      {code}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text style={[typography.labelUppercase, styles.kicker, styles.gap]}>
+              Pengaturan
+            </Text>
+            <Pressable
+              testID="profile-categories-row"
+              accessibilityRole="button"
+              accessibilityLabel="Kelola kategori"
+              onPress={() => router.push('/categories')}
+              style={styles.row}
+            >
+              <View style={styles.rowIcon}>
+                <MaterialIcons name="category" size={20} color={colors.accent} />
+              </View>
+              <View style={styles.rowBody}>
+                <Text style={[typography.bodyMd, styles.rowTitle]}>
+                  Kategori saya
+                </Text>
+                <Text style={[typography.bodySm, styles.rowSubtitle]}>
+                  Buat, arsipkan, dan atur kategori belanja
+                </Text>
+              </View>
+              <MaterialIcons
+                name="chevron-right"
+                size={20}
+                color={colors.textSecondary}
+              />
+            </Pressable>
+
+            <View style={styles.signOut}>
+              <GhostButton
+                testID="sign-out"
+                label={signingOut ? 'Keluar…' : 'Keluar'}
+                onPress={onSignOutPress}
+                disabled={signingOut}
+              />
+            </View>
+          </>
+        )}
+      </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  frame: {
+    paddingTop: spacing.xl,
+    gap: spacing.md,
   },
-  session: {
-    alignItems: 'flex-start',
+  header: {
     gap: spacing.xs,
-    paddingHorizontal: spacing.margin,
-    paddingBottom: spacing.lg,
+  },
+  kicker: {
+    color: colors.textSecondary,
+  },
+  title: {
+    color: colors.textPrimary,
   },
   email: {
     color: colors.textSecondary,
+  },
+  content: {
+    gap: spacing.md,
+    paddingBottom: layout.navClearance,
+  },
+  center: {
+    gap: spacing.md,
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
+  },
+  errorText: {
+    color: colors.error,
+  },
+  avatarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surfaceCard,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+  },
+  avatarFrame: {
+    width: 72,
+    height: 72,
+  },
+  avatar: {
+    width: 72,
+    height: 72,
+    borderRadius: radius.full,
+    backgroundColor: colors.surfaceElevated,
+  },
+  avatarFallback: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitial: {
+    color: colors.accent,
+  },
+  avatarBadge: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 24,
+    height: 24,
+    borderRadius: radius.full,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarBody: {
+    flex: 1,
+    gap: spacing.xs,
+    alignItems: 'flex-start',
+  },
+  avatarName: {
+    color: colors.textPrimary,
+  },
+  gap: {
+    marginTop: spacing.md,
+  },
+  hint: {
+    color: colors.textSecondary,
+  },
+  currencyGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  chip: {
+    minWidth: layout.minTapTarget,
+    minHeight: layout.minTapTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+  },
+  chipActive: {
+    borderColor: colors.accent,
+  },
+  chipText: {
+    color: colors.textSecondary,
+  },
+  chipTextActive: {
+    color: colors.accent,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surfaceCard,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+  },
+  rowIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.full,
+    backgroundColor: colors.surfaceElevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rowBody: {
+    flex: 1,
+    gap: 2,
+  },
+  rowTitle: {
+    color: colors.textPrimary,
+  },
+  rowSubtitle: {
+    color: colors.textSecondary,
+  },
+  signOut: {
+    alignItems: 'flex-start',
   },
 });
