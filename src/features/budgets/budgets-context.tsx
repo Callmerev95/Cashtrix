@@ -29,6 +29,10 @@ import {
 } from 'react';
 
 import { onLocalDataPurge } from '@/supabase';
+import {
+  budgetThresholdEvent,
+  trackEvent,
+} from '@/features/observability';
 import { formatGrouped } from '../transactions/domain';
 
 import {
@@ -152,6 +156,25 @@ export function BudgetsProvider({ children }: { children: ReactNode }) {
         if (fired.length > 0) {
           if (mounted.current) {
             setRecentAlerts((current) => [...fired, ...current].slice(0, 5));
+          }
+          // T10 (issue #11): `budget_threshold_reached` carries the threshold
+          // key + month + category only — never `spent`/`amountLimit` (those
+          // are amounts). Best-effort, like the push below.
+          for (const alert of fired) {
+            try {
+              trackEvent(
+                budgetThresholdEvent({
+                  // The DB key (`warning_80`/`exceeded_100`) stays in budgets;
+                  // the analytics taxonomy uses the PRD's 80/100 numbers.
+                  threshold:
+                    alert.threshold === 'warning_80' ? 80 : 100,
+                  month: alert.month,
+                  categoryId: alert.categoryId,
+                }),
+              );
+            } catch {
+              // Analytics never blocks an alert.
+            }
           }
           for (const alert of fired) {
             const copy = alertCopy({
