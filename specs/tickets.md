@@ -20,9 +20,11 @@ Semua ticket diterbitkan sebagai GitHub issue dengan label `ready-for-agent`. Bl
 
 ## Frontier
 
-Ticket tanpa blocker yang belum selesai: **#7 (T6 — Analytics)**, **#8 (T7 — Budget + alert)**, **#10 (T9 — Data ownership)**, **#9 (T8 — Profile + kategori kustom)**, dan **#11 (T10 — Observability)** — semua dapat dikerjakan paralel sekarang.
+Ticket tanpa blocker yang belum selesai: **#8 (T7 — Budget + alert)**, **#10 (T9 — Data ownership)**, **#9 (T8 — Profile + kategori kustom)**, dan **#11 (T10 — Observability)** — semua dapat dikerjakan paralel sekarang. #7 (T6 — Analytics) sudah dibuka sebagai PR #18.
 
 Selesai (di-merge ke `main`, squash): T1 — #3 via PR #13 · T2 — #2 via PR #14 · T3 — #4 via PR #15 · T4 — #5 via PR #16 (squash `cb3b9df`) · T5 — #6 via PR #17 (squash `492b8f2`).
+
+Sedang direview: T6 — #7 via PR #18 (`feat/t6-analytics`).
 
 Ticket berikutnya tetap berantai: #12 (T11 — E2E Maestro) menunggu #7/#8/#9/#10/#11.
 
