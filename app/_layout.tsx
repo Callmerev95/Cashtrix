@@ -14,6 +14,7 @@ import { useEffect } from 'react';
 
 import { appFonts } from '@/fonts';
 import { AuthProvider, useAuth } from '@/features/auth';
+import { WalletsProvider } from '@/features/wallets';
 import { colors } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -68,6 +69,8 @@ function RootNavigator() {
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="add-transaction" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="wallets" />
+        <Stack.Screen name="wallet-form" options={{ presentation: 'modal' }} />
       </Stack>
       <StatusBar style="light" />
     </>
@@ -83,7 +86,9 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <RootNavigator />
+      <WalletsProvider>
+        <RootNavigator />
+      </WalletsProvider>
     </AuthProvider>
   );
 }

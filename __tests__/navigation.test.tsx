@@ -32,6 +32,8 @@ async function renderSignedInApp() {
       '(tabs)/budgets': require('../app/(tabs)/budgets').default,
       '(tabs)/profile': require('../app/(tabs)/profile').default,
       'add-transaction': require('../app/add-transaction').default,
+      wallets: require('../app/wallets').default,
+      'wallet-form': require('../app/wallet-form').default,
       '(auth)/_layout': require('../app/(auth)/_layout').default,
       '(auth)/login': require('../app/(auth)/login').default,
       '(auth)/register': require('../app/(auth)/register').default,
@@ -69,6 +71,23 @@ describe('navigation shell', () => {
   it('opens the Dashboard tab by default', async () => {
     const { getPathname } = await renderSignedInApp();
     expect(getPathname()).toBe('/');
+  });
+
+  it('opens the Wallets screen from the Dashboard hero', async () => {
+    const { getPathname } = await renderSignedInApp();
+
+    fireEvent.press(await screen.findByTestId('manage-wallets'));
+
+    expect(getPathname()).toBe('/wallets');
+  });
+
+  it('opens the wallet form from the Wallets screen', async () => {
+    const { getPathname } = await renderSignedInApp();
+
+    fireEvent.press(await screen.findByTestId('manage-wallets'));
+    fireEvent.press(await screen.findByTestId('add-wallet'));
+
+    expect(getPathname()).toBe('/wallet-form');
   });
 });
 
