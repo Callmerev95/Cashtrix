@@ -17,12 +17,24 @@
  * keeps the app running — alerts degrade to in-app banners.
  */
 import type * as NotificationsType from 'expo-notifications';
+import Constants from 'expo-constants';
 
 let cached: typeof NotificationsType | null | undefined;
 
-/** The native module, or `null` where it cannot load (Expo Go, Jest). */
+/**
+ * The native module, or `null` where it cannot load (Expo Go, Jest).
+ *
+ * Expo Go is detected *before* touching the module: Metro logs a module-load
+ * error to LogBox before rethrowing, so a try/catch around `require` alone
+ * still flashes the redbox in dev. Skipping the require entirely keeps Expo
+ * Go clean; alerts degrade to in-app banners there.
+ */
 function notifications(): typeof NotificationsType | null {
   if (cached !== undefined) return cached;
+  if (Constants.appOwnership === 'expo') {
+    cached = null;
+    return cached;
+  }
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     cached = require('expo-notifications') as typeof NotificationsType;
