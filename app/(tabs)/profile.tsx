@@ -3,7 +3,8 @@
  *
  * Thin renderer over `useProfile()`: avatar (private bucket, signed URL)
  * + display name + currency setting + a settings list (DESIGN.md §6) that
- * leads to the category manager. Sign out stays T3's responsibility (PRD
+ * leads to the category manager, the CSV export (T9 follow-up #22), and the
+ * delete-account flow. Sign out stays T3's responsibility (PRD
  * §2.3 Epic A): drop the session and all local data, then the routing gate
  * sends the user to Login.
  */
@@ -24,6 +25,7 @@ import {
 
 import { GhostButton, PrimaryButton, Screen, TextField } from '@/components';
 import { signOut, useAuth } from '@/features/auth';
+import { exportAndShareTransactions } from '@/features/data-ownership';
 import {
   SUPPORTED_CURRENCIES,
   formatMoney,
@@ -50,6 +52,7 @@ export default function ProfileScreen() {
   const [savingName, setSavingName] = useState(false);
   const [savingCurrency, setSavingCurrency] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [exportingCsv, setExportingCsv] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
   const draftName = name ?? profile?.displayName ?? '';
@@ -120,6 +123,27 @@ export default function ProfileScreen() {
       );
     } finally {
       setUploadingAvatar(false);
+    }
+  }
+
+  async function onExportCsv() {
+    if (exportingCsv) return;
+    setExportingCsv(true);
+    try {
+      const outcome = await exportAndShareTransactions();
+      if (outcome === 'unavailable') {
+        Alert.alert(
+          'Berbagi tidak tersedia',
+          'Perangkat ini tidak mendukung share sheet.',
+        );
+      }
+    } catch (cause) {
+      Alert.alert(
+        'Gagal mengekspor data',
+        cause instanceof Error ? cause.message : 'Coba lagi sebentar lagi.',
+      );
+    } finally {
+      setExportingCsv(false);
     }
   }
 
@@ -313,6 +337,67 @@ export default function ProfileScreen() {
                 color={colors.textSecondary}
               />
             </Pressable>
+            <Pressable
+              testID="profile-export-row"
+              accessibilityRole="button"
+              accessibilityLabel="Ekspor data sebagai CSV"
+              onPress={() => void onExportCsv()}
+              disabled={exportingCsv}
+              style={styles.row}
+            >
+              <View style={styles.rowIcon}>
+                <MaterialIcons
+                  name="download"
+                  size={20}
+                  color={colors.accent}
+                />
+              </View>
+              <View style={styles.rowBody}>
+                <Text style={[typography.bodyMd, styles.rowTitle]}>
+                  {exportingCsv ? 'Menyiapkan CSV…' : 'Ekspor data (CSV)'}
+                </Text>
+                <Text style={[typography.bodySm, styles.rowSubtitle]}>
+                  Unduh seluruh transaksi lewat share sheet
+                </Text>
+              </View>
+              {exportingCsv ? (
+                <ActivityIndicator size="small" color={colors.accent} />
+              ) : (
+                <MaterialIcons
+                  name="chevron-right"
+                  size={20}
+                  color={colors.textSecondary}
+                />
+              )}
+            </Pressable>
+            <Pressable
+              testID="profile-delete-account-row"
+              accessibilityRole="button"
+              accessibilityLabel="Hapus akun permanen"
+              onPress={() => router.push('/delete-account')}
+              style={[styles.row, styles.rowDanger]}
+            >
+              <View style={styles.rowIcon}>
+                <MaterialIcons
+                  name="delete-forever"
+                  size={20}
+                  color={colors.error}
+                />
+              </View>
+              <View style={styles.rowBody}>
+                <Text style={[typography.bodyMd, styles.rowTitleDanger]}>
+                  Hapus akun
+                </Text>
+                <Text style={[typography.bodySm, styles.rowSubtitle]}>
+                  Permanen, tidak bisa dibatalkan
+                </Text>
+              </View>
+              <MaterialIcons
+                name="chevron-right"
+                size={20}
+                color={colors.textSecondary}
+              />
+            </Pressable>
 
             <View style={styles.signOut}>
               <GhostButton
@@ -459,6 +544,12 @@ const styles = StyleSheet.create({
   },
   rowTitle: {
     color: colors.textPrimary,
+  },
+  rowTitleDanger: {
+    color: colors.error,
+  },
+  rowDanger: {
+    borderColor: colors.error,
   },
   rowSubtitle: {
     color: colors.textSecondary,
