@@ -78,6 +78,7 @@ function RootNavigator() {
         <Stack.Screen name="wallet-form" options={{ presentation: 'modal' }} />
         <Stack.Screen name="categories" />
         <Stack.Screen name="category-form" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="delete-account" />
       </Stack>
       <StatusBar style="light" />
     </>
