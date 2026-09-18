@@ -5,7 +5,7 @@
  */
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Screen } from '@/components';
+import { Screen } from './screen';
 import { colors, radius, spacing, typography } from '@/theme';
 
 export function ScaffoldScreen({

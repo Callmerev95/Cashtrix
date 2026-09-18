@@ -10,14 +10,7 @@
  */
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GhostButton, PrimaryButton, TextField } from '@/components';
@@ -83,17 +76,18 @@ export default function RegisterScreen() {
     );
   }
 
+  // Same keyboard handling as Login: no KeyboardAvoidingView — its padding
+  // pass re-lays the centered content out from under the focused field and
+  // drops focus. The ScrollView insets itself around the keyboard instead.
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <View style={styles.flex}>
       <ScrollView
         contentContainerStyle={[
           styles.content,
           { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.xl },
         ]}
         keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
       >
         <View style={styles.header}>
           <Text style={[typography.labelUppercase, styles.kicker]}>Cashtrix</Text>
@@ -156,7 +150,7 @@ export default function RegisterScreen() {
           </Link>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
