@@ -36,6 +36,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GhostButton, PrimaryButton, Screen } from '@/components';
 import { useAuth } from '@/features/auth';
+import { useBudgets } from '@/features/budgets';
 import { useWallets } from '@/features/wallets';
 import {
   AmountField,
@@ -62,6 +63,7 @@ export default function AddTransactionScreen() {
 
   const { session } = useAuth();
   const { refresh: refreshWallets } = useWallets();
+  const { refresh: refreshBudgets, evaluateAndAlert } = useBudgets();
   const {
     categories,
     wallets,
@@ -204,7 +206,17 @@ export default function AddTransactionScreen() {
 
       // Balances are a separate view owned by the wallet context; the save
       // changed the aggregate, so it must re-read before the Dashboard paints.
+      // Budgets re-read too: a committed expense can push a category past its
+      // threshold, and the alert must fire within seconds of the commit
+      // (PRD §2.3 Epic E). Alert evaluation is best-effort — a failure here
+      // must not lose the saved transaction.
       await refreshWallets();
+      try {
+        await refreshBudgets();
+        await evaluateAndAlert({ userId: session?.user.id ?? '' });
+      } catch {
+        // In-app banner on the Budgets tab retries on its own refresh.
+      }
       router.back();
     } catch (cause) {
       setBusy(false);
@@ -221,6 +233,14 @@ export default function AddTransactionScreen() {
     try {
       await remove(params.id);
       await refreshWallets();
+      // Spent dropped — re-read budgets so rings fall back immediately.
+      // No alert evaluation: a lower percent can never cross a threshold
+      // upward, and fired alerts are never cleared by edits/deletes.
+      try {
+        await refreshBudgets();
+      } catch {
+        // Non-fatal; the Budgets tab refreshes on its own.
+      }
       setConfirmingDelete(false);
       router.back();
     } catch (cause) {
