@@ -277,6 +277,8 @@ export const gradients = {
   progress: [palette.accent, palette.accentSoft] as const,
   /** Highlighted card border — gold (TL) → border (BR). */
   cardBorder: [palette.accent, palette.surfaceElevated] as const,
+  /** Card surface fill — L1 to Canvas gradient */
+  cardFill: [palette.surfaceCard, palette.background] as const,
   /** Horizontal fade for glows/overlays. */
   glow: ['rgba(212, 175, 55, 0.35)', 'rgba(212, 175, 55, 0)'] as const,
 } as const;

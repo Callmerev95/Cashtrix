@@ -11,6 +11,8 @@
  */
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { LinearGradient } from 'expo-linear-gradient';
+
 import {
   AnalyticsEmptyState,
   BarChart,
@@ -26,7 +28,7 @@ import {
   useAnalytics,
 } from '@/features/analytics';
 import { Screen } from '@/components';
-import { colors, radius, spacing, typography } from '@/theme';
+import { colors, gradients, radius, spacing, typography } from '@/theme';
 
 export default function AnalyticsScreen() {
   const {
@@ -82,26 +84,35 @@ export default function AnalyticsScreen() {
           <>
             <KpiHeader totals={overview.totals} delta={overview.delta} />
 
-            <View style={styles.card}>
+            <LinearGradient
+              colors={[...gradients.cardFill]}
+              style={styles.card}
+            >
               <Text style={[typography.labelUppercase, styles.cardKicker]}>
                 Distribusi Pengeluaran
               </Text>
               <DonutChart slices={slices} total={overview.totals.expense} />
-            </View>
+            </LinearGradient>
 
-            <View style={styles.card}>
+            <LinearGradient
+              colors={[...gradients.cardFill]}
+              style={styles.card}
+            >
               <Text style={[typography.labelUppercase, styles.cardKicker]}>
                 {daily ? 'Tren Harian' : 'Tren Bulanan'}
               </Text>
               <BarChart bars={bars} />
-            </View>
+            </LinearGradient>
 
-            <View style={styles.card}>
+            <LinearGradient
+              colors={[...gradients.cardFill]}
+              style={styles.card}
+            >
               <Text style={[typography.labelUppercase, styles.cardKicker]}>
                 Rincian Kategori
               </Text>
               <BreakdownList slices={slices} />
-            </View>
+            </LinearGradient>
           </>
         )}
       </ScrollView>

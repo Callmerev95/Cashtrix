@@ -23,7 +23,7 @@ import {
   View,
 } from 'react-native';
 
-import { PrimaryButton, Screen } from '@/components';
+import { EmptyStateCard, PrimaryButton, Screen } from '@/components';
 import {
   budgetStateLabels,
   formatPercent,
@@ -33,7 +33,7 @@ import {
 } from '@/features/budgets';
 import { BudgetRing } from '@/features/budgets/components/budget-ring';
 import { formatGrouped } from '@/features/transactions/domain';
-import { colors, radius, spacing, typography } from '@/theme';
+import { colors, layout, radius, spacing, typography } from '@/theme';
 
 const MONTH_NAMES = [
   'Januari',
@@ -195,7 +195,7 @@ function AlertBanner({
         accessibilityRole="button"
         accessibilityLabel="Tutup notifikasi"
         onPress={onDismiss}
-        hitSlop={12}
+        style={styles.alertCloseButton}
       >
         <MaterialIcons name="close" size={18} color={colors.textSecondary} />
       </Pressable>
@@ -205,20 +205,14 @@ function AlertBanner({
 
 function BudgetsEmptyState() {
   return (
-    <View testID="budgets-empty" style={styles.center}>
-      <MaterialIcons name="savings" size={40} color={colors.accent} />
-      <Text style={[typography.headlineMd, styles.emptyTitle]}>
-        Belum ada budget bulan ini
-      </Text>
-      <Text style={[typography.bodyMd, styles.emptyBody]}>
-        Tetapkan batas belanja per kategori. Bulan baru mulai otomatis dari nol
-        — tanpa perlu reset manual.
-      </Text>
-      <PrimaryButton
-        label="Buat budget pertama"
-        onPress={() => router.push('/budget-form')}
-      />
-    </View>
+    <EmptyStateCard
+      testID="budgets-empty"
+      icon="savings"
+      title="Belum ada budget bulan ini"
+      description="Tetapkan batas belanja per kategori. Bulan baru mulai otomatis dari nol — tanpa perlu reset manual."
+      actionLabel="Buat Budget Pertama"
+      onAction={() => router.push('/budget-form')}
+    />
   );
 }
 
@@ -325,5 +319,12 @@ const styles = StyleSheet.create({
   },
   alertTitle: {
     color: colors.textPrimary,
+  },
+  alertCloseButton: {
+    width: layout.minTapTarget,
+    height: layout.minTapTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: -8,
   },
 });

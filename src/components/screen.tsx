@@ -13,7 +13,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, layout } from '@/theme';
 
-export function Screen({ style, children, ...rest }: ViewProps) {
+export function Screen({
+  style,
+  children,
+  hasFloatingNav = true,
+  ...rest
+}: ViewProps & { hasFloatingNav?: boolean }) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -22,7 +27,7 @@ export function Screen({ style, children, ...rest }: ViewProps) {
         styles.canvas,
         {
           paddingHorizontal: layout.screenMargin,
-          paddingBottom: layout.navClearance + insets.bottom,
+          paddingBottom: hasFloatingNav ? layout.navClearance + insets.bottom : insets.bottom,
         },
         style,
       ]}

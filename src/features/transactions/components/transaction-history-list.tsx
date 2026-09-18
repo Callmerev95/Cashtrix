@@ -8,7 +8,9 @@
  * while another page is genuinely in flight.
  */
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
 
+import { EmptyStateCard } from '@/components/empty-state-card';
 import { colors, spacing, typography } from '@/theme';
 
 import { groupByDay, type Transaction } from '../domain';
@@ -19,7 +21,7 @@ export function TransactionHistoryList({
   loadingMore,
   hasMore,
   onPressTransaction,
-  emptyLabel = 'Belum ada transaksi. Tekan + untuk mencatat.',
+  emptyLabel = 'Belum ada riwayat transaksi.',
   testID = 'transaction-history',
 }: {
   transactions: Transaction[];
@@ -31,9 +33,14 @@ export function TransactionHistoryList({
 }) {
   if (transactions.length === 0) {
     return (
-      <Text testID={`${testID}-empty`} style={[typography.bodyMd, styles.empty]}>
-        {emptyLabel}
-      </Text>
+      <EmptyStateCard
+        testID={`${testID}-empty`}
+        icon="receipt-long"
+        title="Tidak ada transaksi"
+        description={emptyLabel}
+        actionLabel="Catat Transaksi"
+        onAction={() => router.push('/add-transaction')}
+      />
     );
   }
 

@@ -15,7 +15,7 @@ import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Screen } from '@/components';
+import { EmptyStateCard, Screen } from '@/components';
 import { useAuth } from '@/features/auth';
 import { TransactionHistoryList, useTransactions } from '@/features/transactions';
 import { formatCurrency, useWallets } from '@/features/wallets';
@@ -115,9 +115,13 @@ export default function DashboardScreen() {
           </View>
 
           {wallets.length === 0 && !loading ? (
-            <Text style={[typography.bodyMd, styles.empty]}>
-              Belum ada wallet. Tambahkan satu untuk mulai mencatat.
-            </Text>
+            <EmptyStateCard
+              icon="account-balance-wallet"
+              title="Dompet kosong"
+              description="Tambahkan dompet pertama Anda untuk mulai mencatat arus kas."
+              actionLabel="Tambah Dompet"
+              onAction={() => router.push('/wallet-form')}
+            />
           ) : (
             wallets
               .slice(0, 3)
@@ -182,7 +186,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   body: {
-    paddingBottom: layout.navClearance,
+    // paddingBottom delegated to Screen
   },
   header: {
     flexDirection: 'row',

@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
   },
   content: {
     gap: spacing.md,
-    paddingBottom: layout.navClearance,
+    // paddingBottom delegated to Screen
   },
   center: {
     gap: spacing.md,

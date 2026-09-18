@@ -103,7 +103,7 @@ export default function WalletFormScreen() {
   }
 
   return (
-    <Screen>
+    <Screen hasFloatingNav={false}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   },
   body: {
     paddingTop: spacing.lg,
-    paddingBottom: layout.navClearance,
+    paddingBottom: spacing.xl,
   },
   kicker: {
     color: colors.textSecondary,

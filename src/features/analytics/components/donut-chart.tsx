@@ -25,7 +25,7 @@ import { DONUT_SEGMENTS, donutSegmentSliceIndices } from '../domain';
  * (DESIGN.md §1 — accent is reserved), so a slice is distinguished by *opacity*
  * rather than a new hue: the first slice is full gold, later ones step down.
  */
-const SLICE_ALPHAS = [1, 0.82, 0.68, 0.56, 0.47, 0.39, 0.32, 0.26, 0.2];
+const SLICE_ALPHAS = [1, 0.9, 0.8, 0.72, 0.64, 0.56, 0.48, 0.4, 0.38];
 
 export function DonutChart({
   slices,
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent',
     paddingHorizontal: spacing.md,
     gap: 2,
   },

@@ -123,7 +123,7 @@ export default function BudgetFormScreen() {
   }
 
   return (
-    <Screen>
+    <Screen hasFloatingNav={false}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

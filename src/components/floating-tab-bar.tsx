@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     height: layout.navBarHeight,
     borderRadius: radius.full,
-    backgroundColor: colors.surfaceCardTranslucent,
+    backgroundColor: Platform.OS === 'ios' ? colors.surfaceCardTranslucent : colors.surfaceCard,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     overflow: 'hidden',
