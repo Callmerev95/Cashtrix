@@ -1,6 +1,6 @@
 # PRD — Cashtrix
 
-**Versi:** 1.0 · **Status:** Approved for development · **Tanggal:** 2026-09-17
+**Versi:** 1.0 · **Status:** Approved · **Tanggal:** 2026-09-17 · **Revisi terakhir:** 2026-09-19 (R6–R8, cakupan & bentuk v1.1)
 **Dokumen pendamping:** `design.md` (Obsidian Luxury / Minimalist Obsidian design system) — sumber kebenaran visual.
 
 ---
@@ -170,9 +170,10 @@ Struktur navigasi = **floating bottom bar** (per `design.md` §5 Navigation), 4 
 - ❌ Multi-currency dengan konversi kurs — hanya field `currency_code` di skema.
 - ❌ Transfer antar-wallet — v1.1 (enum `transfer` sudah disiapkan).
 - ❌ Recurring/subscription transactions — v1.1.
-- ❌ Offline write queue (outbox) — v1.1. MVP: tulis butuh koneksi; baca dari cache lokal terakhir.
-- ❌ App lock biometrik (Face ID/PIN) — v1.1.
-- ❌ Shared/household budget, web version, widget, email digest, AI insights, import CSV.
+- ❌ Offline write queue (outbox) + read cache — v2.0 (revisi R6; sebelumnya direncanakan v1.1). MVP: tulis butuh koneksi; baca dari cache lokal terakhir.
+- ❌ App lock biometrik (Face ID/PIN) — v1.2 (butuh dev-client; lihat R6).
+- ❌ Cari/filter riwayat, bulk edit kategori, CSV import, lokalisasi ID/EN — v1.2.
+- ❌ Shared/household budget, web version, widget, email digest, AI insights.
 
 ---
 
@@ -342,11 +343,15 @@ Kode UI **wajib** mengonsumsi token berikut — dilarang hardcode hex di kompone
 
 ### 5.1 Phased Rollout
 
+Katalog lengkap setiap kandidat (termasuk yang ditunda dan yang ditolak) beserta
+bukti kondisi kode hidup di **`docs/roadmap.md`**. Tabel di bawah ringkasannya.
+
 | Fase | Isi | Kriteria keluar |
 |---|---|---|
 | **MVP (v1.0)** | Epic A–F persis seperti §2.3; TestFlight/internal distribution → Play Store + App Store | Semua AC terpenuhi + KPI instrumentasi hidup |
-| **v1.1** | Transfer antar-wallet, recurring transactions, offline outbox (tulis saat offline, sinkron saat online), biometric app lock, CSV import | Tidak ada regresi KPI stabilitas |
-| **v2.0** | Agregasi bank via aggregator (Open Finance), multi-currency + kurs historis, smart insights | Compliance review selesai sebelum rilis |
+| **v1.1** | **Dibekukan 2026-09-19** (revisi R6): jalur distribusi + instrumentasi crash (EAS + Sentry), reset password, konfirmasi email manual, halaman privasi/ToS, transfer antar-wallet, recurring transactions, kalender penuh, undo hapus, arsip wallet | Tidak ada regresi KPI stabilitas; crash-free terukur; lolos review store |
+| **v1.2** | Cari/filter riwayat, bulk edit kategori, inbox notifikasi, ringkasan bulan lalu, biometric app lock, CSV import, lokalisasi ID/EN, 2FA, E2E di CI | — |
+| **v2.0** | Offline outbox + read cache, agregasi bank via aggregator (Open Finance), multi-currency + kurs historis, smart insights | Compliance review selesai sebelum rilis |
 
 ### 5.2 Technical Risks
 
@@ -364,7 +369,15 @@ Kode UI **wajib** mengonsumsi token berikut — dilarang hardcode hex di kompone
 
 ## 6. Open Questions
 
-Tidak ada. Semua area ambigu telah diselesaikan di §0. Pertanyaan baru yang muncul selama development wajib ditambahkan ke dokumen ini dengan status `OPEN` sebelum keputusan diambil di kode.
+Pertanyaan baru yang muncul selama development wajib ditambahkan ke sini dengan status `OPEN` sebelum keputusan diambil di kode. Katalog dan konteks: `docs/roadmap.md` §4.
+
+| # | Status | Keputusan | Menghambat |
+|---|---|---|---|
+| OPEN-1 | closed (R7) | Transfer = satu baris, `wallet_id` sumber + `counterparty_wallet_id` tujuan; `amount` positif; hapus/edit satu baris | — |
+| OPEN-2 | closed (R7) | Recurring = catch-up RPC saat app buka/foreground; semua Occurrence terlewat dilahirkan di tanggal jatuh tempo masing-masing; identik dengan Transaction manual untuk Spent/Alert | — |
+| OPEN-3 | OPEN (diparkir v1.2) | App lock biometrik: kunci perangkat saja, atau state di server | B4 v1.2 |
+
+Transfer / Recurring / V0 auth-legal tertutup di R7–R8. Tidak ada OPEN yang menghambat spec v1.1.
 
 ### 6.1 Revisi tercatat (resolved)
 
@@ -382,3 +395,20 @@ Tidak ada. Semua area ambigu telah diselesaikan di §0. Pertanyaan baru yang mun
   4. **Tanggal transaksi dipilih dengan stepper hari, bukan date picker native.** AC hanya menuntut "default sekarang, tidak boleh future date"; date picker native (`@react-native-community/datetimepicker`) menambah modul native yang memaksa rebuild dev-client. Stepper memenuhi AC tanpa itu; kalender penuh dicatat sebagai polish v1.1.
   5. **Optimistic insert hanya untuk edit.** Baris baru belum punya id, dan id palsu akan membuat alur hapus/undo menunjuk baris yang tidak ada. Create menunggu `refresh()` selesai (modal menahan spinner selama jeda itu) — edit boleh optimistis karena id-nya sudah diketahui.
   6. **Bug laten di `supabase/tests/database/08_wallet_reassign.sql` (T4) diperbaiki.** Tiga assertion tidak pernah benar: (a) saldo wallet tujuan diharapkan −750.000 padahal `v_wallet_balances` sudah benar mengecualikan soft-deleted (−350.000); (b)–(c) kontrol silang-user membaca `transactions` **sebagai alice**, sehingga RLS menyembunyikan baris bob dan count selalu 0. Kontrol cross-user kini dijalankan sebagai `postgres`, dan `plan()` dikoreksi dari 16 → 15 (file hanya punya 15 assertion).
+- **R6 — Cakupan rilis v1.1 dibekukan (2026-09-19).** Sebelumnya §5.1 mencantumkan v1.1 = transfer + recurring + offline outbox + biometric + CSV import. Setelah audit kondisi kode v1.0, prioritas diubah: yang menghambat rilis bukan kekurangan fitur, melainkan (a) crash-free rate belum terukur (transport observability masih ring buffer, `src/features/observability/observability.ts`), (b) belum ada jalur distribusi (`eas.json` tidak ada), dan (c) penolak review store: reset password tidak ada sama sekali, halaman privasi/ToS tidak ada, konfirmasi email masih auto.
+  Keputusan:
+  1. **v1.1 = V0 pra-rilis + distribusi/instrumentasi + transfer + recurring + kalender penuh + undo hapus + arsip wallet.** Daftar lengkap dan urutannya di `docs/roadmap.md` §3.
+  2. **Offline outbox + read cache ditunda ke v2.0.** Fitur ini membalik keputusan MVP "tulis ditolak, bukan antrian buta" (§5.2) dan menyentuh seluruh screen; dikerjakan bersama model konsistensi di v2.0.
+  3. **Biometric app lock, CSV import, cari/filter riwayat, bulk edit kategori, lokalisasi ID/EN, 2FA → v1.2.**
+  4. **Batasan Expo Go dilonggarkan.** Sampai v1.0 modul native dihindari (R5.4, T6/T7). Untuk v1.1 ke atas dev-client/EAS Build diizinkan untuk fitur yang benar-benar butuh native; kerja JS harian tetap boleh Expo Go. Prebuild lokal (`npx expo run:ios`/`android`) gratis; EAS Free tier = 15 build iOS + 15 build Android per bulan.
+  5. **Alur kerja tidak berubah**: revisi PRD → spec → ticket GitHub + blocking edge → PR squash ke `main` → tag `v1.1.0` saat gerbang rilis lolos. Tag `v1.0.0` dipasang mundur di commit rilis MVP.
+  6. **`CONTEXT.md` + `docs/adr/` dibuat sekarang** (sebelumnya sengaja lazily). Glosarium ditulis saat istilah diputuskan, bukan di akhir.
+  7. **Keputusan terbuka sebelum ticket ditulis** (saat R6): model data Transfer, penjadwal Recurring, bentuk biometric lock. OPEN-1 dan OPEN-2 ditutup di R7; OPEN-3 diparkir v1.2.
+- **R7 — Model Transfer dan Recurring (2026-09-19).** Dua keputusan domain yang mengunci skema v1.1:
+  1. **Transfer = satu baris.** `type=transfer`, `wallet_id` = sumber, `counterparty_wallet_id` = tujuan, `amount` tetap positif (R4). Saldo gabungan tidak berubah. Analytics / Spent / Alert mengabaikan `type=transfer` (view v1.0 sudah mengecualikannya). Hapus = hapus satu baris. Edit jumlah, tanggal, catatan, atau Wallet sumber/tujuan boleh selama keduanya milik User dan tidak sama. Dua baris berpasangan ditolak: memaksa `amount` negatif atau kolom `direction`, bertentangan R4. ADR-0004.
+  2. **Recurring = catch-up RPC, bukan cron.** Saat app buka/foreground, RPC `security invoker` menulis Occurrence yang tanggal jatuh temponya ≤ hari ini dan belum ada Transaction-nya; `occurred_at` = tanggal jatuh tempo, bukan "sekarang". Dua bulan app tertutup = dua Occurrence di tanggal masing-masing. Occurrence identik dengan Transaction manual (masuk Spent, bisa menembus Alert). `pg_cron` ditolak: v1.1 tidak punya server-push, jadi ketepatan cron tidak terlihat User, dan menulis sebagai `postgres` di luar RLS. "Hanya pengingat" ditolak: itu bukan Recurring. ADR-0005.
+- **R8 — Bentuk Transfer dan Recurring (2026-09-19).** Melengkapi R7:
+  1. **Transfer tanpa Category.** `category_id` nullable iff `type=transfer`. Form Add menambah segmen ketiga Expense | Income | Transfer; pilih Transfer → grid Category hilang, pemilih Wallet tujuan muncul. Category sistem "Transfer" dan "User pilih Category biasa" ditolak (donut / `kind` ketiga).
+  2. **Recurring v1.1 = bulanan saja**, Due day 1–28 atau "hari terakhir bulan" (hindari 29–31). Catch-up plafon 12 Occurrence per Recurring rule per sesi buka. Edit Recurring rule hanya mengubah Occurrence yang belum lahir. Kunci anti-ganda `(recurring_rule_id, occurred_on)` termasuk baris Soft-delete. Recurring = income atau expense, bukan Transfer. Dikelola dari Profile. Jeda menghentikan Catch-up; hapus Recurring rule men-SET NULL kaitan Occurrence (riwayat tetap). Wajib `starts_on` (hari-1, default bulan berjalan); opsional `ends_on`. Maks 20 Recurring rule aktif (Jeda tidak makan kuota). Archive Wallet yang dipakai rule → rule otomatis Jeda + banner Profile. Transfer menolak future date; picker Transfer hanya Wallet aktif; riwayat ke Wallet yang kemudian di-Archive tetap terlihat. Undo hapus = snackbar ~5 detik → `restore_transaction` (termasuk Transfer).
+  3. **Privasi/ToS** di GitHub Pages (`docs/legal/`, URL publik sama untuk in-app dan store listing, **bahasa Inggris** di v1.1 — ID menyusul v1.2 bersama i18n). **Reset password** = tautan email Supabase → deep link `cashtrix://reset-password`. ADR-0006.
+  4. **Reassign vs Transfer:** RPC memindahkan `wallet_id` dan `counterparty_wallet_id`; jika hasilnya sumber = tujuan, reassign ditolak. Occurrence bulan `starts_on` **tidak** lahir bila Due day sudah lewat (siklus berikutnya). **Auth gate v1.1:** session tanpa `email_confirmed_at` ditahan di layar "Cek email" (bukan tabs); E2E menandai terkonfirmasi via Admin API, bukan mematikan konfirmasi di hosted.

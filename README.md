@@ -17,7 +17,7 @@ per kategori dengan alert ambang batas anti-spam. Semua data milik pengguna
 | [PRD.md](PRD.md) | Keputusan produk terkunci (D1–D11), KPI, Epic A–F, risiko, revisi R1–R5 |
 | [DESIGN.md](DESIGN.md) | Design system kanonik "Minimalist Obsidian" (sumber kebenaran visual) |
 | [specs/cashtrix-mvp.md](specs/cashtrix-mvp.md) | Spec MVP v1.0 (user stories, keputusan implementasi, testing) |
-| [specs/tickets.md](specs/tickets.md) | Peta ticket T1–T11 + status merge |
+| [specs/tickets.md](specs/tickets.md) | Peta ticket: T1–T11 (v1.0, closed) + V0–V6 (v1.1, aktif) |
 | [docs/release-gate.md](docs/release-gate.md) | Gerbang rilis: bukti E2E, KPI, checklist visual, pra-store |
 
 ---
@@ -370,12 +370,21 @@ Penuhnya di PRD §6.1; yang paling memengaruhi kode:
 
 ## Roadmap
 
-- **v1.1** — Transfer antar-wallet, recurring transactions, offline outbox,
-  biometric app lock, CSV import. Kandidat: notification inbox
-  (`budget_alerts` sudah punya `fired_at` + indeks user/month, belum ada flag
-  read).
-- **v2.0** — Agregasi bank via aggregator (Open Finance), multi-currency +
-  kurs historis, smart insights. Compliance review sebelum rilis.
+Katalog lengkap setiap kandidat (beserta bukti kondisi kode, alasan tunda, dan
+keputusan terbuka) hidup di **[docs/roadmap.md](docs/roadmap.md)** — PRD §5.1
+hanya ringkasannya. Cakupan v1.1 dibekukan di PRD §6.1 R6 (2026-09-19).
+
+- **V0 pra-rilis** — konfirmasi email manual, reset password, halaman
+  privasi/ToS, bersihkan akun uji (`docs/release-gate.md` §6).
+- **v1.1** — jalur distribusi + instrumentasi crash (EAS + Sentry),
+  transfer antar-wallet, recurring transactions, kalender penuh,
+  undo hapus transaksi, arsip wallet.
+- **v1.2** — cari/filter riwayat, bulk edit kategori, inbox notifikasi,
+  ringkasan bulan lalu, biometric app lock, CSV import, lokalisasi ID/EN,
+  2FA, E2E Maestro di CI.
+- **v2.0** — offline outbox + read cache, agregasi bank via aggregator
+  (Open Finance), multi-currency + kurs historis, smart insights.
+  Compliance review sebelum rilis.
 
 ---
 

@@ -34,3 +34,6 @@ yarn-error.*
 # test artifacts
 coverage/
 __tests__/.session-seed.json
+
+# stitch html / png dumps
+stitch_cashtrix/

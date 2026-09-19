@@ -14,13 +14,12 @@ If any of these files don't exist, **proceed silently**. Don't flag their absenc
 
 ## Binding documents in this repo
 
-`CONTEXT.md` does not exist yet. Until it does, the canonical domain vocabulary lives in:
-
-- **`PRD.md`** — product decisions, locked decisions §0 (D1–D11), user stories, data model, risks.
+- **`CONTEXT.md`** — glossary. Use these terms; do not drift to the `_Avoid_` list.
+- **`docs/adr/`** — hard-to-reverse decisions (0001 v1.1 scope, 0002 dev-client, 0003 outbox deferred, 0004 transfer single-row, 0005 recurring catch-up, 0006 legal on GitHub Pages).
+- **`PRD.md`** — product decisions, locked decisions §0 (D1–D11), user stories, data model, risks, revisi R1–R6.
 - **`DESIGN.md`** — canonical design system ("Minimalist Obsidian"): tokens, type scale, spacing, components.
+- **`docs/roadmap.md`** — full idea catalogue and release slices (v1.1 / v1.2 / v2.0).
 - **`specs/cashtrix-mvp.md`** — the MVP technical spec published as issue #1.
-
-Treat the vocabulary in `PRD.md` as the glossary for now: "wallet", "budget", "budget month", "spent", "threshold state", "transaction", "category kind". Do not drift to synonyms.
 
 ## File structure
 
