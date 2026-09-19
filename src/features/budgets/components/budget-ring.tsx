@@ -208,7 +208,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background,
+    // Same treatment as the Insight pie: a disc in the card colour, so the
+    // centre reads as punched out rather than black (true transparency is
+    // impossible — the fill meets underneath).
+    backgroundColor: colors.surfaceCard,
     paddingHorizontal: spacing.sm,
     gap: 2,
   },

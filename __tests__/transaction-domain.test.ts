@@ -288,15 +288,14 @@ describe('formatSignedAmount / formatGrouped', () => {
     expect(formatGrouped(0)).toBe('0');
   });
 
-  it('income diberi tanda + dan expense tanpa minus (DESIGN §1)', () => {
-    expect(formatSignedAmount('income', 7_000_000)).toBe('+Rp 7.000.000');
-    expect(formatSignedAmount('expense', 50_000)).toBe('Rp 50.000');
+  it('income tanpa prefix (warna gold pembedanya) dan expense bertanda - (#26)', () => {
+    expect(formatSignedAmount('income', 7_000_000)).toBe('Rp 7.000.000');
+    expect(formatSignedAmount('expense', 50_000)).toBe('-Rp 50.000');
   });
 
-  it('expense tidak pernah memakai warna/glyph negatif', () => {
+  it('expense tidak pernah memakai warna merah', () => {
     const rendered = formatSignedAmount('expense', 50_000);
-    expect(rendered.startsWith('-')).toBe(false);
-    expect(rendered).not.toContain('-');
+    expect(rendered.startsWith('-')).toBe(true);
   });
 });
 

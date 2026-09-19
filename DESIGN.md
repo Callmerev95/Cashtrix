@@ -28,8 +28,8 @@ These are the source-of-truth tokens. All UI must reference them.
 
 ### Semantic rules
 
-- **Income** = `#D4AF37` (gold, `currency-md`, leading `+`).
-- **Expense** = `#E5E5E5` (muted white, never red — preserves understated minimalist balance).
+- **Income** = `#D4AF37` (gold, `currency-md`, no prefix — the colour alone distinguishes it).
+- **Expense** = `#E5E5E5` (muted white, never red) with a leading `-` marking the direction (amended in #26; previously neither side differed by glyph).
 - **Error** = `#FFB4AB` on `#93000A` container (reserved for destructive actions only).
 - Gold is never used for: page backgrounds, body text, expense amounts, or large flat fills >1 card per viewport.
 - Highlighted card borders: gradient `#D4AF37` (top-left) → `#2C2C2E` (bottom-right), or `#D4AF37` at 15% opacity.

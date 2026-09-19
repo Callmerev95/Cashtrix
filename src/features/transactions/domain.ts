@@ -254,9 +254,10 @@ export function formatTime(iso: string): string {
 // ---------------------------------------------------------------------------
 
 /**
- * The row's amount string. Income is gold and leads with `+`; expense stays
- * muted white with **no** minus sign (DESIGN.md §1 — expenses are never red
- * and never carry a negative glyph).
+ * The row's amount string. Income is gold with no prefix (the colour alone
+ * distinguishes it); expense stays muted white and leads with `-`
+ * (DESIGN.md §1, amended in #26 — expenses are never red, but the minus
+ * glyph now marks the direction instead of the income `+`).
  */
 export function formatSignedAmount(
   type: TransactionType,
@@ -264,7 +265,7 @@ export function formatSignedAmount(
   currency = 'Rp',
 ): string {
   const body = `${currency} ${formatGrouped(Math.abs(amount))}`;
-  return type === 'income' ? `+${body}` : body;
+  return type === 'income' ? body : `-${body}`;
 }
 
 /** id-ID grouped digits, max two decimals, trailing `,00` dropped. */
