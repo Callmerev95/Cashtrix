@@ -16,16 +16,18 @@ Semua ticket diterbitkan sebagai GitHub issue dengan label `ready-for-agent`. Bl
 | T8 — Profile + kategori kustom | #9 | #4 | Nama/avatar, CRUD kategori kustom, setting currency |
 | T9 — Data ownership | #10 | #6 | `export-csv` + `delete-account` |
 | T10 — Observability | #11 | #3 | Sentry + scrubbing, `screen_view`/`tx_created`/`budget_threshold_reached` |
-| T11 — E2E Maestro + gerbang rilis | #12 | #7, #8, #9, #10, #11, #26 | Maestro happy path, KPI terverifikasi, checklist visual |
-| UI Polish — Stitch fidelity (prekursor T11) | #26 | — | Gap matrix 8 layar Stitch, shared components, per-layar fidelity (tanpa migrasi DB) |
+| T11 — E2E Maestro + gerbang rilis | #12 | — (semua closed) | Maestro happy path, KPI terverifikasi, checklist visual |
+| UI Polish — Stitch fidelity (prekursor T11) | #26 | — | Gap matrix 8 layar Stitch, shared components, per-layar fidelity (tanpa migrasi DB) — **closed** |
 
 ## Frontier
 
-Ticket tanpa blocker yang belum selesai: **#26 (UI Polish — Stitch fidelity)** — frontier aktif, tanpa blocker, siap dikerjakan.
+Ticket tanpa blocker yang belum selesai: **#12 (T11 — E2E Maestro + gerbang rilis)** — frontier satu-satunya sekaligus gate terakhir rilis MVP.
 
 Selesai (di-merge ke `main`, squash): T1 — #3 via PR #13 · T2 — #2 via PR #14 · T3 — #4 via PR #15 · T4 — #5 via PR #16 (squash `cb3b9df`) · T5 — #6 via PR #17 (squash `492b8f2`) · T6 — #7 via PR #18 (squash `c688a41`) · T7 — #8 via PR #19 (squash `160f71c`) · T8 — #9 via PR #20 (squash `7d1fb0e`) · T9 — #10 via PR #21 (squash `38343db`) · T9 follow-up wiring — #22 via PR #23 (squash `f478fd9`) · T10 — #11 via PR #24 (squash `c524f30`).
 
-Frontier: **#26 (UI Polish — Stitch fidelity)** — tanpa blocker, siap dikerjakan. **#12 (T11 — E2E Maestro + gerbang rilis)** terkunci sebagai gate terakhir (1 open blocker: #26; #7/#8/#9/#10/#11 sudah closed).
+Selesai (langsung ke `main`, tanpa PR): UI Polish — #26 via `92cea30` (shared header/nav/cards + avatar fixes) · `dc17f43` (ramp pie + kartu distribusi) · `0780eac` (Card gradient tonal) · `6b29f17` (avatar 40px, konvensi nominal, hole ring) · `6587e1e` (audit writing/typography F1–F4, T1).
+
+Frontier: **#12 (T11 — E2E Maestro + gerbang rilis)** — 0 open blocker, siap dikerjakan.
 
 ## Aturan
 
