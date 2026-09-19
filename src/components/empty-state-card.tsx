@@ -7,6 +7,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing, typography } from '@/theme';
 import { GhostButton } from './button';
+import { Card } from './card';
 
 type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
 
@@ -26,7 +27,7 @@ export function EmptyStateCard({
   testID?: string;
 }) {
   return (
-    <View testID={testID} style={styles.card}>
+    <Card testID={testID} style={styles.card}>
       <View style={styles.ambience} pointerEvents="none" />
       <View style={styles.iconWell}>
         <MaterialIcons name={icon} size={28} color={colors.accent} />
@@ -42,7 +43,7 @@ export function EmptyStateCard({
           />
         </View>
       ) : null}
-    </View>
+    </Card>
   );
 }
 
@@ -50,12 +51,7 @@ const styles = StyleSheet.create({
   card: {
     alignItems: 'center',
     padding: spacing.lg,
-    backgroundColor: colors.surfaceCard,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
     overflow: 'hidden',
-    position: 'relative',
     marginVertical: spacing.xs,
   },
   ambience: {

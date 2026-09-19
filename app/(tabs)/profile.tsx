@@ -24,7 +24,7 @@ import {
   View,
 } from 'react-native';
 
-import { GhostButton, PrimaryButton, Screen, TextField } from '@/components';
+import { Card, GhostButton, PrimaryButton, Screen, TextField } from '@/components';
 import { signOut, useAuth } from '@/features/auth';
 import { exportAndShareTransactions } from '@/features/data-ownership';
 import {
@@ -324,8 +324,9 @@ export default function ProfileScreen() {
               accessibilityRole="button"
               accessibilityLabel="Kelola kategori"
               onPress={() => router.push('/categories')}
-              style={styles.row}
+              style={styles.rowPress}
             >
+              <Card style={styles.row}>
               <View style={styles.rowIcon}>
                 <MaterialIcons name="category" size={20} color={colors.accent} />
               </View>
@@ -342,6 +343,7 @@ export default function ProfileScreen() {
                 size={20}
                 color={colors.textSecondary}
               />
+              </Card>
             </Pressable>
             <Pressable
               testID="profile-export-row"
@@ -349,8 +351,9 @@ export default function ProfileScreen() {
               accessibilityLabel="Ekspor data sebagai CSV"
               onPress={() => void onExportCsv()}
               disabled={exportingCsv}
-              style={styles.row}
+              style={styles.rowPress}
             >
+              <Card style={styles.row}>
               <View style={styles.rowIcon}>
                 <MaterialIcons
                   name="download"
@@ -375,14 +378,16 @@ export default function ProfileScreen() {
                   color={colors.textSecondary}
                 />
               )}
+              </Card>
             </Pressable>
             <Pressable
               testID="profile-delete-account-row"
               accessibilityRole="button"
               accessibilityLabel="Hapus akun permanen"
               onPress={() => router.push('/delete-account')}
-              style={[styles.row, styles.rowDanger]}
+              style={styles.rowPress}
             >
+              <Card style={styles.row} borderColor={colors.error}>
               <View style={styles.rowIcon}>
                 <MaterialIcons
                   name="delete-forever"
@@ -403,6 +408,7 @@ export default function ProfileScreen() {
                 size={20}
                 color={colors.textSecondary}
               />
+              </Card>
             </Pressable>
 
             <View style={styles.signOut}>
@@ -518,14 +524,13 @@ const styles = StyleSheet.create({
   chipTextActive: {
     color: colors.accent,
   },
+  rowPress: {
+    borderRadius: radius.lg,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: colors.surfaceCard,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: radius.lg,
     padding: spacing.md,
   },
   rowIcon: {
@@ -545,9 +550,6 @@ const styles = StyleSheet.create({
   },
   rowTitleDanger: {
     color: colors.error,
-  },
-  rowDanger: {
-    borderColor: colors.error,
   },
   rowSubtitle: {
     color: colors.textSecondary,

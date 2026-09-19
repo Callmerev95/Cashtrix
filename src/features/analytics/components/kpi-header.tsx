@@ -8,7 +8,8 @@
  */
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing, typography } from '@/theme';
+import { Card } from '@/components/card';
+import { colors, spacing, typography } from '@/theme';
 
 import { deltaTone, formatDelta } from '../domain';
 import { formatGrouped } from '../../transactions/domain';
@@ -23,7 +24,7 @@ export function KpiHeader({
   testID?: string;
 }) {
   return (
-    <View testID={testID} style={styles.card}>
+    <Card testID={testID} style={styles.card}>
       <Kpi
         testID={`${testID}-expense`}
         label="Pengeluaran"
@@ -45,7 +46,7 @@ export function KpiHeader({
         value={totals.net}
         delta={delta.net}
       />
-    </View>
+    </Card>
   );
 }
 
@@ -102,10 +103,6 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
     padding: spacing.md,
     gap: spacing.sm,
-    backgroundColor: colors.surfaceCard,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
   },
   kpi: {
     flex: 1,

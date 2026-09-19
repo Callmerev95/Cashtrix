@@ -13,7 +13,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { GhostButton, LogoMark, PrimaryButton, TextField } from '@/components';
+import { Card, GhostButton, LogoMark, PrimaryButton, TextField } from '@/components';
 import {
   PASSWORD_MIN_LENGTH,
   runSeedUser,
@@ -96,7 +96,7 @@ export default function RegisterScreen() {
           </Text>
         </View>
 
-        <View style={styles.card}>
+        <Card style={styles.card}>
           <View>
             <Text style={[typography.labelUppercase, styles.fieldLabel]}>Email</Text>
             <TextField
@@ -148,7 +148,7 @@ export default function RegisterScreen() {
             loading={busy}
             style={styles.cta}
           />
-        </View>
+        </Card>
 
         <View style={styles.footer}>
           <Text style={[typography.bodySm, styles.footerText]}>Sudah punya akun?</Text>
@@ -195,10 +195,7 @@ const styles = StyleSheet.create({
   card: {
     gap: spacing.md,
     padding: spacing.lg,
-    backgroundColor: colors.surfaceCard,
     borderRadius: radius.xl,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
   },
   fieldLabel: {
     marginBottom: spacing.xs,

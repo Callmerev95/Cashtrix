@@ -20,7 +20,7 @@ import {
   View,
 } from 'react-native';
 
-import { PrimaryButton, Screen } from '@/components';
+import { Card, PrimaryButton, Screen } from '@/components';
 import { useAuth } from '@/features/auth';
 import {
   useProfile,
@@ -198,7 +198,7 @@ function CategoryRow({
 }) {
   const hidden = item.archived || item.muted;
   return (
-    <View style={[styles.card, hidden && styles.cardHidden]}>
+    <Card style={[styles.card, hidden && styles.cardHidden]}>
       <View style={styles.iconWell}>
         <MaterialIcons
           name={item.icon as never}
@@ -259,7 +259,7 @@ function CategoryRow({
           ) : null}
         </View>
       )}
-    </View>
+    </Card>
   );
 }
 
@@ -300,10 +300,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: colors.surfaceCard,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: radius.lg,
     padding: spacing.md,
   },
   cardHidden: {

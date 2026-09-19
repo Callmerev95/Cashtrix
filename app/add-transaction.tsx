@@ -34,7 +34,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { GhostButton, LogoMark, PrimaryButton, Screen, SectionHeader } from '@/components';
+import { GhostButton, Card, LogoMark, PrimaryButton, Screen, SectionHeader } from '@/components';
 import { useAuth } from '@/features/auth';
 import { useBudgets } from '@/features/budgets';
 import { trackEvent, txCreatedEvent } from '@/features/observability';
@@ -327,7 +327,7 @@ export default function AddTransactionScreen() {
             onChange={onToggleType}
           />
 
-          <View style={[styles.entryCard, styles.gap]}>
+          <Card style={[styles.entryCard, styles.gap]}>
             <Text style={[typography.labelUppercase, styles.kicker]}>
               Nominal
             </Text>
@@ -351,7 +351,7 @@ export default function AddTransactionScreen() {
               maxLength={200}
               multiline
             />
-          </View>
+          </Card>
 
           <View style={styles.gap}>
             <SectionHeader
@@ -413,7 +413,7 @@ export default function AddTransactionScreen() {
 
           <View style={styles.gap}>
             <SectionHeader testID="date-header" title="Tanggal" />
-            <View testID="date-stepper" style={styles.dateCard}>
+            <Card testID="date-stepper" style={styles.dateCard}>
               <View style={styles.dateWell}>
                 <MaterialIcons
                   name="calendar-month"
@@ -454,7 +454,7 @@ export default function AddTransactionScreen() {
                   />
                 </Pressable>
               </View>
-            </View>
+            </Card>
           </View>
 
           {formError ? (
@@ -523,10 +523,7 @@ const styles = StyleSheet.create({
   entryCard: {
     padding: spacing.md,
     gap: spacing.sm,
-    backgroundColor: colors.surfaceCard,
     borderRadius: radius.xl,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
   },
   chips: {
     flexDirection: 'row',
@@ -563,10 +560,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     padding: spacing.md,
-    backgroundColor: colors.surfaceCard,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
   },
   dateWell: {
     width: 40,

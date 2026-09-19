@@ -22,6 +22,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
+  Card,
   GhostButton,
   PrimaryButton,
   Screen,
@@ -126,7 +127,7 @@ export default function WalletsScreen() {
           </View>
         </View>
 
-        <View style={styles.summaryCard}>
+        <Card style={styles.summaryCard}>
           <Text style={[typography.labelUppercase, styles.kicker]}>
             Total Saldo
           </Text>
@@ -136,7 +137,7 @@ export default function WalletsScreen() {
           <Text style={[typography.bodySm, styles.meta]}>
             {summary.count} dari {MAX_WALLETS} wallet
           </Text>
-        </View>
+        </Card>
 
         {error ? (
           <Text style={[typography.bodySm, styles.error]}>{error}</Text>
@@ -307,10 +308,6 @@ const styles = StyleSheet.create({
   summaryCard: {
     marginTop: spacing.lg,
     padding: spacing.lg,
-    backgroundColor: colors.surfaceCard,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
     gap: spacing.xs,
   },
   total: {

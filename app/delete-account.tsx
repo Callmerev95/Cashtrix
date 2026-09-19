@@ -22,7 +22,7 @@ import {
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { GhostButton, PrimaryButton, Screen, TextField } from '@/components';
+import { Card, GhostButton, PrimaryButton, Screen, TextField } from '@/components';
 import { signOut } from '@/features/auth';
 import {
   DELETE_CONFIRMATION_WORD,
@@ -84,7 +84,7 @@ export default function DeleteAccountScreen() {
           contentContainerStyle={styles.body}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.warning}>
+          <Card borderColor={colors.error} style={styles.warning}>
             <MaterialIcons
               name="warning-amber"
               size={24}
@@ -95,7 +95,7 @@ export default function DeleteAccountScreen() {
               Seluruh dompet, transaksi, budget, kategori kustom, dan avatar
               Anda akan dihapus.
             </Text>
-          </View>
+          </Card>
 
           <Text style={[typography.bodyMd, styles.instruction]}>
             Ketik {DELETE_CONFIRMATION_WORD} untuk melanjutkan.
@@ -156,10 +156,6 @@ const styles = StyleSheet.create({
   warning: {
     flexDirection: 'row',
     gap: spacing.md,
-    backgroundColor: colors.surfaceCard,
-    borderColor: colors.error,
-    borderWidth: 1,
-    borderRadius: radius.lg,
     padding: spacing.md,
   },
   warningText: {

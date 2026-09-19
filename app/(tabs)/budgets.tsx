@@ -23,7 +23,7 @@ import {
   View,
 } from 'react-native';
 
-import { EmptyStateCard, AppHeader, PrimaryButton, Screen, SectionHeader } from '@/components';
+import { EmptyStateCard, AppHeader, Card, PrimaryButton, Screen, SectionHeader } from '@/components';
 import {
   budgetStateLabels,
   formatPercent,
@@ -76,7 +76,7 @@ export default function BudgetsScreen() {
   return (
     <Screen style={styles.frame} testID="budgets-screen">
       <AppHeader avatarUri={avatarSignedUrl} />
-      <View style={styles.hero}>
+      <Card style={styles.hero}>
         <Text style={[typography.labelUppercase, styles.kicker]}>Active Cycle</Text>
         <Text style={[typography.headlineLg, styles.title]}>
           Budget Architecture
@@ -87,7 +87,7 @@ export default function BudgetsScreen() {
             {budgets.length > 0 ? ` · ${budgets.length} alokasi aktif` : ''}
           </Text>
         ) : null}
-      </View>
+      </Card>
 
       {recentAlerts.map((alert, index) => (
         <AlertBanner
@@ -135,16 +135,17 @@ export default function BudgetsScreen() {
 
 function BudgetCard({ budget }: { budget: BudgetStatus }) {
   return (
-    <Pressable
-      testID={`budget-card-${budget.budgetId}`}
-      accessibilityRole="button"
-      accessibilityLabel={`Budget ${budget.categoryName}, ${formatPercent(budget.percent)}`}
-      onPress={() =>
-        router.push({ pathname: '/budget-form', params: { id: budget.budgetId } })
-      }
-      style={styles.card}
-    >
-      <BudgetRing percent={budget.percent} state={budget.state} size={104} />
+    <Card style={styles.card}>
+      <Pressable
+        testID={`budget-card-${budget.budgetId}`}
+        accessibilityRole="button"
+        accessibilityLabel={`Budget ${budget.categoryName}, ${formatPercent(budget.percent)}`}
+        onPress={() =>
+          router.push({ pathname: '/budget-form', params: { id: budget.budgetId } })
+        }
+        style={styles.cardPress}
+      >
+        <BudgetRing percent={budget.percent} state={budget.state} size={104} />
       <View style={styles.cardBody}>
         <View style={styles.cardTitleRow}>
           <MaterialIcons
@@ -172,7 +173,8 @@ function BudgetCard({ budget }: { budget: BudgetStatus }) {
           </Text>
         </View>
       </View>
-    </Pressable>
+      </Pressable>
+    </Card>
   );
 }
 
@@ -230,10 +232,7 @@ const styles = StyleSheet.create({
   hero: {
     gap: spacing.xs,
     padding: spacing.lg,
-    backgroundColor: colors.surfaceCard,
     borderRadius: radius.xl,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
   },
   kicker: {
     color: colors.textSecondary,
@@ -270,14 +269,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   card: {
+    padding: spacing.lg,
+    borderRadius: radius.xl,
+  },
+  cardPress: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: colors.surfaceCard,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: radius.xl,
-    padding: spacing.lg,
   },
   cardBody: {
     flex: 1,
