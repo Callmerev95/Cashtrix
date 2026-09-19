@@ -1,13 +1,17 @@
 /**
  * Budget progress ring (DESIGN.md §5 "Progress").
  *
- * No `react-native-svg` (same reason as the analytics donut in T6 — a native
- * module would force a dev-client rebuild). The ring is `RING_SEGMENTS` plain
- * ticks around a circle: filled ticks run gold (`accent`, full glow like the
- * progress-fill token `0 0 12px rgba(242,202,80,0.5)`), the rest sit on the
- * `#2C2C2E` track. `exceeded` fills the whole wheel and adds the blur-ring
- * halo (`rgba(212,175,55,0.25)`).
+ * No `react-native-svg` (same reason as the analytics pie — a native module
+ * would force a dev-client rebuild). The fill is a solid gold arc: a
+ * right-half mask (`overflow: hidden`) over a rotating layer carrying a right
+ * semicircle, rotated so the visible wedge is exactly
+ * `[start, start + sweep]` (same geometry as the analytics pie, single
+ * slice). The unfilled remainder is a thin `#2C2C2E` track ring.
+ * `exceeded` fills the whole wheel and adds the blur-ring halo
+ * (`rgba(212,175,55,0.25)`).
  *
+ * This stays a gauge, not a pie: it shows one percent (which can exceed 100%,
+ * something a parts-of-whole pie cannot represent) with a state label.
  * The centre shows the percent in JetBrains Mono (`currency-*` tokens) and the
  * state label beneath it — never red (DESIGN.md §1: no error reds in charts).
  */
@@ -21,6 +25,7 @@ import {
   type BudgetState,
 } from '../domain';
 
+/** Tick-era segment count — kept for the public seam; the ring is now solid. */
 export const RING_SEGMENTS = 48;
 
 export function BudgetRing({
@@ -37,8 +42,23 @@ export function BudgetRing({
   testID?: string;
 }) {
   const fill = ringFillFor(percent);
-  const filled = Math.round(fill * RING_SEGMENTS);
+  const sweep = Math.min(Math.max(fill, 0), 1) * 360;
   const inner = size - thickness * 2;
+  const half = size / 2;
+  // Track circle radius R−t/2 so the track band [R−t, R] aligns exactly with
+  // the visible fill annulus left exposed by the hole.
+  const trackSize = size - thickness;
+
+  // Sweeps above 180° split into a full half plus a remainder wedge.
+  const parts: { start: number; sweep: number }[] = [];
+  let rest = sweep;
+  let offset = 0;
+  while (rest > 0) {
+    const part = Math.min(rest, 180);
+    parts.push({ start: -90 + offset, sweep: part });
+    offset += part;
+    rest -= part;
+  }
 
   return (
     <View testID={testID} style={styles.wrap}>
@@ -52,39 +72,65 @@ export function BudgetRing({
           },
         ]}
       >
-        {Array.from({ length: RING_SEGMENTS }, (_, segment) => {
-          const isFilled = segment < filled;
-          return (
+        <View
+          style={[
+            styles.track,
+            {
+              width: trackSize,
+              height: trackSize,
+              borderRadius: trackSize / 2,
+              borderWidth: thickness,
+            },
+          ]}
+          pointerEvents="none"
+        />
+        {parts.map((part, index) => (
+          <View
+            key={index}
+            testID={index === 0 ? `${testID}-fill` : undefined}
+            style={[
+              styles.wedge,
+              {
+                width: size,
+                height: size,
+                transform: [{ rotate: `${part.start}deg` }],
+              },
+            ]}
+            pointerEvents="none"
+          >
             <View
-              key={segment}
-              testID={isFilled ? `${testID}-fill-${segment}` : undefined}
               style={[
-                styles.tickWrap,
-                {
-                  width: size,
-                  height: size,
-                  transform: [{ rotate: `${(segment / RING_SEGMENTS) * 360}deg` }],
-                },
+                styles.mask,
+                { width: half, height: size, marginLeft: half },
               ]}
-              pointerEvents="none"
             >
               <View
                 style={[
-                  styles.tick,
+                  styles.rotor,
                   {
-                    width: thickness,
-                    height: thickness,
-                    borderRadius: thickness / 2,
-                    backgroundColor: isFilled
-                      ? colors.accent
-                      : colors.surfaceElevated,
-                    ...(isFilled ? styles.tickGlow : null),
+                    width: size,
+                    height: size,
+                    marginLeft: -half,
+                    transform: [{ rotate: `${part.sweep - 180}deg` }],
                   },
                 ]}
-              />
+              >
+                <View
+                  style={[
+                    styles.arc,
+                    {
+                      width: half,
+                      height: size,
+                      marginLeft: half,
+                      borderTopRightRadius: half,
+                      borderBottomRightRadius: half,
+                    },
+                  ]}
+                />
+              </View>
             </View>
-          );
-        })}
+          </View>
+        ))}
 
         <View
           style={[
@@ -132,15 +178,27 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 0 },
   },
-  tickWrap: {
+  /** Full thin track ring underneath the fill. */
+  track: {
     position: 'absolute',
-    alignItems: 'center',
+    borderColor: colors.surfaceElevated,
+    backgroundColor: 'transparent',
   },
-  tick: {
-    marginTop: 0,
+  /** Full-size layer rotated to the arc start; later parts paint on top. */
+  wedge: {
+    position: 'absolute',
   },
-  tickGlow: {
+  /** Right-half mask — only the arc's home half stays visible. */
+  mask: {
+    overflow: 'hidden',
+  },
+  /** Full-size so its centre is the ring centre; carries the semicircle. */
+  rotor: {
+    backgroundColor: 'transparent',
+  },
+  arc: {
     // Progress-fill glow (`0 0 12px rgba(242,202,80,0.5)` in the catalog).
+    backgroundColor: colors.accent,
     shadowColor: colors.accent,
     shadowOpacity: 0.5,
     shadowRadius: 6,

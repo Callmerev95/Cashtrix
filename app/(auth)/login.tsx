@@ -11,7 +11,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { GhostButton, PrimaryButton, TextField } from '@/components';
+import { GhostButton, LogoMark, PrimaryButton, TextField } from '@/components';
 import {
   loginErrorMessage,
   signInWithEmail,
@@ -19,7 +19,7 @@ import {
   hasErrors,
   type FieldErrors,
 } from '@/features/auth';
-import { colors, spacing, typography } from '@/theme';
+import { colors, radius, spacing, typography } from '@/theme';
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
@@ -64,6 +64,7 @@ export default function LoginScreen() {
         automaticallyAdjustKeyboardInsets
       >
         <View style={styles.header}>
+          <LogoMark size={72} />
           <Text style={[typography.labelUppercase, styles.kicker]}>Cashtrix</Text>
           <Text style={[typography.headlineLg, styles.title]}>Welcome Back</Text>
           <Text style={[typography.bodyMd, styles.subtitle]}>
@@ -71,40 +72,48 @@ export default function LoginScreen() {
           </Text>
         </View>
 
-        <View style={styles.form}>
-          <TextField
-            testID="login-email"
-            accessibilityLabel="Email"
-            placeholder="Email"
-            autoCapitalize="none"
-            autoComplete="email"
-            keyboardType="email-address"
-            textContentType="emailAddress"
-            value={email}
-            hasError={Boolean(errors.email)}
-            onChangeText={setEmail}
-            onSubmitEditing={onSubmit}
-          />
-          {errors.email ? (
-            <Text style={styles.fieldError}>{errors.email}</Text>
-          ) : null}
+        <View style={styles.card}>
+          <View>
+            <Text style={[typography.labelUppercase, styles.fieldLabel]}>Email</Text>
+            <TextField
+              testID="login-email"
+              accessibilityLabel="Email"
+              placeholder="nama@email.com"
+              icon="mail-outline"
+              autoCapitalize="none"
+              autoComplete="email"
+              keyboardType="email-address"
+              textContentType="emailAddress"
+              value={email}
+              hasError={Boolean(errors.email)}
+              onChangeText={setEmail}
+              onSubmitEditing={onSubmit}
+            />
+            {errors.email ? (
+              <Text style={styles.fieldError}>{errors.email}</Text>
+            ) : null}
+          </View>
 
-          <TextField
-            testID="login-password"
-            accessibilityLabel="Password"
-            placeholder="Password"
-            secureToggle
-            autoCapitalize="none"
-            autoComplete="current-password"
-            textContentType="password"
-            value={password}
-            hasError={Boolean(errors.password)}
-            onChangeText={setPassword}
-            onSubmitEditing={onSubmit}
-          />
-          {errors.password ? (
-            <Text style={styles.fieldError}>{errors.password}</Text>
-          ) : null}
+          <View>
+            <Text style={[typography.labelUppercase, styles.fieldLabel]}>Password</Text>
+            <TextField
+              testID="login-password"
+              accessibilityLabel="Password"
+              placeholder="••••••••"
+              icon="lock-outline"
+              secureToggle
+              autoCapitalize="none"
+              autoComplete="current-password"
+              textContentType="password"
+              value={password}
+              hasError={Boolean(errors.password)}
+              onChangeText={setPassword}
+              onSubmitEditing={onSubmit}
+            />
+            {errors.password ? (
+              <Text style={styles.fieldError}>{errors.password}</Text>
+            ) : null}
+          </View>
 
           {formError ? <Text style={styles.formError}>{formError}</Text> : null}
 
@@ -140,6 +149,7 @@ const styles = StyleSheet.create({
     gap: spacing.xl,
   },
   header: {
+    alignItems: 'center',
     gap: spacing.xs,
   },
   kicker: {
@@ -147,17 +157,29 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.textPrimary,
+    textAlign: 'center',
   },
   subtitle: {
     color: colors.textSecondary,
+    textAlign: 'center',
   },
-  form: {
-    gap: spacing.sm,
+  card: {
+    gap: spacing.md,
+    padding: spacing.lg,
+    backgroundColor: colors.surfaceCard,
+    borderRadius: radius.xl,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  fieldLabel: {
+    marginBottom: spacing.xs,
+    color: colors.textSecondary,
   },
   cta: {
     marginTop: spacing.md,
   },
   fieldError: {
+    marginTop: spacing.xs,
     ...typography.bodySm,
     color: colors.error,
   },

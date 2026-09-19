@@ -34,7 +34,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { GhostButton, PrimaryButton, Screen } from '@/components';
+import { GhostButton, LogoMark, PrimaryButton, Screen, SectionHeader } from '@/components';
 import { useAuth } from '@/features/auth';
 import { useBudgets } from '@/features/budgets';
 import { trackEvent, txCreatedEvent } from '@/features/observability';
@@ -44,6 +44,7 @@ import {
   CategoryGrid,
   DeleteConfirmSheet,
   TypeSegmentedControl,
+  categoriesForKind,
   formatAmountInput,
   formatDateDivider,
   isFutureDate,
@@ -281,12 +282,13 @@ export default function AddTransactionScreen() {
           <Pressable
             testID="add-transaction-close"
             accessibilityRole="button"
-            accessibilityLabel="Tutup"
+            accessibilityLabel="Kembali"
             onPress={() => router.back()}
             style={styles.close}
           >
-            <MaterialIcons name="close" size={24} color={colors.textSecondary} />
+            <MaterialIcons name="chevron-left" size={28} color={colors.textPrimary} />
           </Pressable>
+          <LogoMark size={32} />
           <Text style={[typography.headlineMd, styles.title]}>
             {isEdit ? 'Ubah Transaksi' : 'Transaksi Baru'}
           </Text>
@@ -325,119 +327,135 @@ export default function AddTransactionScreen() {
             onChange={onToggleType}
           />
 
-          <Text style={[typography.labelUppercase, styles.kicker, styles.gap]}>
-            Nominal
-          </Text>
-          <AmountField
-            testID="amount-input"
-            value={amountRaw}
-            error={amountError}
-            onChangeText={(raw) => {
-              setAmountRaw(formatAmountInput(raw));
-              if (amountError) setAmountError(null);
-            }}
-          />
-
-          <Text style={[typography.labelUppercase, styles.kicker, styles.gap]}>
-            Kategori
-          </Text>
-          <CategoryGrid
-            testID="category-grid"
-            categories={categories}
-            kind={type}
-            selectedId={categoryId}
-            onSelect={(category) => setCategoryChoice(category.id)}
-          />
-
-          <Text style={[typography.labelUppercase, styles.kicker, styles.gap]}>
-            Wallet
-          </Text>
-          <View testID="wallet-picker" style={styles.chips}>
-            {wallets.map((wallet) => {
-              const active = wallet.id === walletId;
-              return (
-                <Pressable
-                  key={wallet.id}
-                  testID={`wallet-option-${wallet.id}`}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
-                  accessibilityLabel={wallet.name}
-                  onPress={() => {
-                    setWalletChoice(wallet.id);
-                    void rememberWallet(wallet.id);
-                  }}
-                  style={[styles.chip, active && styles.chipActive]}
-                >
-                  <Text
-                    style={[
-                      typography.bodyMd,
-                      styles.chipLabel,
-                      active && styles.chipLabelActive,
-                    ]}
-                  >
-                    {wallet.name}
-                  </Text>
-                </Pressable>
-              );
-            })}
-            {wallets.length === 0 ? (
-              <Text style={[typography.bodySm, styles.hint]}>
-                Belum ada wallet — buat satu dulu di menu Dompet.
-              </Text>
-            ) : null}
-          </View>
-
-          <Text style={[typography.labelUppercase, styles.kicker, styles.gap]}>
-            Tanggal
-          </Text>
-          <View testID="date-stepper" style={styles.dateRow}>
-            <Pressable
-              testID="date-prev"
-              accessibilityRole="button"
-              accessibilityLabel="Hari sebelumnya"
-              onPress={() => changeDay(-1)}
-              style={styles.dateButton}
-            >
-              <MaterialIcons
-                name="chevron-left"
-                size={22}
-                color={colors.textPrimary}
-              />
-            </Pressable>
-            <Text style={[typography.bodyMd, styles.dateLabel]}>
-              {atToday ? 'Hari ini' : formatDateDivider(occurredAt.toISOString())}
+          <View style={[styles.entryCard, styles.gap]}>
+            <Text style={[typography.labelUppercase, styles.kicker]}>
+              Nominal
             </Text>
-            <Pressable
-              testID="date-next"
-              accessibilityRole="button"
-              accessibilityLabel="Hari berikutnya"
-              accessibilityState={{ disabled: atToday }}
-              disabled={atToday}
-              onPress={() => changeDay(1)}
-              style={[styles.dateButton, atToday && styles.dateButtonDisabled]}
-            >
-              <MaterialIcons
-                name="chevron-right"
-                size={22}
-                color={atToday ? colors.textSecondary : colors.textPrimary}
-              />
-            </Pressable>
+            <AmountField
+              testID="amount-input"
+              value={amountRaw}
+              error={amountError}
+              onChangeText={(raw) => {
+                setAmountRaw(formatAmountInput(raw));
+                if (amountError) setAmountError(null);
+              }}
+            />
+            <TextInput
+              testID="note-input"
+              style={styles.note}
+              value={note}
+              onChangeText={(text) => setNote(text.slice(0, 200))}
+              placeholder="Catatan (opsional) — kopi pagi, transfer teman…"
+              placeholderTextColor={colors.textSecondary}
+              selectionColor={colors.accent}
+              maxLength={200}
+              multiline
+            />
           </View>
 
-          <Text style={[typography.labelUppercase, styles.kicker, styles.gap]}>
-            Catatan (opsional)
-          </Text>
-          <TextInput
-            testID="note-input"
-            style={styles.note}
-            value={note}
-            onChangeText={(text) => setNote(text.slice(0, 200))}
-            placeholder="Kopi pagi, transfer teman…"
-            placeholderTextColor={colors.textSecondary}
-            selectionColor={colors.accent}
-            maxLength={200}
-            multiline
-          />
+          <View style={styles.gap}>
+            <SectionHeader
+              testID="category-header"
+              title="Kategori"
+              actionLabel={`${categoriesForKind(categories, type).length} kategori`}
+            />
+            <CategoryGrid
+              testID="category-grid"
+              categories={categories}
+              kind={type}
+              selectedId={categoryId}
+              onSelect={(category) => setCategoryChoice(category.id)}
+            />
+          </View>
+
+          <View style={styles.gap}>
+            <SectionHeader testID="wallet-header" title="Wallet" />
+            <View testID="wallet-picker" style={styles.chips}>
+              {wallets.map((wallet) => {
+                const active = wallet.id === walletId;
+                return (
+                  <Pressable
+                    key={wallet.id}
+                    testID={`wallet-option-${wallet.id}`}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    accessibilityLabel={wallet.name}
+                    onPress={() => {
+                      setWalletChoice(wallet.id);
+                      void rememberWallet(wallet.id);
+                    }}
+                    style={[styles.chip, active && styles.chipActive]}
+                  >
+                    <MaterialIcons
+                      name="account-balance-wallet"
+                      size={18}
+                      color={active ? colors.accent : colors.textSecondary}
+                    />
+                    <Text
+                      style={[
+                        typography.bodyMd,
+                        styles.chipLabel,
+                        active && styles.chipLabelActive,
+                      ]}
+                    >
+                      {wallet.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+              {wallets.length === 0 ? (
+                <Text style={[typography.bodySm, styles.hint]}>
+                  Belum ada wallet — buat satu dulu di menu Dompet.
+                </Text>
+              ) : null}
+            </View>
+          </View>
+
+          <View style={styles.gap}>
+            <SectionHeader testID="date-header" title="Tanggal" />
+            <View testID="date-stepper" style={styles.dateCard}>
+              <View style={styles.dateWell}>
+                <MaterialIcons
+                  name="calendar-month"
+                  size={20}
+                  color={colors.accent}
+                />
+              </View>
+              <Text style={[typography.bodyMd, styles.dateLabel]}>
+                {atToday ? 'Hari ini' : formatDateDivider(occurredAt.toISOString())}
+              </Text>
+              <View style={styles.dateButtons}>
+                <Pressable
+                  testID="date-prev"
+                  accessibilityRole="button"
+                  accessibilityLabel="Hari sebelumnya"
+                  onPress={() => changeDay(-1)}
+                  style={styles.dateButton}
+                >
+                  <MaterialIcons
+                    name="chevron-left"
+                    size={22}
+                    color={colors.textPrimary}
+                  />
+                </Pressable>
+                <Pressable
+                  testID="date-next"
+                  accessibilityRole="button"
+                  accessibilityLabel="Hari berikutnya"
+                  accessibilityState={{ disabled: atToday }}
+                  disabled={atToday}
+                  onPress={() => changeDay(1)}
+                  style={[styles.dateButton, atToday && styles.dateButtonDisabled]}
+                >
+                  <MaterialIcons
+                    name="chevron-right"
+                    size={22}
+                    color={atToday ? colors.textSecondary : colors.textPrimary}
+                  />
+                </Pressable>
+              </View>
+            </View>
+          </View>
 
           {formError ? (
             <Text testID="form-error" style={[typography.bodySm, styles.error]}>
@@ -502,6 +520,14 @@ const styles = StyleSheet.create({
   gap: {
     marginTop: spacing.lg,
   },
+  entryCard: {
+    padding: spacing.md,
+    gap: spacing.sm,
+    backgroundColor: colors.surfaceCard,
+    borderRadius: radius.xl,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
   chips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -510,7 +536,9 @@ const styles = StyleSheet.create({
   chip: {
     minHeight: layout.minTapTarget,
     paddingHorizontal: spacing.md,
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.sm,
     justifyContent: 'center',
     borderRadius: radius.full,
     backgroundColor: colors.surfaceElevated,
@@ -519,22 +547,39 @@ const styles = StyleSheet.create({
   },
   chipActive: {
     borderColor: colors.accent,
+    shadowColor: colors.accent,
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 2 },
   },
   chipLabel: {
     color: colors.textSecondary,
   },
   chipLabelActive: {
-    color: colors.textPrimary,
+    color: colors.accent,
   },
-  dateRow: {
+  dateCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: spacing.xs,
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: radius.md,
+    gap: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.surfaceCard,
+    borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.borderStrong,
+    borderColor: colors.border,
+  },
+  dateWell: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceElevated,
+  },
+  dateButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   dateButton: {
     width: layout.minTapTarget,
@@ -546,15 +591,14 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   dateLabel: {
+    flex: 1,
     color: colors.textPrimary,
   },
   note: {
-    minHeight: layout.minTapTarget + spacing.md,
-    padding: spacing.md,
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.borderStrong,
+    minHeight: layout.minTapTarget,
+    paddingTop: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
     color: colors.textPrimary,
     ...typography.bodyLg,
     textAlignVertical: 'top',

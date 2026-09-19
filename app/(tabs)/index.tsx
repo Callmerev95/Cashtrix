@@ -15,8 +15,10 @@ import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { EmptyStateCard, Screen } from '@/components';
+import { EmptyStateCard, AppHeader, Screen, SectionHeader } from '@/components';
 import { useAuth } from '@/features/auth';
+import { useBudgets } from '@/features/budgets';
+import { displayNameOrEmail, useProfile } from '@/features/profile';
 import { TransactionHistoryList, useTransactions } from '@/features/transactions';
 import { formatCurrency, useWallets } from '@/features/wallets';
 import { TotalBalanceCard } from '@/features/wallets/components/total-balance-card';
@@ -30,9 +32,17 @@ function greeting(hour: number): string {
   return 'Selamat malam';
 }
 
+const DATE_FORMAT: Intl.DateTimeFormatOptions = {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+};
+
 export default function DashboardScreen() {
   const { session } = useAuth();
   const { wallets, summary, loading } = useWallets();
+  const { recentAlerts } = useBudgets();
+  const { avatarSignedUrl, profile } = useProfile();
   const {
     transactions,
     loading: loadingTransactions,
@@ -42,9 +52,12 @@ export default function DashboardScreen() {
   } = useTransactions();
   const insets = useSafeAreaInsets();
 
-  const name = (session?.user.user_metadata?.display_name as string | undefined) ??
-    session?.user.email?.split('@')[0] ??
-    'Pengguna';
+  // Identity comes from the profile row (editable in Profile); a row still
+  // carrying the seed default — or none at all — falls back to the email.
+  const name = displayNameOrEmail(
+    profile?.displayName,
+    session?.user.email,
+  );
 
   return (
     <Screen>
@@ -65,31 +78,49 @@ export default function DashboardScreen() {
         }}
         scrollEventThrottle={16}
       >
-        <View style={styles.header}>
-          <View>
-            <Text style={[typography.bodyMd, styles.greeting]}>
-              {greeting(new Date().getHours())}
-            </Text>
+        <AppHeader avatarUri={avatarSignedUrl} />
+
+        <View style={styles.titleBlock}>
+          <Text style={[typography.labelUppercase, styles.dateKicker]}>
+            {new Date().toLocaleDateString('id-ID', DATE_FORMAT)}
+          </Text>
+          <View style={styles.titleRow}>
             <Text
-              style={[typography.headlineLg, styles.name]}
+              style={[typography.headlineMd, styles.name]}
               numberOfLines={1}
+              adjustsFontSizeToFit
             >
-              {name}
+              {greeting(new Date().getHours())}, {name}
             </Text>
+            <Pressable
+              testID="dashboard-alerts"
+              accessibilityRole="button"
+              accessibilityLabel={
+                recentAlerts.length > 0
+                  ? `${recentAlerts.length} notifikasi budget, buka Budgets`
+                  : 'Buka Budgets'
+              }
+              onPress={() => router.push('/(tabs)/budgets')}
+              style={styles.iconButton}
+            >
+              <MaterialIcons
+                name={
+                  recentAlerts.length > 0
+                    ? 'notifications-active'
+                    : 'notifications-none'
+                }
+                size={22}
+                color={
+                  recentAlerts.length > 0
+                    ? colors.accent
+                    : colors.textSecondary
+                }
+              />
+              {recentAlerts.length > 0 ? (
+                <View style={styles.alertDot} />
+              ) : null}
+            </Pressable>
           </View>
-          <Pressable
-            testID="manage-wallets"
-            accessibilityRole="button"
-            accessibilityLabel="Kelola wallet"
-            onPress={() => router.push('/wallets')}
-            style={styles.iconButton}
-          >
-            <MaterialIcons
-              name="account-balance-wallet"
-              size={24}
-              color={colors.accent}
-            />
-          </Pressable>
         </View>
 
         <TotalBalanceCard
@@ -99,20 +130,12 @@ export default function DashboardScreen() {
         />
 
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[typography.labelUppercase, styles.kicker]}>
-              Dompet
-            </Text>
-            <Pressable
-              testID="see-all-wallets"
-              accessibilityRole="button"
-              accessibilityLabel="Lihat semua wallet"
-              onPress={() => router.push('/wallets')}
-              hitSlop={spacing.sm}
-            >
-              <Text style={[typography.bodySm, styles.link]}>Kelola</Text>
-            </Pressable>
-          </View>
+          <SectionHeader
+            testID="dashboard-wallets"
+            title="Dompet"
+            actionLabel="Kelola"
+            onAction={() => router.push('/wallets')}
+          />
 
           {wallets.length === 0 && !loading ? (
             <EmptyStateCard
@@ -149,16 +172,15 @@ export default function DashboardScreen() {
         </View>
 
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[typography.labelUppercase, styles.kicker]}>
-              Riwayat
-            </Text>
-            {transactions.length > 0 ? (
-              <Text style={[typography.bodySm, styles.metaInline]}>
-                {transactions.length} transaksi
-              </Text>
-            ) : null}
-          </View>
+          <SectionHeader
+            testID="dashboard-history"
+            title="Riwayat"
+            actionLabel={
+              transactions.length > 0
+                ? `${transactions.length} transaksi`
+                : undefined
+            }
+          />
 
           {loadingTransactions && transactions.length === 0 ? (
             <Text style={[typography.bodyMd, styles.empty]}>Memuat riwayat…</Text>
@@ -188,16 +210,21 @@ const styles = StyleSheet.create({
   body: {
     // paddingBottom delegated to Screen
   },
-  header: {
+  titleBlock: {
+    marginBottom: spacing.lg,
+    gap: spacing.sm,
+  },
+  dateKicker: {
+    color: colors.textSecondary,
+  },
+  titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.lg,
-  },
-  greeting: {
-    color: colors.textSecondary,
+    gap: spacing.sm,
   },
   name: {
+    flex: 1,
     color: colors.textPrimary,
   },
   iconButton: {
@@ -210,29 +237,23 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
+  alertDot: {
+    position: 'absolute',
+    top: 10,
+    right: 11,
+    width: 8,
+    height: 8,
+    borderRadius: radius.full,
+    backgroundColor: colors.accent,
+  },
   section: {
     marginTop: spacing.xl,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-  },
-  kicker: {
-    color: colors.textSecondary,
-  },
-  link: {
-    color: colors.accent,
   },
   empty: {
     color: colors.textSecondary,
   },
   meta: {
     marginTop: spacing.sm,
-    color: colors.textSecondary,
-  },
-  metaInline: {
     color: colors.textSecondary,
   },
 });

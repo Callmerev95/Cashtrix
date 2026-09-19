@@ -9,6 +9,7 @@ import {
   DISPLAY_NAME_MAX_LENGTH,
   ICON_CATALOG,
   SUPPORTED_CURRENCIES,
+  displayNameOrEmail,
   formatMoney,
   isAvatarMimeType,
   isCatalogIcon,
@@ -139,5 +140,23 @@ describe('isCategoryVisible / visibleCategories', () => {
       category({ id: '3', name: 'Bonus', kind: 'income', isSystem: true }),
     ];
     expect(visibleCategories(rows).map((row) => row.id)).toEqual(['3', '2']);
+  });
+});
+
+describe('displayNameOrEmail', () => {
+  it('memakai nama profil ketika pengguna sudah mengaturnya', () => {
+    expect(displayNameOrEmail('Evelyn', 'evelyn@x.test')).toBe('Evelyn');
+  });
+
+  it('jatuh ke email untuk seed default, kosong, atau null', () => {
+    expect(displayNameOrEmail('Pengguna', 'evelyn@x.test')).toBe(
+      'evelyn@x.test',
+    );
+    expect(displayNameOrEmail('', 'evelyn@x.test')).toBe('evelyn@x.test');
+    expect(displayNameOrEmail(null, 'evelyn@x.test')).toBe('evelyn@x.test');
+  });
+
+  it('tak pernah blank: default terakhir adalah nama seed', () => {
+    expect(displayNameOrEmail(null, null)).toBe('Pengguna');
   });
 });

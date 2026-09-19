@@ -1,24 +1,27 @@
 /**
- * Donut wheel — top-8 expense categories + "Other" (PRD §2.3 Epic D).
+ * Pie chart — top-8 expense categories + "Other" (PRD §2.3 Epic D).
  *
  * There is **no `react-native-svg`** in this project, and T5 already avoided
  * adding a native module (the date picker) for the same reason: a new native
- * dependency forces a dev-client rebuild. So the ring is composed from plain
- * `View`s: `DONUT_SEGMENTS` small ticks are placed evenly around a circle and
- * each is rotated to sit on its radius; a tick's colour is decided by which
- * slice owns its angle (`donutSegmentSliceIndices`, a pure function that is
- * unit-tested rather than eyeballed).
+ * dependency forces a dev-client rebuild. So each slice is a wedge composed
+ * from plain `View`s: an outer layer rotated to the slice's start angle, a
+ * right-half mask (`overflow: hidden`), and a rotating layer carrying a right
+ * semicircle. The rotating layer is full-size so its centre coincides with
+ * the pie centre; rotating the semicircle by `sweep - 180` inside the mask
+ * yields exactly the wedge `[start, start + sweep]` for sweeps ≤ 180°.
+ * Sweeps above 180° are split into a full half plus a remainder wedge.
  *
- * Arcs thinner than `MIN_ARC_SHARE` (0.5%) are already filtered out by
- * `toDonutSlices`, so the wheel never draws invisible slivers. The centre
- * shows the range's total expense.
+ * The visual concept matches the Stitch wheel: monochrome-gold slices
+ * (distinguished by opacity, DESIGN.md §1) around a hollow centre showing
+ * the range's total expense. Arcs thinner than `MIN_ARC_SHARE` (0.5%) are
+ * already filtered out by `toDonutSlices`, so the pie never draws invisible
+ * slivers.
  */
 import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, spacing, typography } from '@/theme';
 
 import { formatGrouped } from '../../transactions/domain';
-import { DONUT_SEGMENTS, donutSegmentSliceIndices } from '../domain';
 
 /**
  * Gold-family ramp for the slices. The palette is deliberately monochrome-gold
@@ -26,6 +29,9 @@ import { DONUT_SEGMENTS, donutSegmentSliceIndices } from '../domain';
  * rather than a new hue: the first slice is full gold, later ones step down.
  */
 const SLICE_ALPHAS = [1, 0.9, 0.8, 0.72, 0.64, 0.56, 0.48, 0.4, 0.38];
+
+/** Hairline overlap into the next slice so pixel seams never show canvas. */
+const SEAM_OVERLAP_DEG = 1;
 
 export function DonutChart({
   slices,
@@ -41,50 +47,88 @@ export function DonutChart({
   testID?: string;
 }) {
   const inner = size - thickness * 2;
-  const owners = donutSegmentSliceIndices(slices, DONUT_SEGMENTS);
+  const half = size / 2;
+
+  type WedgePart = {
+    key: string;
+    sliceId: string;
+    start: number;
+    sweep: number;
+    color: string;
+  };
+  const parts: WedgePart[] = [];
+  let cursor = -90;
+  slices.forEach((slice, index) => {
+    const sweep = slice.share * 360;
+    if (sweep <= 0) return;
+    const color = withAlpha(colors.accent, SLICE_ALPHAS[index] ?? 0.38);
+    let rest = sweep;
+    let offset = 0;
+    while (rest > 0) {
+      const part = Math.min(rest, 180);
+      // Extend into the next wedge (drawn later, on top) to hide seams —
+      // except on full halves, where an extension would break the geometry.
+      const drawn = part < 180 - SEAM_OVERLAP_DEG ? part + SEAM_OVERLAP_DEG : part;
+      parts.push({
+        key: `${slice.id}-${offset}`,
+        sliceId: slice.id,
+        start: cursor + offset,
+        sweep: drawn,
+        color,
+      });
+      offset += part;
+      rest -= part;
+    }
+    cursor += sweep;
+  });
 
   return (
     <View testID={testID} style={styles.wrap}>
-      <View style={[styles.ring, { width: size, height: size }]}>
-        {owners.map((ownerIndex, segment) => {
-          const turn = segment / DONUT_SEGMENTS;
-          const alpha =
-            ownerIndex >= 0 ? (SLICE_ALPHAS[ownerIndex] ?? 0.18) : 0;
-          const slice = ownerIndex >= 0 ? slices[ownerIndex] : undefined;
-
-          return (
+      <View style={[styles.pie, { width: size, height: size }]}>
+        {parts.map((part) => (
+          <View
+            key={part.key}
+            testID={`${testID}-slice-${part.sliceId}`}
+            style={[
+              styles.wedge,
+              { width: size, height: size, transform: [{ rotate: `${part.start}deg` }] },
+            ]}
+            pointerEvents="none"
+          >
             <View
-              key={segment}
-              testID={
-                slice ? `${testID}-seg-${slice.id}-${segment}` : undefined
-              }
               style={[
-                styles.tickWrap,
-                {
-                  width: size,
-                  height: size,
-                  transform: [{ rotate: `${turn * 360}deg` }],
-                },
+                styles.mask,
+                { width: half, height: size, marginLeft: half },
               ]}
-              pointerEvents="none"
             >
               <View
                 style={[
-                  styles.tick,
+                  styles.rotor,
                   {
-                    width: thickness,
-                    height: thickness,
-                    borderRadius: thickness / 2,
-                    backgroundColor:
-                      alpha > 0
-                        ? withAlpha(colors.accent, alpha)
-                        : colors.surfaceElevated,
+                    width: size,
+                    height: size,
+                    marginLeft: -half,
+                    transform: [{ rotate: `${part.sweep - 180}deg` }],
                   },
                 ]}
-              />
+              >
+                <View
+                  style={[
+                    styles.halfDisc,
+                    {
+                      width: half,
+                      height: size,
+                      marginLeft: half,
+                      borderTopRightRadius: half,
+                      borderBottomRightRadius: half,
+                      backgroundColor: part.color,
+                    },
+                  ]}
+                />
+              </View>
             </View>
-          );
-        })}
+          </View>
+        ))}
 
         <View
           style={[
@@ -123,25 +167,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.md,
   },
-  ring: {
+  pie: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tickWrap: {
+  /** Full-size layer rotated to the wedge start; later wedges paint on top. */
+  wedge: {
     position: 'absolute',
-    alignItems: 'center',
   },
-  tick: {
-    // Sits at the top of the rotated wrapper, so rotation of the wrapper places
-    // the tick on its radius. The wrapper is `size` wide, so `alignItems`
-    // centres the tick horizontally on the ring's diameter.
-    marginTop: 0,
+  /** Right-half mask — only the wedge's home half stays visible. */
+  mask: {
+    overflow: 'hidden',
+  },
+  /** Full-size so its centre is the pie centre; carries the semicircle. */
+  rotor: {
+    backgroundColor: 'transparent',
+  },
+  halfDisc: {
+    backgroundColor: 'transparent',
   },
   hole: {
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'transparent',
+    // Solid card fill, not transparent: the wedges meet underneath, so the
+    // hollow centre is a disc punched visually out of the pie. The card
+    // gradient is subtle enough that the seam is invisible.
+    backgroundColor: colors.surfaceCard,
     paddingHorizontal: spacing.md,
     gap: 2,
   },

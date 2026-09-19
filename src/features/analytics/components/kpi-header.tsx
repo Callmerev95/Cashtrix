@@ -26,14 +26,14 @@ export function KpiHeader({
     <View testID={testID} style={styles.card}>
       <Kpi
         testID={`${testID}-expense`}
-        label="Total Pengeluaran"
+        label="Pengeluaran"
         value={totals.expense}
         delta={delta.expense}
       />
       <View style={styles.divider} />
       <Kpi
         testID={`${testID}-income`}
-        label="Total Pemasukan"
+        label="Pemasukan"
         value={totals.income}
         delta={delta.income}
         accent
@@ -66,7 +66,12 @@ function Kpi({
 
   return (
     <View testID={testID} style={styles.kpi}>
-      <Text style={[typography.labelUppercase, styles.label]} numberOfLines={1}>
+      <Text
+        style={[typography.labelUppercase, styles.label]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.75}
+      >
         {label}
       </Text>
       <Text

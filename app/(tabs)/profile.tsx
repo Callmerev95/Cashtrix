@@ -9,6 +9,7 @@
  * sends the user to Login.
  */
 import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from 'expo-linear-gradient';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -33,7 +34,7 @@ import {
   validateDisplayName,
   type CurrencyCode,
 } from '@/features/profile';
-import { colors, layout, radius, spacing, typography } from '@/theme';
+import { colors, gradients, layout, radius, spacing, typography } from '@/theme';
 
 export default function ProfileScreen() {
   const { session } = useAuth();
@@ -54,6 +55,16 @@ export default function ProfileScreen() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [exportingCsv, setExportingCsv] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  // Same dead-URL degradation as AppHeader: a signed URL that no longer
+  // resolves renders the fallback initial instead of a blank box. The
+  // "seen" URI is state (never a ref, never an effect — see the lint rules);
+  // a new URI resets the flag during render, before commit.
+  const [avatarBroken, setAvatarBroken] = useState(false);
+  const [seenAvatarUrl, setSeenAvatarUrl] = useState(avatarSignedUrl);
+  if (seenAvatarUrl !== avatarSignedUrl) {
+    setSeenAvatarUrl(avatarSignedUrl);
+    setAvatarBroken(false);
+  }
 
   const draftName = name ?? profile?.displayName ?? '';
 
@@ -171,21 +182,63 @@ export default function ProfileScreen() {
 
   return (
     <Screen style={styles.frame} testID="profile-screen">
-      <View style={styles.header}>
-        <Text style={[typography.labelUppercase, styles.kicker]}>Account</Text>
-        <Text style={[typography.headlineLg, styles.title]} numberOfLines={1}>
-          {profile?.displayName ?? 'Profile'}
-        </Text>
-        <Text style={[typography.bodySm, styles.email]} numberOfLines={1}>
-          {session?.user.email ?? ''}
-        </Text>
-      </View>
-
       <ScrollView
         testID="profile-scroll"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
+        <View style={styles.identity}>
+          <LinearGradient
+            colors={[...gradients.cardBorder]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.avatarRing}
+          >
+            <Pressable
+              testID="profile-avatar"
+              accessibilityRole="button"
+              accessibilityLabel="Ubah foto profil"
+              onPress={onChangeAvatar}
+              disabled={uploadingAvatar}
+              style={styles.avatarPress}
+            >
+              {avatarSignedUrl && !avatarBroken ? (
+                <Image
+                  source={{ uri: avatarSignedUrl }}
+                  style={styles.avatar}
+                  testID="profile-avatar-image"
+                  onError={() => setAvatarBroken(true)}
+                />
+              ) : (
+                <View style={[styles.avatar, styles.avatarFallback]}>
+                  <Text style={[typography.headlineMd, styles.avatarInitial]}>
+                    {(profile?.displayName ?? 'C').charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          </LinearGradient>
+          <View style={styles.nameRow}>
+            <Text style={[typography.headlineMd, styles.avatarName]} numberOfLines={1}>
+              {profile?.displayName ?? 'Profile'}
+            </Text>
+            <MaterialIcons
+              name="verified-user"
+              size={18}
+              color={colors.accent}
+            />
+          </View>
+          <Text style={[typography.bodySm, styles.email]} numberOfLines={1}>
+            {session?.user.email ?? ''}
+          </Text>
+          <GhostButton
+            testID="profile-change-avatar"
+            label={uploadingAvatar ? 'Mengunggah…' : 'Ubah foto'}
+            onPress={onChangeAvatar}
+            disabled={uploadingAvatar}
+          />
+        </View>
+
         {loading ? (
           <View testID="profile-loading" style={styles.center}>
             <ActivityIndicator color={colors.accent} />
@@ -199,53 +252,6 @@ export default function ProfileScreen() {
           </View>
         ) : (
           <>
-            <View style={styles.avatarRow}>
-              <Pressable
-                testID="profile-avatar"
-                accessibilityRole="button"
-                accessibilityLabel="Ubah foto profil"
-                onPress={onChangeAvatar}
-                disabled={uploadingAvatar}
-                style={styles.avatarFrame}
-              >
-                {avatarSignedUrl ? (
-                  <Image
-                    source={{ uri: avatarSignedUrl }}
-                    style={styles.avatar}
-                    testID="profile-avatar-image"
-                  />
-                ) : (
-                  <View style={[styles.avatar, styles.avatarFallback]}>
-                    <Text style={[typography.headlineMd, styles.avatarInitial]}>
-                      {(profile?.displayName ?? 'C').charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
-                )}
-                <View style={styles.avatarBadge}>
-                  {uploadingAvatar ? (
-                    <ActivityIndicator size="small" color={colors.textOnAccent} />
-                  ) : (
-                    <MaterialIcons
-                      name="verified-user"
-                      size={16}
-                      color={colors.textOnAccent}
-                    />
-                  )}
-                </View>
-              </Pressable>
-              <View style={styles.avatarBody}>
-                <Text style={[typography.headlineSm, styles.avatarName]} numberOfLines={1}>
-                  {profile?.displayName ?? ''}
-                </Text>
-                <GhostButton
-                  testID="profile-change-avatar"
-                  label={uploadingAvatar ? 'Mengunggah…' : 'Ubah foto'}
-                  onPress={onChangeAvatar}
-                  disabled={uploadingAvatar}
-                />
-              </View>
-            </View>
-
             <Text style={[typography.labelUppercase, styles.kicker]}>
               Nama tampilan
             </Text>
@@ -402,9 +408,10 @@ export default function ProfileScreen() {
             <View style={styles.signOut}>
               <GhostButton
                 testID="sign-out"
-                label={signingOut ? 'Keluar…' : 'Keluar'}
+                label={signingOut ? 'Keluar…' : 'Keluar dari Cashtrix'}
                 onPress={onSignOutPress}
                 disabled={signingOut}
+                danger
               />
             </View>
           </>
@@ -419,14 +426,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
     gap: spacing.md,
   },
-  header: {
-    gap: spacing.xs,
-  },
   kicker: {
     color: colors.textSecondary,
-  },
-  title: {
-    color: colors.textPrimary,
   },
   email: {
     color: colors.textSecondary,
@@ -443,24 +444,28 @@ const styles = StyleSheet.create({
   errorText: {
     color: colors.error,
   },
-  avatarRow: {
-    flexDirection: 'row',
+  identity: {
     alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surfaceCard,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: radius.lg,
-    padding: spacing.md,
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
   },
-  avatarFrame: {
-    width: 72,
-    height: 72,
+  avatarRing: {
+    width: 96,
+    height: 96,
+    borderRadius: radius.full,
+    padding: 2,
+    shadowColor: colors.accent,
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  avatarPress: {
+    flex: 1,
+    borderRadius: radius.full,
+    overflow: 'hidden',
   },
   avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: radius.full,
+    flex: 1,
     backgroundColor: colors.surfaceElevated,
   },
   avatarFallback: {
@@ -470,21 +475,10 @@ const styles = StyleSheet.create({
   avatarInitial: {
     color: colors.accent,
   },
-  avatarBadge: {
-    position: 'absolute',
-    right: -2,
-    bottom: -2,
-    width: 24,
-    height: 24,
-    borderRadius: radius.full,
-    backgroundColor: colors.accent,
+  nameRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarBody: {
-    flex: 1,
     gap: spacing.xs,
-    alignItems: 'flex-start',
   },
   avatarName: {
     color: colors.textPrimary,
@@ -513,6 +507,10 @@ const styles = StyleSheet.create({
   },
   chipActive: {
     borderColor: colors.accent,
+    shadowColor: colors.accent,
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 2 },
   },
   chipText: {
     color: colors.textSecondary,

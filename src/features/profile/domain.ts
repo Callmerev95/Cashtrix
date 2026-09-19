@@ -12,6 +12,31 @@
 export const DISPLAY_NAME_MAX_LENGTH = 60;
 export const CATEGORY_NAME_MAX_LENGTH = 40;
 
+/**
+ * Seed default written by `seed-user` (see `20260917090000_schema.sql`:
+ * `display_name ... default 'Pengguna'`). A row still carrying it means the
+ * user never set a name, so display logic treats it as unset and falls back
+ * to the email.
+ */
+export const DEFAULT_DISPLAY_NAME = 'Pengguna';
+
+/**
+ * Greeting/identity name: the profile name when the user set one, otherwise
+ * their email (never blank, never the seed default).
+ */
+export function displayNameOrEmail(
+  displayName: string | null | undefined,
+  email: string | null | undefined,
+): string {
+  const custom =
+    displayName && displayName.trim() !== '' && displayName !== DEFAULT_DISPLAY_NAME
+      ? displayName
+      : null;
+  if (custom) return custom;
+  if (email && email.trim() !== '') return email;
+  return DEFAULT_DISPLAY_NAME;
+}
+
 /** Avatar pipeline contract (AC #9): resized before upload, bucket-capped. */
 export const AVATAR_SIZE_PX = 512;
 export const AVATAR_MAX_BYTES = 2 * 1024 * 1024;

@@ -23,7 +23,7 @@ import {
   View,
 } from 'react-native';
 
-import { EmptyStateCard, PrimaryButton, Screen } from '@/components';
+import { EmptyStateCard, AppHeader, PrimaryButton, Screen, SectionHeader } from '@/components';
 import {
   budgetStateLabels,
   formatPercent,
@@ -32,6 +32,7 @@ import {
   type FiredAlert,
 } from '@/features/budgets';
 import { BudgetRing } from '@/features/budgets/components/budget-ring';
+import { useProfile } from '@/features/profile';
 import { formatGrouped } from '@/features/transactions/domain';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 
@@ -70,17 +71,20 @@ export default function BudgetsScreen() {
     dismissAlert,
     refresh,
   } = useBudgets();
+  const { avatarSignedUrl } = useProfile();
 
   return (
     <Screen style={styles.frame} testID="budgets-screen">
-      <View style={styles.header}>
-        <Text style={[typography.labelUppercase, styles.kicker]}>Limits</Text>
+      <AppHeader avatarUri={avatarSignedUrl} />
+      <View style={styles.hero}>
+        <Text style={[typography.labelUppercase, styles.kicker]}>Active Cycle</Text>
         <Text style={[typography.headlineLg, styles.title]}>
           Budget Architecture
         </Text>
         {month ? (
           <Text testID="budgets-month" style={[typography.bodySm, styles.month]}>
             {formatMonthLabel(month)}
+            {budgets.length > 0 ? ` · ${budgets.length} alokasi aktif` : ''}
           </Text>
         ) : null}
       </View>
@@ -113,13 +117,15 @@ export default function BudgetsScreen() {
           <BudgetsEmptyState />
         ) : (
           <>
+            <SectionHeader
+              testID="budgets-allocations"
+              title="Alokasi Kategori"
+              actionLabel="Tambah"
+              onAction={() => router.push('/budget-form')}
+            />
             {budgets.map((budget) => (
               <BudgetCard key={budget.budgetId} budget={budget} />
             ))}
-            <PrimaryButton
-              label="Tambah budget"
-              onPress={() => router.push('/budget-form')}
-            />
           </>
         )}
       </ScrollView>
@@ -221,8 +227,13 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
     gap: spacing.md,
   },
-  header: {
+  hero: {
     gap: spacing.xs,
+    padding: spacing.lg,
+    backgroundColor: colors.surfaceCard,
+    borderRadius: radius.xl,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
   kicker: {
     color: colors.textSecondary,
@@ -265,8 +276,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceCard,
     borderColor: colors.border,
     borderWidth: 1,
-    borderRadius: radius.lg,
-    padding: spacing.md,
+    borderRadius: radius.xl,
+    padding: spacing.lg,
   },
   cardBody: {
     flex: 1,

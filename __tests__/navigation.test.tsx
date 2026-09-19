@@ -76,7 +76,7 @@ describe('navigation shell', () => {
   it('opens the Wallets screen from the Dashboard hero', async () => {
     const { getPathname } = await renderSignedInApp();
 
-    fireEvent.press(await screen.findByTestId('manage-wallets'));
+    fireEvent.press(await screen.findByTestId('dashboard-wallets-action'));
 
     expect(getPathname()).toBe('/wallets');
   });
@@ -84,7 +84,7 @@ describe('navigation shell', () => {
   it('opens the wallet form from the Wallets screen', async () => {
     const { getPathname } = await renderSignedInApp();
 
-    fireEvent.press(await screen.findByTestId('manage-wallets'));
+    fireEvent.press(await screen.findByTestId('dashboard-wallets-action'));
     fireEvent.press(await screen.findByTestId('add-wallet'));
 
     expect(getPathname()).toBe('/wallet-form');

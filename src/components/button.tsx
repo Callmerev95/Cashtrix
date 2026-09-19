@@ -70,9 +70,10 @@ export function GhostButton({
   label,
   onPress,
   disabled,
+  danger = false,
   style,
   testID,
-}: LinkButtonProps) {
+}: LinkButtonProps & { danger?: boolean }) {
   return (
     <Pressable
       testID={testID}
@@ -87,7 +88,9 @@ export function GhostButton({
         pressed && styles.pressed,
       ]}
     >
-      <Text style={styles.ghostLabel}>{label}</Text>
+      <Text style={[styles.ghostLabel, danger && styles.ghostLabelDanger]}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -123,6 +126,9 @@ const styles = StyleSheet.create({
   ghostLabel: {
     color: colors.accent,
     ...typography.bodyMd,
+  },
+  ghostLabelDanger: {
+    color: colors.error,
   },
   pressed: {
     transform: [{ scale: 0.99 }],

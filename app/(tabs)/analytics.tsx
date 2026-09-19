@@ -27,7 +27,8 @@ import {
   toDonutSlices,
   useAnalytics,
 } from '@/features/analytics';
-import { Screen } from '@/components';
+import { Screen, AppHeader } from '@/components';
+import { useProfile } from '@/features/profile';
 import { colors, gradients, radius, spacing, typography } from '@/theme';
 
 export default function AnalyticsScreen() {
@@ -42,6 +43,7 @@ export default function AnalyticsScreen() {
     error,
     isEmpty,
   } = useAnalytics();
+  const { avatarSignedUrl } = useProfile();
 
   const window = resolveRange(range);
   const daily = isDailyRange(range);
@@ -50,6 +52,7 @@ export default function AnalyticsScreen() {
 
   return (
     <Screen style={styles.frame} testID="analytics-screen">
+      <AppHeader avatarUri={avatarSignedUrl} />
       <View style={styles.header}>
         <Text style={[typography.labelUppercase, styles.kicker]}>Insights</Text>
         <Text style={[typography.headlineLg, styles.title]}>

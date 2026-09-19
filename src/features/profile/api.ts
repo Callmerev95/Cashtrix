@@ -13,6 +13,7 @@
  * signed URL minted on read.
  */
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import { File } from 'expo-file-system';
 
 import { supabase } from '@/supabase';
 
@@ -272,9 +273,16 @@ export async function uploadAvatar(input: {
     { compress: 0.85, format: SaveFormat.JPEG },
   );
 
-  const response = await fetch(rendered.uri);
-  const buffer = await response.arrayBuffer();
-  if (byteLength(buffer) > AVATAR_MAX_BYTES) {
+  // Native file read — never `fetch(file://)`: React Native fetch only speaks
+  // http(s), so reading the resized JPEG through fetch silently produced an
+  // empty body and the avatar rendered blank despite a "successful" upload.
+  const buffer = await new File(rendered.uri).arrayBuffer();
+  // A silent empty body would upload a corrupt 0-byte object whose signed URL
+  // then renders as a blank avatar — fail loudly instead.
+  if (buffer.byteLength === 0) {
+    throw new Error('Berkas avatar kosong');
+  }
+  if (buffer.byteLength > AVATAR_MAX_BYTES) {
     throw new Error('Avatar maksimal 2MB');
   }
 
@@ -293,13 +301,12 @@ export async function getAvatarSignedUrl(
   path: string | null,
 ): Promise<string | null> {
   if (!path) return null;
+  // Minted once per provider mount and cached in context, so the expiry must
+  // outlive a long-lived session: 7 days. (A 1-hour URL silently broke every
+  // avatar display after an hour with no re-mint.)
   const { data, error } = await supabase.storage
     .from('avatars')
-    .createSignedUrl(path, 3600);
+    .createSignedUrl(path, 7 * 24 * 3600);
   if (error) throw error;
   return data.signedUrl;
-}
-
-function byteLength(buffer: ArrayBuffer): number {
-  return buffer.byteLength;
 }

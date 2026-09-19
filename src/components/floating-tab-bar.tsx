@@ -14,10 +14,10 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { Fragment } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, gradients, layout, radius, shadows, spacing } from '@/theme';
+import { colors, gradients, layout, radius, shadows, spacing, typography } from '@/theme';
 
 type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
 
@@ -32,19 +32,41 @@ const TAB_ICONS: Record<string, MaterialIconName> = {
   profile: 'person',
 };
 
+/** Micro-label per tab route — the Stitch nav pairs every icon with an
+ * uppercase label (VAULT / INSIGHTS / BUDGETS / ACCOUNT). */
+const TAB_LABELS: Record<string, string> = {
+  index: 'Vault',
+  analytics: 'Insights',
+  budgets: 'Budgets',
+  profile: 'Account',
+};
+
 function TabIcon({
   icon,
+  label,
   focused,
 }: {
   icon: MaterialIconName;
+  label: string;
   focused: boolean;
 }) {
   return (
-    <MaterialIcons
-      name={icon}
-      size={24}
-      color={focused ? colors.accent : colors.textSecondary}
-    />
+    <View style={styles.tabContent}>
+      <MaterialIcons
+        name={icon}
+        size={24}
+        color={focused ? colors.accent : colors.textSecondary}
+      />
+      <Text
+        style={[
+          typography.labelUppercase,
+          styles.tabLabel,
+          focused ? styles.tabLabelActive : styles.tabLabelIdle,
+        ]}
+      >
+        {label}
+      </Text>
+    </View>
   );
 }
 
@@ -123,6 +145,7 @@ export function FloatingTabBar({
               >
                 <TabIcon
                   icon={TAB_ICONS[route.name] ?? 'circle'}
+                  label={TAB_LABELS[route.name] ?? ''}
                   focused={focused}
                 />
               </Pressable>
@@ -156,9 +179,23 @@ const styles = StyleSheet.create({
   },
   tabItem: {
     flex: 1,
-    height: layout.minTapTarget,
+    height: layout.minTapTarget + spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  tabContent: {
+    alignItems: 'center',
+    gap: 2,
+  },
+  tabLabel: {
+    fontSize: 9,
+    lineHeight: 12,
+  },
+  tabLabelActive: {
+    color: colors.accent,
+  },
+  tabLabelIdle: {
+    color: colors.textSecondary,
   },
   fabSpacer: {
     width: layout.fabSize,

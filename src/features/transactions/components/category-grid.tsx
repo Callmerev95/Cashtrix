@@ -1,7 +1,11 @@
 /**
  * Category picker grid (AC #18) — only categories whose `kind` matches the
  * selected transaction type are shown, so income can never land in an expense
- * category. Selection is a gold ring around the icon well.
+ * category.
+ *
+ * Stitch pattern: 3-column L1 cards, each with a circular icon well and a
+ * label beneath it. The selected card carries a gold border + glow and a gold
+ * label; unselected cards stay muted.
  */
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -47,7 +51,7 @@ export function CategoryGrid({
             accessibilityState={{ selected: active }}
             accessibilityLabel={category.name}
             onPress={() => onSelect(category)}
-            style={styles.cell}
+            style={[styles.cell, active && styles.cellActive]}
           >
             <View style={[styles.well, active && styles.wellActive]}>
               <MaterialIcons
@@ -76,9 +80,23 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   cell: {
-    width: 72,
+    flexGrow: 1,
+    flexBasis: '31%',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xs,
+    backgroundColor: colors.surfaceCard,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  cellActive: {
+    borderColor: colors.accent,
+    shadowColor: colors.accent,
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 2 },
   },
   well: {
     width: 52,
@@ -99,7 +117,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   labelActive: {
-    color: colors.textPrimary,
+    color: colors.accent,
   },
   empty: {
     color: colors.textSecondary,

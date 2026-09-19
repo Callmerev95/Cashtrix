@@ -29,11 +29,14 @@ export type TextFieldProps = TextInputProps & {
   hasError?: boolean;
   /** Eye toggle for password fields. */
   secureToggle?: boolean;
+  /** Leading icon in the well (Stitch inputs pair every field with an icon). */
+  icon?: React.ComponentProps<typeof MaterialIcons>['name'];
 };
 
 export function TextField({
   hasError = false,
   secureToggle = false,
+  icon,
   style,
   testID,
   ...rest
@@ -50,14 +53,20 @@ export function TextField({
         testID={testID ? `${testID}-well` : undefined}
         style={[styles.well, hasError && styles.wellError]}
       >
+        {icon ? (
+          <MaterialIcons
+            name={icon}
+            size={20}
+            color={focused ? colors.accent : colors.textSecondary}
+          />
+        ) : null}
         <TextInput
           {...rest}
           testID={testID}
           style={[styles.input, style]}
           placeholderTextColor={colors.textSecondary}
           selectionColor={colors.accent}
-          secureTextEntry={secureToggle ? hidden : rest.secureTextEntry}
-          onFocus={(event) => {
+          secureTextEntry={secureToggle ? hidden : rest.secureTextEntry}          onFocus={(event) => {
             setFocused(true);
             rest.onFocus?.(event);
           }}
