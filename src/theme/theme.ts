@@ -283,6 +283,31 @@ export const gradients = {
   glow: ['rgba(212, 175, 55, 0.35)', 'rgba(212, 175, 55, 0)'] as const,
 } as const;
 
+/**
+ * Distribution-chart ramp (pie slices + legend swatches, brightest first).
+ *
+ * Strictly fading in visual strength with rank: vivid gold → deep gold →
+ * khaki → stone greys, so a 37/33/24/6 split reads at a glance. Anchored to
+ * the Stitch Analytics reference (`stitch_cashtrix/cashtrix_analytics`), with
+ * two deliberate deviations: Stitch's pale-champagne second stop is dropped
+ * (it created a non-monotonic spike — rank 2 looked as strong as rank 0) and
+ * the floor is raised (Stitch's darkest stop `#2A2A2A` vanishes against our
+ * `#1C1C1E` cards, so the ramp ends at `#48484A`). Every stop is declared
+ * here — the single file allowed hex literals — never color-picked ad hoc in
+ * components.
+ */
+export const chartRamp = [
+  '#F2CA50',
+  '#D4AF37',
+  '#B89B55',
+  '#99907C',
+  '#7E7869',
+  '#66645E',
+  '#585650',
+  '#504E4A',
+  '#48484A',
+] as const;
+
 // ---------------------------------------------------------------------------
 // Aggregate theme
 // ---------------------------------------------------------------------------
@@ -298,6 +323,7 @@ export const theme = {
   radius,
   shadows,
   gradients,
+  chartRamp,
 } as const;
 
 export type Theme = typeof theme;

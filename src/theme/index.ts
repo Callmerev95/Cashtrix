@@ -10,6 +10,7 @@ export {
   radius,
   shadows,
   gradients,
+  chartRamp,
   default,
 } from './theme';
 

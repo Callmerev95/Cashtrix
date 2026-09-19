@@ -95,6 +95,8 @@ export default function AnalyticsScreen() {
                 Distribusi Pengeluaran
               </Text>
               <DonutChart slices={slices} total={overview.totals.expense} />
+              <View style={styles.legendDivider} />
+              <BreakdownList slices={slices} />
             </LinearGradient>
 
             <LinearGradient
@@ -105,16 +107,6 @@ export default function AnalyticsScreen() {
                 {daily ? 'Tren Harian' : 'Tren Bulanan'}
               </Text>
               <BarChart bars={bars} />
-            </LinearGradient>
-
-            <LinearGradient
-              colors={[...gradients.cardFill]}
-              style={styles.card}
-            >
-              <Text style={[typography.labelUppercase, styles.cardKicker]}>
-                Rincian Kategori
-              </Text>
-              <BreakdownList slices={slices} />
             </LinearGradient>
           </>
         )}
@@ -151,6 +143,10 @@ const styles = StyleSheet.create({
   },
   cardKicker: {
     color: colors.textSecondary,
+  },
+  legendDivider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
   },
   loading: {
     paddingVertical: spacing.xl,

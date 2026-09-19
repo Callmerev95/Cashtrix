@@ -2,9 +2,9 @@
  * Category breakdown rows — the legend beneath the donut (PRD §2.3 Epic D,
  * "Analytics" screen: donut → bar chart → category breakdown rows).
  *
- * One row per rendered slice (so the rows and the wheel always match), with the
- * gold swatch at the slice's opacity, the category name/icon, the amount and
- * the share percentage.
+ * One row per rendered slice (so the rows and the wheel always match), with
+ * the slice's ramp colour (`sliceColor`, shared with the pie), the category
+ * name/icon, the amount and the share percentage.
  */
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { StyleSheet, Text, View } from 'react-native';
@@ -12,10 +12,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 
 import { formatGrouped } from '../../transactions/domain';
+import { sliceColor } from './slice-ramp';
 
 type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
-
-const SWATCH_ALPHAS = [1, 0.82, 0.68, 0.56, 0.47, 0.39, 0.32, 0.26, 0.2];
 
 export function BreakdownList({
   slices,
@@ -31,15 +30,7 @@ export function BreakdownList({
       {slices.map((slice, index) => (
         <View key={slice.id} testID={`${testID}-row-${slice.id}`} style={styles.row}>
           <View
-            style={[
-              styles.swatch,
-              {
-                backgroundColor: withAlpha(
-                  colors.accent,
-                  SWATCH_ALPHAS[index] ?? 0.2,
-                ),
-              },
-            ]}
+            style={[styles.swatch, { backgroundColor: sliceColor(index) }]}
           >
             <MaterialIcons
               name={slice.icon as MaterialIconName}
@@ -63,14 +54,6 @@ export function BreakdownList({
       ))}
     </View>
   );
-}
-
-function withAlpha(hex: string, alpha: number): string {
-  const value = hex.replace('#', '');
-  const r = parseInt(value.slice(0, 2), 16);
-  const g = parseInt(value.slice(2, 4), 16);
-  const b = parseInt(value.slice(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 const styles = StyleSheet.create({
