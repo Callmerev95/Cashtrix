@@ -1,0 +1,46 @@
+# Release gate — Cashtrix MVP (T11, issue #12).
+#
+# Static checks run on every push/PR. The full live verification needs a
+# service-role key (it creates a real user, then deletes it via cascade), so
+# it only runs when the SUPABASE_SERVICE_ROLE_KEY secret exists. The Maestro
+# device run itself stays manual (docs/release-gate.md §2) — CI proves the
+# flow's selector contract instead of faking a green device run.
+name: release-gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test
+      - run: node scripts/verify-t11.mjs --static-only
+      - run: npx expo export --platform android --output-dir /tmp/cashtrix-export
+
+  live:
+    runs-on: ubuntu-latest
+    needs: static
+    # Full journey against the hosted project: creates one test user, replays
+    # the Maestro happy path via API, then self-deletes via delete-account —
+    # no secrets needed, no residue. PRs skip this; push to main proves it.
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/verify-t11.mjs

@@ -1,0 +1,177 @@
+# T11 happy path (issue #12 AC #1): register → 3 transaksi → Dashboard &
+# Analytics → set budget → trigger alert.
+#
+# Fixed E2E account, self-healing on first run: it tries to log in, and only
+# registers when the server says the credentials are unknown. Re-runs are
+# therefore idempotent (second run appends 3 more transactions and the budget
+# upserts on `(user, category, month)` instead of duplicating).
+#
+# KPI proof (AC #2): every step below fires an observability event through the
+# T10 sink — `screen_view` on each tab, `tx_created` after each save,
+# `budget_threshold_reached` when the Makanan budget crosses 100%. Dev builds
+# log them as `[analytics] <name> {...}` (see observability.ts), so the gate
+# is: `adb logcat | grep '\[analytics\]'` (Android) or Console.app
+# (iOS) must show all three names during this run. docs/release-gate.md has
+# the exact commands.
+appId: com.callmerev95.cashtrix
+---
+- launchApp:
+    clearState: true
+
+# --- Auth: login, or register on first run --------------------------------
+- assertVisible:
+    id: "login-submit"
+- tapOn:
+    id: "login-email"
+- inputText: "e2e@cashtrix.test"
+- tapOn:
+    id: "login-password"
+- inputText: "Cashtrix123"
+- hideKeyboard
+- tapOn:
+    id: "login-submit"
+
+- runFlow:
+    when:
+      visible: "Email atau password salah"
+    commands:
+      - tapOn:
+          id: "login-to-register"
+      - assertVisible:
+          id: "register-submit"
+      - tapOn:
+          id: "register-email"
+      - inputText: "e2e@cashtrix.test"
+      - tapOn:
+          id: "register-password"
+      - inputText: "Cashtrix123"
+      - hideKeyboard
+      - tapOn:
+          id: "register-submit"
+
+# Auth gate drops us into the tabs; seed-user has created the Cash wallet.
+- assertVisible:
+    id: "dashboard-wallets"
+    timeout: 20000
+
+# --- Tx 1: expense Makanan 50.000 ------------------------------------------
+- tapOn:
+    id: "fab-add-transaction"
+- assertVisible:
+    id: "transaction-save"
+- tapOn:
+    id: "amount-input"
+- inputText: "50000"
+- tapOn: "Makanan"
+- hideKeyboard
+- tapOn:
+    id: "transaction-save"
+- assertVisible:
+    id: "dashboard-history"
+    timeout: 15000
+
+# --- Tx 2: expense Transportasi 25.000 --------------------------------------
+- tapOn:
+    id: "fab-add-transaction"
+- assertVisible:
+    id: "transaction-save"
+- tapOn:
+    id: "amount-input"
+- inputText: "25000"
+- tapOn: "Transportasi"
+- hideKeyboard
+- tapOn:
+    id: "transaction-save"
+- assertVisible:
+    id: "dashboard-history"
+    timeout: 15000
+
+# --- Tx 3: income Gaji 5.000.000 --------------------------------------------
+- tapOn:
+    id: "fab-add-transaction"
+- assertVisible:
+    id: "transaction-save"
+- tapOn:
+    id: "type-option-income"
+- tapOn:
+    id: "amount-input"
+- inputText: "5000000"
+- tapOn: "Gaji"
+- hideKeyboard
+- tapOn:
+    id: "transaction-save"
+- assertVisible:
+    id: "dashboard-history"
+    timeout: 15000
+
+# --- Analytics: KPI + donut render from server aggregation ------------------
+- tapOn:
+    id: "tab-analytics"
+- assertVisible:
+    id: "analytics-kpi"
+    timeout: 15000
+- assertVisible:
+    id: "analytics-donut"
+- tapOn:
+    id: "range-option-1M"
+
+# --- Budget: cap Makanan at 200.000 ------------------------------------------
+- tapOn:
+    id: "tab-budgets"
+- assertVisible:
+    id: "budgets-screen"
+    timeout: 15000
+
+# First run shows the empty state, later runs the allocations header —
+# both lead to /budget-form.
+- runFlow:
+    when:
+      visible: "Buat budget pertama"
+    commands:
+      - tapOn:
+          id: "budgets-empty-action"
+- runFlow:
+    when:
+      visible:
+        id: "budgets-allocations-action"
+    commands:
+      - tapOn:
+          id: "budgets-allocations-action"
+
+- assertVisible:
+    id: "budget-save"
+- tapOn: "Makanan"
+- tapOn:
+    id: "budget-amount"
+- inputText: "200000"
+- hideKeyboard
+- tapOn:
+    id: "budget-save"
+- assertVisible:
+    id: "budgets-screen"
+    timeout: 15000
+
+# --- Trigger: Makanan expense 150.000 → spent 200.000 = 100% = exceeded -----
+- tapOn:
+    id: "fab-add-transaction"
+- assertVisible:
+    id: "transaction-save"
+- tapOn:
+    id: "amount-input"
+- inputText: "150000"
+- tapOn: "Makanan"
+- hideKeyboard
+- tapOn:
+    id: "transaction-save"
+- assertVisible:
+    id: "dashboard-history"
+    timeout: 15000
+
+# The in-app alert banner is the push-independent proof (PRD D8): it renders
+# even when notification permission was denied.
+- tapOn:
+    id: "tab-budgets"
+- assertVisible: "Budget Makanan terlampaui"
+  timeout: 15000
+
+- takeScreenshot: "t11-happy-path-alert"

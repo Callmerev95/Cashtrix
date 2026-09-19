@@ -75,6 +75,7 @@ function AddTransactionFab({ onPress }: { onPress: () => void }) {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel="Add Transaction"
+      testID="fab-add-transaction"
       onPress={onPress}
       style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
     >
@@ -134,6 +135,7 @@ export function FloatingTabBar({
               <Pressable
                 accessibilityRole="tab"
                 accessibilityState={{ selected: focused }}
+                testID={`tab-${route.name}`}
                 accessibilityLabel={
                   options.tabBarAccessibilityLabel ??
                   options.title ??

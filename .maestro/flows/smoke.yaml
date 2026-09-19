@@ -1,0 +1,45 @@
+# T11 smoke (issue #12): read-only pass over the four tabs. No writes, so it
+# is safe to run against any account state — use it for quick iteration while
+# the full happy-path.yaml remains the release gate.
+appId: com.callmerev95.cashtrix
+---
+- launchApp:
+    clearState: true
+
+- assertVisible:
+    id: "login-submit"
+- tapOn:
+    id: "login-email"
+- inputText: "e2e@cashtrix.test"
+- tapOn:
+    id: "login-password"
+- inputText: "Cashtrix123"
+- hideKeyboard
+- tapOn:
+    id: "login-submit"
+
+- assertVisible:
+    id: "dashboard-wallets"
+    timeout: 20000
+- takeScreenshot: "t11-smoke-dashboard"
+
+- tapOn:
+    id: "tab-analytics"
+- assertVisible:
+    id: "analytics-screen"
+    timeout: 15000
+- takeScreenshot: "t11-smoke-analytics"
+
+- tapOn:
+    id: "tab-budgets"
+- assertVisible:
+    id: "budgets-screen"
+    timeout: 15000
+- takeScreenshot: "t11-smoke-budgets"
+
+- tapOn:
+    id: "tab-profile"
+- assertVisible:
+    id: "profile-screen"
+    timeout: 15000
+- takeScreenshot: "t11-smoke-profile"

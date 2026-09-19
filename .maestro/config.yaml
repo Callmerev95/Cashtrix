@@ -1,0 +1,11 @@
+# Maestro config — Cashtrix (T11, issue #12).
+#
+# Run against a dev build on a simulator/emulator:
+#   npx expo run:android   # or run:ios, then:
+#   maestro test .maestro/flows/happy-path.yaml
+#
+# The flows address elements by `testID` (`id:` selector) wherever the id is
+# static, and by visible text / accessibilityLabel where the id embeds a
+# database uuid (category cells `category-<uuid>`, budget alerts
+# `budget-alert-<categoryId>`). See docs/release-gate.md for the full gate.
+appId: com.callmerev95.cashtrix

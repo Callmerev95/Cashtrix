@@ -132,6 +132,7 @@ export default function BudgetFormScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Tutup"
+            testID="budget-form-close"
             onPress={() => router.back()}
             style={styles.close}
           >
@@ -181,12 +182,14 @@ export default function BudgetFormScreen() {
           />
 
           <PrimaryButton
+            testID="budget-save"
             label={busy ? 'Menyimpan…' : isEdit ? 'Simpan perubahan' : 'Buat budget'}
             onPress={() => void handleSave()}
           />
 
           {isEdit ? (
             <GhostButton
+              testID="budget-delete"
               label="Hapus budget"
               onPress={() => setConfirmingDelete(true)}
             />
@@ -204,8 +207,9 @@ export default function BudgetFormScreen() {
                 terhapus — alert yang sudah terkirim tetap tercatat.
               </Text>
               <View style={styles.sheetActions}>
-                <GhostButton label="Batal" onPress={() => setConfirmingDelete(false)} />
+                <GhostButton testID="budget-delete-cancel" label="Batal" onPress={() => setConfirmingDelete(false)} />
                 <PrimaryButton
+                  testID="budget-delete-confirm"
                   label={busy ? 'Menghapus…' : 'Hapus'}
                   onPress={() => void handleDelete()}
                 />

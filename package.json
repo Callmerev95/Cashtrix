@@ -12,6 +12,8 @@
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "db:test": "supabase test db",
+    "e2e:check": "node scripts/verify-t11.mjs --static-only",
+    "e2e:verify": "node scripts/verify-t11.mjs",
     "db:types": "supabase gen types typescript --local > src/types/database.types.ts"
   },
   "dependencies": {
