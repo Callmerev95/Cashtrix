@@ -217,8 +217,8 @@ function BudgetsEmptyState() {
       testID="budgets-empty"
       icon="savings"
       title="Belum ada budget bulan ini"
-      description="Tetapkan batas belanja per kategori. Bulan baru mulai otomatis dari nol — tanpa perlu reset manual."
-      actionLabel="Buat Budget Pertama"
+      description="Tetapkan batas belanja per kategori. Bulan baru mulai otomatis dari nol. Tanpa perlu reset manual."
+      actionLabel="Buat budget pertama"
       onAction={() => router.push('/budget-form')}
     />
   );

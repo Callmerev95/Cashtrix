@@ -290,7 +290,7 @@ export default function AddTransactionScreen() {
           </Pressable>
           <LogoMark size={32} />
           <Text style={[typography.headlineMd, styles.title]}>
-            {isEdit ? 'Ubah Transaksi' : 'Transaksi Baru'}
+            {isEdit ? 'Ubah transaksi' : 'Transaksi baru'}
           </Text>
           {isEdit ? (
             <Pressable
@@ -345,7 +345,7 @@ export default function AddTransactionScreen() {
               style={styles.note}
               value={note}
               onChangeText={(text) => setNote(text.slice(0, 200))}
-              placeholder="Catatan (opsional) — kopi pagi, transfer teman…"
+              placeholder="Catatan (opsional): kopi pagi, transfer teman…"
               placeholderTextColor={colors.textSecondary}
               selectionColor={colors.accent}
               maxLength={200}
@@ -405,7 +405,7 @@ export default function AddTransactionScreen() {
               })}
               {wallets.length === 0 ? (
                 <Text style={[typography.bodySm, styles.hint]}>
-                  Belum ada wallet — buat satu dulu di menu Dompet.
+                  Belum ada wallet. Buat satu dulu di menu Dompet.
                 </Text>
               ) : null}
             </View>
@@ -467,7 +467,7 @@ export default function AddTransactionScreen() {
         <View style={styles.footer}>
           <PrimaryButton
             testID="transaction-save"
-            label={isEdit ? 'Simpan Perubahan' : 'Simpan'}
+            label={isEdit ? 'Simpan perubahan' : 'Simpan'}
             onPress={submit}
             loading={busy}
           />

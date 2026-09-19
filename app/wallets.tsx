@@ -122,8 +122,8 @@ export default function WalletsScreen() {
             <MaterialIcons name="arrow-back" size={24} color={colors.textSecondary} />
           </Pressable>
           <View style={styles.headerText}>
-            <Text style={[typography.labelUppercase, styles.kicker]}>Dompet</Text>
-            <Text style={[typography.headlineLg, styles.title]}>Wallets</Text>
+            <Text style={[typography.labelUppercase, styles.kicker]}>Kelola</Text>
+            <Text style={[typography.headlineLg, styles.title]}>Dompet</Text>
           </View>
         </View>
 
@@ -258,7 +258,7 @@ export default function WalletsScreen() {
             <View style={styles.sheetActions}>
               <PrimaryButton
                 testID="add-wallet-from-sheet"
-                label="Wallet Baru"
+                label="Wallet baru"
                 onPress={() => {
                   setPendingDelete(null);
                   router.push('/wallet-form');

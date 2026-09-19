@@ -9,7 +9,7 @@
  */
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { colors, fontFamily, layout, radius, spacing, typography } from '@/theme';
+import { colors, layout, radius, spacing, typography } from '@/theme';
 
 export function AmountField({
   value,
@@ -68,19 +68,15 @@ const styles = StyleSheet.create({
   },
   glyph: {
     // Static gold currency glyph — never part of the editable value, so the
-    // caret never lands before it.
-    fontFamily: fontFamily.monoMedium,
-    fontSize: 20,
-    lineHeight: 24,
+    // caret never lands before it. On the type scale (`currencyMd`).
+    ...typography.currencyMd,
     color: colors.accent,
   },
   input: {
     flex: 1,
     paddingVertical: spacing.md,
     color: colors.textPrimary,
-    fontFamily: fontFamily.monoMedium,
-    fontSize: 22,
-    lineHeight: 28,
+    ...typography.currencyMd,
   },
   error: {
     marginTop: spacing.xs,

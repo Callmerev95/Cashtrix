@@ -118,7 +118,7 @@ export default function WalletFormScreen() {
             <MaterialIcons name="close" size={24} color={colors.textSecondary} />
           </Pressable>
           <Text style={[typography.headlineMd, styles.title]}>
-            {isEdit ? 'Ubah Wallet' : 'Wallet Baru'}
+            {isEdit ? 'Ubah wallet' : 'Wallet baru'}
           </Text>
         </View>
 

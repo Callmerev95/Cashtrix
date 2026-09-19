@@ -140,7 +140,7 @@ export default function CategoriesScreen() {
             </Text>
             {custom.length === 0 ? (
               <Text style={[typography.bodyMd, styles.empty]}>
-                Belum ada kategori kustom. Buat yang mencerminkan gaya hidupmu.
+                Belum ada kategori kustom. Buat yang mencerminkan gaya hidup Anda.
               </Text>
             ) : (
               custom.map((item) => (

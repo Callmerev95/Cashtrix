@@ -90,7 +90,7 @@ export default function RegisterScreen() {
         <View style={styles.header}>
           <LogoMark size={72} />
           <Text style={[typography.labelUppercase, styles.kicker]}>Cashtrix</Text>
-          <Text style={[typography.headlineLg, styles.title]}>Buat Akun</Text>
+          <Text style={[typography.headlineLg, styles.title]}>Buat akun</Text>
           <Text style={[typography.bodyMd, styles.subtitle]}>
             Satu akun untuk seluruh wallet dan transaksi Anda.
           </Text>

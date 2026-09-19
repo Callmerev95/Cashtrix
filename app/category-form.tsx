@@ -204,7 +204,7 @@ export default function CategoryFormScreen() {
             <Text style={[typography.bodySm, styles.error]}>{iconError}</Text>
           ) : null}
           <Text style={[typography.bodySm, styles.hint]}>
-            Warna ikon mengikuti tema — tanpa color picker.
+            Warna ikon mengikuti tema, tanpa color picker.
           </Text>
         </ScrollView>
 

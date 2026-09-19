@@ -262,7 +262,7 @@ export default function ProfileScreen() {
                 setName(text);
                 if (nameError) setNameError(validateDisplayName(text));
               }}
-              placeholder="Nama kamu"
+              placeholder="Nama Anda"
               autoCapitalize="words"
               maxLength={70}
               hasError={Boolean(nameError)}
@@ -287,7 +287,7 @@ export default function ProfileScreen() {
               Mata uang tampilan
             </Text>
             <Text style={[typography.bodySm, styles.hint]}>
-              Contoh: {formatMoney(1250000, profile?.currencyCode ?? 'IDR', profile?.locale ?? 'id-ID')} — tanpa konversi kurs.
+              Contoh: {formatMoney(1250000, profile?.currencyCode ?? 'IDR', profile?.locale ?? 'id-ID')}, tanpa konversi kurs.
             </Text>
             <View style={styles.currencyGrid}>
               {SUPPORTED_CURRENCIES.map((code) => {
