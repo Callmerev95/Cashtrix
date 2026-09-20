@@ -19,10 +19,12 @@ export {
 export type { TransactionDraft } from './api';
 export {
   AMOUNT_MAX,
+  CATEGORY_KINDS,
   DEFAULT_TRANSACTION_TYPE,
   NOTE_MAX_LENGTH,
   PAGE_SIZE,
   TRANSACTION_TYPES,
+  TRANSFER_ICON,
   amountMessages,
   categoriesForKind,
   formatAmountInput,
@@ -38,14 +40,19 @@ export {
   normalizeNote,
   startOfDay,
   toDateKey,
+  transferFeedLabel,
+  transferMessages,
   validateAmount,
+  validateTransfer,
 } from './domain';
 export type {
   AmountValidation,
   Category,
+  CategoryKind,
   Transaction,
   TransactionDayGroup,
   TransactionType,
+  TransferValidation,
   WalletOption,
 } from './domain';
 export { TransactionRow } from './components/transaction-row';

@@ -15,8 +15,16 @@
 // Types
 // ---------------------------------------------------------------------------
 
-export const TRANSACTION_TYPES = ['expense', 'income'] as const;
+export const TRANSACTION_TYPES = ['expense', 'income', 'transfer'] as const;
 export type TransactionType = (typeof TRANSACTION_TYPES)[number];
+
+/**
+ * Category kinds stay `expense | income` (V2): transfer never takes a
+ * category (DB check enforces `category_id is null`), so no `kind = transfer`
+ * exists anywhere — the grid, budgets and analytics keep their narrow type.
+ */
+export const CATEGORY_KINDS = ['expense', 'income'] as const;
+export type CategoryKind = (typeof CATEGORY_KINDS)[number];
 
 export function isTransactionType(value: unknown): value is TransactionType {
   return (
@@ -34,11 +42,19 @@ export type Transaction = {
   /** ISO timestamp of when the money moved (not when it was typed). */
   occurredAt: string;
   note: string | null;
-  categoryId: string;
+  /**
+   * Null for `transfer` (ADR-0004: transfer ↔ category null ↔ counterparty
+   * not null). `categoryName`/`categoryIcon` fall back to the transfer label
+   * and icon so rows never render blank.
+   */
+  categoryId: string | null;
   categoryName: string;
   categoryIcon: string;
   walletId: string;
   walletName: string;
+  /** Destination wallet — set only for `transfer`, null otherwise. */
+  counterpartyWalletId: string | null;
+  counterpartyWalletName: string | null;
 };
 
 /** A category option in the picker grid. */
@@ -46,7 +62,7 @@ export type Category = {
   id: string;
   name: string;
   icon: string;
-  kind: TransactionType;
+  kind: CategoryKind;
 };
 
 export type WalletOption = {
@@ -257,7 +273,9 @@ export function formatTime(iso: string): string {
  * The row's amount string. Income is gold with no prefix (the colour alone
  * distinguishes it); expense stays muted white and leads with `-`
  * (DESIGN.md §1, amended in #26 — expenses are never red, but the minus
- * glyph now marks the direction instead of the income `+`).
+ * glyph now marks the direction instead of the income `+`). Transfer is
+ * neutral white with no prefix — it is neither income nor expense, and the
+ * feed label already says where the money went.
  */
 export function formatSignedAmount(
   type: TransactionType,
@@ -265,7 +283,7 @@ export function formatSignedAmount(
   currency = 'Rp',
 ): string {
   const body = `${currency} ${formatGrouped(Math.abs(amount))}`;
-  return type === 'income' ? body : `-${body}`;
+  return type === 'expense' ? `-${body}` : body;
 }
 
 /** id-ID grouped digits, max two decimals, trailing `,00` dropped. */
@@ -282,12 +300,62 @@ export function formatGrouped(value: number): string {
 /**
  * Categories for the picker grid: only the given `kind`, and archived ones
  * are hidden (AC #18). Ordering is stable so the grid does not reshuffle.
+ * Transfer hides the grid entirely, so it never asks for a kind here.
  */
 export function categoriesForKind(
   categories: Category[],
   kind: TransactionType,
 ): Category[] {
   return categories.filter((category) => category.kind === kind);
+}
+
+// ---------------------------------------------------------------------------
+// Transfer (V2, ADR-0004)
+// ---------------------------------------------------------------------------
+
+export const transferMessages = {
+  sourceRequired: 'Pilih wallet sumber terlebih dahulu',
+  destinationRequired: 'Pilih wallet tujuan terlebih dahulu',
+  sameWallet: 'Wallet sumber dan tujuan harus berbeda',
+} as const;
+
+export type TransferValidation =
+  | { ok: true }
+  | { ok: false; error: string };
+
+/**
+ * Validates the transfer wallet pair (V2): both ends present and different.
+ * Amount/date rules are shared (`validateAmount` / `isFutureDate`); no
+ * category is involved — the DB check enforces `category_id is null`.
+ */
+export function validateTransfer(input: {
+  sourceWalletId: string | null;
+  destinationWalletId: string | null;
+}): TransferValidation {
+  if (!input.sourceWalletId) {
+    return { ok: false, error: transferMessages.sourceRequired };
+  }
+  if (!input.destinationWalletId) {
+    return { ok: false, error: transferMessages.destinationRequired };
+  }
+  if (input.sourceWalletId === input.destinationWalletId) {
+    return { ok: false, error: transferMessages.sameWallet };
+  }
+  return { ok: true };
+}
+
+/** Icon for transfer rows (MaterialIcons name). */
+export const TRANSFER_ICON = 'swap-horiz';
+
+/**
+ * The single feed line for a transfer (V2 AC): `Transfer ke {nama}`.
+ * Falls back to a bare `Transfer` when the destination name is missing
+ * (e.g. an optimistic row before the refresh lands).
+ */
+export function transferFeedLabel(
+  destinationName: string | null | undefined,
+): string {
+  return destinationName ? `Transfer ke ${destinationName}` : 'Transfer';
 }
 
 // ---------------------------------------------------------------------------

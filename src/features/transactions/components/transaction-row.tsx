@@ -4,14 +4,15 @@
  * Category icon in a `#2C2C2E` circle, name in `body-md #E5E5E5`, timestamp in
  * `body-sm #8E8E93`, amount in `currency-md`. Income renders gold with no
  * prefix; expense renders muted white with a leading `-` — expenses are
- * never red in this system (DESIGN.md §1).
+ * never red in this system (DESIGN.md §1). Transfer renders neutral white
+ * with no prefix and a single `Transfer ke {tujuan}` line (V2, ADR-0004).
  */
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, layout, radius, spacing, typography } from '@/theme';
 
-import { formatSignedAmount, formatTime, type Transaction } from '../domain';
+import { formatSignedAmount, formatTime, transferFeedLabel, type Transaction } from '../domain';
 
 type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
 
@@ -25,6 +26,13 @@ export function TransactionRow({
   testID?: string;
 }) {
   const income = transaction.type === 'income';
+  const transfer = transaction.type === 'transfer';
+  const title = transfer
+    ? transferFeedLabel(transaction.counterpartyWalletName)
+    : transaction.categoryName;
+  const accessibilityName = transfer
+    ? transferFeedLabel(transaction.counterpartyWalletName)
+    : transaction.categoryName;
 
   const content = (
     <>
@@ -38,7 +46,7 @@ export function TransactionRow({
 
       <View style={styles.center}>
         <Text style={[typography.bodyMd, styles.name]} numberOfLines={1}>
-          {transaction.categoryName}
+          {title}
         </Text>
         <Text style={[typography.bodySm, styles.meta]} numberOfLines={1}>
           {formatTime(transaction.occurredAt)} · {transaction.walletName}
@@ -71,7 +79,7 @@ export function TransactionRow({
     <Pressable
       testID={testID}
       accessibilityRole="button"
-      accessibilityLabel={`${transaction.categoryName}, ${formatSignedAmount(
+      accessibilityLabel={`${accessibilityName}, ${formatSignedAmount(
         transaction.type,
         transaction.amount,
       )}, ${transaction.walletName}`}

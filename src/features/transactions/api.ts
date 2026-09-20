@@ -30,15 +30,17 @@ type FeedRow = {
   currency_code: string;
   occurred_at: string;
   note: string | null;
-  category_id: string;
-  category_name: string;
-  category_icon: string;
+  category_id: string | null;
+  category_name: string | null;
+  category_icon: string | null;
   wallet_id: string;
   wallet_name: string;
+  counterparty_wallet_id: string | null;
+  counterparty_wallet_name: string | null;
 };
 
 const FEED_COLUMNS =
-  'id, type, amount, currency_code, occurred_at, note, category_id, category_name, category_icon, wallet_id, wallet_name';
+  'id, type, amount, currency_code, occurred_at, note, category_id, category_name, category_icon, wallet_id, wallet_name, counterparty_wallet_id, counterparty_wallet_name';
 
 function toTransaction(row: FeedRow): Transaction {
   return {
@@ -49,10 +51,12 @@ function toTransaction(row: FeedRow): Transaction {
     occurredAt: row.occurred_at,
     note: row.note,
     categoryId: row.category_id,
-    categoryName: row.category_name,
-    categoryIcon: row.category_icon,
+    categoryName: row.category_name ?? '',
+    categoryIcon: row.category_icon ?? 'swap-horiz',
     walletId: row.wallet_id,
     walletName: row.wallet_name,
+    counterpartyWalletId: row.counterparty_wallet_id,
+    counterpartyWalletName: row.counterparty_wallet_name,
   };
 }
 
@@ -93,7 +97,10 @@ export async function getTransaction(id: string): Promise<Transaction | null> {
 export type TransactionDraft = {
   userId: string;
   walletId: string;
-  categoryId: string;
+  /** Null for `transfer` (DB check enforces the shape). */
+  categoryId: string | null;
+  /** Destination wallet — set only for `transfer`. */
+  counterpartyWalletId?: string | null;
   type: TransactionType;
   amount: number;
   occurredAt: string;
@@ -116,6 +123,7 @@ export async function createTransaction(
       user_id: draft.userId,
       wallet_id: draft.walletId,
       category_id: draft.categoryId,
+      counterparty_wallet_id: draft.counterpartyWalletId ?? null,
       type: draft.type,
       amount: draft.amount,
       occurred_at: draft.occurredAt,
@@ -161,7 +169,8 @@ async function findByIdempotencyKey(
 export async function updateTransaction(input: {
   id: string;
   walletId: string;
-  categoryId: string;
+  categoryId: string | null;
+  counterpartyWalletId?: string | null;
   type: TransactionType;
   amount: number;
   occurredAt: string;
@@ -172,6 +181,7 @@ export async function updateTransaction(input: {
     .update({
       wallet_id: input.walletId,
       category_id: input.categoryId,
+      counterparty_wallet_id: input.counterpartyWalletId ?? null,
       type: input.type,
       amount: input.amount,
       occurred_at: input.occurredAt,

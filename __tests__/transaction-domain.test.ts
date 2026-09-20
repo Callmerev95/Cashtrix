@@ -6,10 +6,12 @@
  */
 import {
   AMOUNT_MAX,
+  CATEGORY_KINDS,
   DEFAULT_TRANSACTION_TYPE,
   NOTE_MAX_LENGTH,
   PAGE_SIZE,
   TRANSACTION_TYPES,
+  TRANSFER_ICON,
   amountMessages,
   categoriesForKind,
   formatAmountInput,
@@ -25,7 +27,10 @@ import {
   normalizeNote,
   startOfDay,
   toDateKey,
+  transferFeedLabel,
+  transferMessages,
   validateAmount,
+  validateTransfer,
   type Category,
   type Transaction,
 } from '@/features/transactions';
@@ -43,12 +48,15 @@ function transaction(partial: Partial<Transaction>): Transaction {
     categoryIcon: partial.categoryIcon ?? 'restaurant',
     walletId: partial.walletId ?? 'w1',
     walletName: partial.walletName ?? 'Cash',
+    counterpartyWalletId: partial.counterpartyWalletId ?? null,
+    counterpartyWalletName: partial.counterpartyWalletName ?? null,
   };
 }
 
 describe('constants & type guard', () => {
-  it('mendefinisikan dua tipe transaksi MVP (transfer tidak dapat ditulis)', () => {
-    expect(TRANSACTION_TYPES).toEqual(['expense', 'income']);
+  it('mendefinisikan tiga tipe transaksi (V2 menambah transfer)', () => {
+    expect(TRANSACTION_TYPES).toEqual(['expense', 'income', 'transfer']);
+    expect(CATEGORY_KINDS).toEqual(['expense', 'income']);
     expect(DEFAULT_TRANSACTION_TYPE).toBe('expense');
     expect(PAGE_SIZE).toBe(20);
     expect(NOTE_MAX_LENGTH).toBe(200);
@@ -58,7 +66,7 @@ describe('constants & type guard', () => {
   it('mengenali tipe yang valid saja', () => {
     expect(isTransactionType('expense')).toBe(true);
     expect(isTransactionType('income')).toBe(true);
-    expect(isTransactionType('transfer')).toBe(false);
+    expect(isTransactionType('transfer')).toBe(true);
     expect(isTransactionType(null)).toBe(false);
     expect(isTransactionType(7)).toBe(false);
   });
@@ -293,6 +301,10 @@ describe('formatSignedAmount / formatGrouped', () => {
     expect(formatSignedAmount('expense', 50_000)).toBe('-Rp 50.000');
   });
 
+  it('transfer netral tanpa prefix (bukan income maupun expense)', () => {
+    expect(formatSignedAmount('transfer', 250_000)).toBe('Rp 250.000');
+  });
+
   it('expense tidak pernah memakai warna merah', () => {
     const rendered = formatSignedAmount('expense', 50_000);
     expect(rendered.startsWith('-')).toBe(true);
@@ -366,5 +378,46 @@ describe('hasMoreAfter', () => {
     expect(hasMoreAfter(20, 20)).toBe(true);
     expect(hasMoreAfter(20, 19)).toBe(false);
     expect(hasMoreAfter(20, 0)).toBe(false);
+  });
+});
+
+describe('validateTransfer (V2)', () => {
+  it('menerima pasangan sumber dan tujuan yang berbeda', () => {
+    expect(
+      validateTransfer({ sourceWalletId: 'w1', destinationWalletId: 'w2' }),
+    ).toEqual({ ok: true });
+  });
+
+  it('menolak sumber yang kosong', () => {
+    expect(
+      validateTransfer({ sourceWalletId: null, destinationWalletId: 'w2' }),
+    ).toEqual({ ok: false, error: transferMessages.sourceRequired });
+  });
+
+  it('menolak tujuan yang kosong', () => {
+    expect(
+      validateTransfer({ sourceWalletId: 'w1', destinationWalletId: null }),
+    ).toEqual({ ok: false, error: transferMessages.destinationRequired });
+  });
+
+  it('menolak sumber = tujuan', () => {
+    expect(
+      validateTransfer({ sourceWalletId: 'w1', destinationWalletId: 'w1' }),
+    ).toEqual({ ok: false, error: transferMessages.sameWallet });
+  });
+});
+
+describe('transferFeedLabel (V2)', () => {
+  it('me-render satu baris "Transfer ke {nama}"', () => {
+    expect(transferFeedLabel('BCA')).toBe('Transfer ke BCA');
+  });
+
+  it('jatuh ke "Transfer" bila nama tujuan hilang', () => {
+    expect(transferFeedLabel(null)).toBe('Transfer');
+    expect(transferFeedLabel(undefined)).toBe('Transfer');
+  });
+
+  it('ikon transfer adalah swap-horiz', () => {
+    expect(TRANSFER_ICON).toBe('swap-horiz');
   });
 });

@@ -76,7 +76,10 @@ export type SaveInput = {
   id?: string;
   userId: string;
   walletId: string;
-  categoryId: string;
+  /** Null for `transfer`. */
+  categoryId: string | null;
+  /** Destination wallet — set only for `transfer`. */
+  counterpartyWalletId?: string | null;
   type: TransactionType;
   amount: number;
   occurredAt: Date;
@@ -236,6 +239,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
             id: input.id,
             walletId: input.walletId,
             categoryId: input.categoryId,
+            counterpartyWalletId: input.counterpartyWalletId ?? null,
             type: input.type,
             amount: input.amount,
             occurredAt: input.occurredAt.toISOString(),
@@ -246,6 +250,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
             userId: input.userId,
             walletId: input.walletId,
             categoryId: input.categoryId,
+            counterpartyWalletId: input.counterpartyWalletId ?? null,
             type: input.type,
             amount: input.amount,
             occurredAt: input.occurredAt.toISOString(),
@@ -384,8 +389,13 @@ export function toOptimistic(
 ): Transaction | null {
   if (!input.id) return null;
 
-  const category = categories.find((item) => item.id === input.categoryId);
+  const category = input.categoryId
+    ? categories.find((item) => item.id === input.categoryId)
+    : undefined;
   const wallet = wallets.find((item) => item.id === input.walletId);
+  const counterparty = input.counterpartyWalletId
+    ? wallets.find((item) => item.id === input.counterpartyWalletId)
+    : undefined;
 
   return {
     id: input.id,
@@ -396,8 +406,10 @@ export function toOptimistic(
     note: input.note,
     categoryId: input.categoryId,
     categoryName: category?.name ?? '',
-    categoryIcon: category?.icon ?? 'category',
+    categoryIcon: category?.icon ?? 'swap-horiz',
     walletId: input.walletId,
     walletName: wallet?.name ?? '',
+    counterpartyWalletId: input.counterpartyWalletId ?? null,
+    counterpartyWalletName: counterparty?.name ?? null,
   };
 }

@@ -13,6 +13,11 @@
  * `?id=` switches to edit mode (delete also lives here, as a destructive
  * confirm sheet).
  *
+ * Transfer (V2, ADR-0004) is the third segment: the category grid hides and a
+ * destination-wallet picker appears instead. Transfer rows carry
+ * `category_id = null` and `counterparty_wallet_id` set — the DB check
+ * enforces the shape, the form just refuses to send anything else.
+ *
  * Date entry is a day stepper rather than a native date picker: MVP requires
  * "default now, never a future date" and a stepper delivers that with no extra
  * native module (which would force a dev-client rebuild). A calendar picker is
@@ -53,6 +58,7 @@ import {
   toDateKey,
   useTransactions,
   validateAmount,
+  validateTransfer,
   type Transaction,
   type TransactionType,
 } from '@/features/transactions';
@@ -89,6 +95,9 @@ export default function AddTransactionScreen() {
   // context refetches after a save.
   const [typeOverride, setTypeOverride] = useState<TransactionType | null>(null);
   const [walletChoice, setWalletChoice] = useState<string | null>(null);
+  const [destinationChoice, setDestinationChoice] = useState<string | null>(
+    null,
+  );
   const [categoryChoice, setCategoryChoice] = useState<string | null>(null);
   const [amountRaw, setAmountRaw] = useState('');
   const [occurredAt, setOccurredAt] = useState(new Date());
@@ -104,11 +113,22 @@ export default function AddTransactionScreen() {
 
   const type: TransactionType =
     typeOverride ?? loaded?.type ?? lastType;
+  const isTransfer = type === 'transfer';
 
   // Wallet: explicit choice > the row being edited > the remembered last-used
   // wallet > the first available (so an empty picker can never block Save).
   const walletId =
     walletChoice ?? loaded?.walletId ?? lastWalletId ?? wallets[0]?.id ?? null;
+
+  // Transfer destination: explicit choice > the row being edited > the first
+  // wallet that is not the source (never default to the source itself —
+  // source = destination is rejected by the DB check).
+  const destinationWalletId = isTransfer
+    ? (destinationChoice ??
+      loaded?.counterpartyWalletId ??
+      wallets.find((wallet) => wallet.id !== walletId)?.id ??
+      null)
+    : null;
 
   // Category: an explicit choice only counts while it belongs to the visible
   // `kind`; otherwise fall back to the edited row's category. Switching the
@@ -181,7 +201,16 @@ export default function AddTransactionScreen() {
       setFormError('Pilih wallet terlebih dahulu');
       return;
     }
-    if (!categoryId) {
+    if (isTransfer) {
+      const transfer = validateTransfer({
+        sourceWalletId: walletId,
+        destinationWalletId,
+      });
+      if (!transfer.ok) {
+        setFormError(transfer.error);
+        return;
+      }
+    } else if (!categoryId) {
       setFormError('Pilih kategori terlebih dahulu');
       return;
     }
@@ -198,7 +227,8 @@ export default function AddTransactionScreen() {
         id: params.id,
         userId: session?.user.id ?? '',
         walletId,
-        categoryId,
+        categoryId: isTransfer ? null : categoryId,
+        counterpartyWalletId: isTransfer ? destinationWalletId : null,
         type,
         amount: amount.value,
         occurredAt,
@@ -353,23 +383,28 @@ export default function AddTransactionScreen() {
             />
           </Card>
 
-          <View style={styles.gap}>
-            <SectionHeader
-              testID="category-header"
-              title="Kategori"
-              actionLabel={`${categoriesForKind(categories, type).length} kategori`}
-            />
-            <CategoryGrid
-              testID="category-grid"
-              categories={categories}
-              kind={type}
-              selectedId={categoryId}
-              onSelect={(category) => setCategoryChoice(category.id)}
-            />
-          </View>
+          {isTransfer ? null : (
+            <View style={styles.gap}>
+              <SectionHeader
+                testID="category-header"
+                title="Kategori"
+                actionLabel={`${categoriesForKind(categories, type).length} kategori`}
+              />
+              <CategoryGrid
+                testID="category-grid"
+                categories={categories}
+                kind={type}
+                selectedId={categoryId}
+                onSelect={(category) => setCategoryChoice(category.id)}
+              />
+            </View>
+          )}
 
           <View style={styles.gap}>
-            <SectionHeader testID="wallet-header" title="Wallet" />
+            <SectionHeader
+              testID="wallet-header"
+              title={isTransfer ? 'Wallet sumber' : 'Wallet'}
+            />
             <View testID="wallet-picker" style={styles.chips}>
               {wallets.map((wallet) => {
                 const active = wallet.id === walletId;
@@ -410,6 +445,52 @@ export default function AddTransactionScreen() {
               ) : null}
             </View>
           </View>
+
+          {isTransfer ? (
+            <View style={styles.gap}>
+              <SectionHeader testID="destination-header" title="Wallet tujuan" />
+              <View testID="destination-picker" style={styles.chips}>
+                {wallets
+                  .filter((wallet) => wallet.id !== walletId)
+                  .map((wallet) => {
+                    const active = wallet.id === destinationWalletId;
+                    return (
+                      <Pressable
+                        key={wallet.id}
+                        testID={`destination-option-${wallet.id}`}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: active }}
+                        accessibilityLabel={wallet.name}
+                        onPress={() => setDestinationChoice(wallet.id)}
+                        style={[styles.chip, active && styles.chipActive]}
+                      >
+                        <MaterialIcons
+                          name="call-received"
+                          size={18}
+                          color={active ? colors.accent : colors.textSecondary}
+                        />
+                        <Text
+                          style={[
+                            typography.bodyMd,
+                            styles.chipLabel,
+                            active && styles.chipLabelActive,
+                          ]}
+                        >
+                          {wallet.name}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                {wallets.filter((wallet) => wallet.id !== walletId).length ===
+                0 ? (
+                  <Text style={[typography.bodySm, styles.hint]}>
+                    Butuh dua wallet untuk transfer. Buat satu lagi di menu
+                    Dompet.
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+          ) : null}
 
           <View style={styles.gap}>
             <SectionHeader testID="date-header" title="Tanggal" />
