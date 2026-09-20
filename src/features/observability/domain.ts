@@ -140,7 +140,7 @@ export function screenViewEvent(screen: string): AnalyticsEvent {
   return { name: 'screen_view', params: { screen } };
 }
 
-export type TransactionKind = 'expense' | 'income';
+export type TransactionKind = 'expense' | 'income' | 'transfer';
 
 /**
  * `tx_created` — coarse facts only: which kind, and whether a note exists

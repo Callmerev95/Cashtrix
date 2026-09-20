@@ -45,6 +45,12 @@ insert into public.categories (id, user_id, name, icon, kind, is_system) values
 -- Rentang uji: [2026-09-01 00:00 WIB, 2026-10-01 00:00 WIB)
 --            = [2026-08-31 17:00 UTC, 2026-09-30 17:00 UTC)
 -- Periode sebelumnya: [2026-08-01 00:00 WIB, 2026-09-01 00:00 WIB)
+--
+-- Fixture boundary memakai 1 Okt **2025** 00:30 WIB (= 30 Sep 2025 17:30 UTC):
+-- semantik boundary-nya identik (00:30 WIB tanggal 1 = 17:30 UTC hari
+-- sebelumnya), tetapi tahun 2026 sudah masuk masa depan dan trigger V2
+-- `enforce_transaction_no_future` menolak occurred_at masa depan. Semua
+-- fixture di file ini wajib masa lalu — lihat `13_transfer.sql`.
 insert into public.transactions
   (id, user_id, wallet_id, category_id, type, amount, occurred_at, idempotency_key, deleted_at) values
   ('bc000000-0000-4000-a000-000000000001', '7a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d',
@@ -67,7 +73,7 @@ insert into public.transactions
    'expense', 80000, '2026-08-20T12:00:00+07:00', 'bd000000-0000-4000-a000-000000000006', null),
   ('bc000000-0000-4000-a000-000000000007', '7a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d',
    'ba000000-0000-4000-a000-000000000001', 'bb000000-0000-4000-a000-000000000001',
-   'expense', 700000, '2026-10-01T00:30:00+07:00', 'bd000000-0000-4000-a000-000000000007', null),
+   'expense', 700000, '2025-10-01T00:30:00+07:00', 'bd000000-0000-4000-a000-000000000007', null),
   ('bc000000-0000-4000-a000-000000000008', '7a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d',
    'ba000000-0000-4000-a000-000000000001', 'bb000000-0000-4000-a000-000000000001',
    'expense', 999000, '2026-09-09T12:00:00+07:00', 'bd000000-0000-4000-a000-000000000008', now()),
@@ -123,7 +129,7 @@ select is(
 
 select is(
   (select total_expense from public.v_monthly_summary
-    where user_id = '7a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d' and month = '2026-10-01'),
+    where user_id = '7a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d' and month = '2025-10-01'),
   700000::numeric,
   'v_monthly_summary: 1 Okt 00:30 WIB masuk bulan Okt, bukan Sep (boundary tz)');
 

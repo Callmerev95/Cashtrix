@@ -1,5 +1,5 @@
 /**
- * Expense/Income segmented toggle (DESIGN.md §5 / AC #15).
+ * Expense/Income/Transfer segmented toggle (DESIGN.md §5 / AC #15, V2).
  *
  * The active pill is gold with a glow and an obsidian label; the inactive
  * option is muted. Selection is owned by the caller so the last choice can be
@@ -14,6 +14,7 @@ import type { TransactionType } from '../domain';
 const OPTIONS: { value: TransactionType; label: string }[] = [
   { value: 'expense', label: 'Pengeluaran' },
   { value: 'income', label: 'Pemasukan' },
+  { value: 'transfer', label: 'Transfer' },
 ];
 
 export function TypeSegmentedControl({
