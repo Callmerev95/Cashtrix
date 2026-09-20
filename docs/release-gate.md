@@ -99,6 +99,71 @@ Stitch hanya referensi **layout**; warna selalu dari token kanonik
 Yang tetap manual (butuh perangkat): run Maestro hijau + checklist §4 +
 sesi crash-free.
 
+## 7. V1.1 — EAS + Sentry + kepatuhan store (issue #30)
+
+Jalur distribusi dan crash yang terukur. `app.json` version `1.1.0`;
+`/ios` dan `/android` tetap gitignored (CNG — verifikasi:
+`git check-ignore ios android`).
+
+### 7.1 Profil build (`eas.json`)
+
+| Profil | Kegunaan | Distribusi |
+|---|---|---|
+| `development` | Dev client + modul native (Sentry) di simulator/perangkat | internal (`developmentClient: true`) |
+| `preview` | TestFlight internal / Play internal testing | internal |
+| `production` | Kandidat store (`autoIncrement` build number) | store |
+
+Dev client gratis tanpa kuota EAS: `npx expo run:ios` / `npx expo run:android`
+(prebuild lokal). EAS Free: 15 build iOS + 15 Android/bulan. Kerja JS harian
+tetap boleh Expo Go — tanpa DSN (lihat §7.2) app memakai buffer lokal T10.
+
+### 7.2 Sentry via `configureTransport`
+
+- Modul: `src/features/observability/sentry.ts` — `createSentryTransport(client)`
+  di belakang seam `configureTransport` yang sudah ada; `app/_layout.tsx`
+  memanggil `initSentry()` sebelum `initObservability()`.
+- Analytics (`screen_view`, `tx_created`, `budget_threshold_reached`) dikirim
+  sebagai Sentry **breadcrumbs** (menempel di laporan crash berikutnya), bukan
+  event tersendiri — tanpa biaya kuota.
+- Jaminan scrub (PRD §4.4) tiga lapis: builder domain hanya membawa fakta
+  kasar → `trackEvent`/`captureError` scrub defensif → transport scrub ulang
+  + `beforeSend`/`beforeBreadcrumb` untuk crash native yang mem-bypass keduanya.
+- Test: `__tests__/observability-sentry-transport.test.ts` — event berisi
+  `amount`/`note` yang diselundupkan tiba di Sentry sebagai `[redacted]`;
+  `initSentry` tanpa DSN = no-op (buffer lokal tetap).
+- DSN (`EXPO_PUBLIC_SENTRY_DSN`): kosong di `.env` untuk Expo Go harian; diisi
+  via `.env` untuk dev-client lokal, via EAS secret untuk remote build:
+  `eas env:create --name EXPO_PUBLIC_SENTRY_DSN --value <dsn> --visibility secret --scope project`.
+
+### 7.3 Data Safety (Play) — draf jawaban, konfirmasi saat submit
+
+| Pertanyaan | Jawaban draf |
+|---|---|
+| Data dikumpulkan | Email (login), info keuangan yang diketik user (transaksi, budget), log crash |
+| Dibagikan ke pihak ketiga | Tidak (Supabase = prosesor penyimpanan, Sentry = prosesor crash — bukan bagi-data) |
+| Iklan / penjualan data | Tidak ada iklan, tidak ada penjualan |
+| Enkripsi transit | Ya (HTTPS/TLS ke Supabase + Sentry) |
+| Penghapusan akun | Ya, in-app (`delete-account` → cascade) |
+| Target anak | Tidak |
+
+### 7.4 Privacy Manifest (Apple) — draf, konfirmasi saat submit
+
+- `NSPrivacyTracking` = **false**; tidak ada domain tracking. Endpoint yang
+  dihubungi hanya Supabase (fungsionalitas app) dan Sentry (crash) —
+  keduanya untuk tujuan app, bukan pelacakan lintas-app.
+- Required-reason API: yang dipakai tidak langsung oleh kode app melainkan
+  lewat Expo SDK/AsyncStorage (`UserDefaults`, file timestamps). Manifest
+  final digabung otomatis oleh EAS prebuild dari manifest tiap paket Expo;
+  verifikasi sebelum submit: `npx expo prebuild --clean`, periksa
+  `ios/<App>/PrivacyInfo.xcprivacy`, cocokkan dengan App Store Connect.
+
+### 7.5 Checklist submit (diisi saat V6)
+
+- [ ] `eas init` — `extra.eas.projectId` terisi (belum ada: repo belum ditautkan ke proyek EAS)
+- [ ] Secret `EXPO_PUBLIC_SENTRY_DSN` (scope project) + `EXPO_PUBLIC_SUPABASE_ANON_KEY` untuk remote build
+- [ ] Crash-free rate terpantau di dashboard Sentry pasca-preview
+- [ ] §7.3 + §7.4 disalin ke listing Play / App Store Connect apa adanya
+
 ## 6. Sebelum naik ke TestFlight / Play Store
 
 - [ ] `auth.email.enable_confirmations` dikembalikan ke konfirmasi manual

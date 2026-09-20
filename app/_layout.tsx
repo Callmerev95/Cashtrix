@@ -18,6 +18,7 @@ import { AnalyticsProvider } from '@/features/analytics';
 import { BudgetsProvider } from '@/features/budgets';
 import {
   initObservability,
+  initSentry,
   screenNameFromSegments,
   screenViewEvent,
   trackEvent,
@@ -120,10 +121,11 @@ function RootNavigator() {
 export default function RootLayout() {
   const [fontsLoaded, fontsError] = useFonts(appFonts);
 
-  // T10 (issue #11): installs the global error handler (crash reporting)
-  // once. State updates happen in promise callbacks inside the sink, never
-  // synchronously here.
+  // V1 (issue #30): Sentry first so the sink is live before any capture,
+  // then the global error handler (crash reporting). Both never throw; with
+  // no DSN (daily Expo Go work) the redacted buffer stays in place.
   useEffect(() => {
+    initSentry();
     initObservability();
   }, []);
 

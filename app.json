@@ -3,7 +3,7 @@
     "name": "Cashtrix",
     "slug": "cashtrix",
     "scheme": "cashtrix",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -29,6 +29,7 @@
     },
     "plugins": [
       "expo-router",
+      "@sentry/react-native/expo",
       [
         "expo-splash-screen",
         {

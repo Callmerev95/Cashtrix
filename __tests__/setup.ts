@@ -8,6 +8,16 @@ jest.mock(
   () => require('./mocks/async-storage'),
 );
 
+// V1 (issue #30): the observability sink imports `@sentry/react-native`
+// statically and `app/_layout.tsx` calls `initSentry()` on mount, which the
+// navigation tests exercise. The native module cannot load in Jest, so it is
+// replaced with recording no-ops; the transport unit test injects its own
+// fakes and never touches this stand-in.
+jest.mock(
+  require.resolve('@sentry/react-native'),
+  () => require('./mocks/sentry'),
+);
+
 // Expo injects EXPO_PUBLIC_* at build time; Jest does not, and supabase-js
 // throws on an empty key before a test can even mount.
 process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ??= 'test-anon-key';
