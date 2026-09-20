@@ -33,7 +33,7 @@ Semua ticket `ready-for-agent`. Blocking edges = native GitHub issue dependencie
 
 | Ticket | Issue | Blocked by | Deliverable |
 |---|---|---|---|
-| V0 — Konfirmasi email, reset password, legal EN | #29 | — | Auth gate "Cek email"; `cashtrix://reset-password`; GitHub Pages privasi/ToS EN |
+| V0 — Konfirmasi email, reset password, legal EN | #29 | — | Auth gate "Cek email"; `cashtrix://reset-password`; GitHub Pages privasi/ToS EN — selesai (PR #36, merged) |
 | V1 — EAS + Sentry + version 1.1.0 | #30 | #29 | `eas.json` 3 profil; Sentry via `configureTransport`; `app.json` 1.1.0 |
 | V2 — Transfer satu baris | #31 | #29 | Segmen ketiga; Saldo dua Wallet; gabungan/donut/Spent diam; reassign collapse ditolak |
 | V3 — Recurring catch-up | #32 | #29, #31 | Profile "Transaksi berulang"; Catch-up RPC; skip siklus pertama; plafon 12 |
@@ -51,9 +51,11 @@ V0 #29 ─┬─ V1 #30 ──────────────┐
 
 ### Frontier
 
-Ticket tanpa blocker terbuka, belum di-assign: **#29 (V0 — Konfirmasi email, reset password, legal EN)**.
+V0 (#29) closed via PR #36 (merged 2026-09-20). Ticket tanpa blocker
+terbuka, belum di-assign: **#30 (V1 — EAS + Sentry + version 1.1.0)** dan
+**#31 (V2 — Transfer satu baris)**.
 
-V1 (#30) dan V2 (#31) terbuka begitu V0 closed. V3/V4/V5 menunggu V2. V6 menunggu V1+V3+V4+V5.
+V3/V4/V5 menunggu V2. V6 menunggu V1+V3+V4+V5.
 
 ### Aturan
 
