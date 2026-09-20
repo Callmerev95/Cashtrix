@@ -35,6 +35,7 @@ import {
   validateDisplayName,
   type CurrencyCode,
 } from '@/features/profile';
+import { useRecurring } from '@/features/recurring';
 import { colors, gradients, layout, radius, spacing, typography } from '@/theme';
 
 // Legal URLs (GitHub Pages) — same for in-app and store listing (ADR-0006)
@@ -54,6 +55,7 @@ export default function ProfileScreen() {
     saveProfile,
     saveAvatar,
   } = useProfile();
+  const { rules: recurringRules } = useRecurring();
 
   const [name, setName] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
@@ -74,6 +76,12 @@ export default function ProfileScreen() {
   }
 
   const draftName = name ?? profile?.displayName ?? '';
+
+  // Rules auto-paused by a wallet archive (V3): the Profile banner keeps a
+  // stalled bill from failing silently.
+  const archivedPauses = recurringRules.filter(
+    (rule) => rule.status === 'paused' && rule.walletArchived,
+  );
 
   async function onSaveName() {
     const message = validateDisplayName(draftName);
@@ -326,6 +334,64 @@ export default function ProfileScreen() {
             <Text style={[typography.labelUppercase, styles.kicker, styles.gap]}>
               Pengaturan
             </Text>
+            {archivedPauses.length > 0 ? (
+              <Pressable
+                testID="profile-recurring-banner"
+                accessibilityRole="button"
+                accessibilityLabel="Aturan berulang yang dijeda"
+                onPress={() => router.push('/recurring')}
+                style={styles.rowPress}
+              >
+                <Card style={styles.row}>
+                  <View style={styles.rowIcon}>
+                    <MaterialIcons
+                      name="pause-circle-outline"
+                      size={20}
+                      color={colors.accent}
+                    />
+                  </View>
+                  <View style={styles.rowBody}>
+                    <Text style={[typography.bodyMd, styles.rowTitle]}>
+                      {archivedPauses.length} aturan dijeda
+                    </Text>
+                    <Text style={[typography.bodySm, styles.rowSubtitle]}>
+                      Wallet-nya diarsipkan — ketuk untuk meninjau
+                    </Text>
+                  </View>
+                  <MaterialIcons
+                    name="chevron-right"
+                    size={20}
+                    color={colors.textSecondary}
+                  />
+                </Card>
+              </Pressable>
+            ) : null}
+            <Pressable
+              testID="profile-recurring-row"
+              accessibilityRole="button"
+              accessibilityLabel="Kelola transaksi berulang"
+              onPress={() => router.push('/recurring')}
+              style={styles.rowPress}
+            >
+              <Card style={styles.row}>
+              <View style={styles.rowIcon}>
+                <MaterialIcons name="repeat" size={20} color={colors.accent} />
+              </View>
+              <View style={styles.rowBody}>
+                <Text style={[typography.bodyMd, styles.rowTitle]}>
+                  Transaksi berulang
+                </Text>
+                <Text style={[typography.bodySm, styles.rowSubtitle]}>
+                  Gaji & tagihan otomatis tiap bulan
+                </Text>
+              </View>
+              <MaterialIcons
+                name="chevron-right"
+                size={20}
+                color={colors.textSecondary}
+              />
+              </Card>
+            </Pressable>
             <Pressable
               testID="profile-categories-row"
               accessibilityRole="button"

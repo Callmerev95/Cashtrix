@@ -24,6 +24,7 @@ import {
   trackEvent,
 } from '@/features/observability';
 import { ProfileProvider } from '@/features/profile';
+import { RecurringProvider } from '@/features/recurring';
 import { TransactionsProvider } from '@/features/transactions';
 import { WalletsProvider } from '@/features/wallets';
 import { colors } from '@/theme';
@@ -111,6 +112,8 @@ function RootNavigator() {
         <Stack.Screen name="wallet-form" options={{ presentation: 'modal' }} />
         <Stack.Screen name="categories" />
         <Stack.Screen name="category-form" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="recurring" />
+        <Stack.Screen name="recurring-form" options={{ presentation: 'modal' }} />
         <Stack.Screen name="delete-account" />
       </Stack>
       <StatusBar style="light" />
@@ -138,11 +141,13 @@ export default function RootLayout() {
       <WalletsProvider>
         <TransactionsProvider>
           <BudgetsProvider>
-            <AnalyticsProvider>
-              <ProfileProvider>
-                <RootNavigator />
-              </ProfileProvider>
-            </AnalyticsProvider>
+            <RecurringProvider>
+              <AnalyticsProvider>
+                <ProfileProvider>
+                  <RootNavigator />
+                </ProfileProvider>
+              </AnalyticsProvider>
+            </RecurringProvider>
           </BudgetsProvider>
         </TransactionsProvider>
       </WalletsProvider>
