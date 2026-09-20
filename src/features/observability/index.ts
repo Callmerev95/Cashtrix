@@ -23,3 +23,8 @@ export {
   trackEvent,
 } from './observability';
 export type { ErrorContext, ObservabilityTransport } from './observability';
+export {
+  createSentryTransport,
+  initSentry,
+} from './sentry';
+export type { SentryClient } from './sentry';
