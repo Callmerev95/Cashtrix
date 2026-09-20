@@ -36,7 +36,7 @@ Semua ticket `ready-for-agent`. Blocking edges = native GitHub issue dependencie
 | V0 — Konfirmasi email, reset password, legal EN | #29 | — | Auth gate "Cek email"; `cashtrix://reset-password`; GitHub Pages privasi/ToS EN — selesai (PR #36, merged) |
 | V1 — EAS + Sentry + version 1.1.0 | #30 | #29 | `eas.json` 3 profil; Sentry via `configureTransport`; `app.json` 1.1.0 — selesai (PR #37, merged) |
 | V2 — Transfer satu baris | #31 | #29 | Segmen ketiga; Saldo dua Wallet; gabungan/donut/Spent diam; reassign collapse ditolak — selesai (PR #38, merged) |
-| V3 — Recurring catch-up | #32 | #29, #31 | Profile "Transaksi berulang"; Catch-up RPC; skip siklus pertama; plafon 12 |
+| V3 — Recurring catch-up | #32 | #29, #31 | Profile "Transaksi berulang"; Catch-up RPC; skip siklus pertama; plafon 12 — selesai (PR #39, merged) |
 | V4 — Undo snackbar + arsip Wallet | #33 | #31 | Snackbar ~5s Urungkan; Archive Wallet; riwayat Transfer tetap |
 | V5 — Kalender penuh + pass istilah | #34 | #31 | Grid kalender `View`; "Dompet" konsisten |
 | V6 — Gerbang rilis v1.1 | #35 | #30, #32, #33, #34 | Maestro + pgTAP + Jest; tag `v1.0.0` mundur + `v1.1.0` |
@@ -53,11 +53,12 @@ V0 #29 ─┬─ V1 #30 ──────────────┐
 
 V0 (#29) closed via PR #36 (merged 2026-09-20). V1 (#30) closed via PR
 #37 (merged 2026-09-20). V2 (#31) closed via PR #38 (merged 2026-09-20).
+V3 (#32) closed via PR #39 (merged 2026-09-20).
 Ticket tanpa blocker terbuka, belum di-assign:
-**#32 (V3 — Recurring catch-up)**, **#33 (V4 — Undo snackbar + arsip Wallet)**,
+**#33 (V4 — Undo snackbar + arsip Wallet)**,
 **#34 (V5 — Kalender penuh + pass istilah)**.
 
-V6 menunggu V3+V4+V5 (V1 sudah closed).
+V6 menunggu V4+V5 (V1+V3 sudah closed).
 
 ### Aturan
 
