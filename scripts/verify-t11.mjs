@@ -26,6 +26,8 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { provisionTestUser, requireAdminClient } from './lib/admin-confirm.mjs';
+
 const SUPABASE_URL = 'https://bklriyyuglwiqczgbqgq.supabase.co';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -37,6 +39,9 @@ if (!anonKey) throw new Error('EXPO_PUBLIC_SUPABASE_ANON_KEY tidak ditemukan');
 const stamp = Date.now();
 const email = `t11-verify-${stamp}@cashtrix.test`;
 const password = 'Cashtrix123';
+
+// V0: konfirmasi email aktif di hosted — akun uji dikonfirmasi via Admin API.
+const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
 let passed = 0;
 let failed = 0;
@@ -58,6 +63,7 @@ function section(title) {
 const supabase = createClient(SUPABASE_URL, anonKey, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
+const admin = requireAdminClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE);
 
 function monthStartWib(now, monthsBack) {
   // First day of the month, monthsBack ago, at 00:00 WIB (= previous day 17:00Z).
@@ -76,11 +82,13 @@ async function main() {
   }
 
   // -------------------------------------------------------------------------
-  section('register → seed (langkah 1 Maestro: login/register)');
-  const signUp = await supabase.auth.signUp({ email, password });
-  if (signUp.error) throw signUp.error;
-  check('signup menghasilkan sesi (auto-confirm)', Boolean(signUp.data.session));
-  const userId = signUp.data.user.id;
+  section('provisi Admin → seed (langkah 1 Maestro: login)');
+  const userId = await provisionTestUser(admin, supabase, {
+    email,
+    password,
+    check,
+    tag: 'user uji',
+  });
 
   const seed = await supabase.functions.invoke('seed-user', { method: 'POST' });
   check('seed-user sukses', !seed.error, seed.error?.message);

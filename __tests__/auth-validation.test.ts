@@ -9,6 +9,7 @@ import {
   PASSWORD_MIN_LENGTH,
   authMessages,
   hasErrors,
+  isEmailNotConfirmedError,
   isValidEmail,
   isValidPassword,
   loginErrorMessage,
@@ -114,8 +115,13 @@ describe('loginErrorMessage', () => {
     expect(loginErrorMessage({ status: 400, code: 'invalid_credentials' })).toBe(
       authMessages.invalidCredentials,
     );
+  });
+
+  it('gives unconfirmed emails their own actionable copy (V0)', () => {
+    // Unlike a wrong password this state is fixable in-app (resend path),
+    // so it must not masquerade as invalid credentials.
     expect(loginErrorMessage({ status: 400, code: 'email_not_confirmed' })).toBe(
-      authMessages.invalidCredentials,
+      authMessages.emailNotConfirmed,
     );
   });
 
@@ -128,6 +134,15 @@ describe('loginErrorMessage', () => {
 
   it('returns an empty message when there is no error', () => {
     expect(loginErrorMessage(null)).toBe('');
+  });
+});
+
+describe('isEmailNotConfirmedError', () => {
+  it('detects only the Supabase unconfirmed code (V0 login resend path)', () => {
+    expect(isEmailNotConfirmedError({ code: 'email_not_confirmed' })).toBe(true);
+    expect(isEmailNotConfirmedError({ code: 'invalid_credentials' })).toBe(false);
+    expect(isEmailNotConfirmedError({})).toBe(false);
+    expect(isEmailNotConfirmedError(null)).toBe(false);
   });
 });
 

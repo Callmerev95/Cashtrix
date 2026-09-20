@@ -1,0 +1,44 @@
+# Deploy `docs/legal` to GitHub Pages (V0, ADR-0006).
+#
+# Serves the store-reviewable Privacy Policy + Terms at
+# https://callmerev95.github.io/Cashtrix/ — the same URL the app opens
+# in-app (Login/Register/Profile) and the store listing uses.
+# One-time setup: repo Settings → Pages → Source: "GitHub Actions".
+name: Legal Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/legal/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/legal
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

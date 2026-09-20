@@ -22,6 +22,8 @@ import { createClient } from '@supabase/supabase-js';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { provisionTestUser } from './lib/admin-confirm.mjs';
+
 const SUPABASE_URL = 'https://bklriyyuglwiqczgbqgq.supabase.co';
 
 const env = readFileSync(new URL('../.env', import.meta.url), 'utf8');
@@ -81,10 +83,12 @@ const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE, {
 async function main() {
   // -------------------------------------------------------------------------
   section('auth + seed');
-  const signUp = await supabase.auth.signUp({ email, password });
-  if (signUp.error) throw signUp.error;
-  check('signup menghasilkan sesi (auto-confirm)', Boolean(signUp.data.session));
-  const userId = signUp.data.user.id;
+  const userId = await provisionTestUser(admin, supabase, {
+    email,
+    password,
+    check,
+    tag: 'user uji',
+  });
 
   const seed = await supabase.functions.invoke('seed-user', { method: 'POST' });
   check('seed-user sukses', !seed.error, seed.error?.message);
@@ -198,10 +202,13 @@ async function main() {
 
   // -------------------------------------------------------------------------
   section('isolasi antar-user');
-  const otherSignUp = await other.auth.signUp({ email: otherEmail, password });
-  if (otherSignUp.error) throw otherSignUp.error;
+  const otherUserId = await provisionTestUser(admin, other, {
+    email: otherEmail,
+    password,
+    check,
+    tag: 'user lain',
+  });
   await other.functions.invoke('seed-user', { method: 'POST' });
-  const otherUserId = otherSignUp.data.user.id;
 
   const otherExport = await other.functions.invoke('export-csv', { method: 'POST' });
   const otherCsv = typeof otherExport.data === 'string' ? otherExport.data : 'NON-STRING';

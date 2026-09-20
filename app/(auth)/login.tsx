@@ -6,14 +6,16 @@
  * Validation is synchronous and *local*: a failing form never sends a request
  * (PRD §2.3 Epic A / R2).
  */
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card, GhostButton, LogoMark, PrimaryButton, TextField } from '@/components';
 import {
+  isEmailNotConfirmedError,
   loginErrorMessage,
+  runSeedUser,
   signInWithEmail,
   validateRegister,
   hasErrors,
@@ -21,12 +23,19 @@ import {
 } from '@/features/auth';
 import { colors, radius, spacing, typography } from '@/theme';
 
+// Legal URLs (GitHub Pages) — same for in-app and store listing (ADR-0006)
+const LEGAL = {
+  privacy: 'https://callmerev95.github.io/Cashtrix/privacy.html',
+  terms: 'https://callmerev95.github.io/Cashtrix/terms.html',
+} as const;
+
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState('');
+  const [unconfirmed, setUnconfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
 
   async function onSubmit() {
@@ -36,18 +45,29 @@ export default function LoginScreen() {
     const blocking = { email: validation.email };
     setErrors(blocking);
     setFormError('');
+    setUnconfirmed(false);
     if (hasErrors(blocking)) return;
 
     setBusy(true);
     try {
       await signInWithEmail(email, password);
+      // V0: with email confirmation on, signup creates no session, so the
+      // first post-confirmation login is what seeds the Cash wallet.
+      // Idempotent — safe on every login, failures never block entry.
+      await runSeedUser().catch(() => undefined);
       // The root layout's gate reacts to the auth state change and swaps to
       // the tabs; nothing to navigate here.
     } catch (error) {
-      setFormError(loginErrorMessage(error as { status?: number; code?: string }));
+      const err = error as { status?: number; code?: string };
+      setFormError(loginErrorMessage(err));
+      setUnconfirmed(isEmailNotConfirmedError(err));
     } finally {
       setBusy(false);
     }
+  }
+
+  function openLegal(url: string) {
+    Linking.openURL(url).catch(() => undefined);
   }
 
   // No KeyboardAvoidingView: the ScrollView insets itself around the
@@ -116,6 +136,15 @@ export default function LoginScreen() {
           </View>
 
           {formError ? <Text style={styles.formError}>{formError}</Text> : null}
+          {unconfirmed ? (
+            <GhostButton
+              label="Kirim ulang verifikasi"
+              testID="login-resend"
+              onPress={() =>
+                router.push({ pathname: '/(auth)/check-email', params: { email: email.trim() } })
+              }
+            />
+          ) : null}
 
           <PrimaryButton
             testID="login-submit"
@@ -131,6 +160,34 @@ export default function LoginScreen() {
           <Link href="/(auth)/register" asChild>
             <GhostButton label="Daftar" testID="login-to-register" />
           </Link>
+        </View>
+
+        <View style={styles.footer}>
+          <Link href="/(auth)/forgot-password" asChild>
+            <GhostButton label="Lupa password?" testID="login-forgot-password" />
+          </Link>
+        </View>
+
+        <View style={styles.legal}>
+          <Text style={[typography.bodySm, styles.legalText]}>Dengan melanjutkan, Anda menyetujui </Text>
+          <Text
+            style={[typography.bodySm, styles.legalLink]}
+            accessibilityRole="link"
+            testID="login-terms-link"
+            onPress={() => openLegal(LEGAL.terms)}
+          >
+            Ketentuan Layanan
+          </Text>
+          <Text style={[typography.bodySm, styles.legalText]}> dan </Text>
+          <Text
+            style={[typography.bodySm, styles.legalLink]}
+            accessibilityRole="link"
+            testID="login-privacy-link"
+            onPress={() => openLegal(LEGAL.privacy)}
+          >
+            Kebijakan Privasi
+          </Text>
+          <Text style={[typography.bodySm, styles.legalText]}>.</Text>
         </View>
       </ScrollView>
     </View>
@@ -192,5 +249,20 @@ const styles = StyleSheet.create({
   },
   footerText: {
     color: colors.textSecondary,
+  },
+  legal: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: 2,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.sm,
+  },
+  legalText: {
+    color: colors.textSecondary,
+  },
+  legalLink: {
+    color: colors.accent,
   },
 });

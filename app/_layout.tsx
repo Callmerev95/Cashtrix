@@ -58,6 +58,15 @@ function AuthGate() {
       return;
     }
 
+    // Unconfirmed email: hold at "Cek email" screen (inside auth group)
+    if (status === 'unconfirmed') {
+      const inCheckEmail = segments[0] === '(auth)' && segments[1] === 'check-email';
+      if (!inCheckEmail) {
+        router.replace('/(auth)/check-email');
+      }
+      return;
+    }
+
     if (status === 'authenticated' && inAuthGroup) {
       router.replace('/');
     }

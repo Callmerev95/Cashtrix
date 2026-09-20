@@ -37,8 +37,44 @@ async function renderSignedInApp() {
       '(auth)/_layout': require('../app/(auth)/_layout').default,
       '(auth)/login': require('../app/(auth)/login').default,
       '(auth)/register': require('../app/(auth)/register').default,
+      '(auth)/check-email': require('../app/(auth)/check-email').default,
+      '(auth)/forgot-password': require('../app/(auth)/forgot-password').default,
+      '(auth)/reset-password': require('../app/(auth)/reset-password').default,
     },
     { initialUrl: '/' },
+  );
+}
+
+/**
+ * V0 gate tests overwrite the seeded session with an unconfirmed variant
+ * (`email_confirmed_at: null`). supabase-js re-reads storage in `getSession()`
+ * on every mount, so writing before render is enough — no client rebuild.
+ */
+const SESSION_STORAGE_KEY = 'sb-bklriyyuglwiqczgbqgq-auth-token';
+
+function seedSession(emailConfirmedAt: string | null) {
+  const { sessionStorageSeed } = require('./mocks/async-storage');
+  sessionStorageSeed.set(
+    SESSION_STORAGE_KEY,
+    JSON.stringify({
+      access_token: 'test-access-token',
+      refresh_token: 'test-refresh-token',
+      token_type: 'bearer',
+      expires_in: 3600,
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+      user: {
+        id: '00000000-0000-4000-8000-000000000001',
+        aud: 'authenticated',
+        role: 'authenticated',
+        email: 'evelyn@cashtrix.app',
+        email_confirmed_at: emailConfirmedAt,
+        app_metadata: { provider: 'email', providers: ['email'] },
+        user_metadata: {},
+        created_at: '2026-09-17T00:00:00Z',
+        updated_at: '2026-09-17T00:00:00Z',
+      },
+      weak_password: null,
+    }),
   );
 }
 
@@ -115,5 +151,40 @@ describe('auth gate', () => {
     expect(screen.getByText('Password minimal 8 karakter')).toBeTruthy();
     // Still on Register: a failing form must not navigate or request.
     expect(getPathname()).toBe('/register');
+  });
+
+  it('holds an unconfirmed session at Check Email, not the tabs (V0)', async () => {
+    seedSession(null);
+    const { getPathname } = await renderSignedInApp();
+
+    expect(await screen.findByTestId('check-email-resend')).toBeTruthy();
+    expect(getPathname()).toBe('/check-email');
+  });
+
+  it('shows the session email on Check Email so resend works without a param (V0)', async () => {
+    seedSession(null);
+    await renderSignedInApp();
+
+    // The gate-driven path carries no `email` param; the screen falls back
+    // to the session address — otherwise resend would be dead on arrival.
+    expect(await screen.findByText(/evelyn@cashtrix\.app/)).toBeTruthy();
+  });
+
+  it('lets a confirmed session into the tabs (V0)', async () => {
+    seedSession('2026-09-17T00:00:00Z');
+    const { getPathname } = await renderSignedInApp();
+
+    expect(await screen.findByLabelText('Dashboard')).toBeTruthy();
+    expect(getPathname()).toBe('/');
+  });
+
+  it('reaches Forgot Password from Login (V0)', async () => {
+    await require('@/supabase').supabase.auth.signOut();
+    const { getPathname } = await renderSignedInApp();
+
+    fireEvent.press(await screen.findByTestId('login-forgot-password'));
+
+    expect(getPathname()).toBe('/forgot-password');
+    expect(await screen.findByTestId('forgot-password-submit')).toBeTruthy();
   });
 });

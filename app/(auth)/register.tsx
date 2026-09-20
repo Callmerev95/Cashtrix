@@ -2,15 +2,12 @@
  * Register screen — DESIGN.md §6 Register ("Cashtrix"): same auth pattern as
  * Login, stacked inputs, gold CTA.
  *
- * With hosted auto-confirm enabled (PRD §6.1 R2) Supabase returns a session
- * immediately, so the gate drops the user straight on the Dashboard. If
- * confirmation is ever re-enabled, we must *not* navigate — the screen says so
- * and offers a write path, because reporting "want to log in?" (AuthApiError)
- * as a hard failure would lose a real account.
+ * With hosted email confirmations enabled, Supabase returns a session only
+ * after verification. The gate drops unconfirmed users at the Check Email screen.
  */
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card, GhostButton, LogoMark, PrimaryButton, TextField } from '@/components';
@@ -25,13 +22,18 @@ import {
 } from '@/features/auth';
 import { colors, radius, spacing, typography } from '@/theme';
 
+// Legal URLs (GitHub Pages) — same for in-app and store listing (ADR-0006)
+const LEGAL = {
+  privacy: 'https://callmerev95.github.io/Cashtrix/privacy.html',
+  terms: 'https://callmerev95.github.io/Cashtrix/terms.html',
+} as const;
+
 export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState('');
-  const [confirmationPending, setConfirmationPending] = useState(false);
   const [busy, setBusy] = useState(false);
 
   async function onSubmit() {
@@ -45,7 +47,8 @@ export default function RegisterScreen() {
     try {
       const { hasSession } = await signUpWithEmail(email, password);
       if (!hasSession) {
-        setConfirmationPending(true);
+        // Email confirmation required — navigate to check-email with email param
+        router.push({ pathname: '/(auth)/check-email', params: { email: email.trim() } });
         return;
       }
       // Seeding is best-effort: the user is already authenticated, and the
@@ -59,24 +62,11 @@ export default function RegisterScreen() {
     }
   }
 
-  if (confirmationPending) {
-    return (
-      <View
-        style={[styles.flex, styles.confirmFrame, { paddingBottom: insets.bottom + spacing.xl }]}
-      >
-        <Text style={[typography.headlineMd, styles.title]}>Cek email Anda</Text>
-        <Text style={[typography.bodyMd, styles.subtitle]}>
-          Kami mengirim tautan verifikasi ke {email.trim()}. Buka tautan itu, lalu masuk
-          dengan akun Anda.
-        </Text>
-        <Link href="/(auth)/login" asChild>
-          <PrimaryButton label="Ke halaman masuk" onPress={() => undefined} />
-        </Link>
-      </View>
-    );
+  // Same keyboard handling as Login: no KeyboardAvoidingView (see note there).
+  function openLegal(url: string) {
+    Linking.openURL(url).catch(() => undefined);
   }
 
-  // Same keyboard handling as Login: no KeyboardAvoidingView (see note there).
   return (
     <View style={styles.flex}>
       <ScrollView
@@ -156,6 +146,28 @@ export default function RegisterScreen() {
             <GhostButton label="Masuk" testID="register-to-login" />
           </Link>
         </View>
+
+        <View style={styles.legal}>
+          <Text style={[typography.bodySm, styles.legalText]}>Dengan mendaftar, Anda menyetujui </Text>
+          <Text
+            style={[typography.bodySm, styles.legalLink]}
+            accessibilityRole="link"
+            testID="register-terms-link"
+            onPress={() => openLegal(LEGAL.terms)}
+          >
+            Ketentuan Layanan
+          </Text>
+          <Text style={[typography.bodySm, styles.legalText]}> dan </Text>
+          <Text
+            style={[typography.bodySm, styles.legalLink]}
+            accessibilityRole="link"
+            testID="register-privacy-link"
+            onPress={() => openLegal(LEGAL.privacy)}
+          >
+            Kebijakan Privasi
+          </Text>
+          <Text style={[typography.bodySm, styles.legalText]}>.</Text>
+        </View>
       </ScrollView>
     </View>
   );
@@ -171,11 +183,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.margin,
     gap: spacing.xl,
-  },
-  confirmFrame: {
-    justifyContent: 'center',
-    paddingHorizontal: spacing.margin,
-    gap: spacing.md,
   },
   header: {
     alignItems: 'center',
@@ -226,5 +233,20 @@ const styles = StyleSheet.create({
   },
   footerText: {
     color: colors.textSecondary,
+  },
+  legal: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: 2,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.sm,
+  },
+  legalText: {
+    color: colors.textSecondary,
+  },
+  legalLink: {
+    color: colors.accent,
   },
 });

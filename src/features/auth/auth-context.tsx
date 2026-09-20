@@ -17,7 +17,7 @@ import {
 
 import { supabase } from '@/supabase';
 
-export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
+export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'unconfirmed';
 
 type AuthState = {
   /** `loading` until the persisted session has been read back from storage. */
@@ -31,7 +31,10 @@ const AuthContext = createContext<AuthState>({
 });
 
 function toState(session: Session | null): AuthState {
-  return { status: session ? 'authenticated' : 'unauthenticated', session };
+  if (!session) return { status: 'unauthenticated', session: null };
+  // If session exists but email not confirmed, user is in "unconfirmed" state
+  const confirmed = session.user.email_confirmed_at !== null;
+  return { status: confirmed ? 'authenticated' : 'unconfirmed', session };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
