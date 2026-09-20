@@ -22,7 +22,7 @@
  *   delete from auth.users where email like 't11-verify-%';
  */
 import { createClient } from '@supabase/supabase-js';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -31,17 +31,24 @@ import { provisionTestUser, requireAdminClient } from './lib/admin-confirm.mjs';
 const SUPABASE_URL = 'https://bklriyyuglwiqczgbqgq.supabase.co';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-const env = readFileSync(join(ROOT, '.env'), 'utf8');
-const anonKey =
-  /EXPO_PUBLIC_SUPABASE_ANON_KEY=(.+)/.exec(env)?.[1]?.trim() ?? '';
-if (!anonKey) throw new Error('EXPO_PUBLIC_SUPABASE_ANON_KEY tidak ditemukan');
+/**
+ * CI (`--static-only`) has no `.env` (gitignored) and no network: the anon
+ * key is read lazily on the live path only — from `.env` locally, or from
+ * the environment (CI secrets) otherwise.
+ */
+function readAnonKey() {
+  const dotEnv = join(ROOT, '.env');
+  const text = existsSync(dotEnv) ? readFileSync(dotEnv, 'utf8') : '';
+  return (
+    /EXPO_PUBLIC_SUPABASE_ANON_KEY=(.+)/.exec(text)?.[1]?.trim() ||
+    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
+    ''
+  );
+}
 
 const stamp = Date.now();
 const email = `t11-verify-${stamp}@cashtrix.test`;
 const password = 'Cashtrix123';
-
-// V0: konfirmasi email aktif di hosted — akun uji dikonfirmasi via Admin API.
-const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
 let passed = 0;
 let failed = 0;
@@ -59,11 +66,6 @@ function check(label, condition, detail = '') {
 function section(title) {
   console.log(`\n== ${title}`);
 }
-
-const supabase = createClient(SUPABASE_URL, anonKey, {
-  auth: { persistSession: false, autoRefreshToken: false },
-});
-const admin = requireAdminClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE);
 
 function monthStartWib(now, monthsBack) {
   // First day of the month, monthsBack ago, at 00:00 WIB (= previous day 17:00Z).
@@ -83,6 +85,21 @@ async function main() {
 
   // -------------------------------------------------------------------------
   section('provisi Admin → seed (langkah 1 Maestro: login)');
+  // V0: konfirmasi email aktif di hosted — akun uji dikonfirmasi via Admin
+  // API (butuh SUPABASE_SERVICE_ROLE_KEY), lalu login bersesi.
+  const anonKey = readAnonKey();
+  if (!anonKey) {
+    throw new Error(
+      'EXPO_PUBLIC_SUPABASE_ANON_KEY tidak ditemukan (isi .env atau env)',
+    );
+  }
+  const supabase = createClient(SUPABASE_URL, anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const admin = requireAdminClient(
+    SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
+  );
   const userId = await provisionTestUser(admin, supabase, {
     email,
     password,

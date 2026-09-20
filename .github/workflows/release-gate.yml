@@ -34,8 +34,15 @@ jobs:
     needs: static
     # Full journey against the hosted project: creates one test user, replays
     # the Maestro happy path via API, then self-deletes via delete-account —
-    # no secrets needed, no residue. PRs skip this; push to main proves it.
+    # no residue. PRs skip this; push to main proves it.
+    # V0: the hosted email gate forces Admin-provisioned test users, so this
+    # job needs two repo secrets (Settings → Secrets → Actions):
+    # EXPO_PUBLIC_SUPABASE_ANON_KEY (publishable, already in the bundle) and
+    # SUPABASE_SERVICE_ROLE_KEY (confirm + cleanup via Admin API).
     if: github.event_name == 'push'
+    env:
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
