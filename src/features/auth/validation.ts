@@ -16,6 +16,12 @@ export const authMessages = {
   passwordNeedsLetterAndNumber: 'Password harus memuat huruf dan angka',
   /** Login failure is deliberately generic (PRD §2.3 Epic A). */
   invalidCredentials: 'Email atau password salah',
+  /**
+   * V0: sign-in with an unconfirmed email is rejected by Supabase
+   * (`email_not_confirmed`). Unlike a wrong password this is actionable, so
+   * it gets its own copy that points at the Check Email screen.
+   */
+  emailNotConfirmed: 'Email belum dikonfirmasi. Cek kotak masuk Anda.',
   signUpFailed: 'Pendaftaran gagal. Coba lagi sebentar lagi',
   networkError: 'Tidak dapat terhubung. Periksa koneksi Anda',
 } as const;
@@ -26,6 +32,8 @@ export const PASSWORD_MIN_LENGTH = 8;
 export type FieldErrors = {
   email?: string;
   password?: string;
+  /** V0 reset-password screen only. */
+  confirmPassword?: string;
 };
 
 /**
@@ -96,7 +104,20 @@ export function loginErrorMessage(error: { status?: number; code?: string } | nu
     return authMessages.networkError;
   }
 
+  if (isEmailNotConfirmedError(error)) {
+    return authMessages.emailNotConfirmed;
+  }
+
   return authMessages.invalidCredentials;
+}
+
+/**
+ * V0: Supabase rejects sign-in for unconfirmed emails with
+ * `code: 'email_not_confirmed'`. The login screen uses this to offer the
+ * resend path instead of the generic wrong-password copy.
+ */
+export function isEmailNotConfirmedError(error: { code?: string } | null): boolean {
+  return error?.code === 'email_not_confirmed';
 }
 
 /** Register errors: duplicate email surfaces as a generic retry message. */

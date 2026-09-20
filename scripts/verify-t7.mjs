@@ -19,6 +19,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
 
+import { provisionTestUser, requireAdminClient } from './lib/admin-confirm.mjs';
+
 const SUPABASE_URL = 'https://bklriyyuglwiqczgbqgq.supabase.co';
 
 const env = readFileSync(new URL('../.env', import.meta.url), 'utf8');
@@ -57,13 +59,18 @@ const other = createClient(SUPABASE_URL, anonKey, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
+// V0: konfirmasi email aktif di hosted — akun uji dikonfirmasi via Admin API.
+const admin = requireAdminClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE);
+
 async function main() {
   // -------------------------------------------------------------------------
   section('auth + seed');
-  const signUp = await supabase.auth.signUp({ email, password });
-  if (signUp.error) throw signUp.error;
-  check('signup menghasilkan sesi (auto-confirm)', Boolean(signUp.data.session));
-  const userId = signUp.data.user.id;
+  const userId = await provisionTestUser(admin, supabase, {
+    email,
+    password,
+    check,
+    tag: 'user uji',
+  });
 
   const seed = await supabase.functions.invoke('seed-user', { method: 'POST' });
   check('seed-user sukses', !seed.error, seed.error?.message);
@@ -198,10 +205,13 @@ async function main() {
 
   // -------------------------------------------------------------------------
   section('isolasi antar-user (dedup per-user, PRD §6.1 R1)');
-  const otherSignUp = await other.auth.signUp({ email: otherEmail, password });
-  if (otherSignUp.error) throw otherSignUp.error;
+  const otherUserId = await provisionTestUser(admin, other, {
+    email: otherEmail,
+    password,
+    check,
+    tag: 'user lain',
+  });
   await other.functions.invoke('seed-user', { method: 'POST' });
-  const otherUserId = otherSignUp.data.user.id;
 
   const otherRows = await other.from('v_budget_status').select('budget_id');
   check('user lain melihat 0 budget', otherRows.data?.length === 0, String(otherRows.data?.length));
@@ -222,18 +232,9 @@ async function main() {
 
   // -------------------------------------------------------------------------
   section('cleanup');
-  if (SUPABASE_SERVICE_ROLE) {
-    const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    for (const id of [userId, otherUserId]) {
-      const { error } = await admin.auth.admin.deleteUser(id);
-      check(`hapus user uji ${id.slice(0, 8)}`, !error, error?.message);
-    }
-  } else {
-    console.log(
-      '  (SUPABASE_SERVICE_ROLE_KEY tidak di-set — user uji dibiarkan; hapus manual)',
-    );
+  for (const id of [userId, otherUserId]) {
+    const { error } = await admin.auth.admin.deleteUser(id);
+    check(`hapus user uji ${id.slice(0, 8)}`, !error, error?.message);
   }
 
   console.log(`\n${passed} passed, ${failed} failed`);

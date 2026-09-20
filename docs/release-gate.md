@@ -41,9 +41,12 @@ Konvensi selektor (jangan dilanggar saat menambah layar):
   Ceknya ketat: prefix kosong dibuang agar tidak lolos vakum, dan ada
   kontrol negatif (id palsu harus gagal).
 
-Akun E2E: `e2e@cashtrix.test` / `Cashtrix123`. Flow self-healing — ia login,
-dan hanya register bila kredensial belum dikenal — jadi re-run idempoten
-(budget upsert di `(user, category, month)`, bukan duplikat).
+Akun E2E: `e2e@cashtrix.test` / `Cashtrix123`. V0: akun harus sudah ada dan
+terkonfirmasi (Maestro tidak bisa mengetuk email) — provisi sekali jalan:
+`SUPABASE_SERVICE_ROLE_KEY=<key> node scripts/provision-e2e.mjs`
+(ulangi setiap habis cleanup `'%cashtrix.test'`). Flow selalu jalur login;
+register baru mendarat di Check Email by design (diliput Jest gate +
+verify-*.mjs, bukan Maestro).
 
 ## 3. Bukti event KPI (AC #2)
 

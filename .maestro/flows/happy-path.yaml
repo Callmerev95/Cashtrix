@@ -1,9 +1,15 @@
 # T11 happy path (issue #12 AC #1): register → 3 transaksi → Dashboard &
 # Analytics → set budget → trigger alert.
 #
-# Fixed E2E account, self-healing on first run: it tries to log in, and only
-# registers when the server says the credentials are unknown. Re-runs are
-# therefore idempotent (second run appends 3 more transactions and the budget
+# V0 auth gate: the fixed E2E account must exist AND be email-confirmed,
+# because a Maestro run cannot tap the confirmation email. Provision once
+# (and after any '%cashtrix.test' cleanup):
+#   SUPABASE_SERVICE_ROLE_KEY=<key> node scripts/provision-e2e.mjs
+# The flow therefore always takes the login path; a fresh register would
+# strand on the Check Email screen by design (covered by Jest gate tests +
+# verify-*.mjs signup-no-session checks instead).
+#
+# Re-runs are idempotent (each run appends 3 more transactions and the budget
 # upserts on `(user, category, month)` instead of duplicating).
 #
 # KPI proof (AC #2): every step below fires an observability event through the
@@ -18,7 +24,7 @@ appId: com.callmerev95.cashtrix
 - launchApp:
     clearState: true
 
-# --- Auth: login, or register on first run --------------------------------
+# --- Auth: login with the pre-provisioned, pre-confirmed E2E account -----
 - assertVisible:
     id: "login-submit"
 - tapOn:
@@ -30,24 +36,6 @@ appId: com.callmerev95.cashtrix
 - hideKeyboard
 - tapOn:
     id: "login-submit"
-
-- runFlow:
-    when:
-      visible: "Email atau password salah"
-    commands:
-      - tapOn:
-          id: "login-to-register"
-      - assertVisible:
-          id: "register-submit"
-      - tapOn:
-          id: "register-email"
-      - inputText: "e2e@cashtrix.test"
-      - tapOn:
-          id: "register-password"
-      - inputText: "Cashtrix123"
-      - hideKeyboard
-      - tapOn:
-          id: "register-submit"
 
 # Auth gate drops us into the tabs; seed-user has created the Cash wallet.
 - assertVisible:

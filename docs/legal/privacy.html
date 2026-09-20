@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Privacy Policy — Cashtrix</title>
+  <style>
+    body { font-family: -apple-system, system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1a1a1a; }
+    h1 { font-size: 1.6rem; } h2 { font-size: 1.15rem; margin-top: 2rem; }
+    footer { margin-top: 3rem; font-size: 0.85rem; color: #666; }
+  </style>
+</head>
+<body>
+  <h1>Privacy Policy — Cashtrix</h1>
+  <p><strong>Effective date:</strong> 20 September 2026</p>
+
+  <p>Cashtrix ("we", "us", "our") is a personal finance tracker. This policy
+  explains what data the Cashtrix mobile app collects, how it is used, and the
+  choices you have. The same document is linked from inside the app
+  (Login, Register, Profile) and from the store listing.</p>
+
+  <h2>1. Data we collect</h2>
+  <ul>
+    <li><strong>Account data:</strong> your email address and password hash,
+    managed by our authentication provider (Supabase Auth).</li>
+    <li><strong>Financial data you enter:</strong> wallets, transactions
+    (amount, date, note), categories, budgets, display name, currency and
+    timezone preferences.</li>
+    <li><strong>Avatar image:</strong> only if you upload one; stored in
+    private per-user storage.</li>
+    <li><strong>Diagnostics:</strong> crash reports and anonymous usage events
+    (screen views, transaction saved, budget threshold reached). These events
+    never contain transaction amounts or notes.</li>
+  </ul>
+
+  <h2>2. How we use it</h2>
+  <ul>
+    <li>To provide the app: sign-in, balances, history, budgets, analytics.</li>
+    <li>To keep your account secure and to send account-related email
+    (verification, password reset).</li>
+    <li>To fix crashes and improve stability using aggregated diagnostics.</li>
+  </ul>
+  <p>We do not sell your data. We do not use it for advertising.</p>
+
+  <h2>3. Storage and security</h2>
+  <ul>
+    <li>App data is hosted on Supabase (Postgres) with row-level security:
+    every query is scoped to the signed-in user; unauthenticated access is
+    denied.</li>
+    <li>Passwords are stored as hashes by Supabase Auth; we never see them.</li>
+    <li>Your session token lives only on your device and is wiped on sign-out.</li>
+    <li>Avatar files live in a private bucket, readable only by their owner.</li>
+  </ul>
+
+  <h2>4. Your rights: export and deletion</h2>
+  <p>Inside the app (Profile) you can <strong>export</strong> all your
+  transactions as CSV, and you can <strong>delete your account</strong>. Deleting
+  your account permanently removes your profile, wallets, transactions, budgets,
+  avatar, and login — this cannot be undone.</p>
+
+  <h2>5. Children</h2>
+  <p>Cashtrix is not directed at children under 13. We do not knowingly collect
+  data from children under 13; accounts found to belong to under-13 users will
+  be deleted.</p>
+
+  <h2>6. Changes</h2>
+  <p>We may update this policy as the app evolves. Material changes will be
+  announced in the app or on the repository before they take effect. Continued
+  use after a change means you accept the updated policy.</p>
+
+  <h2>7. Contact</h2>
+  <p>Questions about this policy:
+  <a href="https://github.com/Callmerev95/Cashtrix">github.com/Callmerev95/Cashtrix</a>.</p>
+
+  <footer>Cashtrix · Privacy Policy v1.1 (English). Indonesian translation follows in a later release.</footer>
+</body>
+</html>

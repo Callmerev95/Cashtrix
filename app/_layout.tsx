@@ -58,6 +58,18 @@ function AuthGate() {
       return;
     }
 
+    // Unconfirmed email: hold at "Cek email" screen (inside auth group).
+    // Compared as a joined path (not `segments[1]`): the generated router
+    // types are gitignored, so indexed access fails CI typecheck (TS2493)
+    // where the fallback segment tuple has length 1.
+    if (status === 'unconfirmed') {
+      const inCheckEmail = segments.join('/') === '(auth)/check-email';
+      if (!inCheckEmail) {
+        router.replace('/(auth)/check-email');
+      }
+      return;
+    }
+
     if (status === 'authenticated' && inAuthGroup) {
       router.replace('/');
     }

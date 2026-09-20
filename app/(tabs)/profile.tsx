@@ -17,6 +17,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -35,6 +36,12 @@ import {
   type CurrencyCode,
 } from '@/features/profile';
 import { colors, gradients, layout, radius, spacing, typography } from '@/theme';
+
+// Legal URLs (GitHub Pages) — same for in-app and store listing (ADR-0006)
+const LEGAL = {
+  privacy: 'https://callmerev95.github.io/Cashtrix/privacy.html',
+  terms: 'https://callmerev95.github.io/Cashtrix/terms.html',
+} as const;
 
 export default function ProfileScreen() {
   const { session } = useAuth();
@@ -405,6 +412,60 @@ export default function ProfileScreen() {
               </View>
               <MaterialIcons
                 name="chevron-right"
+                size={20}
+                color={colors.textSecondary}
+              />
+              </Card>
+            </Pressable>
+
+            <Pressable
+              testID="profile-privacy-row"
+              accessibilityRole="link"
+              accessibilityLabel="Kebijakan Privasi"
+              onPress={() => Linking.openURL(LEGAL.privacy).catch(() => undefined)}
+              style={styles.rowPress}
+            >
+              <Card style={styles.row}>
+              <View style={styles.rowIcon}>
+                <MaterialIcons name="shield" size={20} color={colors.accent} />
+              </View>
+              <View style={styles.rowBody}>
+                <Text style={[typography.bodyMd, styles.rowTitle]}>
+                  Kebijakan Privasi
+                </Text>
+                <Text style={[typography.bodySm, styles.rowSubtitle]}>
+                  Cara kami melindungi data Anda
+                </Text>
+              </View>
+              <MaterialIcons
+                name="open-in-new"
+                size={20}
+                color={colors.textSecondary}
+              />
+              </Card>
+            </Pressable>
+
+            <Pressable
+              testID="profile-terms-row"
+              accessibilityRole="link"
+              accessibilityLabel="Ketentuan Layanan"
+              onPress={() => Linking.openURL(LEGAL.terms).catch(() => undefined)}
+              style={styles.rowPress}
+            >
+              <Card style={styles.row}>
+              <View style={styles.rowIcon}>
+                <MaterialIcons name="description" size={20} color={colors.accent} />
+              </View>
+              <View style={styles.rowBody}>
+                <Text style={[typography.bodyMd, styles.rowTitle]}>
+                  Ketentuan Layanan
+                </Text>
+                <Text style={[typography.bodySm, styles.rowSubtitle]}>
+                  Syarat penggunaan aplikasi
+                </Text>
+              </View>
+              <MaterialIcons
+                name="open-in-new"
                 size={20}
                 color={colors.textSecondary}
               />
