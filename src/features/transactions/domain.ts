@@ -270,12 +270,10 @@ export function formatTime(iso: string): string {
 // ---------------------------------------------------------------------------
 
 /**
- * The row's amount string. Income is gold with no prefix (the colour alone
- * distinguishes it); expense stays muted white and leads with `-`
- * (DESIGN.md §1, amended in #26 — expenses are never red, but the minus
- * glyph now marks the direction instead of the income `+`). Transfer is
- * neutral white with no prefix — it is neither income nor expense, and the
- * feed label already says where the money went.
+ * The row's amount string. Income is green with no prefix (the colour alone
+ * distinguishes it); expense is red and leads with `-` (DESIGN.md §1).
+ * Transfer is neutral white with no prefix — it is neither income nor
+ * expense, and the feed label already says where the money went.
  */
 export function formatSignedAmount(
   type: TransactionType,

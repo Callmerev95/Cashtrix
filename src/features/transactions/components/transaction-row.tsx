@@ -2,9 +2,9 @@
  * History row — DESIGN.md §5 / AC #25 (sign convention amended in #26).
  *
  * Category icon in a `#2C2C2E` circle, name in `body-md #E5E5E5`, timestamp in
- * `body-sm #8E8E93`, amount in `currency-md`. Income renders gold with no
- * prefix; expense renders muted white with a leading `-` — expenses are
- * never red in this system (DESIGN.md §1). Transfer renders neutral white
+ * `body-sm #8E8E93`, amount in `currency-md`. Income renders green with no
+ * prefix; expense renders red with a leading `-` (DESIGN.md §1).
+ * Transfer renders neutral white
  * with no prefix and a single `Transfer ke {tujuan}` line (V2, ADR-0004).
  */
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';

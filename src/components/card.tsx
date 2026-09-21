@@ -3,7 +3,7 @@
  *
  * Subtle tonal gradient (`surfaceCard → background`, the `cardFill` token)
  * with a hairline border: top-light that fades into the canvas, never a
- * gold tint (gold stays a scalpel — CTA, income, active states). Small and
+ * gold tint (gold stays a scalpel — CTA, active states). Small and
  * interactive elements (chips, cells, inputs, segmented wells, plain rows)
  * stay solid; bottom sheets and scaffolds are overlay surfaces, not cards.
  *

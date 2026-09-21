@@ -124,6 +124,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
   );
 
   const mounted = useRef(true);
+  const inflight = useRef<Promise<void> | null>(null);
   // Guards `loadMore` against a double-fire from `onEndReached` while a page
   // is already in flight — appending twice would duplicate rows.
   const fetchingPage = useRef(false);
@@ -135,27 +136,36 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const refresh = useCallback(async () => {
-    try {
-      const [page, nextCategories, nextWallets] = await Promise.all([
-        listTransactions({ offset: 0 }),
-        listCategories(),
-        listWalletOptions(),
-      ]);
-      if (!mounted.current) return;
-      setTransactions(page);
-      setCategories(nextCategories);
-      setWallets(nextWallets);
-      setHasMore(hasMoreAfter(PAGE_SIZE, page.length));
-      setError(null);
-    } catch (cause) {
-      if (!mounted.current) return;
-      setError(
-        cause instanceof Error ? cause.message : 'Gagal memuat transaksi',
-      );
-    } finally {
-      if (mounted.current) setLoading(false);
+  const refresh = useCallback(() => {
+    // Same in-flight reuse as the wallets context (see the save flow calling
+    // both refreshes back to back).
+    if (!inflight.current) {
+      inflight.current = (async () => {
+        try {
+          const [page, nextCategories, nextWallets] = await Promise.all([
+            listTransactions({ offset: 0 }),
+            listCategories(),
+            listWalletOptions(),
+          ]);
+          if (!mounted.current) return;
+          setTransactions(page);
+          setCategories(nextCategories);
+          setWallets(nextWallets);
+          setHasMore(hasMoreAfter(PAGE_SIZE, page.length));
+          setError(null);
+        } catch (cause) {
+          if (!mounted.current) return;
+          setError(
+            cause instanceof Error ? cause.message : 'Gagal memuat transaksi',
+          );
+        } finally {
+          if (mounted.current) setLoading(false);
+        }
+      })().finally(() => {
+        inflight.current = null;
+      });
     }
+    return inflight.current;
   }, []);
 
   useEffect(() => {

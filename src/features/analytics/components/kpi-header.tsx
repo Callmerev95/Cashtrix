@@ -1,10 +1,10 @@
 /**
  * KPI header (PRD §2.3 Epic D / AC #7).
  *
- * Total Expense / Total Income / Net for the active range, each with its delta
- * vs the equal-length previous period. Delta "up" is gold and "down" is muted
- * grey — there is **no red** anywhere in this system (DESIGN.md §1). A `null`
- * delta (no previous data) renders as an em dash, never `NaN`/`Infinity`.
+ * Total Expense (red) / Total Income (green) / Net (gold) for the active
+ * range, each with its delta vs the equal-length previous period. Delta "up"
+ * is gold and "down" is muted grey. A `null` delta (no previous data) renders
+ * as an em dash, never `NaN`/`Infinity`.
  */
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -30,6 +30,7 @@ export function KpiHeader({
         label="Pengeluaran"
         value={totals.expense}
         delta={delta.expense}
+        tone="expense"
       />
       <View style={styles.divider} />
       <Kpi
@@ -37,7 +38,7 @@ export function KpiHeader({
         label="Pemasukan"
         value={totals.income}
         delta={delta.income}
-        accent
+        tone="income"
       />
       <View style={styles.divider} />
       <Kpi
@@ -45,6 +46,7 @@ export function KpiHeader({
         label="Net"
         value={totals.net}
         delta={delta.net}
+        tone="net"
       />
     </Card>
   );
@@ -54,17 +56,16 @@ function Kpi({
   label,
   value,
   delta,
-  accent = false,
+  tone,
   testID,
 }: {
   label: string;
   value: number;
   delta: number | null;
-  accent?: boolean;
+  tone: 'expense' | 'income' | 'net';
   testID?: string;
 }) {
-  const tone = deltaTone(delta);
-
+  const direction = deltaTone(delta);
   return (
     <View testID={testID} style={styles.kpi}>
       <Text
@@ -77,7 +78,7 @@ function Kpi({
       </Text>
       <Text
         testID={`${testID}-value`}
-        style={[typography.currencyMd, accent ? styles.valueAccent : styles.value]}
+        style={[typography.currencyMd, valueToneStyle[tone]]}
         numberOfLines={1}
         adjustsFontSizeToFit
       >
@@ -87,7 +88,7 @@ function Kpi({
         testID={`${testID}-delta`}
         style={[
           typography.bodySm,
-          tone === 'up' ? styles.deltaUp : styles.deltaMuted,
+          direction === 'up' ? styles.deltaUp : styles.deltaMuted,
         ]}
         numberOfLines={1}
       >
@@ -115,11 +116,14 @@ const styles = StyleSheet.create({
   label: {
     color: colors.textSecondary,
   },
-  value: {
-    color: colors.textPrimary,
+  valueExpense: {
+    color: colors.expense,
   },
-  valueAccent: {
+  valueIncome: {
     color: colors.income,
+  },
+  valueNet: {
+    color: colors.net,
   },
   deltaUp: {
     color: colors.accent,
@@ -128,3 +132,9 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
 });
+
+const valueToneStyle = {
+  expense: styles.valueExpense,
+  income: styles.valueIncome,
+  net: styles.valueNet,
+} as const;

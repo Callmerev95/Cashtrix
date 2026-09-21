@@ -3,7 +3,7 @@
 **Name:** Obsidian Luxury (Minimalist Obsidian)
 **Source:** Stitch project `Cashtrix` (`projects/16569655893689994`), design system asset `assets/4b61549b44c64e5f9f2b2ef2437c18dd` v1
 **Mode:** Dark only · Mobile-first (390px canvas)
-**Style:** Minimalism with Luminous Glass Accents — discreet, private-wealth aesthetic. Deep obsidian depths, tactile card surfaces, subtle champagne-gold glows, disciplined alignment. No consumer fintech gimmicks, no harsh reds.
+**Style:** Minimalism with Luminous Glass Accents — discreet, private-wealth aesthetic. Deep obsidian depths, tactile card surfaces, subtle champagne-gold glows, disciplined alignment. No consumer fintech gimmicks; red is reserved for expense amounts only (never destructive actions).
 
 ---
 
@@ -20,17 +20,21 @@ These are the source-of-truth tokens. All UI must reference them.
 | `surface-elevated` | `#2C2C2E` | Layer 2 — interactive sub-cards, inputs, segmented wells, icon avatars, active chips. |
 | `border` | `#2C2C2E` | Hairline 1px dividers and card outlines (Layer 1 border = this color). |
 | `border-strong` | `#3A3A3C` | Hairline borders on Layer 2 elements (modals, inputs, active segments). |
-| `accent` | `#D4AF37` | Champagne gold. **Reserved:** primary CTAs, income values, active nav/segment states, key data highlights, progress fills, soft glows. |
+| `accent` | `#D4AF37` | Champagne gold. **Reserved:** primary CTAs, net values, active nav/segment states, key data highlights, progress fills, soft glows. |
 | `accent-soft` | `#F3E5AB` | Secondary stop in gold gradients (progress fill end, hover sheen). |
-| `text-primary` | `#E5E5E5` | Muted warm white. Headings, body copy, transaction names, **expense amounts**. |
+| `gain` | `#30D158` | Income green. Income amounts only. |
+| `loss` | `#FF6B62` | Expense red. Expense amounts only — never for destructive actions (those stay `error`). |
+| `text-primary` | `#E5E5E5` | Muted warm white. Headings, body copy, transaction names, combined total. |
 | `text-secondary` | `#8E8E93` | Cool grey. Timestamps, metadata, inactive labels, disabled states. |
 | `text-on-accent` | `#0A0A0A` | Obsidian text on gold fills (primary buttons). |
 
 ### Semantic rules
 
-- **Income** = `#D4AF37` (gold, `currency-md`, no prefix — the colour alone distinguishes it).
-- **Expense** = `#E5E5E5` (muted white, never red) with a leading `-` marking the direction (amended in #26; previously neither side differed by glyph).
-- **Error** = `#FFB4AB` on `#93000A` container (reserved for destructive actions only).
+- **Income** = `#30D158` (green, `currency-md`, no prefix — the colour alone distinguishes it).
+- **Expense** = `#FF6B62` (red) with a leading `-` marking the direction (amended post-V5: previously muted white, never red — overturned per owner review of the preview build).
+- **Net** (income − expense) = `#D4AF37` (gold, `currency-md`).
+- **Combined total** (Dashboard hero) stays `#E5E5E5` muted white.
+- **Error** = `#FFB4AB` on `#93000A` container (reserved for destructive actions only — never for expense amounts).
 - Gold is never used for: page backgrounds, body text, expense amounts, or large flat fills >1 card per viewport.
 - Highlighted card borders: gradient `#D4AF37` (top-left) → `#2C2C2E` (bottom-right), or `#D4AF37` at 15% opacity.
 
@@ -172,7 +176,7 @@ Depth = tonal layering + hairline edges + diffuse gold glow (never heavy drop sh
 - 16px vertical padding, 1px `#2C2C2E` divider.
 - Left: circular `#2C2C2E` icon well (Material Symbols Outlined, 20px, monochrome or gold).
 - Center: name `body-md` `#E5E5E5` + timestamp `body-sm` `#8E8E93`.
-- Right: `currency-md` — income gold, expense `#E5E5E5`.
+- Right: `currency-md` — income `#30D158`, expense `#FF6B62`.
 
 ### Chips / segmented control
 - Well: `#1C1C1E`, 4px inner padding, `rounded-full`.
