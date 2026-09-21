@@ -26,12 +26,16 @@ export {
   PAGE_SIZE,
   TRANSACTION_TYPES,
   TRANSFER_ICON,
+  WEEKDAY_LABELS,
   amountMessages,
+  buildMonthGrid,
+  canSelectDay,
   categoriesForKind,
   deletedTransactionLabel,
   formatAmountInput,
   formatDateDivider,
   formatGrouped,
+  formatMonthLabel,
   formatSignedAmount,
   formatTime,
   groupByDay,
@@ -49,6 +53,7 @@ export {
 } from './domain';
 export type {
   AmountValidation,
+  CalendarDay,
   Category,
   CategoryKind,
   Transaction,
@@ -59,6 +64,7 @@ export type {
 } from './domain';
 export { TransactionRow } from './components/transaction-row';
 export { CategoryGrid } from './components/category-grid';
+export { CalendarGrid } from './components/calendar-grid';
 export { TypeSegmentedControl } from './components/type-segmented-control';
 export { AmountField } from './components/amount-field';
 export { DeleteConfirmSheet } from './components/delete-confirm-sheet';

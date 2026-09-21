@@ -314,9 +314,9 @@ export function categoriesForKind(
 // ---------------------------------------------------------------------------
 
 export const transferMessages = {
-  sourceRequired: 'Pilih wallet sumber terlebih dahulu',
-  destinationRequired: 'Pilih wallet tujuan terlebih dahulu',
-  sameWallet: 'Wallet sumber dan tujuan harus berbeda',
+  sourceRequired: 'Pilih dompet sumber terlebih dahulu',
+  destinationRequired: 'Pilih dompet tujuan terlebih dahulu',
+  sameWallet: 'Dompet sumber dan tujuan harus berbeda',
 } as const;
 
 export type TransferValidation =
@@ -415,4 +415,138 @@ export function groupByDay(
 /** Whether another page exists, given how many rows the last fetch returned. */
 export function hasMoreAfter(pageSize: number, received: number): boolean {
   return received === pageSize;
+}
+
+// ---------------------------------------------------------------------------
+// Calendar month grid (V5)
+//
+// The Add form picks its date from a full month grid built from plain `View`s
+// (same reasoning as the T6 donut / T7 ring: no native date-picker module, so
+// no dev-client rebuild). The grid is Monday-first (`id-ID` week) and always
+// complete weeks — leading/trailing days from the adjacent months fill the
+// first/last row so columns never shift.
+//
+// Future days are *flagged*, never offered: the grid disables them and
+// `canSelectDay` mirrors that rule for tests, while the form keeps its
+// `isFutureDate` submit guard as defence in depth (income/expense/transfer).
+// ---------------------------------------------------------------------------
+
+/** Short `id-ID` weekday headers, Monday-first. */
+export const WEEKDAY_LABELS = [
+  'Sen',
+  'Sel',
+  'Rab',
+  'Kam',
+  'Jum',
+  'Sab',
+  'Min',
+] as const;
+
+const MONTH_NAMES_ID = [
+  'Januari',
+  'Februari',
+  'Maret',
+  'April',
+  'Mei',
+  'Juni',
+  'Juli',
+  'Agustus',
+  'September',
+  'Oktober',
+  'November',
+  'Desember',
+];
+
+export type CalendarDay = {
+  /** Local midnight of the cell's date — stable key via `toDateKey`. */
+  date: Date;
+  /** Day of month (1–31). */
+  day: number;
+  /** False for the leading/trailing filler from adjacent months. */
+  inMonth: boolean;
+  isToday: boolean;
+  /** After today — the grid renders these disabled and never selects them. */
+  isFuture: boolean;
+  isSelected: boolean;
+};
+
+/**
+ * Builds the visible month as complete Monday-first weeks. Every day of the
+ * month appears exactly once with `inMonth: true`; filler cells keep the
+ * 7-column alignment stable.
+ */
+export function buildMonthGrid(
+  month: Date,
+  selected: Date,
+  now: Date = new Date(),
+): CalendarDay[][] {
+  const year = month.getFullYear();
+  const monthIndex = month.getMonth();
+  const todayKey = toDateKey(startOfDay(now));
+  const selectedKey = toDateKey(startOfDay(selected));
+
+  // Monday-first offset: JS `getDay()` is 0 = Sunday.
+  const firstWeekday = new Date(year, monthIndex, 1).getDay();
+  const leading = (firstWeekday + 6) % 7;
+
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const total = leading + daysInMonth;
+  const weeks: CalendarDay[][] = [];
+  let week: CalendarDay[] = [];
+
+  for (let i = 0; i < total; i += 1) {
+    const date = new Date(year, monthIndex, 1 - leading + i);
+    const key = toDateKey(date);
+    week.push({
+      date,
+      day: date.getDate(),
+      inMonth: date.getMonth() === monthIndex,
+      isToday: key === todayKey,
+      isFuture: key > todayKey,
+      isSelected: key === selectedKey,
+    });
+    if (week.length === 7) {
+      weeks.push(week);
+      week = [];
+    }
+  }
+
+  // Pad the last row with the next month so every week is complete.
+  if (week.length > 0) {
+    const last = week[week.length - 1].date;
+    let cursor = new Date(last.getFullYear(), last.getMonth(), last.getDate());
+    while (week.length < 7) {
+      cursor = new Date(
+        cursor.getFullYear(),
+        cursor.getMonth(),
+        cursor.getDate() + 1,
+      );
+      const key = toDateKey(cursor);
+      week.push({
+        date: cursor,
+        day: cursor.getDate(),
+        inMonth: false,
+        isToday: key === todayKey,
+        isFuture: key > todayKey,
+        isSelected: key === selectedKey,
+      });
+    }
+    weeks.push(week);
+  }
+
+  return weeks;
+}
+
+/**
+ * Whether the calendar may select the given day — today or earlier only.
+ * Same day-granularity rule as `isFutureDate`, exposed under a calendar name
+ * so the grid and its tests share one predicate.
+ */
+export function canSelectDay(day: Date, now: Date = new Date()): boolean {
+  return !isFutureDate(day, now);
+}
+
+/** `September 2026` — the grid's month header in `id-ID`. */
+export function formatMonthLabel(month: Date): string {
+  return `${MONTH_NAMES_ID[month.getMonth()]} ${month.getFullYear()}`;
 }

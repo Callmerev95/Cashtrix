@@ -126,7 +126,7 @@ export default function RecurringScreen() {
                     {archivedPauses.length} aturan dijeda
                   </Text>
                   <Text style={[typography.bodySm, styles.bannerSubtitle]}>
-                    Wallet-nya diarsipkan — buka arsip wallet atau pilih wallet
+                    Dompetnya diarsipkan — buka arsip dompet atau pilih dompet
                     lain agar tagihan jalan lagi.
                   </Text>
                 </View>
@@ -200,7 +200,7 @@ function RuleRow({
         <Text style={[typography.bodySm, styles.cardMeta]} numberOfLines={1}>
           {formatRuleWindow(rule.startsOn, rule.endsOn)} ·{' '}
           {statusLabel(rule.status)}
-          {rule.walletArchived ? ' · wallet diarsipkan' : ''}
+          {rule.walletArchived ? ' · dompet diarsipkan' : ''}
         </Text>
       </View>
       {busy ? (

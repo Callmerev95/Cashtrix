@@ -56,7 +56,7 @@ export default function WalletsScreen() {
       await refresh();
     } catch (cause) {
       Alert.alert(
-        'Gagal menghapus wallet',
+        'Gagal menghapus dompet',
         cause instanceof Error ? cause.message : 'Coba lagi sebentar lagi.',
       );
     } finally {
@@ -67,7 +67,7 @@ export default function WalletsScreen() {
   function onDeletePress(wallet: Wallet) {
     if (wallet.transactionCount === 0) {
       Alert.alert(
-        'Hapus wallet?',
+        'Hapus dompet?',
         `"${wallet.name}" tidak punya transaksi dan akan dihapus permanen.`,
         [
           { text: 'Batal', style: 'cancel' },
@@ -90,14 +90,14 @@ export default function WalletsScreen() {
       await setWalletArchived(wallet.id, archived);
       await refresh();
       Alert.alert(
-        archived ? 'Wallet diarsipkan' : 'Wallet dibuka dari arsip',
+        archived ? 'Dompet diarsipkan' : 'Dompet dibuka dari arsip',
         archived
           ? `"${wallet.name}" disembunyikan dari Dashboard dan transaksi baru. Riwayatnya tetap tersimpan.`
           : `"${wallet.name}" kembali tersedia.`,
       );
     } catch (cause) {
       Alert.alert(
-        'Gagal mengubah wallet',
+        'Gagal mengubah dompet',
         cause instanceof Error ? cause.message : 'Coba lagi sebentar lagi.',
       );
     } finally {
@@ -158,7 +158,7 @@ export default function WalletsScreen() {
             {loading ? '—' : totalLabel}
           </Text>
           <Text style={[typography.bodySm, styles.meta]}>
-            {summary.count} dari {MAX_WALLETS} wallet
+            {summary.count} dari {MAX_WALLETS} dompet
           </Text>
         </Card>
 
@@ -169,7 +169,7 @@ export default function WalletsScreen() {
         <View style={styles.list}>
           {wallets.length === 0 && !loading ? (
             <Text style={[typography.bodyMd, styles.empty]}>
-              Belum ada wallet. Buat wallet pertama Anda untuk mulai mencatat.
+              Belum ada dompet. Buat dompet pertama Anda untuk mulai mencatat.
             </Text>
           ) : (
             wallets.map((wallet) => (
@@ -193,7 +193,7 @@ export default function WalletsScreen() {
                       hitSlop={spacing.sm}
                       onPress={() =>
                         Alert.alert(
-                          'Arsipkan wallet?',
+                          'Arsipkan dompet?',
                           `"${wallet.name}" disembunyikan dari Dashboard dan picker. Riwayat transaksi tetap ada.`,
                           [
                             { text: 'Batal', style: 'cancel' },
@@ -271,8 +271,8 @@ export default function WalletsScreen() {
             testID="add-wallet"
             label={
               summary.remainingSlots > 0
-                ? 'Tambah Wallet'
-                : `Maksimal ${MAX_WALLETS} wallet`
+                ? 'Tambah Dompet'
+                : `Maksimal ${MAX_WALLETS} dompet`
             }
             disabled={summary.remainingSlots <= 0}
             onPress={() => router.push('/wallet-form')}
@@ -288,8 +288,8 @@ export default function WalletsScreen() {
               Pindahkan transaksi {pendingDelete.name}
             </Text>
             <Text style={[typography.bodySm, styles.sheetBody]}>
-              Wallet ini punya {pendingDelete.transactionCount} transaksi. Pilih
-              wallet tujuan, lalu wallet ini dihapus.
+              Dompet ini punya {pendingDelete.transactionCount} transaksi. Pilih
+              dompet tujuan, lalu dompet ini dihapus.
             </Text>
 
             <View style={styles.sheetList}>
@@ -333,7 +333,7 @@ export default function WalletsScreen() {
                 ))}
               {wallets.length <= 1 ? (
                 <Text style={[typography.bodySm, styles.empty]}>
-                  Tidak ada wallet lain. Buat wallet baru dulu untuk memindahkan
+                  Tidak ada dompet lain. Buat dompet baru dulu untuk memindahkan
                   transaksi.
                 </Text>
               ) : null}
@@ -342,7 +342,7 @@ export default function WalletsScreen() {
             <View style={styles.sheetActions}>
               <PrimaryButton
                 testID="add-wallet-from-sheet"
-                label="Wallet baru"
+                label="Dompet baru"
                 onPress={() => {
                   setPendingDelete(null);
                   router.push('/wallet-form');

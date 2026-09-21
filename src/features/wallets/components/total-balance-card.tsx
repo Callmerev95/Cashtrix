@@ -42,7 +42,7 @@ export function TotalBalanceCard({
           {loading ? '—' : formatCurrency(total)}
         </Text>
         <Text style={[typography.bodySm, styles.meta]}>
-          {walletCount} wallet
+          {walletCount} dompet
         </Text>
       </View>
     </LinearGradient>

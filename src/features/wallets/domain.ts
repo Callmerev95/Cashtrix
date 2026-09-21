@@ -84,14 +84,14 @@ export function formatCurrency(value: number, currency = 'Rp'): string {
 // ---------------------------------------------------------------------------
 
 export const walletMessages = {
-  nameRequired: 'Nama wallet wajib diisi',
-  nameTooLong: `Nama wallet maksimal ${WALLET_NAME_MAX} karakter`,
-  nameDuplicate: 'Nama wallet sudah dipakai',
+  nameRequired: 'Nama dompet wajib diisi',
+  nameTooLong: `Nama dompet maksimal ${WALLET_NAME_MAX} karakter`,
+  nameDuplicate: 'Nama dompet sudah dipakai',
   amountInvalid: `Nominal harus antara 0 dan ${AMOUNT_MAX}`,
   amountInvalidNumber: 'Nominal tidak valid',
-  limitReached: `Maksimal ${MAX_WALLETS} wallet`,
-  deleteConfirm: 'Hapus wallet ini?',
-  reassignRequired: 'Pilih wallet tujuan untuk memindahkan transaksi',
+  limitReached: `Maksimal ${MAX_WALLETS} dompet`,
+  deleteConfirm: 'Hapus dompet ini?',
+  reassignRequired: 'Pilih dompet tujuan untuk memindahkan transaksi',
 } as const;
 
 export type WalletFieldErrors = {

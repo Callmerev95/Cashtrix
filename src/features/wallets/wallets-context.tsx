@@ -70,7 +70,7 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
     } catch (cause) {
       if (!mounted.current) return;
       setError(
-        cause instanceof Error ? cause.message : 'Gagal memuat wallet',
+        cause instanceof Error ? cause.message : 'Gagal memuat dompet',
       );
     } finally {
       if (mounted.current) setLoading(false);
@@ -90,7 +90,7 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
       })
       .catch((cause: unknown) => {
         if (cancelled || !mounted.current) return;
-        setError(cause instanceof Error ? cause.message : 'Gagal memuat wallet');
+        setError(cause instanceof Error ? cause.message : 'Gagal memuat dompet');
       })
       .finally(() => {
         if (!cancelled && mounted.current) setLoading(false);
