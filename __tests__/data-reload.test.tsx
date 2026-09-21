@@ -21,6 +21,16 @@ jest.mock('@/features/wallets/api', () => {
   return { ...actual, listWallets: jest.fn().mockResolvedValue([]) };
 });
 
+jest.mock('@/features/analytics/api', () => {
+  const actual = jest.requireActual('@/features/analytics/api');
+  return {
+    ...actual,
+    fetchTimezone: jest.fn().mockResolvedValue('Asia/Jakarta'),
+    fetchOverview: jest.fn().mockResolvedValue(null),
+    listWalletFilters: jest.fn().mockResolvedValue([]),
+  };
+});
+
 const walletsMock = listWallets as jest.Mock;
 
 describe('DataProviders reload per user', () => {
@@ -49,8 +59,7 @@ describe('DataProviders reload per user', () => {
     });
   });
 
-  it('memakai ulang fetch yang sedang jalan (tanpa query ganda)', async () => {
-    const { useWallets } = require('@/features/wallets');
+  it('memakai ulang fetch yang sedang jalan (tanpa query ganda)', async () => {    const { useWallets } = require('@/features/wallets');
 
     function Probe() {
       const { refresh } = useWallets();
@@ -81,5 +90,41 @@ describe('DataProviders reload per user', () => {
     // Two concurrent refreshes share one fetch (at most one new call: the
     // shared one — never two).
     expect(walletsMock.mock.calls.length).toBeLessThanOrEqual(before + 1);
+  });
+});
+
+describe('AnalyticsProvider refresh', () => {
+  it('memuat ulang overview + chip filter (Insight tak basi pasca-tulis)', async () => {
+    const { AnalyticsProvider, useAnalytics } = require('@/features/analytics');
+    const api = require('@/features/analytics/api');
+
+    function Probe() {
+      const { refresh } = useAnalytics();
+      (globalThis as { __analyticsRefresh?: () => Promise<void> })
+        .__analyticsRefresh = refresh;
+      return <View testID="probe" />;
+    }
+
+    render(
+      <AnalyticsProvider>
+        <Probe />
+      </AnalyticsProvider>,
+    );
+
+    await waitFor(() => {
+      expect(api.fetchOverview).toHaveBeenCalled();
+    });
+    const overviewCalls = api.fetchOverview.mock.calls.length;
+    const chipsCalls = api.listWalletFilters.mock.calls.length;
+
+    await act(async () => {
+      await (
+        globalThis as { __analyticsRefresh?: () => Promise<void> }
+      ).__analyticsRefresh?.();
+    });
+
+    // One explicit refresh re-reads both the numbers and the wallet filter.
+    expect(api.fetchOverview.mock.calls.length).toBeGreaterThan(overviewCalls);
+    expect(api.listWalletFilters.mock.calls.length).toBeGreaterThan(chipsCalls);
   });
 });

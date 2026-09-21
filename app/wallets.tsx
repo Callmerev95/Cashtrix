@@ -21,12 +21,8 @@ import {
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {
-  Card,
-  GhostButton,
-  PrimaryButton,
-  Screen,
-} from '@/components';
+import { Card, GhostButton, PrimaryButton, Screen } from '@/components';
+import { useAnalytics } from '@/features/analytics';
 import {
   MAX_WALLETS,
   deleteWallet,
@@ -43,6 +39,7 @@ import { colors, layout, radius, spacing, typography } from '@/theme';
 export default function WalletsScreen() {
   const { wallets, archivedWallets, summary, loading, error, refresh } =
     useWallets();
+  const { refresh: refreshAnalytics } = useAnalytics();
   const insets = useSafeAreaInsets();
 
   /** Wallet queued for deletion; non-null opens the reassignment sheet. */
@@ -115,6 +112,9 @@ export default function WalletsScreen() {
       });
       setPendingDelete(null);
       await refresh();
+      // Rows changed wallets, so per-wallet Insight filters re-read too.
+      // Best-effort: the move already committed.
+      await refreshAnalytics().catch(() => undefined);
       Alert.alert('Selesai', `${moved} transaksi dipindahkan ke ${target.name}.`);
     } catch (cause) {
       Alert.alert(

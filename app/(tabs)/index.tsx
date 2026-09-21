@@ -16,6 +16,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyStateCard, AppHeader, Screen, SectionHeader } from '@/components';
+import { useAnalytics } from '@/features/analytics';
 import { useAuth } from '@/features/auth';
 import { useBudgets } from '@/features/budgets';
 import { displayNameOrEmail, useProfile } from '@/features/profile';
@@ -44,8 +45,9 @@ const DATE_FORMAT: Intl.DateTimeFormatOptions = {
 
 export default function DashboardScreen() {
   const { session } = useAuth();
-  const { wallets, summary, loading } = useWallets();
-  const { recentAlerts } = useBudgets();
+  const { wallets, summary, loading, refresh: refreshWallets } = useWallets();
+  const { recentAlerts, refresh: refreshBudgets } = useBudgets();
+  const { refresh: refreshAnalytics } = useAnalytics();
   const { avatarSignedUrl, profile } = useProfile();
   const {
     transactions,
@@ -207,7 +209,22 @@ export default function DashboardScreen() {
         </View>
       </ScrollView>
 
-      <UndoSnackbar snack={lastDeleted} onUndo={() => void undoDelete()} onDismiss={dismissUndo} />
+      <UndoSnackbar
+        snack={lastDeleted}
+        // A restore resurrects amounts everywhere: history (handled inside
+        // `undoDelete`), balances, Spent and the Insight overview all re-read.
+        // Best-effort — the restore itself already committed.
+        onUndo={() =>
+          void undoDelete().then(() =>
+            Promise.all([
+              refreshWallets().catch(() => undefined),
+              refreshBudgets().catch(() => undefined),
+              refreshAnalytics().catch(() => undefined),
+            ]),
+          )
+        }
+        onDismiss={dismissUndo}
+      />
     </Screen>
   );
 }
