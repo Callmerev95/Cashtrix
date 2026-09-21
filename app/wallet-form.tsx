@@ -96,7 +96,7 @@ export default function WalletFormScreen() {
     } catch (cause) {
       setBusy(false);
       Alert.alert(
-        isEdit ? 'Gagal menyimpan perubahan' : 'Gagal membuat wallet',
+        isEdit ? 'Gagal menyimpan perubahan' : 'Gagal membuat dompet',
         cause instanceof Error ? cause.message : 'Coba lagi sebentar lagi.',
       );
     }
@@ -118,7 +118,7 @@ export default function WalletFormScreen() {
             <MaterialIcons name="close" size={24} color={colors.textSecondary} />
           </Pressable>
           <Text style={[typography.headlineMd, styles.title]}>
-            {isEdit ? 'Ubah wallet' : 'Wallet baru'}
+            {isEdit ? 'Ubah dompet' : 'Dompet baru'}
           </Text>
         </View>
 
@@ -180,14 +180,14 @@ export default function WalletFormScreen() {
           ) : null}
 
           <Text style={[typography.bodySm, styles.hint]}>
-            Maksimal {MAX_WALLETS} wallet per akun.
+            Maksimal {MAX_WALLETS} dompet per akun.
           </Text>
         </ScrollView>
 
         <View style={[styles.footer, { paddingBottom: spacing.md }]}>
           <PrimaryButton
             testID="wallet-save"
-            label={isEdit ? 'Simpan' : 'Buat Wallet'}
+            label={isEdit ? 'Simpan' : 'Buat Dompet'}
             onPress={save}
             loading={busy}
             disabled={atLimit}

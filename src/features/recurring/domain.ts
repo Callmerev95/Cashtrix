@@ -229,7 +229,7 @@ export function defaultStartsOn(input: {
 
 export const recurringMessages = {
   kindRequired: 'Pilih Pengeluaran atau Pemasukan',
-  walletRequired: 'Pilih wallet terlebih dahulu',
+  walletRequired: 'Pilih dompet terlebih dahulu',
   categoryRequired: 'Pilih kategori terlebih dahulu',
   dueRequired: 'Pilih tanggal jatuh tempo',
   startsRequired: 'Bulan mulai wajib diisi',

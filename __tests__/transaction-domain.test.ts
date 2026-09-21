@@ -12,11 +12,15 @@ import {
   PAGE_SIZE,
   TRANSACTION_TYPES,
   TRANSFER_ICON,
+  WEEKDAY_LABELS,
   amountMessages,
+  buildMonthGrid,
+  canSelectDay,
   categoriesForKind,
   formatAmountInput,
   formatDateDivider,
   formatGrouped,
+  formatMonthLabel,
   formatSignedAmount,
   formatTime,
   groupByDay,
@@ -34,6 +38,8 @@ import {
   type Category,
   type Transaction,
 } from '@/features/transactions';
+import { walletMessages } from '@/features/wallets';
+import { recurringMessages } from '@/features/recurring';
 
 function transaction(partial: Partial<Transaction>): Transaction {
   return {
@@ -419,5 +425,115 @@ describe('transferFeedLabel (V2)', () => {
 
   it('ikon transfer adalah swap-horiz', () => {
     expect(TRANSFER_ICON).toBe('swap-horiz');
+  });
+});
+
+describe('kalender bulan (V5)', () => {
+  // 18 Sep 2026 — 1 Sep 2026 adalah Selasa, jadi minggu pertama berawalan
+  // Senin 31 Agu sebagai filler.
+  const now = new Date(2026, 8, 18, 10, 0);
+  const september = new Date(2026, 8, 1);
+  const selected = new Date(2026, 8, 10);
+
+  it('label hari Senin-dulu dan judul bulan id-ID', () => {
+    expect(WEEKDAY_LABELS).toEqual([
+      'Sen',
+      'Sel',
+      'Rab',
+      'Kam',
+      'Jum',
+      'Sab',
+      'Min',
+    ]);
+    expect(formatMonthLabel(september)).toBe('September 2026');
+    expect(formatMonthLabel(new Date(2026, 1, 1))).toBe('Februari 2026');
+  });
+
+  it('minggu lengkap 7 kolom Senin-dulu dan tanggal berurutan', () => {
+    const weeks = buildMonthGrid(september, selected, now);
+    expect(weeks.length).toBeGreaterThanOrEqual(4);
+    for (const week of weeks) {
+      expect(week).toHaveLength(7);
+      expect(week[0].date.getDay()).toBe(1); // Senin
+      for (let i = 1; i < 7; i += 1) {
+        const diff =
+          week[i].date.getTime() - week[i - 1].date.getTime();
+        expect(diff).toBe(86_400_000);
+      }
+    }
+    expect(toDateKey(weeks[0][0].date)).toBe('2026-08-31');
+  });
+
+  it('setiap tanggal muncul tepat sekali sebagai inMonth', () => {
+    const weeks = buildMonthGrid(september, selected, now);
+    const inMonth = weeks.flat().filter((day) => day.inMonth);
+    expect(inMonth).toHaveLength(30);
+    expect(inMonth.map((day) => day.day)).toEqual(
+      Array.from({ length: 30 }, (_, i) => i + 1),
+    );
+    expect(
+      weeks
+        .flat()
+        .filter((day) => !day.inMonth)
+        .every((day) => day.day >= 28 || day.day <= 5),
+    ).toBe(true);
+  });
+
+  it('menandai hari ini, masa depan, dan pilihan', () => {
+    const weeks = buildMonthGrid(september, selected, now);
+    const flat = weeks.flat();
+    const today = flat.filter((day) => day.isToday);
+    expect(today).toHaveLength(1);
+    expect(toDateKey(today[0].date)).toBe('2026-09-18');
+
+    const future = flat.filter((day) => day.inMonth && day.isFuture);
+    expect(future.map((day) => day.day)).toEqual(
+      Array.from({ length: 12 }, (_, i) => i + 19),
+    );
+    expect(
+      flat.find(
+        (day) => toDateKey(day.date) === '2026-09-17',
+      )?.isFuture,
+    ).toBe(false);
+
+    const picked = flat.filter((day) => day.isSelected);
+    expect(picked).toHaveLength(1);
+    expect(toDateKey(picked[0].date)).toBe('2026-09-10');
+  });
+
+  it('hanya mengizinkan hari ini atau sebelumnya (kalender tak memilih masa depan)', () => {
+    expect(canSelectDay(new Date(2026, 8, 17), now)).toBe(true);
+    expect(canSelectDay(new Date(2026, 8, 18), now)).toBe(true);
+    expect(canSelectDay(new Date(2026, 8, 19), now)).toBe(false);
+  });
+
+  it('menolak tanggal masa depan untuk Transfer (submit guard semua tipe)', () => {
+    // Pasangan wallet valid, tapi tanggal besok tetap ditolak — aturan yang
+    // sama mengikat income/expense/transfer di form.
+    expect(
+      validateTransfer({ sourceWalletId: 'w1', destinationWalletId: 'w2' }),
+    ).toEqual({ ok: true });
+    expect(isFutureDate(new Date(2026, 8, 19), now)).toBe(true);
+    expect(isFutureDate(new Date(2026, 8, 18), now)).toBe(false);
+  });
+});
+
+describe('pass istilah Dompet (V5)', () => {
+  it('copy dompet yang terlihat pengguna memakai "dompet", bukan "wallet"', () => {
+    const copies = [
+      walletMessages.nameRequired,
+      walletMessages.nameTooLong,
+      walletMessages.nameDuplicate,
+      walletMessages.limitReached,
+      walletMessages.deleteConfirm,
+      walletMessages.reassignRequired,
+      ...Object.values(transferMessages),
+      recurringMessages.walletRequired,
+    ];
+    expect(copies.length).toBeGreaterThan(0);
+    for (const copy of copies) {
+      expect(copy.toLowerCase()).toContain('dompet');
+      expect(copy.toLowerCase()).not.toContain('wallet');
+    }
   });
 });

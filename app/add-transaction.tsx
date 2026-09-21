@@ -18,10 +18,10 @@
  * `category_id = null` and `counterparty_wallet_id` set — the DB check
  * enforces the shape, the form just refuses to send anything else.
  *
- * Date entry is a day stepper rather than a native date picker: MVP requires
- * "default now, never a future date" and a stepper delivers that with no extra
- * native module (which would force a dev-client rebuild). A calendar picker is
- * a v1.1 polish item.
+ * Date entry is a full month grid (`CalendarGrid`, plain `View`s like the T6
+ * donut / T7 ring — no native date-picker module, so no dev-client rebuild).
+ * Future days render disabled and can never be picked; the submit guard
+ * rejects them anyway for income/expense/transfer alike.
  */
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -46,16 +46,15 @@ import { trackEvent, txCreatedEvent } from '@/features/observability';
 import { useWallets } from '@/features/wallets';
 import {
   AmountField,
+  CalendarGrid,
   CategoryGrid,
   DeleteConfirmSheet,
   TypeSegmentedControl,
   categoriesForKind,
   formatAmountInput,
-  formatDateDivider,
   isFutureDate,
   newIdempotencyKey,
   normalizeNote,
-  toDateKey,
   useTransactions,
   validateAmount,
   validateTransfer,
@@ -183,9 +182,9 @@ export default function AddTransactionScreen() {
     void rememberType(next);
   }
 
-  function changeDay(deltaDays: number) {
-    const next = new Date(occurredAt);
-    next.setDate(next.getDate() + deltaDays);
+  function onPickDate(next: Date) {
+    // The grid never offers future days (they render disabled); the guard
+    // stays so a programmatic value can never slip through either.
     if (isFutureDate(next)) return; // AC #19: never a future date
     setOccurredAt(next);
   }
@@ -199,7 +198,7 @@ export default function AddTransactionScreen() {
     setAmountError(null);
 
     if (!walletId) {
-      setFormError('Pilih wallet terlebih dahulu');
+      setFormError('Pilih dompet terlebih dahulu');
       return;
     }
     if (isTransfer) {
@@ -304,9 +303,6 @@ export default function AddTransactionScreen() {
     }
   }
 
-  const today = new Date();
-  const atToday = toDateKey(occurredAt) === toDateKey(today);
-
   return (
     <Screen hasFloatingNav={false}>
       <KeyboardAvoidingView
@@ -408,7 +404,7 @@ export default function AddTransactionScreen() {
           <View style={styles.gap}>
             <SectionHeader
               testID="wallet-header"
-              title={isTransfer ? 'Wallet sumber' : 'Wallet'}
+              title={isTransfer ? 'Dompet sumber' : 'Dompet'}
             />
             <View testID="wallet-picker" style={styles.chips}>
               {wallets.map((wallet) => {
@@ -445,7 +441,7 @@ export default function AddTransactionScreen() {
               })}
               {wallets.length === 0 ? (
                 <Text style={[typography.bodySm, styles.hint]}>
-                  Belum ada wallet. Buat satu dulu di menu Dompet.
+                  Belum ada dompet. Buat satu dulu di menu Dompet.
                 </Text>
               ) : null}
             </View>
@@ -453,7 +449,7 @@ export default function AddTransactionScreen() {
 
           {isTransfer ? (
             <View style={styles.gap}>
-              <SectionHeader testID="destination-header" title="Wallet tujuan" />
+              <SectionHeader testID="destination-header" title="Dompet tujuan" />
               <View testID="destination-picker" style={styles.chips}>
                 {wallets
                   .filter((wallet) => wallet.id !== walletId)
@@ -489,7 +485,7 @@ export default function AddTransactionScreen() {
                 {wallets.filter((wallet) => wallet.id !== walletId).length ===
                 0 ? (
                   <Text style={[typography.bodySm, styles.hint]}>
-                    Butuh dua wallet untuk transfer. Buat satu lagi di menu
+                    Butuh dua dompet untuk transfer. Buat satu lagi di menu
                     Dompet.
                   </Text>
                 ) : null}
@@ -499,48 +495,11 @@ export default function AddTransactionScreen() {
 
           <View style={styles.gap}>
             <SectionHeader testID="date-header" title="Tanggal" />
-            <Card testID="date-stepper" style={styles.dateCard}>
-              <View style={styles.dateWell}>
-                <MaterialIcons
-                  name="calendar-month"
-                  size={20}
-                  color={colors.accent}
-                />
-              </View>
-              <Text style={[typography.bodyMd, styles.dateLabel]}>
-                {atToday ? 'Hari ini' : formatDateDivider(occurredAt.toISOString())}
-              </Text>
-              <View style={styles.dateButtons}>
-                <Pressable
-                  testID="date-prev"
-                  accessibilityRole="button"
-                  accessibilityLabel="Hari sebelumnya"
-                  onPress={() => changeDay(-1)}
-                  style={styles.dateButton}
-                >
-                  <MaterialIcons
-                    name="chevron-left"
-                    size={22}
-                    color={colors.textPrimary}
-                  />
-                </Pressable>
-                <Pressable
-                  testID="date-next"
-                  accessibilityRole="button"
-                  accessibilityLabel="Hari berikutnya"
-                  accessibilityState={{ disabled: atToday }}
-                  disabled={atToday}
-                  onPress={() => changeDay(1)}
-                  style={[styles.dateButton, atToday && styles.dateButtonDisabled]}
-                >
-                  <MaterialIcons
-                    name="chevron-right"
-                    size={22}
-                    color={atToday ? colors.textSecondary : colors.textPrimary}
-                  />
-                </Pressable>
-              </View>
-            </Card>
+            <CalendarGrid
+              testID="date-calendar"
+              value={occurredAt}
+              onChange={onPickDate}
+            />
           </View>
 
           {formError ? (
@@ -640,38 +599,6 @@ const styles = StyleSheet.create({
   },
   chipLabelActive: {
     color: colors.accent,
-  },
-  dateCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.md,
-  },
-  dateWell: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surfaceElevated,
-  },
-  dateButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  dateButton: {
-    width: layout.minTapTarget,
-    height: layout.minTapTarget,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dateButtonDisabled: {
-    opacity: 0.4,
-  },
-  dateLabel: {
-    flex: 1,
-    color: colors.textPrimary,
   },
   note: {
     minHeight: layout.minTapTarget,

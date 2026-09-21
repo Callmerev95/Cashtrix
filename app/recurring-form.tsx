@@ -273,7 +273,7 @@ export default function RecurringFormScreen() {
           />
 
           <View style={styles.gap}>
-            <SectionHeader testID="recurring-wallet-header" title="Wallet" />
+            <SectionHeader testID="recurring-wallet-header" title="Dompet" />
             <View testID="recurring-wallet-picker" style={styles.chips}>
               {wallets.map((wallet) => {
                 const active = wallet.id === walletChoice;
@@ -301,7 +301,7 @@ export default function RecurringFormScreen() {
               })}
               {wallets.length === 0 ? (
                 <Text style={[typography.bodySm, styles.hint]}>
-                  Belum ada wallet aktif. Buat satu dulu di menu Dompet.
+                  Belum ada dompet aktif. Buat satu dulu di menu Dompet.
                 </Text>
               ) : null}
             </View>

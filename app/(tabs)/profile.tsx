@@ -355,7 +355,7 @@ export default function ProfileScreen() {
                       {archivedPauses.length} aturan dijeda
                     </Text>
                     <Text style={[typography.bodySm, styles.rowSubtitle]}>
-                      Wallet-nya diarsipkan — ketuk untuk meninjau
+                      Dompetnya diarsipkan — ketuk untuk meninjau
                     </Text>
                   </View>
                   <MaterialIcons
