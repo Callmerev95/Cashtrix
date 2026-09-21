@@ -241,6 +241,24 @@ export async function listWalletOptions(): Promise<WalletOption[]> {
 }
 
 /**
+ * The newest live transaction, fully joined — the undo snackbar's copy needs a
+ * name, so it cannot reuse `lastUsedWalletId` (which selects `wallet_id` only).
+ * Newest is `occurred_at desc, id desc`, the same total order the feed uses.
+ */
+export async function latestTransaction(): Promise<Transaction | null> {
+  const { data, error } = await supabase
+    .from('v_transactions_feed')
+    .select(FEED_COLUMNS)
+    .order('occurred_at', { ascending: false })
+    .order('id', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ? toTransaction(data as FeedRow) : null;
+}
+
+/**
  * The wallet of the most recent transaction — the form's default (AC #21).
  * Read from the feed, so a soft-deleted "last" transaction is ignored.
  */

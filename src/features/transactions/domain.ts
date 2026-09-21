@@ -358,6 +358,19 @@ export function transferFeedLabel(
   return destinationName ? `Transfer ke ${destinationName}` : 'Transfer';
 }
 
+/**
+ * The one-line confirmation the undo snackbar shows (V4) — the row that just
+ * disappeared, named, plus its amount. `formatGrouped` is the same digits the
+ * history row renders, so the snackbar cannot disagree with the list.
+ */
+export function deletedTransactionLabel(transaction: Transaction): string {
+  const name =
+    transaction.type === 'transfer'
+      ? transferFeedLabel(transaction.counterpartyWalletName)
+      : transaction.categoryName;
+  return `${name || 'Transaksi'} · Rp ${formatGrouped(transaction.amount)} dihapus`;
+}
+
 // ---------------------------------------------------------------------------
 // History grouping & pagination
 // ---------------------------------------------------------------------------

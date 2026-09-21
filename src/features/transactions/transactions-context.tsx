@@ -33,6 +33,7 @@ import {
   listCategories,
   listTransactions,
   listWalletOptions,
+  restoreTransaction,
   softDeleteTransaction,
   updateTransaction,
   type TransactionDraft,
@@ -40,6 +41,7 @@ import {
 import {
   DEFAULT_TRANSACTION_TYPE,
   PAGE_SIZE,
+  deletedTransactionLabel,
   hasMoreAfter,
   isTransactionType,
   type Category,
@@ -62,13 +64,26 @@ type TransactionsContextValue = {
   /** Persisted Expense/Income preference (default `expense`). */
   lastType: TransactionType;
   lastWalletId: string | null;
+  /** Soft-deleted just now — non-null renders the undo snackbar (V4). */
+  lastDeleted: LatestTransaction | null;
   refresh: () => Promise<void>;
   loadMore: () => Promise<void>;
   loadTransaction: (id: string) => Promise<Transaction | null>;
   save: (input: SaveInput) => Promise<void>;
   remove: (id: string) => Promise<void>;
+  undoDelete: () => Promise<void>;
+  dismissUndo: () => void;
   rememberType: (type: TransactionType) => Promise<void>;
   rememberWallet: (walletId: string) => Promise<void>;
+};
+
+export type LatestTransaction = {
+  /** Id of the soft-deleted row — what `restore_transaction` addresses. */
+  id: string;
+  /** The snackbar's copy, built from the row that left the list. */
+  label: string;
+  /** When the delete landed; the snackbar hides itself after 5 s. */
+  createdAt: number;
 };
 
 export type SaveInput = {
@@ -104,6 +119,9 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     DEFAULT_TRANSACTION_TYPE,
   );
   const [lastWalletId, setLastWalletId] = useState<string | null>(null);
+  const [lastDeleted, setLastDeleted] = useState<LatestTransaction | null>(
+    null,
+  );
 
   const mounted = useRef(true);
   // Guards `loadMore` against a double-fire from `onEndReached` while a page
@@ -183,6 +201,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
         setWallets([]);
         setLastWalletId(null);
         setLastType(DEFAULT_TRANSACTION_TYPE);
+        setLastDeleted(null);
         setError(null);
       }),
     [],
@@ -281,6 +300,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
   const remove = useCallback(
     async (id: string) => {
       const previous = transactions;
+      const deleted = transactions.find((row) => row.id === id) ?? null;
       setTransactions((current) => current.filter((row) => row.id !== id));
 
       try {
@@ -290,10 +310,40 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
         throw cause;
       }
 
+      // The undo window opens only once the delete is committed, so the
+      // snackbar never points at a row that is still alive. A create/edit has
+      // no `deleted` row (the id is not in the page) and simply gets no snack.
+      setLastDeleted(
+        deleted
+          ? {
+              id,
+              label: deletedTransactionLabel(deleted),
+              createdAt: Date.now(),
+            }
+          : null,
+      );
+
       await refresh();
     },
     [refresh, transactions],
   );
+
+  /**
+   * Undo the last soft-delete (V4 AC #1). Called within the snackbar's window;
+   * `restore_transaction` is the same RPC the DB has exposed since T5, so the
+   * 30-day retention and the feed filtering are unchanged. The snackbar is
+   * cleared first so a double-tap cannot fire two restores.
+   */
+  const undoDelete = useCallback(async () => {
+    const target = lastDeleted;
+    setLastDeleted(null);
+    if (!target) return;
+
+    const restored = await restoreTransaction(target.id);
+    if (restored) await refresh();
+  }, [lastDeleted, refresh]);
+
+  const dismissUndo = useCallback(() => setLastDeleted(null), []);
 
   const value = useMemo(
     () => ({
@@ -306,11 +356,14 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       error,
       lastType,
       lastWalletId,
+      lastDeleted,
       refresh,
       loadMore,
       loadTransaction,
       save,
       remove,
+      undoDelete,
+      dismissUndo,
       rememberType,
       rememberWallet,
     }),
@@ -324,11 +377,14 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       error,
       lastType,
       lastWalletId,
+      lastDeleted,
       refresh,
       loadMore,
       loadTransaction,
       save,
       remove,
+      undoDelete,
+      dismissUndo,
       rememberType,
       rememberWallet,
     ],

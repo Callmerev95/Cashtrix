@@ -32,6 +32,7 @@ import {
   deleteWallet,
   formatCurrency,
   reassignAndDeleteWallet,
+  setWalletArchived,
   useWallets,
   walletTypeMeta,
   type Wallet,
@@ -40,7 +41,8 @@ import { WalletRow } from '@/features/wallets/components/wallet-row';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 
 export default function WalletsScreen() {
-  const { wallets, summary, loading, error, refresh } = useWallets();
+  const { wallets, archivedWallets, summary, loading, error, refresh } =
+    useWallets();
   const insets = useSafeAreaInsets();
 
   /** Wallet queued for deletion; non-null opens the reassignment sheet. */
@@ -80,6 +82,27 @@ export default function WalletsScreen() {
     }
 
     setPendingDelete(wallet);
+  }
+
+  async function archiveWallet(wallet: Wallet, archived: boolean) {
+    setBusy(true);
+    try {
+      await setWalletArchived(wallet.id, archived);
+      await refresh();
+      Alert.alert(
+        archived ? 'Wallet diarsipkan' : 'Wallet dibuka dari arsip',
+        archived
+          ? `"${wallet.name}" disembunyikan dari Dashboard dan transaksi baru. Riwayatnya tetap tersimpan.`
+          : `"${wallet.name}" kembali tersedia.`,
+      );
+    } catch (cause) {
+      Alert.alert(
+        'Gagal mengubah wallet',
+        cause instanceof Error ? cause.message : 'Coba lagi sebentar lagi.',
+      );
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function reassignTo(target: Wallet) {
@@ -161,26 +184,87 @@ export default function WalletsScreen() {
                   })
                 }
                 trailing={
-                  <Pressable
-                    testID={`wallet-delete-${wallet.id}`}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Hapus ${wallet.name}`}
-                    disabled={busy}
-                    hitSlop={spacing.sm}
-                    onPress={() => onDeletePress(wallet)}
-                    style={styles.deleteButton}
-                  >
-                    <MaterialIcons
-                      name="delete-outline"
-                      size={20}
-                      color={colors.textSecondary}
-                    />
-                  </Pressable>
+                  <View style={styles.rowActions}>
+                    <Pressable
+                      testID={`wallet-archive-${wallet.id}`}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Arsipkan ${wallet.name}`}
+                      disabled={busy}
+                      hitSlop={spacing.sm}
+                      onPress={() =>
+                        Alert.alert(
+                          'Arsipkan wallet?',
+                          `"${wallet.name}" disembunyikan dari Dashboard dan picker. Riwayat transaksi tetap ada.`,
+                          [
+                            { text: 'Batal', style: 'cancel' },
+                            {
+                              text: 'Arsipkan',
+                              onPress: () => void archiveWallet(wallet, true),
+                            },
+                          ],
+                        )
+                      }
+                      style={styles.deleteButton}
+                    >
+                      <MaterialIcons
+                        name="archive"
+                        size={20}
+                        color={colors.textSecondary}
+                      />
+                    </Pressable>
+                    <Pressable
+                      testID={`wallet-delete-${wallet.id}`}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Hapus ${wallet.name}`}
+                      disabled={busy}
+                      hitSlop={spacing.sm}
+                      onPress={() => onDeletePress(wallet)}
+                      style={styles.deleteButton}
+                    >
+                      <MaterialIcons
+                        name="delete-outline"
+                        size={20}
+                        color={colors.textSecondary}
+                      />
+                    </Pressable>
+                  </View>
                 }
               />
             ))
           )}
         </View>
+
+        {archivedWallets.length > 0 ? (
+          <View style={styles.archivedSection}>
+            <Text style={[typography.labelUppercase, styles.kicker]}>
+              Arsip
+            </Text>
+            {archivedWallets.map((wallet) => (
+              <WalletRow
+                key={wallet.id}
+                testID={`wallet-archived-${wallet.id}`}
+                wallet={wallet}
+                trailing={
+                  <Pressable
+                    testID={`wallet-unarchive-${wallet.id}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Buka arsip ${wallet.name}`}
+                    disabled={busy}
+                    hitSlop={spacing.sm}
+                    onPress={() => void archiveWallet(wallet, false)}
+                    style={styles.deleteButton}
+                  >
+                    <MaterialIcons
+                      name="unarchive"
+                      size={20}
+                      color={colors.accent}
+                    />
+                  </Pressable>
+                }
+              />
+            ))}
+          </View>
+        ) : null}
 
         <View style={styles.actions}>
           <PrimaryButton
@@ -322,6 +406,14 @@ const styles = StyleSheet.create({
   },
   list: {
     marginTop: spacing.lg,
+  },
+  rowActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  archivedSection: {
+    marginTop: spacing.xl,
+    gap: spacing.xs,
   },
   empty: {
     color: colors.textSecondary,

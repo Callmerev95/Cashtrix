@@ -49,7 +49,6 @@
 - `scripts/verify-t7.mjs` is the live end-to-end check (signup → seed → expense-only guard 23514 → upsert-update → 40% ok / 80% warning / 110% exceeded → alert dedup true/false → soft-delete lowers spent without clearing alerts → per-user dedup for second user → anon denial); run it from the repo root with `node scripts/verify-t7.mjs`, then clean up `delete from auth.users where email like 't7-verify-%' or email like 't7-other-%'`.
 
 ### Recurring (V3, #32)
-
 - `src/features/recurring/`: `domain.ts` (pure — seam Jest: `resolveDueDate`/`lastDayOfMonth` (due 1–28 atau last-of-month), `defaultStartsOn` (due bulan ini sudah lewat → mulai bulan depan, spec story 27), `enumerateDueDates` (cermin jendela RPC + plafon 12), `dueLabel`/`statusLabel` ("Jeda"), `formatRuleMonth`/`formatRuleWindow`, `validateRecurringRule`), `api.ts` (CRUD `recurring_rules` + `runCatchUpRpc` + `fetchRecurringCurrentMonth`), `recurring-context.tsx` (`RecurringProvider`/`useRecurring` — rules + `runCatchUp`).
 - `RecurringProvider` **di dalam** `BudgetsProvider` (butuh wallets/transactions/budgets untuk refresh pasca-catch-up) dan **di luar** `AnalyticsProvider`/`ProfileProvider`. Catch-up jalan di app open + `AppState` active, bukan cron/server-push; hanya refresh wallets/transactions/budgets + `evaluateAndAlert` bila RPC benar-benar menulis baris. Semua kegagalan ditelan — catch-up tidak boleh menghalangi app open.
 - Screens: `/recurring` (kartu rule + banner "wallet diarsipkan → N aturan dijeda" + jeda/lanjut/edit/hapus) dan `/recurring-form` (kind segmented **terkunci saat edit**, wallet aktif saja, grid kategori per kind, 28 chip due + "Akhir bulan", `starts_on` read-only hasil `defaultStartsOn`, `ends_on` opsional via stepper bulan). Row Profile "Transaksi berulang" + banner jeda menuju `/recurring`.
@@ -59,6 +58,15 @@
 - Gotcha CHECK: `due_last = false AND due_day BETWEEN 1 AND 28` bernilai NULL (bukan FALSE) saat `due_day` NULL dan CHECK **meloloskan NULL** — konstraint due wajib menulis `due_day IS NOT NULL` eksplisit.
 - `delete __tests__/.session-seed.json` sebelum Jest (sama seperti T4–T8).
 - `scripts/verify-v3-recurring.mjs` (pola V0/T5 + `provisionTestUser`; butuh `SUPABASE_SERVICE_ROLE_KEY`): 51 check — bentuk rule 5 penolakan → catch-up 19 + 1 (plafon) + 0 (idempotent) → soft-delete/hapus rule/arsip wallet → Spent 75rb + exceeded → batas 20 aktif → isolasi bob → anon 42501 → cleanup user uji.
+
+### Undo + arsip (V4, #33)
+
+- Undo delete = snackbar ~5 detik (`UNDO_SNACKBAR_MS = 5000`), bukan layar recycle bin. `TransactionsProvider` membuka jendela via `lastDeleted: { id, label, createdAt } | null` **setelah `soft_delete_transaction` commit** (tidak pernah menunjuk baris yang masih hidup); `undoDelete()` memanggil `restore_transaction` yang sudah ada (T5), lalu clear-dulu-supaya-double-tap-tidak-double-restore. Copy snackbar dari `deletedTransactionLabel` (pure, seam Jest). Timer di `UndoSnackbar` re-arm per `createdAt` — dua hapus beruntun masing-masing dapat jendela penuh. Snackbar dirender di Dashboard; hapus dari edit form (`app/add-transaction.tsx`) memanggil `dismissUndo()` karena confirm sheet sudah deliberate.
+- Arsip Wallet = `wallets.archived_at` (kolom sejak T2 — **V4 tanpa DDL baru**): `Wallet.archivedAt`, `activeWallets`/`archivedWallets` (pure, seam Jest), `setWalletArchived` di api. `WalletsProvider` memegang semua, mengekspos `wallets` = **aktif saja** (Dashboard + semua picker otomatis menyaring) + `archivedWallets` untuk section Arsip di `/wallets` (arsip/buka-arsip; hapus tetap jalur reassign, collapse V2 ditolak). `listWalletOptions`/`listWalletFilters` sudah filter `archived_at is null` di query sejak T5/T6 — tidak berubah.
+- AC "transfer lama ke wallet terarsip tetap bernama" sudah dijamin migrasi V2 (`v_transactions_feed` LEFT JOIN counterparty) — pgTAP V4 menegaskan, bukan migrasi baru. Trigger arsip→jeda-rule milik V3.
+- pgTAP `supabase/tests/database/15_wallet_archive.sql` (15 assertion: arsip/buka-arsip pemilik + view tetap baca + feed nama terarsip + undo soft/restore + hapus-terarsip 23503 + silang-user no-op; kontrol cross-user baca sebagai postgres karena RLS menyembunyikan — pelajaran T4/T5).
+- `delete __tests__/.session-seed.json` sebelum Jest (sama seperti T4–V3).
+- `scripts/verify-v4.mjs` (pola V2 + `provisionTestUser`; butuh `SUPABASE_SERVICE_ROLE_KEY`): 38 check — arsip/buka-arsip via update klien → picker/filter hilang-kembali → feed `BCA Live` tetap → undo delete/restore → hapus-terarsip 23503 → cross-user no-op + 0 feed + restore 0 → anon 42501 → cleanup user uji.
 
 ### Profile (T8)
 

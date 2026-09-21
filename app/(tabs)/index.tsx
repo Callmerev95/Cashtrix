@@ -19,7 +19,11 @@ import { EmptyStateCard, AppHeader, Screen, SectionHeader } from '@/components';
 import { useAuth } from '@/features/auth';
 import { useBudgets } from '@/features/budgets';
 import { displayNameOrEmail, useProfile } from '@/features/profile';
-import { TransactionHistoryList, useTransactions } from '@/features/transactions';
+import {
+  TransactionHistoryList,
+  UndoSnackbar,
+  useTransactions,
+} from '@/features/transactions';
 import { formatCurrency, useWallets } from '@/features/wallets';
 import { TotalBalanceCard } from '@/features/wallets/components/total-balance-card';
 import { WalletRow } from '@/features/wallets/components/wallet-row';
@@ -49,6 +53,9 @@ export default function DashboardScreen() {
     loadingMore,
     hasMore,
     loadMore,
+    lastDeleted,
+    undoDelete,
+    dismissUndo,
   } = useTransactions();
   const insets = useSafeAreaInsets();
 
@@ -199,6 +206,8 @@ export default function DashboardScreen() {
           )}
         </View>
       </ScrollView>
+
+      <UndoSnackbar snack={lastDeleted} onUndo={() => void undoDelete()} onDismiss={dismissUndo} />
     </Screen>
   );
 }

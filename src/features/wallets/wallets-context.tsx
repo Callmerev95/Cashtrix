@@ -21,10 +21,19 @@ import {
 import { onLocalDataPurge } from '@/supabase';
 
 import { listWallets } from './api';
-import { summarizeWallets, type Wallet, type WalletSummary } from './domain';
+import {
+  activeWallets,
+  archivedWallets,
+  summarizeWallets,
+  type Wallet,
+  type WalletSummary,
+} from './domain';
 
 type WalletsContextValue = {
+  /** Active (unarchived) wallets — everything the Dashboard and pickers show. */
   wallets: Wallet[];
+  /** Archived wallets — rendered only by the manage screen's archive section. */
+  archivedWallets: Wallet[];
   summary: WalletSummary;
   loading: boolean;
   error: string | null;
@@ -40,7 +49,7 @@ const EMPTY_SUMMARY: WalletSummary = {
 const WalletsContext = createContext<WalletsContextValue | null>(null);
 
 export function WalletsProvider({ children }: { children: ReactNode }) {
-  const [wallets, setWallets] = useState<Wallet[]>([]);
+  const [allWallets, setAllWallets] = useState<Wallet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
@@ -56,7 +65,7 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
     try {
       const next = await listWallets();
       if (!mounted.current) return;
-      setWallets(next);
+      setAllWallets(next);
       setError(null);
     } catch (cause) {
       if (!mounted.current) return;
@@ -76,7 +85,7 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
     listWallets()
       .then((next) => {
         if (cancelled || !mounted.current) return;
-        setWallets(next);
+        setAllWallets(next);
         setError(null);
       })
       .catch((cause: unknown) => {
@@ -97,17 +106,19 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
     () =>
       onLocalDataPurge(() => {
         if (!mounted.current) return;
-        setWallets([]);
+        setAllWallets([]);
         setError(null);
       }),
     [],
   );
 
+  const wallets = useMemo(() => activeWallets(allWallets), [allWallets]);
+  const archived = useMemo(() => archivedWallets(allWallets), [allWallets]);
   const summary = useMemo(() => summarizeWallets(wallets), [wallets]);
 
   const value = useMemo(
-    () => ({ wallets, summary, loading, error, refresh }),
-    [wallets, summary, loading, error, refresh],
+    () => ({ wallets, archivedWallets: archived, summary, loading, error, refresh }),
+    [wallets, archived, summary, loading, error, refresh],
   );
 
   return (

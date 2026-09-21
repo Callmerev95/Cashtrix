@@ -4,6 +4,7 @@ export {
   deleteWallet,
   listWallets,
   reassignAndDeleteWallet,
+  setWalletArchived,
   updateWallet,
 } from './api';
 export {
@@ -11,6 +12,8 @@ export {
   MAX_WALLETS,
   WALLET_NAME_MAX,
   WALLET_TYPES,
+  activeWallets,
+  archivedWallets,
   formatAmount,
   formatCurrency,
   hasWalletErrors,

@@ -6,6 +6,8 @@
 import {
   AMOUNT_MAX,
   MAX_WALLETS,
+  activeWallets,
+  archivedWallets,
   formatAmount,
   formatCurrency,
   hasWalletErrors,
@@ -27,6 +29,7 @@ function wallet(partial: Partial<Wallet>): Wallet {
     openingBalance: partial.openingBalance ?? 0,
     balance: partial.balance ?? 0,
     transactionCount: partial.transactionCount ?? 0,
+    archivedAt: partial.archivedAt ?? null,
   };
 }
 
@@ -190,5 +193,32 @@ describe('walletTypeMeta', () => {
     expect(isWalletType('bank')).toBe(true);
     expect(isWalletType('crypto')).toBe(false);
     expect(isWalletType(null)).toBe(false);
+  });
+});
+
+describe('activeWallets / archivedWallets (V4)', () => {
+  it('menyaring wallet terarsip dari picker, tanpa menyentuh urutan', () => {
+    const all = [
+      wallet({ id: 'a', name: 'BCA' }),
+      wallet({ id: 'b', name: 'Kartu Lama', archivedAt: '2026-09-20T00:00:00Z' }),
+      wallet({ id: 'c', name: 'GoPay' }),
+    ];
+
+    expect(activeWallets(all).map((item) => item.id)).toEqual(['a', 'c']);
+    expect(archivedWallets(all).map((item) => item.id)).toEqual(['b']);
+  });
+
+  it('memisahkan kosong tanpa NaN', () => {
+    expect(activeWallets([])).toEqual([]);
+    expect(archivedWallets([])).toEqual([]);
+  });
+
+  it('mengecualikan wallet terarsip dari saldo gabungan Dashboard', () => {
+    const all = [
+      wallet({ id: 'a', balance: 500_000 }),
+      wallet({ id: 'b', balance: 900_000, archivedAt: '2026-09-20T00:00:00Z' }),
+    ];
+
+    expect(summarizeWallets(activeWallets(all)).totalBalance).toBe(500_000);
   });
 });
