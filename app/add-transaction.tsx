@@ -80,6 +80,7 @@ export default function AddTransactionScreen() {
     loadTransaction,
     save,
     remove,
+    dismissUndo,
     rememberType,
     rememberWallet,
   } = useTransactions();
@@ -288,6 +289,10 @@ export default function AddTransactionScreen() {
         // Non-fatal; the Budgets tab refreshes on its own.
       }
       setConfirmingDelete(false);
+      // A delete from the edit form is deliberate (confirm sheet passed); the
+      // snackbar on the Dashboard belongs to *this* row's undo — suppress it,
+      // or it would offer to restore what the sheet just confirmed.
+      dismissUndo();
       router.back();
     } catch (cause) {
       setBusy(false);

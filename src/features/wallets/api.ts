@@ -16,6 +16,7 @@ type WalletBalanceRow = {
   opening_balance: number | string;
   balance: number | string;
   transaction_count: number | string;
+  archived_at: string | null;
 };
 
 function toWallet(row: WalletBalanceRow): Wallet {
@@ -26,6 +27,7 @@ function toWallet(row: WalletBalanceRow): Wallet {
     openingBalance: Number(row.opening_balance),
     balance: Number(row.balance),
     transactionCount: Number(row.transaction_count),
+    archivedAt: row.archived_at,
   };
 }
 
@@ -33,7 +35,9 @@ function toWallet(row: WalletBalanceRow): Wallet {
 export async function listWallets(): Promise<Wallet[]> {
   const { data, error } = await supabase
     .from('v_wallet_balances')
-    .select('wallet_id, name, type, opening_balance, balance, transaction_count')
+    .select(
+      'wallet_id, name, type, opening_balance, balance, transaction_count, archived_at',
+    )
     .order('created_at', { ascending: true });
 
   if (error) throw error;
@@ -86,6 +90,23 @@ export async function updateWallet(input: {
  */
 export async function deleteWallet(id: string): Promise<void> {
   const { error } = await supabase.from('wallets').delete().eq('id', id);
+  if (error) throw error;
+}
+
+/**
+ * Archive / unarchive (V4). Archived wallets drop out of the Dashboard and the
+ * pickers, keep their transaction history, and auto-pause recurring rules (the
+ * DB trigger from V3). Unarchiving restores all of it.
+ */
+export async function setWalletArchived(
+  id: string,
+  archived: boolean,
+): Promise<void> {
+  const { error } = await supabase
+    .from('wallets')
+    .update({ archived_at: archived ? new Date().toISOString() : null })
+    .eq('id', id);
+
   if (error) throw error;
 }
 

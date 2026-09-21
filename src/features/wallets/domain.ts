@@ -29,6 +29,11 @@ export type Wallet = {
   openingBalance: number;
   balance: number;
   transactionCount: number;
+  /**
+   * Archive marker (V4). An archived wallet keeps its rows and its history —
+   * it only disappears from the Dashboard and every picker. `null` = active.
+   */
+  archivedAt: string | null;
 };
 
 export function isWalletType(value: unknown): value is WalletType {
@@ -161,6 +166,21 @@ export const walletTypeMeta: Record<WalletType, WalletTypeMeta> = {
   cash: { label: 'Tunai', icon: 'payments', accent: 'accent' },
   card: { label: 'Kartu', icon: 'credit-card', accent: 'textSecondary' },
 };
+
+// ---------------------------------------------------------------------------
+// Archive split (V4) — Dashboard and pickers render `activeWallets` only;
+// the Wallets screen also renders `archivedWallets` with an unarchive action.
+// ---------------------------------------------------------------------------
+
+/** Active (unarchived) wallets, in list order. */
+export function activeWallets(wallets: Wallet[]): Wallet[] {
+  return wallets.filter((wallet) => wallet.archivedAt === null);
+}
+
+/** Archived wallets, in list order (feeds the manage screen's archive row). */
+export function archivedWallets(wallets: Wallet[]): Wallet[] {
+  return wallets.filter((wallet) => wallet.archivedAt !== null);
+}
 
 // ---------------------------------------------------------------------------
 // Derived view data

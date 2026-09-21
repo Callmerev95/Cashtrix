@@ -4,11 +4,12 @@ export {
   LAST_TYPE_KEY,
   LAST_WALLET_KEY,
 } from './transactions-context';
-export type { SaveInput } from './transactions-context';
+export type { SaveInput, LatestTransaction } from './transactions-context';
 export {
   createTransaction,
   getTransaction,
   lastUsedWalletId,
+  latestTransaction,
   listCategories,
   listTransactions,
   listWalletOptions,
@@ -27,6 +28,7 @@ export {
   TRANSFER_ICON,
   amountMessages,
   categoriesForKind,
+  deletedTransactionLabel,
   formatAmountInput,
   formatDateDivider,
   formatGrouped,
@@ -61,3 +63,4 @@ export { TypeSegmentedControl } from './components/type-segmented-control';
 export { AmountField } from './components/amount-field';
 export { DeleteConfirmSheet } from './components/delete-confirm-sheet';
 export { TransactionHistoryList } from './components/transaction-history-list';
+export { UndoSnackbar } from './components/undo-snackbar';
