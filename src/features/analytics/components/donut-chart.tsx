@@ -212,6 +212,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   holeValue: {
-    color: colors.textPrimary,
+    color: colors.expense,
   },
 });

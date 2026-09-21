@@ -11,6 +11,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef } from 'react';
+import type { ReactNode } from 'react';
 
 import { appFonts } from '@/fonts';
 import { AuthProvider, useAuth } from '@/features/auth';
@@ -121,6 +122,36 @@ function RootNavigator() {
   );
 }
 
+/**
+ * Data providers, remounted per user.
+ *
+ * Every provider below fetches once on mount. Without the `key`, that fetch
+ * runs while the app boots — usually before a session exists — so RLS returns
+ * nothing and no later event refetches: a returning user sees empty screens
+ * until a restart. Keying on the stable `user.id` (not the session object,
+ * so token refreshes never remount) guarantees each login gets a fresh,
+ * authenticated load; sign-out remounts as `guest`, which also drops the
+ * in-memory copies alongside the persisted purge.
+ */
+export function DataProviders({ children }: { children: ReactNode }) {
+  const { session } = useAuth();
+  const userKey = session?.user.id ?? 'guest';
+
+  return (
+    <WalletsProvider key={userKey}>
+      <TransactionsProvider>
+        <BudgetsProvider>
+          <RecurringProvider>
+            <AnalyticsProvider>
+              <ProfileProvider>{children}</ProfileProvider>
+            </AnalyticsProvider>
+          </RecurringProvider>
+        </BudgetsProvider>
+      </TransactionsProvider>
+    </WalletsProvider>
+  );
+}
+
 export default function RootLayout() {
   const [fontsLoaded, fontsError] = useFonts(appFonts);
 
@@ -138,19 +169,9 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <WalletsProvider>
-        <TransactionsProvider>
-          <BudgetsProvider>
-            <RecurringProvider>
-              <AnalyticsProvider>
-                <ProfileProvider>
-                  <RootNavigator />
-                </ProfileProvider>
-              </AnalyticsProvider>
-            </RecurringProvider>
-          </BudgetsProvider>
-        </TransactionsProvider>
-      </WalletsProvider>
+      <DataProviders>
+        <RootNavigator />
+      </DataProviders>
     </AuthProvider>
   );
 }

@@ -25,11 +25,15 @@ export const palette = {
   border: '#2C2C2E',
   /** Hairline borders on Layer-2 elements (modals, inputs, active segments). */
   borderStrong: '#3A3A3C',
-  /** Champagne gold. Reserved: CTAs, income, active states, highlights, fills. */
+  /** Champagne gold. Reserved: CTAs, net values, active states, highlights, fills. */
   accent: '#D4AF37',
   /** Secondary stop in gold gradients (progress fill end, hover sheen). */
   accentSoft: '#F3E5AB',
-  /** Muted warm white. Headings, body, transaction names, expense amounts. */
+  /** Income green — income amounts only. */
+  gain: '#30D158',
+  /** Expense red — expense amounts only, never destructive actions. */
+  loss: '#FF6B62',
+  /** Muted warm white. Headings, body, transaction names, combined total. */
   textPrimary: '#E5E5E5',
   /** Cool grey. Timestamps, metadata, inactive labels, disabled states. */
   textSecondary: '#8E8E93',
@@ -49,10 +53,12 @@ export const palette = {
  */
 export const colors = {
   ...palette,
-  /** Income values render gold, currency-md, with a leading `+`. */
-  income: palette.accent,
-  /** Expenses stay muted white — never red (DESIGN.md §1 semantic rules). */
-  expense: palette.textPrimary,
+  /** Income values render green, currency-md, with no prefix. */
+  income: palette.gain,
+  /** Expense values render red, currency-md, with a leading `-`. */
+  expense: palette.loss,
+  /** Net (income − expense) renders gold. */
+  net: palette.accent,
   /** Backdrop scrim for modals/sheets. */
   scrim: 'rgba(0, 0, 0, 0.6)',
   /** Gold at 15% opacity for highlighted card borders. */

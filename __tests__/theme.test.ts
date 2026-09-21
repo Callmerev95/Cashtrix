@@ -14,7 +14,7 @@ import {
 } from '@/theme';
 
 describe('theme — canonical colours (DESIGN.md §1)', () => {
-  it('exposes the nine core palette tokens with canonical hex values', () => {
+  it('exposes the core palette tokens with canonical hex values', () => {
     expect(colors.background).toBe('#0A0A0A');
     expect(colors.surfaceCard).toBe('#1C1C1E');
     expect(colors.surfaceElevated).toBe('#2C2C2E');
@@ -22,16 +22,20 @@ describe('theme — canonical colours (DESIGN.md §1)', () => {
     expect(colors.borderStrong).toBe('#3A3A3C');
     expect(colors.accent).toBe('#D4AF37');
     expect(colors.accentSoft).toBe('#F3E5AB');
+    expect(colors.gain).toBe('#30D158');
+    expect(colors.loss).toBe('#FF6B62');
     expect(colors.textPrimary).toBe('#E5E5E5');
     expect(colors.textSecondary).toBe('#8E8E93');
     expect(colors.textOnAccent).toBe('#0A0A0A');
   });
 
-  it('keeps semantic rules: income gold, expense muted white, error reserved', () => {
-    expect(colors.income).toBe(colors.accent);
-    expect(colors.expense).toBe(colors.textPrimary);
+  it('keeps semantic rules: income green, expense red, net gold, error reserved', () => {
+    expect(colors.income).toBe(colors.gain);
+    expect(colors.expense).toBe(colors.loss);
+    expect(colors.net).toBe(colors.accent);
     expect(colors.error).toBe('#FFB4AB');
     expect(colors.expense).not.toBe(colors.error);
+    expect(colors.expense).not.toBe(colors.textPrimary);
   });
 });
 

@@ -53,6 +53,7 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
+  const inflight = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
     mounted.current = true;
@@ -61,20 +62,30 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const refresh = useCallback(async () => {
-    try {
-      const next = await listWallets();
-      if (!mounted.current) return;
-      setAllWallets(next);
-      setError(null);
-    } catch (cause) {
-      if (!mounted.current) return;
-      setError(
-        cause instanceof Error ? cause.message : 'Gagal memuat dompet',
-      );
-    } finally {
-      if (mounted.current) setLoading(false);
+  const refresh = useCallback(() => {
+    // Reuse the in-flight fetch when a save races a second refresh (e.g. the
+    // post-save `refreshWallets + refreshBudgets` pair): the second caller
+    // awaits the same promise instead of firing a duplicate query.
+    if (!inflight.current) {
+      inflight.current = (async () => {
+        try {
+          const next = await listWallets();
+          if (!mounted.current) return;
+          setAllWallets(next);
+          setError(null);
+        } catch (cause) {
+          if (!mounted.current) return;
+          setError(
+            cause instanceof Error ? cause.message : 'Gagal memuat dompet',
+          );
+        } finally {
+          if (mounted.current) setLoading(false);
+        }
+      })().finally(() => {
+        inflight.current = null;
+      });
     }
+    return inflight.current;
   }, []);
 
   useEffect(() => {

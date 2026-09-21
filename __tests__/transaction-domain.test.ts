@@ -302,7 +302,7 @@ describe('formatSignedAmount / formatGrouped', () => {
     expect(formatGrouped(0)).toBe('0');
   });
 
-  it('income tanpa prefix (warna gold pembedanya) dan expense bertanda - (#26)', () => {
+  it('income tanpa prefix (warna hijau pembedanya) dan expense bertanda -', () => {
     expect(formatSignedAmount('income', 7_000_000)).toBe('Rp 7.000.000');
     expect(formatSignedAmount('expense', 50_000)).toBe('-Rp 50.000');
   });

@@ -103,6 +103,7 @@ export function BudgetsProvider({ children }: { children: ReactNode }) {
   const [recentAlerts, setRecentAlerts] = useState<FiredAlert[]>([]);
 
   const mounted = useRef(true);
+  const inflight = useRef<Promise<void> | null>(null);
   // Guards `evaluateAndAlert` against concurrent runs (a save racing a
   // foreground refresh): without it the same crossing could notify twice
   // before either `recordAlert` lands.
@@ -200,24 +201,32 @@ export function BudgetsProvider({ children }: { children: ReactNode }) {
   // State updates happen inside `.then`/`.catch`, never synchronously in the
   // effect body (`react-hooks/set-state-in-effect`, cf. T5/T6).
   const load = useCallback((): Promise<void> => {
-    return fetchTimezone()
-      .then((tz) => fetchCurrentMonth(tz))
-      .then((current) =>
-        listBudgetStatus(current).then((rows) => ({ current, rows })),
-      )
-      .then(({ current, rows }) => {
-        if (!mounted.current) return;
-        setMonth(current);
-        setBudgets(rows);
-        setLoadedMonth(current);
-        setError(null);
-      })
-      .catch((cause: unknown) => {
-        if (!mounted.current) return;
-        setError(
-          cause instanceof Error ? cause.message : 'Gagal memuat budget',
-        );
-      });
+    // In-flight reuse (same as wallets/transactions refresh): a save racing a
+    // second refresh awaits the same fetch instead of doubling it.
+    if (!inflight.current) {
+      inflight.current = fetchTimezone()
+        .then((tz) => fetchCurrentMonth(tz))
+        .then((current) =>
+          listBudgetStatus(current).then((rows) => ({ current, rows })),
+        )
+        .then(({ current, rows }) => {
+          if (!mounted.current) return;
+          setMonth(current);
+          setBudgets(rows);
+          setLoadedMonth(current);
+          setError(null);
+        })
+        .catch((cause: unknown) => {
+          if (!mounted.current) return;
+          setError(
+            cause instanceof Error ? cause.message : 'Gagal memuat budget',
+          );
+        })
+        .finally(() => {
+          inflight.current = null;
+        });
+    }
+    return inflight.current;
   }, []);
 
   // Sign out drops the cached month and every in-app alert.

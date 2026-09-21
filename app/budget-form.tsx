@@ -207,11 +207,12 @@ export default function BudgetFormScreen() {
                 terhapus — alert yang sudah terkirim tetap tercatat.
               </Text>
               <View style={styles.sheetActions}>
-                <GhostButton testID="budget-delete-cancel" label="Batal" onPress={() => setConfirmingDelete(false)} />
+                <GhostButton testID="budget-delete-cancel" label="Batal" onPress={() => setConfirmingDelete(false)} style={styles.sheetAction} />
                 <PrimaryButton
                   testID="budget-delete-confirm"
                   label={busy ? 'Menghapus…' : 'Hapus'}
                   onPress={() => void handleDelete()}
+                  style={styles.sheetAction}
                 />
               </View>
             </View>
@@ -278,6 +279,8 @@ const styles = StyleSheet.create({
   sheetActions: {
     flexDirection: 'row',
     gap: spacing.sm,
-    justifyContent: 'flex-end',
+  },
+  sheetAction: {
+    flex: 1,
   },
 });
