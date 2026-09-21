@@ -61,6 +61,20 @@ Ticket tanpa blocker terbuka, belum di-assign:
 
 V6 tanpa blocker tersisa (V1+V2+V3+V4+V5 sudah closed).
 
+### Review follow-up (di luar ticket map, sudah merged ke `main`)
+
+Hasil review preview build Android + Expo Go oleh owner, diverifikasi di HP:
+
+- PR #42 — reload data pasca-login (`DataProviders key=user.id`), override warna nominal (amandemen DESIGN.md §1: income `#30D158`, expense `#FF6B62`, net gold), tombol hapus budget setengah lebar, guard in-flight refresh.
+- PR #43 — refresh Insight pasca-tulis (save/delete/undo/catch-up/reassign; `AnalyticsProvider` di atas `RecurringProvider`).
+- PR #44 — virtualisasi riwayat (`SectionList` + sticky header; uji 200 txn via `scripts/seed-bulk.mjs`, user uji dibersihkan).
+- Chore: sinkron lockfile v1.1.0 + `.npmrc`, link proyek EAS, `SENTRY_DISABLE_AUTO_UPLOAD` di profil preview, timeout suite navigasi 15 detik (flake CI).
+
+### Setelah V6 (rencana tercatat, belum jadi ticket)
+
+1. **Preloader + skeleton** (cakupan dikunci: startup transition + shimmer generik + placeholder per layar: hero saldo, baris riwayat, KPI/donut, ring budget). Perlu amandemen `DESIGN.md` (motion belum diatur). Sengaja setelah V6 — menyentuh semua permukaan loading → re-gate visual ringan khusus untuknya.
+2. Mock network Supabase di test navigasi (ganti ketergantungan kecepatan runner; paket dengan assert state error/empty) — prasyarat sinyal gate yang kredibel, bagian dari V6 bila sempat.
+
 ### Aturan
 
 - Jangan menutup atau mengubah issue #1 (spec MVP v1.0).
