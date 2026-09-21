@@ -10,6 +10,12 @@
  */
 import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 
+// Router integration tests mount the whole tree (providers attempt their
+// reads on mount); on shared CI runners the first mount can exceed the
+// default 5 s timeout even when nothing is wrong — flaked identically on
+// runs 35550273577, 35560686123 and 35574680625 with no app-code change.
+jest.setTimeout(15_000);
+
 // Font loading is async against the native bridge, which never resolves in
 // Jest; the shell gates first paint on it, so report fonts as ready while
 // keeping the rest of the module (Font.isLoaded, loadAsync) intact.
