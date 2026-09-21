@@ -40,6 +40,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GhostButton, Card, LogoMark, PrimaryButton, Screen, SectionHeader } from '@/components';
+import { useAnalytics } from '@/features/analytics';
 import { useAuth } from '@/features/auth';
 import { useBudgets } from '@/features/budgets';
 import { trackEvent, txCreatedEvent } from '@/features/observability';
@@ -71,6 +72,7 @@ export default function AddTransactionScreen() {
   const { session } = useAuth();
   const { refresh: refreshWallets } = useWallets();
   const { refresh: refreshBudgets, evaluateAndAlert } = useBudgets();
+  const { refresh: refreshAnalytics } = useAnalytics();
   const {
     categories,
     wallets,
@@ -254,11 +256,14 @@ export default function AddTransactionScreen() {
       // changed the aggregate, so it must re-read before the Dashboard paints.
       // Budgets re-read too: a committed expense can push a category past its
       // threshold, and the alert must fire within seconds of the commit
-      // (PRD §2.3 Epic E). Alert evaluation is best-effort — a failure here
-      // must not lose the saved transaction.
+      // (PRD §2.3 Epic E). Analytics re-reads as well: the Insight screen
+      // would otherwise show the pre-save overview until the range changes.
+      // Everything after the save is best-effort — a failure here must not
+      // lose the saved transaction.
       await refreshWallets();
       try {
         await refreshBudgets();
+        await refreshAnalytics();
         await evaluateAndAlert({ userId: session?.user.id ?? '' });
       } catch {
         // In-app banner on the Budgets tab retries on its own refresh.
@@ -280,10 +285,12 @@ export default function AddTransactionScreen() {
       await remove(params.id);
       await refreshWallets();
       // Spent dropped — re-read budgets so rings fall back immediately.
+      // Analytics drops with it, or Insight keeps the deleted row's amounts.
       // No alert evaluation: a lower percent can never cross a threshold
       // upward, and fired alerts are never cleared by edits/deletes.
       try {
         await refreshBudgets();
+        await refreshAnalytics();
       } catch {
         // Non-fatal; the Budgets tab refreshes on its own.
       }

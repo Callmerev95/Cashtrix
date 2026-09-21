@@ -132,6 +132,11 @@ function RootNavigator() {
  * so token refreshes never remount) guarantees each login gets a fresh,
  * authenticated load; sign-out remounts as `guest`, which also drops the
  * in-memory copies alongside the persisted purge.
+ *
+ * Order note: `AnalyticsProvider` sits above `RecurringProvider` (not below
+ * it) so the recurring catch-up can refresh the overview when it births
+ * occurrences. Analytics depends on no context — only the server — while
+ * recurring needs wallets/transactions/budgets, which all stay above it.
  */
 export function DataProviders({ children }: { children: ReactNode }) {
   const { session } = useAuth();
@@ -141,11 +146,11 @@ export function DataProviders({ children }: { children: ReactNode }) {
     <WalletsProvider key={userKey}>
       <TransactionsProvider>
         <BudgetsProvider>
-          <RecurringProvider>
-            <AnalyticsProvider>
+          <AnalyticsProvider>
+            <RecurringProvider>
               <ProfileProvider>{children}</ProfileProvider>
-            </AnalyticsProvider>
-          </RecurringProvider>
+            </RecurringProvider>
+          </AnalyticsProvider>
         </BudgetsProvider>
       </TransactionsProvider>
     </WalletsProvider>

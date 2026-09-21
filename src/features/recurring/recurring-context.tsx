@@ -28,6 +28,7 @@ import {
 
 import { onLocalDataPurge } from '@/supabase';
 import { useAuth } from '@/features/auth';
+import { useAnalytics } from '@/features/analytics';
 import { useBudgets } from '@/features/budgets';
 import { useTransactions } from '@/features/transactions';
 import { useWallets } from '@/features/wallets';
@@ -89,6 +90,7 @@ export function RecurringProvider({ children }: { children: ReactNode }) {
   const { refresh: refreshWallets } = useWallets();
   const { refresh: refreshTransactions } = useTransactions();
   const { refresh: refreshBudgets, evaluateAndAlert } = useBudgets();
+  const { refresh: refreshAnalytics } = useAnalytics();
 
   useEffect(() => {
     mounted.current = true;
@@ -136,6 +138,7 @@ export function RecurringProvider({ children }: { children: ReactNode }) {
           refreshWallets().catch(() => undefined),
           refreshTransactions().catch(() => undefined),
           refreshBudgets().catch(() => undefined),
+          refreshAnalytics().catch(() => undefined),
         ]);
         try {
           await evaluateAndAlert({ userId });
@@ -155,6 +158,7 @@ export function RecurringProvider({ children }: { children: ReactNode }) {
     refreshWallets,
     refreshTransactions,
     refreshBudgets,
+    refreshAnalytics,
     evaluateAndAlert,
   ]);
 

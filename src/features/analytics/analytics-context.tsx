@@ -72,8 +72,10 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Wallet chips + timezone are fetched once; they do not depend on the range.
-  useEffect(() => {
-    listWalletFilters()
+  // The same loader backs `refresh()` so a new/archived wallet shows up in
+  // the filter without a restart.
+  const loadWallets = useCallback((): Promise<void> => {
+    return listWalletFilters()
       .then((next) => {
         if (mounted.current) setWallets(next);
       })
@@ -82,6 +84,10 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
         if (mounted.current) setWallets([]);
       });
   }, []);
+
+  useEffect(() => {
+    void loadWallets();
+  }, [loadWallets]);
 
   // Sign out clears the cached payload so the next user never sees stale money.
   useEffect(
@@ -149,7 +155,10 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     setWalletIdState(value);
   }, []);
 
-  const refresh = useCallback(() => load(range, walletId), [load, range, walletId]);
+  const refresh = useCallback(
+    () => Promise.all([load(range, walletId), loadWallets()]).then(() => undefined),
+    [load, loadWallets, range, walletId],
+  );
 
   const value = useMemo<AnalyticsContextValue>(
     () => ({
