@@ -12,7 +12,7 @@
  */
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyStateCard, AppHeader, Screen, SectionHeader } from '@/components';
@@ -68,146 +68,140 @@ export default function DashboardScreen() {
     session?.user.email,
   );
 
+  // The history list is the screen's outer scroller (a SectionList — nesting
+  // it in a ScrollView would mount every row and defeat virtualization), so
+  // the hero + wallets ride along as its header.
+  const header = (
+    <View>
+      <AppHeader avatarUri={avatarSignedUrl} />
+
+      <View style={styles.titleBlock}>
+        <Text style={[typography.labelUppercase, styles.dateKicker]}>
+          {new Date().toLocaleDateString('id-ID', DATE_FORMAT)}
+        </Text>
+        <View style={styles.titleRow}>
+          <Text
+            style={[typography.headlineMd, styles.name]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+          >
+            {greeting(new Date().getHours())}, {name}
+          </Text>
+          <Pressable
+            testID="dashboard-alerts"
+            accessibilityRole="button"
+            accessibilityLabel={
+              recentAlerts.length > 0
+                ? `${recentAlerts.length} notifikasi budget, buka Budgets`
+                : 'Buka Budgets'
+            }
+            onPress={() => router.push('/(tabs)/budgets')}
+            style={styles.iconButton}
+          >
+            <MaterialIcons
+              name={
+                recentAlerts.length > 0
+                  ? 'notifications-active'
+                  : 'notifications-none'
+              }
+              size={22}
+              color={
+                recentAlerts.length > 0
+                  ? colors.accent
+                  : colors.textSecondary
+              }
+            />
+            {recentAlerts.length > 0 ? (
+              <View style={styles.alertDot} />
+            ) : null}
+          </Pressable>
+        </View>
+      </View>
+
+      <TotalBalanceCard
+        total={summary.totalBalance}
+        walletCount={summary.count}
+        loading={loading}
+      />
+
+      <View style={styles.section}>
+        <SectionHeader
+          testID="dashboard-wallets"
+          title="Dompet"
+          actionLabel="Kelola"
+          onAction={() => router.push('/wallets')}
+        />
+
+        {wallets.length === 0 && !loading ? (
+          <EmptyStateCard
+            icon="account-balance-wallet"
+            title="Dompet kosong"
+            description="Tambahkan dompet pertama Anda untuk mulai mencatat arus kas."
+            actionLabel="Tambah Dompet"
+            onAction={() => router.push('/wallet-form')}
+          />
+        ) : (
+          wallets
+            .slice(0, 3)
+            .map((wallet) => (
+              <WalletRow
+                key={wallet.id}
+                testID={`dashboard-wallet-${wallet.id}`}
+                wallet={wallet}
+                onPress={() =>
+                  router.push({
+                    pathname: '/wallet-form',
+                    params: { id: wallet.id },
+                  })
+                }
+              />
+            ))
+        )}
+
+        {wallets.length > 3 ? (
+          <Text style={[typography.bodySm, styles.meta]}>
+              +{wallets.length - 3} dompet lain · total{' '}
+            {formatCurrency(summary.totalBalance)}
+          </Text>
+        ) : null}
+      </View>
+
+      <View style={styles.section}>
+        <SectionHeader
+          testID="dashboard-history"
+          title="Riwayat"
+          actionLabel={
+            transactions.length > 0
+              ? `${transactions.length} transaksi`
+              : undefined
+          }
+        />
+      </View>
+    </View>
+  );
+
   return (
     <Screen>
-      <ScrollView
-        style={styles.flex}
+      <TransactionHistoryList
+        transactions={transactions}
+        loading={loadingTransactions}
+        loadingMore={loadingMore}
+        hasMore={hasMore}
+        onEndReached={() => {
+          if (hasMore && !loadingMore) void loadMore();
+        }}
         contentContainerStyle={[
           styles.body,
           { paddingTop: insets.top + spacing.xl },
         ]}
-        showsVerticalScrollIndicator={false}
-        onScroll={({ nativeEvent }) => {
-          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-          const distanceFromBottom =
-            contentSize.height - (contentOffset.y + layoutMeasurement.height);
-          // 240px lead so the next page is usually already there when the user
-          // arrives at the bottom. `loadMore` itself guards against double-fire.
-          if (distanceFromBottom < 240) void loadMore();
-        }}
-        scrollEventThrottle={16}
-      >
-        <AppHeader avatarUri={avatarSignedUrl} />
-
-        <View style={styles.titleBlock}>
-          <Text style={[typography.labelUppercase, styles.dateKicker]}>
-            {new Date().toLocaleDateString('id-ID', DATE_FORMAT)}
-          </Text>
-          <View style={styles.titleRow}>
-            <Text
-              style={[typography.headlineMd, styles.name]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-            >
-              {greeting(new Date().getHours())}, {name}
-            </Text>
-            <Pressable
-              testID="dashboard-alerts"
-              accessibilityRole="button"
-              accessibilityLabel={
-                recentAlerts.length > 0
-                  ? `${recentAlerts.length} notifikasi budget, buka Budgets`
-                  : 'Buka Budgets'
-              }
-              onPress={() => router.push('/(tabs)/budgets')}
-              style={styles.iconButton}
-            >
-              <MaterialIcons
-                name={
-                  recentAlerts.length > 0
-                    ? 'notifications-active'
-                    : 'notifications-none'
-                }
-                size={22}
-                color={
-                  recentAlerts.length > 0
-                    ? colors.accent
-                    : colors.textSecondary
-                }
-              />
-              {recentAlerts.length > 0 ? (
-                <View style={styles.alertDot} />
-              ) : null}
-            </Pressable>
-          </View>
-        </View>
-
-        <TotalBalanceCard
-          total={summary.totalBalance}
-          walletCount={summary.count}
-          loading={loading}
-        />
-
-        <View style={styles.section}>
-          <SectionHeader
-            testID="dashboard-wallets"
-            title="Dompet"
-            actionLabel="Kelola"
-            onAction={() => router.push('/wallets')}
-          />
-
-          {wallets.length === 0 && !loading ? (
-            <EmptyStateCard
-              icon="account-balance-wallet"
-              title="Dompet kosong"
-              description="Tambahkan dompet pertama Anda untuk mulai mencatat arus kas."
-              actionLabel="Tambah Dompet"
-              onAction={() => router.push('/wallet-form')}
-            />
-          ) : (
-            wallets
-              .slice(0, 3)
-              .map((wallet) => (
-                <WalletRow
-                  key={wallet.id}
-                  testID={`dashboard-wallet-${wallet.id}`}
-                  wallet={wallet}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/wallet-form',
-                      params: { id: wallet.id },
-                    })
-                  }
-                />
-              ))
-          )}
-
-          {wallets.length > 3 ? (
-            <Text style={[typography.bodySm, styles.meta]}>
-              +{wallets.length - 3} wallet lain · total{' '}
-              {formatCurrency(summary.totalBalance)}
-            </Text>
-          ) : null}
-        </View>
-
-        <View style={styles.section}>
-          <SectionHeader
-            testID="dashboard-history"
-            title="Riwayat"
-            actionLabel={
-              transactions.length > 0
-                ? `${transactions.length} transaksi`
-                : undefined
-            }
-          />
-
-          {loadingTransactions && transactions.length === 0 ? (
-            <Text style={[typography.bodyMd, styles.empty]}>Memuat riwayat…</Text>
-          ) : (
-            <TransactionHistoryList
-              transactions={transactions}
-              loadingMore={loadingMore}
-              hasMore={hasMore}
-              onPressTransaction={(transaction) =>
-                router.push({
-                  pathname: '/add-transaction',
-                  params: { id: transaction.id },
-                })
-              }
-            />
-          )}
-        </View>
-      </ScrollView>
+        ListHeaderComponent={header}
+        onPressTransaction={(transaction) =>
+          router.push({
+            pathname: '/add-transaction',
+            params: { id: transaction.id },
+          })
+        }
+      />
 
       <UndoSnackbar
         snack={lastDeleted}
@@ -230,9 +224,6 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-  },
   body: {
     // paddingBottom delegated to Screen
   },
@@ -274,9 +265,6 @@ const styles = StyleSheet.create({
   },
   section: {
     marginTop: spacing.xl,
-  },
-  empty: {
-    color: colors.textSecondary,
   },
   meta: {
     marginTop: spacing.sm,
