@@ -12,18 +12,15 @@
  * the end (cascade removes wallets + rules + transactions).
  */
 import { createClient } from '@supabase/supabase-js';
-import { readFileSync } from 'node:fs';
+import { readAnonKey } from './lib/keys.mjs';
 
 import { provisionTestUser, requireAdminClient } from './lib/admin-confirm.mjs';
 
 const SUPABASE_URL = 'https://bklriyyuglwiqczgbqgq.supabase.co';
 
-// Publishable key is safe to hold in the bundle (RLS is the guard). Read it
-// from .env so the script tracks whatever the app is built with.
-const env = readFileSync(new URL('../.env', import.meta.url), 'utf8');
-const anonKey =
-  /EXPO_PUBLIC_SUPABASE_ANON_KEY=(.+)/.exec(env)?.[1]?.trim() ?? '';
-if (!anonKey) throw new Error('EXPO_PUBLIC_SUPABASE_ANON_KEY tidak ditemukan');
+// Publishable key is safe to hold in the bundle (RLS is the guard). Env var
+// on CI, `.env` locally (scripts/lib/keys.mjs).
+const anonKey = readAnonKey();
 
 const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 

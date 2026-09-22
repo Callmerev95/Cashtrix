@@ -12,16 +12,13 @@
  * Run from the repo root so package resolution works normally.
  */
 import { createClient } from '@supabase/supabase-js';
-import { readFileSync } from 'node:fs';
+import { readAnonKey } from './lib/keys.mjs';
 
 import { requireAdminClient } from './lib/admin-confirm.mjs';
 
 const SUPABASE_URL = 'https://bklriyyuglwiqczgbqgq.supabase.co';
 
-const env = readFileSync(new URL('../.env', import.meta.url), 'utf8');
-const anonKey =
-  /EXPO_PUBLIC_SUPABASE_ANON_KEY=(.+)/.exec(env)?.[1]?.trim() ?? '';
-if (!anonKey) throw new Error('EXPO_PUBLIC_SUPABASE_ANON_KEY tidak ditemukan');
+const anonKey = readAnonKey();
 
 const admin = requireAdminClient(
   SUPABASE_URL,

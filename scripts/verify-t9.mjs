@@ -23,13 +23,11 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { provisionTestUser } from './lib/admin-confirm.mjs';
+import { readAnonKey } from './lib/keys.mjs';
 
 const SUPABASE_URL = 'https://bklriyyuglwiqczgbqgq.supabase.co';
 
-const env = readFileSync(new URL('../.env', import.meta.url), 'utf8');
-const anonKey =
-  /EXPO_PUBLIC_SUPABASE_ANON_KEY=(.+)/.exec(env)?.[1]?.trim() ?? '';
-if (!anonKey) throw new Error('EXPO_PUBLIC_SUPABASE_ANON_KEY tidak ditemukan');
+const anonKey = readAnonKey();
 
 const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 if (!SUPABASE_SERVICE_ROLE) {

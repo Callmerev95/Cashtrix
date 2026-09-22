@@ -16,17 +16,14 @@
  *   delete from auth.users where email like 't8-verify-%' or email like 't8-other-%';
  */
 import { createClient } from '@supabase/supabase-js';
-import { readFileSync } from 'node:fs';
+import { readAnonKey } from './lib/keys.mjs';
 
 import { provisionTestUser, requireAdminClient } from './lib/admin-confirm.mjs';
 import { Buffer } from 'node:buffer';
 
 const SUPABASE_URL = 'https://bklriyyuglwiqczgbqgq.supabase.co';
 
-const env = readFileSync(new URL('../.env', import.meta.url), 'utf8');
-const anonKey =
-  /EXPO_PUBLIC_SUPABASE_ANON_KEY=(.+)/.exec(env)?.[1]?.trim() ?? '';
-if (!anonKey) throw new Error('EXPO_PUBLIC_SUPABASE_ANON_KEY tidak ditemukan');
+const anonKey = readAnonKey();
 
 const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
