@@ -153,6 +153,26 @@ async function main() {
     .single();
   check('tx2 income tersimpan', !tx2.error, tx2.error?.message);
 
+  // v1.1.x (Opsi B): transfer tampil satu baris dengan kolom kategori
+  // "Transfer ke {tujuan}" dan kolom dompet = sumber.
+  const txTransfer = await supabase
+    .from('transactions')
+    .insert({
+      user_id: userId,
+      wallet_id: cashId,
+      counterparty_wallet_id: customWalletId,
+      category_id: null,
+      type: 'transfer',
+      amount: 100_000,
+      currency_code: 'IDR',
+      occurred_at: new Date(Date.now() - 1800_000).toISOString(),
+      note: null,
+      idempotency_key: crypto.randomUUID(),
+    })
+    .select('id')
+    .single();
+  check('tx transfer tersimpan', !txTransfer.error, txTransfer.error?.message);
+
   // -------------------------------------------------------------------------
   section('export-csv (AC #1)');
   const exported = await supabase.functions.invoke('export-csv', { method: 'POST' });
@@ -166,9 +186,14 @@ async function main() {
     lines[0] === 'date,type,category,wallet,amount,currency,note',
     JSON.stringify(lines[0]),
   );
-  check('2 baris data', lines.length === 3, `got ${lines.length} baris`);
+  check('3 baris data', lines.length === 4, `got ${lines.length} baris`);
   check('memuat kategori + wallet milik caller', csv.includes('Makanan') && csv.includes('T9 Dompet'));
   check('memuat amount + currency', csv.includes('50000') && csv.includes('1000000') && csv.includes('IDR'));
+  check(
+    'transfer satu baris: type + label tujuan + dompet sumber',
+    csv.includes('transfer,Transfer ke T9 Dompet,') && csv.includes(',100000,'),
+    lines.find((line) => line.startsWith('20') && line.includes('transfer')) ?? '(baris transfer tak ada)',
+  );
   check(
     'note bermusuhan ter-escape RFC 4180',
     csv.includes('"nasi padang, rendang ""extra"""'),
@@ -189,7 +214,8 @@ async function main() {
   const csv2 = typeof reExported.data === 'string' ? reExported.data : '';
   check(
     'transaksi terhapus tidak muncul di CSV',
-    !csv2.includes('nasi padang') && csv2.includes('gaji september'),
+    !csv2.includes('nasi padang') && csv2.includes('gaji september') &&
+      csv2.includes('Transfer ke T9 Dompet'),
   );
   // Kembalikan agar delete-account diuji dengan data lengkap (termasuk
   // baris soft-deleted — function harus menghapusnya permanen juga).

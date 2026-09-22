@@ -4,6 +4,8 @@
  * Mengembalikan seluruh transaksi milik pemanggil sebagai CSV:
  *   date,type,category,wallet,amount,currency,note
  * diurut `occurred_at` desc, tanpa baris soft-deleted (`deleted_at is null`).
+ * Transfer (tanpa kategori) tampil satu baris dengan kolom kategori
+ * "Transfer ke {dompet tujuan}" dan kolom dompet = sumber.
  *
  * Generasi dilakukan di server (PRD §2.3 AC F2) agar tidak membebani memori
  * client — T8 tinggal men-share string yang dikembalikan API client
@@ -103,14 +105,15 @@ Deno.serve(async (req: Request) => {
     const from = page * PAGE_SIZE;
     // V2 menambahkan FK komposit kedua transactions→wallets
     // (counterparty_wallet_id), sehingga hint `wallets!inner` menjadi ambigu
-    // (PGRST201). Nama constraint eksplisit memilih sisi sumber — perilaku
-    // T9 pulih persis (income/expense; transfer tetap ter-exclude oleh
-    // `categories!inner` seperti sebelum V2 — semantik transfer-di-CSV
-    // diputuskan di ticket follow-up, bukan di gerbang).
+    // (PGRST201) — kedua sisi dinamai eksplisit via constraint + alias
+    // (`source`/`dest`). `categories` LEFT (tanpa `!inner`) agar Transfer
+    // (category NULL) ikut ter-export; kolom kategorinya diisi label
+    // "Transfer ke {tujuan}" — keputusan v1.1.x (Opsi B): satu baris per
+    // transaksi, bentuk kolom stabil, konsisten dengan label feed di app.
     const { data, error } = await admin
       .from('transactions')
       .select(
-        'occurred_at, type, amount, currency_code, note, categories!inner(name), wallets!transactions_wallet_id_user_id_fkey(name)',
+        'occurred_at, type, amount, currency_code, note, categories(name), source:wallets!transactions_wallet_id_user_id_fkey(name), dest:wallets!transactions_counterparty_wallet_fk(name)',
       )
       .eq('user_id', userId)
       .is('deleted_at', null)
@@ -128,20 +131,26 @@ Deno.serve(async (req: Request) => {
       amount: number | string;
       currency_code: string;
       note: string | null;
-      categories: { name: string } | { name: string }[];
-      wallets: { name: string } | { name: string }[];
+      categories: { name: string } | { name: string }[] | null;
+      source: { name: string } | { name: string }[] | null;
+      dest: { name: string } | { name: string }[] | null;
     }[];
     for (const item of batch) {
       const category = Array.isArray(item.categories)
         ? item.categories[0]
         : item.categories;
-      const wallet = Array.isArray(item.wallets)
-        ? item.wallets[0]
-        : item.wallets;
+      const wallet = Array.isArray(item.source) ? item.source[0] : item.source;
+      const counterparty = Array.isArray(item.dest) ? item.dest[0] : item.dest;
       rows.push({
         occurred_at: item.occurred_at,
         type: item.type,
-        category_name: category?.name ?? null,
+        // Transfer tidak punya kategori (NULL) — kolomnya membawa label
+        // tujuan agar barisnya terbaca ("Transfer ke Bank"), sama seperti
+        // judul baris di riwayat aplikasi.
+        category_name:
+          item.type === 'transfer' && counterparty
+            ? `Transfer ke ${counterparty.name}`
+            : (category?.name ?? null),
         wallet_name: wallet?.name ?? null,
         amount: item.amount,
         currency_code: item.currency_code,

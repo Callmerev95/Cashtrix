@@ -127,6 +127,7 @@
 - Kontrak statis `verify-t11.mjs --static-only`: suffix komposisi `-action`/`-confirm`/`-cancel` + prefix template + tap-teks harus literal di `app/`/`src/`/seed kategori. CI `live` menjalankan matriks penuh `verify-t5/t6/t7/t8/t9/v2/v3/v4/t11` (self-cleanup, butuh 2 secret).
 - Alert budget tidak pernah menyala (temuan device pasca-V6): `evaluateAndAlert({userId})` tanpa rows menilai cache pra-commit sehingga persilangan tak terlihat — kedua pemanggil (save + catch-up) kena. Perbaikan: tanpa rows eksplisit selalu baca ulang server (`fetchTimezone→fetchCurrentMonth→listBudgetStatus`, fallback cache bila gagal); evaluasi juga jalan setelah save budget, catch-up menulis baris, dan undo-restore (Dashboard). Hapus tetap tidak mengevaluasi (spent hanya turun). Dikunci `__tests__/budgets-alerts.test.tsx` (gagal di kode lama).
 - Tag: `v1.0.0` mundur di `492a117` (README MVP v1.0); `v1.1.0` di HEAD gerbang. Push tag hanya seizin pemilik.
+- v1.1.x (Opsi B, disetujui pemilik): transfer di CSV export = satu baris `type=transfer`, kolom kategori `Transfer ke {tujuan}`, kolom dompet = sumber (konsisten label feed). `categories` di-LEFT-join + embed alias `source`/`dest` (dua FK komposit). Dikunci `verify-t9.mjs` (baris transfer + tetap ada pasca-soft-delete baris lain).
 
 ### Database
 
