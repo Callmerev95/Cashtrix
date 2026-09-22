@@ -183,3 +183,57 @@ Transfer, Recurring, Undo, Archive, V0 auth/legal: **tertutup** (R7–R8, ADR-00
 - CSV import di v1.1 — nilai rendah dibanding biaya pemetaan kategori.
 - Multi-bahasa di v1.1 — dikerjakan bersama pass terminologi v1.2 supaya string
   tidak diaudit dua kali.
+
+---
+
+## 6. Rencana pasca-v1.1 (disetujui pemilik 2026-09-22)
+
+v1.1.0 sudah di-tag dan di-push. Fase di bawah ini mengikat **urutan**, bukan
+jadwal mati — hal-hal kecil boleh ditambahkan di tengah jalan selama tidak
+melanggar prinsip §6.4. Tiap batch dibekukan jadi spec + ticket (`specs/`)
+seperti v1.1 sebelum dikerjakan.
+
+### 6.1 v1.1.x — penutup lubang (kecil, tanpa ubah perilaku)
+
+| Urutan | Item | Kenapa sekarang |
+|---|---|---|
+| 1 | Semantik transfer di CSV export | Lubang dari V6 (transfer ter-drop diam-diam); makin lama makin banyak export yang kehilangan baris. Grill singkat + satu format baris + test. |
+| 2 | Aset store listing + mekanik `release-gate.md` §7.5 | Prasyarat submit TestFlight/Play — tanpa ini v1.1.0 tidak naik store. |
+| 3 | Run Maestro device | Menutup janji opsi B selagi flow + akun e2e masih segar. |
+
+### 6.2 v1.2 batch 1 — nilai user langsung, risiko kecil
+
+Memakai pola yang sudah ada (view/RPC + komponen):
+
+| Urutan | Item | Alasan urutan |
+|---|---|---|
+| 1 | Ringkasan bulan lalu (A6) | Paling kecil — `v_monthly_summary` sudah ada, tinggal permukaan Dashboard. |
+| 2 | Cari & filter riwayat (A3) | Nilai naik seiring data user bertambah; fondasi query untuk A4. |
+| 3 | Bulk edit kategori (A4) | Bergantung pola filter A3; tanpa A3 dulu implementasinya duplikasi logika. |
+| 4 | Inbox notifikasi (A5) | Fondasi baru diperbaiki (alert pipeline V6 + `fired_at`); tinggal flag read + layar. |
+| 5 | Error handling terlihat (D4) | Robustness yang makin penting saat user riil bertambah. |
+
+### 6.3 v1.2 batch 2 — butuh keputusan / setup native
+
+| Item | Syarat mulai |
+|---|---|
+| Biometric lock (B4) | Tutup dulu OPEN-3 (kunci perangkat vs state server) via grill — jangan sentuh kode sebelumnya. |
+| i18n ID/EN (C6) | Paket dengan satu pass terminologi (audit string sekali saja). |
+| 2FA (C2) | Supabase siap; UI sedang — antre setelah B4/C6. |
+| Preloader + skeleton | Sesudah batch 1 (menyentuh semua permukaan loading → re-gate visual; jangan digabung rilis fitur). Perlu amandemen `DESIGN.md` (motion). |
+| Maestro di CI (D3) | Time-box riset device farm/emulator dulu; bila mahal, tetap manual + perkuat mock test navigasi. |
+| Rate limiting (D5) | Sebelum publikasi luas — bukan sebelumnya. |
+| CSV import (B5) | Nilai rendah vs biaya — paling akhir, atau drop. |
+
+### 6.4 Prinsip urutan (mengikat)
+
+1. Yang menutup lubang > yang menambah permukaan.
+2. Yang fondasinya sudah ada (view/RPC) > yang butuh keputusan desain (grill dulu, pola ADR).
+3. Satu pass lintas-layar (terminologi, skeleton, i18n) dikerjakan sekaligus, tidak dicicil.
+4. Item kecil tambahan di tengah jalan boleh masuk batch berjalan bila memenuhi 1–3; bila tidak, antre di batch berikutnya.
+
+### 6.5 v2.0 — paket arsitektur, jangan dicicil
+
+Offline outbox + read cache = satu pekerjaan konsistensi (satu model sync +
+resolusi konflik), didahului spec + grill seperti v1.1. Widget, bank sync,
+multi-currency, AI insight antre di belakangnya per PRD.
