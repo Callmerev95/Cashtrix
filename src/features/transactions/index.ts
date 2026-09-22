@@ -69,4 +69,4 @@ export { TypeSegmentedControl } from './components/type-segmented-control';
 export { AmountField } from './components/amount-field';
 export { DeleteConfirmSheet } from './components/delete-confirm-sheet';
 export { TransactionHistoryList } from './components/transaction-history-list';
-export { UndoSnackbar } from './components/undo-snackbar';
+export { UndoSnackbar, UNDO_SNACKBAR_MS } from './components/undo-snackbar';

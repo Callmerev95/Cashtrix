@@ -1,12 +1,14 @@
 /**
  * Undo snackbar tests (V4 AC #1/#6). The component is the render seam: the
- * ~5 s window, the `Urungkan` press and the auto-dismiss all live here, while
- * the actual `restore_transaction` call lives in the transactions context.
- * No Supabase, no router — just the timer contract that keeps the window.
+ * undo window, the `Urungkan` press and the auto-dismiss all live here,
+ * while the actual `restore_transaction` call lives in the transactions
+ * context. No Supabase, no router — just the timer contract that keeps the
+ * window. Boundaries derive from `UNDO_SNACKBAR_MS` so the test locks the
+ * contract (dismiss exactly at the constant), not a magic number.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
-import { UndoSnackbar } from '@/features/transactions';
+import { UndoSnackbar, UNDO_SNACKBAR_MS } from '@/features/transactions';
 
 const SNACK = {
   id: 'tx-1',
@@ -47,12 +49,12 @@ describe('UndoSnackbar', () => {
     expect(onDismiss).not.toHaveBeenCalled();
   });
 
-  it('menutup sendiri setelah 5 detik (soft-delete berdiri)', () => {
+  it('menutup sendiri tepat di akhir jendela (soft-delete berdiri)', () => {
     const onDismiss = jest.fn();
     render(<UndoSnackbar snack={SNACK} onUndo={jest.fn()} onDismiss={onDismiss} />);
 
     act(() => {
-      jest.advanceTimersByTime(4_999);
+      jest.advanceTimersByTime(UNDO_SNACKBAR_MS - 1);
     });
     expect(onDismiss).not.toHaveBeenCalled();
 
@@ -69,7 +71,7 @@ describe('UndoSnackbar', () => {
     );
 
     act(() => {
-      jest.advanceTimersByTime(4_000);
+      jest.advanceTimersByTime(UNDO_SNACKBAR_MS - 1_000);
     });
     rerender(
       <UndoSnackbar
@@ -80,7 +82,7 @@ describe('UndoSnackbar', () => {
     );
 
     act(() => {
-      jest.advanceTimersByTime(4_000);
+      jest.advanceTimersByTime(UNDO_SNACKBAR_MS - 1_000);
     });
     expect(onDismiss).not.toHaveBeenCalled();
 

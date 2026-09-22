@@ -296,7 +296,7 @@ export default function AddTransactionScreen() {
       setConfirmingDelete(false);
       // V6: biarkan jendela undo tetap terbuka. `remove()` sudah membuka
       // `lastDeleted` setelah commit — sheet konfirmasi mencegah salah tekan,
-      // snackbar ~5 detik di Dashboard menampung sesal sesudahnya (pola
+      // snackbar ~10 detik di Dashboard menampung sesal sesudahnya (pola
       // Gmail: konfirmasi + Urungkan boleh berdampingan). Menutupnya di sini
       // membuat snackbar V4 tidak pernah tampil dari satu-satunya jalur hapus
       // di app, sehingga langkah "undo hapus" di gerbang Maestro (V6) tak

@@ -241,7 +241,7 @@ appId: com.callmerev95.cashtrix
     id: "dashboard-wallets"
     timeout: 20000
 
-# --- V6 / Undo: hapus Makanan → snackbar ~5 detik → Urungkan ------------------
+# --- V6 / Undo: hapus Makanan → snackbar ~10 detik → Urungkan ------------------
 # Delete opens the edit form for the most recent Makanan row; the confirm
 # sheet commits, and (since V6) the edit form no longer dismisses the undo
 # window, so the Dashboard snackbar appears on return.

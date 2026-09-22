@@ -1,6 +1,6 @@
 /**
  * Undo snackbar (V4 AC #1) — appears right after a delete commits, offers
- * `Urungkan` for ~5 s, then the soft-delete stands (30-day retention in the
+ * `Urungkan` for ~10 s, then the soft-delete stands (30-day retention in the
  * DB, no recycle-bin screen: PRD §6.1 R5 keeps the surface minimal).
  *
  * The timer re-arms per `createdAt`, so two deletes in a row each get their
@@ -13,7 +13,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, layout, radius, spacing, typography } from '@/theme';
 
-export const UNDO_SNACKBAR_MS = 5000;
+export const UNDO_SNACKBAR_MS = 10_000;
 
 export function UndoSnackbar({
   snack,
