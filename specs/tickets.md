@@ -39,7 +39,7 @@ Semua ticket `ready-for-agent`. Blocking edges = native GitHub issue dependencie
 | V3 — Recurring catch-up | #32 | #29, #31 | Profile "Transaksi berulang"; Catch-up RPC; skip siklus pertama; plafon 12 — selesai (PR #39, merged) |
 | V4 — Undo snackbar + arsip Wallet | #33 | #31 | Snackbar ~5s Urungkan; Archive Wallet; riwayat Transfer tetap — selesai (PR #40, merged) |
 | V5 — Kalender penuh + pass istilah | #34 | #31 | Grid kalender `View`; "Dompet" konsisten — selesai (PR #41, merged) |
-| V6 — Gerbang rilis v1.1 | #35 | #30, #32, #33, #34 | Maestro + pgTAP + Jest; tag `v1.0.0` mundur + `v1.1.0` — gate otomatis hijau (2026-09-21, bukti di #35); sisa manual: run Maestro di device + checklist visual + sesi crash-free |
+| V6 — Gerbang rilis v1.1 | #35 | #30, #32, #33, #34 | Maestro + pgTAP + Jest; tag `v1.0.0` + `v1.1.0` — selesai, closed 2026-09-22 |
 
 ```
 V0 #29 ─┬─ V1 #30 ──────────────┐
@@ -71,8 +71,9 @@ Verifikasi device pemilik 2026-09-22: snackbar Urungkan lolos (setelah fix
 posisi atas-nav + durasi 10 detik), warna nominal lolos, **notifikasi budget
 lolos** (setelah fix evaluasi baca-server — warning 80% + exceeded 100%
 banner + push benar).
-Sisa manual: run Maestro di dev build (ditunda jadi follow-up, opsi B) +
-checklist visual §4 penuh + sesi crash-free — #28 tetap terbuka sampai itu terlampir.
+Run Maestro device ditunda jadi follow-up pasca-v1.1 (opsi B — flow +
+kontrak statis + cermin API siap). v1.1.0 di-tag di HEAD; tidak ada lagi
+perubahan untuk versi ini (konfirmasi pemilik 2026-09-22).
 
 ### Review follow-up (di luar ticket map, sudah merged ke `main`)
 
