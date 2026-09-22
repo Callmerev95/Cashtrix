@@ -11,7 +11,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing, typography } from '@/theme';
+import { colors, layout, radius, spacing, typography } from '@/theme';
 
 export const UNDO_SNACKBAR_MS = 5000;
 
@@ -66,7 +66,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: spacing.md,
     right: spacing.md,
-    bottom: spacing.xl,
+    // Floats ABOVE the floating nav, not under it: `bottom: spacing.xl`
+    // parks the bar inside the 96px nav clearance where the tab bar paints
+    // over the scene — the snackbar rendered but was invisible (V6 gate
+    // finding: state correct, zero pixels visible on device).
+    bottom: layout.navClearance + spacing.xl,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
