@@ -67,8 +67,12 @@ matriks live `verify-t5/t6/t7/t8/t9/v2/v3/v4/t11` hijau (t9 sempat merah —
 `export-csv` 500 sejak V2, diperbaiki + redeploy); kontrak statis Maestro
 74 selector/8 tap/3 event; `provision-e2e` menyiapkan dompet Bank; tag
 `v1.0.0` lokal di `492a117` (`v1.1.0` menyusul di commit merge).
-Sisa manual pemilik: run Maestro di dev build + checklist visual §4 +
-sesi crash-free — #28 tetap terbuka sampai itu terlampir.
+Verifikasi device pemilik 2026-09-22: snackbar Urungkan lolos (setelah fix
+posisi atas-nav + durasi 10 detik), warna nominal lolos, **notifikasi budget
+lolos** (setelah fix evaluasi baca-server — warning 80% + exceeded 100%
+banner + push benar).
+Sisa manual: run Maestro di dev build (ditunda jadi follow-up, opsi B) +
+checklist visual §4 penuh + sesi crash-free — #28 tetap terbuka sampai itu terlampir.
 
 ### Review follow-up (di luar ticket map, sudah merged ke `main`)
 
