@@ -101,10 +101,16 @@ Deno.serve(async (req: Request) => {
   let page = 0;
   for (;;) {
     const from = page * PAGE_SIZE;
+    // V2 menambahkan FK komposit kedua transactions→wallets
+    // (counterparty_wallet_id), sehingga hint `wallets!inner` menjadi ambigu
+    // (PGRST201). Nama constraint eksplisit memilih sisi sumber — perilaku
+    // T9 pulih persis (income/expense; transfer tetap ter-exclude oleh
+    // `categories!inner` seperti sebelum V2 — semantik transfer-di-CSV
+    // diputuskan di ticket follow-up, bukan di gerbang).
     const { data, error } = await admin
       .from('transactions')
       .select(
-        'occurred_at, type, amount, currency_code, note, categories!inner(name), wallets!inner(name)',
+        'occurred_at, type, amount, currency_code, note, categories!inner(name), wallets!transactions_wallet_id_user_id_fkey(name)',
       )
       .eq('user_id', userId)
       .is('deleted_at', null)

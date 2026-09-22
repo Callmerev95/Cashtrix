@@ -1,16 +1,22 @@
-# T11 happy path (issue #12 AC #1): register → 3 transaksi → Dashboard &
-# Analytics → set budget → trigger alert.
+# T11 happy path (issue #12 AC #1) + V6 v1.1 extension (issue #35):
+# login → 3 transaksi → Dashboard & Analytics → set budget → trigger alert →
+# Transfer → Recurring rule → relaunch catch-up → undo hapus.
 #
 # V0 auth gate: the fixed E2E account must exist AND be email-confirmed,
 # because a Maestro run cannot tap the confirmation email. Provision once
 # (and after any '%cashtrix.test' cleanup):
 #   SUPABASE_SERVICE_ROLE_KEY=<key> node scripts/provision-e2e.mjs
-# The flow therefore always takes the login path; a fresh register would
-# strand on the Check Email screen by design (covered by Jest gate tests +
-# verify-*.mjs signup-no-session checks instead).
+# Provisioning also creates the second wallet ("Bank") the Transfer step
+# needs and clears old recurring rules. The flow therefore always takes the
+# login path; a fresh register would strand on the Check Email screen by
+# design (covered by Jest gate tests + verify-*.mjs signup-no-session checks
+# instead).
 #
-# Re-runs are idempotent (each run appends 3 more transactions and the budget
-# upserts on `(user, category, month)` instead of duplicating).
+# Re-runs: transactions append (assertions are structural, never numeric),
+# the budget upserts on `(user, category, month)`, Tx1 re-taps its kind
+# explicitly (a previous run may have left Transfer remembered), and each run
+# adds one Tagihan rule — re-provision to reset after ~15 runs (cap: 20
+# active rules).
 #
 # KPI proof (AC #2): every step below fires an observability event through the
 # T10 sink — `screen_view` on each tab, `tx_created` after each save,
@@ -47,6 +53,10 @@ appId: com.callmerev95.cashtrix
     id: "fab-add-transaction"
 - assertVisible:
     id: "transaction-save"
+# Explicit kind: a previous run may have left Transfer remembered, and the
+# form restores it — without this tap a re-run would open as Transfer.
+- tapOn:
+    id: "type-option-expense"
 - tapOn:
     id: "amount-input"
 - inputText: "50000"
@@ -163,3 +173,93 @@ appId: com.callmerev95.cashtrix
   timeout: 15000
 
 - takeScreenshot: "t11-happy-path-alert"
+
+# --- V6 / Transfer: Cash → Bank 100.000 (defaults are deterministic) ---------
+# Source defaults to last-used (Cash — every save above used it); destination
+# defaults to the only other wallet (Bank, created by provision-e2e). No
+# wallet-name taps: chip testIDs carry per-account uuids, so tapping names
+# would be ambiguous (each name renders twice: source list + destination).
+- tapOn:
+    id: "fab-add-transaction"
+- assertVisible:
+    id: "transaction-save"
+- tapOn:
+    id: "type-option-transfer"
+- tapOn:
+    id: "amount-input"
+- inputText: "100000"
+- hideKeyboard
+- tapOn:
+    id: "transaction-save"
+- assertVisible:
+    id: "dashboard-history"
+    timeout: 15000
+- assertVisible: "Transfer ke Bank"
+
+# --- V6 / Recurring: Tagihan 75rb, due tgl 1 --------------------------------
+# Kind defaults to expense; starts_on fills itself (this month — due day 1 is
+# never in the future, so the first occurrence is always due immediately).
+# "Bank" is tapped by text: it renders exactly once on this screen (single
+# wallet picker, unlike the transfer form's double list).
+- tapOn:
+    id: "tab-profile"
+- assertVisible:
+    id: "profile-screen"
+    timeout: 15000
+- tapOn:
+    id: "profile-recurring-row"
+- assertVisible:
+    id: "recurring-screen"
+    timeout: 15000
+- tapOn:
+    id: "recurring-add"
+- assertVisible:
+    id: "recurring-save"
+- tapOn:
+    id: "recurring-amount"
+- inputText: "75000"
+- tapOn: "Tagihan"
+- hideKeyboard
+- tapOn:
+    id: "recurring-due-1"
+- tapOn: "Bank"
+- tapOn:
+    id: "recurring-save"
+- assertVisible:
+    id: "recurring-screen"
+    timeout: 15000
+- assertVisible: "Tagihan"
+
+# --- V6 / Catch-up: cold start materialises the Tagihan occurrence -----------
+# Session persists (clearState stays false); app-open catch-up runs the
+# `run_recurring_catchup` RPC before the tabs paint. Occurrence-level proof
+# lives API-side (`verify-v3-recurring.mjs`, run in CI) — here the gate is
+# that the cold start lands back on the tabs without crashing.
+- launchApp:
+    clearState: false
+- assertVisible:
+    id: "dashboard-wallets"
+    timeout: 20000
+
+# --- V6 / Undo: hapus Makanan → snackbar ~5 detik → Urungkan ------------------
+# Delete opens the edit form for the most recent Makanan row; the confirm
+# sheet commits, and (since V6) the edit form no longer dismisses the undo
+# window, so the Dashboard snackbar appears on return.
+- tapOn: "Makanan"
+- assertVisible:
+    id: "transaction-save"
+    timeout: 15000
+- tapOn:
+    id: "transaction-delete"
+- tapOn:
+    id: "delete-confirm-confirm"
+- assertVisible:
+    id: "undo-snackbar"
+    timeout: 15000
+- tapOn:
+    id: "undo-button"
+- assertVisible:
+    id: "dashboard-history"
+    timeout: 15000
+
+- takeScreenshot: "v6-happy-path-undo"

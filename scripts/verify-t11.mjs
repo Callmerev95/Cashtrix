@@ -278,7 +278,7 @@ async function main() {
  * Static half of the gate: needs no device and no database. Every `id:`
  * selector used by the flows must resolve to a testID in app/src (static
  * literal, overridable default, dynamic template prefix, or a composed
- * `-action` button), every text tap must name a label present in code or in
+ * `-action` / `-confirm` / `-cancel` button), every text tap must name a label present in code or in
  * the category seed, and the three KPI events must be emitted on this path.
  */
 function runStaticContract() {
@@ -313,10 +313,16 @@ function runStaticContract() {
   const hasTestId = (id) =>
     staticIds.has(id) ||
     prefixes.some((prefix) => id.startsWith(prefix)) ||
-    // Composed at runtime: SectionHeader/EmptyStateCard render
-    // `${testID}-action` from a static base (`budgets-empty` → button
-    // `budgets-empty-action`).
-    (id.endsWith('-action') && staticIds.has(id.slice(0, -'-action'.length)));
+    // Composed at runtime from a static base:
+    // - SectionHeader/EmptyStateCard render `${testID}-action`
+    //   (`budgets-empty` → button `budgets-empty-action`);
+    // - DeleteConfirmSheet renders `${testID}-confirm` / `${testID}-cancel`
+    //   (`delete-confirm` → `delete-confirm-confirm`). Same class of runtime
+    //   composition, grounded by the static base — not a weakening.
+    ['-action', '-confirm', '-cancel'].some(
+      (suffix) =>
+        id.endsWith(suffix) && staticIds.has(id.slice(0, -suffix.length)),
+    );
 
   const flowText = ['happy-path.yaml', 'smoke.yaml']
     .map((name) => readFileSync(join(ROOT, '.maestro/flows', name), 'utf8'))

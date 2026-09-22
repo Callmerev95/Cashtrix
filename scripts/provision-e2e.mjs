@@ -62,6 +62,43 @@ async function main() {
   const seed = await client.functions.invoke('seed-user', { method: 'POST' });
   if (seed.error) throw seed.error;
   console.log('ok  seed-user ok — Maestro can take the login path');
+
+  // V6: the happy path's Transfer step needs exactly two wallets with
+  // deterministic defaults (source = last-used Cash, destination = the only
+  // other wallet), so the flow taps no wallet names. "Bank" is also the
+  // walletTypeMeta label, keeping the recurring wallet tap grounded.
+  const { data: e2eUser } = await client.auth.getUser();
+  const userId = e2eUser?.user?.id;
+  if (!userId) throw new Error('sesi e2e tidak terbentuk setelah login');
+  const { data: existingWallets, error: listError } = await client
+    .from('wallets')
+    .select('id, name, archived_at');
+  if (listError) throw listError;
+  const bank = existingWallets?.find((w) => w.name === 'Bank');
+  if (!bank) {
+    const { error } = await client
+      .from('wallets')
+      .insert({ user_id: userId, name: 'Bank', type: 'bank' });
+    if (error) throw error;
+    console.log('ok  wallet Bank dibuat (tujuan Transfer deterministik)');
+  } else {
+    const { error } = await client
+      .from('wallets')
+      .update({ archived_at: null })
+      .eq('id', bank.id);
+    if (error) throw error;
+    console.log('ok  wallet Bank sudah ada (buka-arsip bila perlu)');
+  }
+
+  // V6: re-provision is the documented reset point — one run creates one
+  // rule, and active rules cap at 20. Clearing here keeps re-runs green
+  // without touching the flow.
+  const { error: rulesError } = await client
+    .from('recurring_rules')
+    .delete()
+    .eq('user_id', userId);
+  if (rulesError) throw rulesError;
+  console.log('ok  recurring rules e2e dibersihkan (reset lintas-run)');
 }
 
 main().catch((error) => {

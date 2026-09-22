@@ -1,8 +1,9 @@
-# Release gate — Cashtrix MVP (T11, issue #12).
+# Release gate — Cashtrix v1.1 (V6, issue #35; was T11 MVP, issue #12).
 #
 # Static checks run on every push/PR. The full live verification needs a
-# service-role key (it creates a real user, then deletes it via cascade), so
-# it only runs when the SUPABASE_SERVICE_ROLE_KEY secret exists. The Maestro
+# service-role key (each script creates real users, then deletes them via
+# cascade / delete-account), so it only runs when the
+# SUPABASE_SERVICE_ROLE_KEY secret exists. The Maestro
 # device run itself stays manual (docs/release-gate.md §2) — CI proves the
 # flow's selector contract instead of faking a green device run.
 name: release-gate
@@ -32,11 +33,13 @@ jobs:
   live:
     runs-on: ubuntu-latest
     needs: static
-    # Full journey against the hosted project: creates one test user, replays
-    # the Maestro happy path via API, then self-deletes via delete-account —
-    # no residue. PRs skip this; push to main proves it.
-    # V0: the hosted email gate forces Admin-provisioned test users, so this
-    # job needs two repo secrets (Settings → Secrets → Actions):
+    # Full v1.1 matrix against the hosted project (V6 AC: verify-t5..t11
+    # plus Transfer/Recurring/undo-auth-confirm). Each script provisions its
+    # own Admin-confirmed users (live-proof of the V0 email gate), replays
+    # its journey via API — including the extended Maestro happy path in
+    # verify-t11 — then self-deletes via delete-account/cascade, no residue.
+    # PRs skip this; push to main proves it.
+    # Needs two repo secrets (Settings → Secrets → Actions):
     # EXPO_PUBLIC_SUPABASE_ANON_KEY (publishable, already in the bundle) and
     # SUPABASE_SERVICE_ROLE_KEY (confirm + cleanup via Admin API).
     if: github.event_name == 'push'
@@ -50,4 +53,12 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --legacy-peer-deps
+      - run: node scripts/verify-t5.mjs
+      - run: node scripts/verify-t6.mjs
+      - run: node scripts/verify-t7.mjs
+      - run: node scripts/verify-t8.mjs
+      - run: node scripts/verify-t9.mjs
+      - run: node scripts/verify-v2-transfer.mjs
+      - run: node scripts/verify-v3-recurring.mjs
+      - run: node scripts/verify-v4.mjs
       - run: node scripts/verify-t11.mjs

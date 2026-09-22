@@ -77,10 +77,12 @@ Stitch hanya referensi **layout**; warna selalu dari token kanonik
 | Layar | Layout vs Stitch | Token | Clearance |
 |---|---|---|---|
 | Login / Register | stack tengah, card + CTA 52px | bg `#0A0A0A`, card `#1C1C1E`, gold `#D4AF37` | keyboard tidak menutup CTA |
-| Dashboard | hero saldo → wallet → riwayat grup harian | income gold, expense `#E5E5E5` (tidak pernah merah) | list ≥96px + safe-area |
-| Add Transaction | toggle → nominal Mono → grid 3 kolom → wallet chips → stepper tanggal | glyph `Rp` gold statis, error `#FFB4AB` destruktif saja | modal, tombol Simpan di atas nav |
+| Dashboard | hero saldo → dompet → riwayat grup harian | income `#30D158`, expense `#FF6B62`, net gold (amandemen DESIGN.md §1, PR #42) | list ≥96px + safe-area |
+| Add Transaction | toggle → nominal Mono → grid 3 kolom → dompet chips → grid kalender | glyph `Rp` gold statis, error `#FFB4AB` destruktif saja | modal, tombol Simpan di atas nav |
 | Analytics | KPI → donut → bar → breakdown, atau empty state (tanpa NaN) | donut dari `chartRamp` theme | scroll ≥96px |
 | Budgets | label bulan → banner alert → ring cards | ring `ok/warning/exceeded`, hole = card | scroll ≥96px |
+| Recurring (v1.1) | header Otomatisasi → banner jeda → kartu aturan → CTA Buat aturan | chip aktif gold, teks meta `#8E8E93` | scroll ≥96px |
+| Dompet / arsip (v1.1) | Total Saldo → daftar aktif → seksi Arsip | arsip redup, bukan hilang | scroll ≥96px |
 | Profile | avatar 40px + badge → nama → currency chips → rows | destruktif `#FFB4AB` hanya Ekspor/Hapus | scroll ≥96px |
 | Floating nav | bar frosted + FAB 56px gold gradient | ikon aktif gold, idle `#8E8E93` | bar 64 + overhang 16 + gap 16 = 96 |
 
@@ -174,3 +176,73 @@ tetap boleh Expo Go — tanpa DSN (lihat §7.2) app memakai buffer lokal T10.
   `delete from auth.users where email like '%cashtrix.test';`
 - [ ] Catat versi + tanggal di PR rilis; tutup #12 dengan ringkasan bukti
   (log Maestro, screenshot `t11-happy-path-alert`, angka regresi).
+
+## 8. Gerbang v1.1 (V6, issue #35)
+
+Perluasan §1–§6 untuk rilis store v1.1. Spec induk #28 tetap terbuka sampai
+semua bukti di bawah terlampir; #1 tidak disentuh.
+
+### 8.1 AC → bukti
+
+| # | Acceptance criteria (#35) | Dibuktikan oleh |
+|---|---|---|
+| 1 | Maestro: login → … → Transfer → Recurring catch-up → undo hapus | `.maestro/flows/happy-path.yaml` (bagian V6) di emulator/simulator + `verify-t11.mjs` (mirror API) |
+| 2 | `lint` + `typecheck` + `test` hijau | CI `static` job + run lokal pra-tag |
+| 3 | pgTAP hijau termasuk suite Transfer + Recurring | `supabase/tests/database/13_transfer.sql` (42) + `14_recurring.sql` (43) + `15_wallet_archive.sql` + 00–12 tanpa regresi |
+| 4 | `verify-t5`..`t11` + Transfer/Recurring/undo/auth-confirm hijau | CI `live` job: `verify-t5/t6/t7/t8/t9/v2/v3/v4/t11` berurutan; tiap skrip memprovisi user via Admin API (bukti gate V0: login pre-konfirmasi ditolak `email_not_confirmed`) |
+| 5 | Checklist visual (layout vs Stitch, token kanonik, clearance) | §4 (di-refresh untuk warna PR #42 + kalender V5 + layar Recurring/Arsip), manual per rilis |
+| 6 | Tag `v1.0.0` mundur + `v1.1.0` | §8.4 |
+| 7 | #28 bisa ditutup setelah bukti terlampir | komentar bukti di #35, lalu tutup #28 (jangan sentuh #1) |
+
+### 8.2 Yang berubah dari gerbang T11 (alasan tiap diff)
+
+- **Happy path +3 babak** (`happy-path.yaml`): Tx1 men-tap kind eksplisit
+  (`type-option-expense`) agar re-run tahan terhadap `lastType` yang
+  tertinggal; Transfer memakai default deterministik (sumber = Cash
+  last-used, tujuan = satu-satunya dompet lain) tanpa tap nama dompet —
+  nama dompet dinamis per akun dan muncul dua kali di layar Transfer
+  (daftar sumber + tujuan); Recurring memakai due `recurring-due-1`
+  (tidak pernah future) + tap teks `Bank` (muncul tepat sekali di layar
+  itu); relaunch `clearState: false` memicu catch-up AppState; undo
+  menghapus baris Makanan teratas lalu `Urungkan` via snackbar.
+  Bukti API per langkah: `verify-v2/v3/v4` (CI `live`).
+- **Undo bisa dijangkau dari UI** (`app/add-transaction.tsx`): hapus dari
+  form edit tidak lagi `dismissUndo()` — itu membuat snackbar V4 tidak
+  pernah tampil dari satu-satunya jalur hapus di app. Sheet konfirmasi
+  tetap mencegah salah tekan; snackbar menampung sesal sesudahnya.
+- **pgTAP tahan data riil** (`09_transactions.sql`): count pra-purge dan
+  nilai balik `purge_deleted_transactions()` di-scope ke fixture alice /
+  dilonggarkan ke `>= 1` — DB hosted kini menampung soft-delete user riil
+  dan count global goyah karenanya. Konvensi baru: assertion agregat
+  sebagai `postgres` wajib ter-scope ke UUID fixture (lih. pelajaran
+  T4/T5 di AGENTS.md).
+- **Kontrak statis +2 suffix** (`verify-t11.mjs`): `-confirm`/`-cancel`
+  komposisi runtime `DeleteConfirmSheet`, sejajar aturan `-action` yang
+  sudah ada — base (`delete-confirm`) tetap statis.
+- **CI `live` = matriks penuh** (`.github/workflows/release-gate.yml`):
+  `verify-t5/t6/t7/t8/t9/v2-transfer/v3-recurring/v4/t11` berurutan,
+  tiap skrip self-cleanup (tanpa residu, tanpa secret tambahan selain dua
+  yang sudah ada).
+- **`provision-e2e.mjs`**: memastikan dompet `Bank`, buka-arsip bila perlu,
+  dan membersihkan recurring rules e2e (titik reset antar-run; tiap run
+  menambah tepat satu aturan, plafon 20 aktif).
+
+### 8.3 Sisa manual (butuh perangkat)
+
+1. `SUPABASE_SERVICE_ROLE_KEY=<key> node scripts/provision-e2e.mjs`
+   (sekali, dan setiap habis cleanup `'%cashtrix.test'`).
+2. `maestro test .maestro/flows/smoke.yaml` lalu
+   `maestro test .maestro/flows/happy-path.yaml` di dev build.
+3. Selama run: `adb logcat | grep '\[analytics\]'` memuat
+   `screen_view` + `tx_created` + `budget_threshold_reached`.
+4. Checklist §4 per layar + screenshot `v6-happy-path-undo`.
+5. Sesi crash-free + Sentry: tanpa DSN app memakai buffer lokal;
+   crash-free rate dibaca di dashboard Sentry pasca-preview (§7.5).
+
+### 8.4 Tag
+
+- `v1.0.0` mundur di commit rilis MVP (`492a117` — README MVP v1.0):
+  `git tag -a v1.0.0 492a117 -m "Cashtrix v1.0.0 (MVP internal)"`.
+- `v1.1.0` di commit gerbang ini (HEAD setelah merge PR V6):
+  `git tag -a v1.1.0 <sha> -m "Cashtrix v1.1.0 (rilis store)"`.
+- Push tag hanya saat rilis disetujui pemilik: `git push origin v1.0.0 v1.1.0`.

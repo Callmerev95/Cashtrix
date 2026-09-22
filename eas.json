@@ -11,6 +11,7 @@
       }
     },
     "preview": {
+      "channel": "preview",
       "distribution": "internal",
       "env": {
         "SENTRY_ENVIRONMENT": "preview",

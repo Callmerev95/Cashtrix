@@ -81,7 +81,6 @@ export default function AddTransactionScreen() {
     loadTransaction,
     save,
     remove,
-    dismissUndo,
     rememberType,
     rememberWallet,
   } = useTransactions();
@@ -295,10 +294,13 @@ export default function AddTransactionScreen() {
         // Non-fatal; the Budgets tab refreshes on its own.
       }
       setConfirmingDelete(false);
-      // A delete from the edit form is deliberate (confirm sheet passed); the
-      // snackbar on the Dashboard belongs to *this* row's undo — suppress it,
-      // or it would offer to restore what the sheet just confirmed.
-      dismissUndo();
+      // V6: biarkan jendela undo tetap terbuka. `remove()` sudah membuka
+      // `lastDeleted` setelah commit — sheet konfirmasi mencegah salah tekan,
+      // snackbar ~5 detik di Dashboard menampung sesal sesudahnya (pola
+      // Gmail: konfirmasi + Urungkan boleh berdampingan). Menutupnya di sini
+      // membuat snackbar V4 tidak pernah tampil dari satu-satunya jalur hapus
+      // di app, sehingga langkah "undo hapus" di gerbang Maestro (V6) tak
+      // terjangkau.
       router.back();
     } catch (cause) {
       setBusy(false);

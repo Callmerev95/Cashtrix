@@ -39,7 +39,7 @@ Semua ticket `ready-for-agent`. Blocking edges = native GitHub issue dependencie
 | V3 — Recurring catch-up | #32 | #29, #31 | Profile "Transaksi berulang"; Catch-up RPC; skip siklus pertama; plafon 12 — selesai (PR #39, merged) |
 | V4 — Undo snackbar + arsip Wallet | #33 | #31 | Snackbar ~5s Urungkan; Archive Wallet; riwayat Transfer tetap — selesai (PR #40, merged) |
 | V5 — Kalender penuh + pass istilah | #34 | #31 | Grid kalender `View`; "Dompet" konsisten — selesai (PR #41, merged) |
-| V6 — Gerbang rilis v1.1 | #35 | #30, #32, #33, #34 | Maestro + pgTAP + Jest; tag `v1.0.0` mundur + `v1.1.0` |
+| V6 — Gerbang rilis v1.1 | #35 | #30, #32, #33, #34 | Maestro + pgTAP + Jest; tag `v1.0.0` mundur + `v1.1.0` — gate otomatis hijau (2026-09-21, bukti di #35); sisa manual: run Maestro di device + checklist visual + sesi crash-free |
 
 ```
 V0 #29 ─┬─ V1 #30 ──────────────┐
@@ -60,6 +60,15 @@ Ticket tanpa blocker terbuka, belum di-assign:
 **#35 (V6 — Gerbang rilis v1.1)**.
 
 V6 tanpa blocker tersisa (V1+V2+V3+V4+V5 sudah closed).
+
+**#35 (V6) — gate otomatis selesai 2026-09-21** (kerja di working tree,
+belum PR): lint/typecheck bersih; Jest 284/284; pgTAP 358/358 (00–15);
+matriks live `verify-t5/t6/t7/t8/t9/v2/v3/v4/t11` hijau (t9 sempat merah —
+`export-csv` 500 sejak V2, diperbaiki + redeploy); kontrak statis Maestro
+74 selector/8 tap/3 event; `provision-e2e` menyiapkan dompet Bank; tag
+`v1.0.0` lokal di `492a117` (`v1.1.0` menyusul di commit merge).
+Sisa manual pemilik: run Maestro di dev build + checklist visual §4 +
+sesi crash-free — #28 tetap terbuka sampai itu terlampir.
 
 ### Review follow-up (di luar ticket map, sudah merged ke `main`)
 

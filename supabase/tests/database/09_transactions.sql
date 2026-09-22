@@ -216,15 +216,23 @@ reset role;
 set role postgres;
 set search_path = public, extensions;
 
+-- Dihitung ter-scope ke alice fixture: DB bersama (hosted) menampung
+-- soft-delete milik user riil, jadi count global akan goyah oleh data yang
+-- bukan milik test ini. Tepat-dua hanya bermakna di dalam scope fixture.
 select is(
-  (select count(*)::int from public.transactions where deleted_at is not null),
+  (select count(*)::int from public.transactions
+    where user_id = '5a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d' and deleted_at is not null),
   2,
-  'purge: 2 transaksi soft-deleted sebelum purge (1 baru, 1 lewat retensi)');
+  'purge: 2 transaksi soft-deleted alice sebelum purge (1 baru, 1 lewat retensi)');
 
-select is(
+-- Nilai balik purge bersifat global (sebagai postgres ia membersihkan semua
+-- user — sama seperti job cron harian), jadi assertion-nya >= 1. Ketepatan
+-- "hanya yang lewat retensi" dibuktikan dua test setelahnya per baris.
+select cmp_ok(
   public.purge_deleted_transactions(),
+  '>=',
   1,
-  'purge: hanya transaksi lewat 30 hari yang di-hard-delete');
+  'purge: minimal 1 baris lewat retensi ter-hard-delete');
 
 select is(
   (select count(*)::int from public.transactions
