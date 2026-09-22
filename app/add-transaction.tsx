@@ -263,9 +263,11 @@ export default function AddTransactionScreen() {
       try {
         await refreshBudgets();
         await refreshAnalytics();
+        // Fresh server read inside (V6) — the cached list is still pre-save
+        // truth here, so evaluating it would miss this commit's crossing.
         await evaluateAndAlert({ userId: session?.user.id ?? '' });
       } catch {
-        // In-app banner on the Budgets tab retries on its own refresh.
+        // Non-fatal; the next save re-evaluates (dedup-safe).
       }
       router.back();
     } catch (cause) {

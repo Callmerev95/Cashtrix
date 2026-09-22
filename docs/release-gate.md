@@ -210,6 +210,9 @@ semua bukti di bawah terlampir; #1 tidak disentuh.
   form edit tidak lagi `dismissUndo()` — itu membuat snackbar V4 tidak
   pernah tampil dari satu-satunya jalur hapus di app. Sheet konfirmasi
   tetap mencegah salah tekan; snackbar menampung sesal sesudahnya.
+  Posisi: di atas floating nav (`layout.navClearance + spacing.xl` —
+  `bottom: spacing.xl` menaruhnya di zona yang ditimpa tab bar:
+  state benar, 0 piksel terlihat). Durasi 10 detik (permintaan pemilik).
 - **pgTAP tahan data riil** (`09_transactions.sql`): count pra-purge dan
   nilai balik `purge_deleted_transactions()` di-scope ke fixture alice /
   dilonggarkan ke `>= 1` — DB hosted kini menampung soft-delete user riil
@@ -226,6 +229,12 @@ semua bukti di bawah terlampir; #1 tidak disentuh.
 - **`provision-e2e.mjs`**: memastikan dompet `Bank`, buka-arsip bila perlu,
   dan membersihkan recurring rules e2e (titik reset antar-run; tiap run
   menambah tepat satu aturan, plafon 20 aktif).
+- **Alert budget menyala** (temuan device pasca-V6, `budgets-context.tsx`):
+  evaluasi tanpa rows kini baca ulang server (bukan cache pra-commit), plus
+  evaluasi setelah save budget, catch-up menulis baris, dan undo-restore.
+  Warning 80% (`hampir habis`) + exceeded 100% (`terlampaui`) tiba sebagai
+  banner in-app (selalu) + push lokal (bila izin diberikan). Hapus transaksi
+  tetap tidak mengevaluasi.
 
 ### 8.3 Sisa manual (butuh perangkat)
 

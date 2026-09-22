@@ -10,12 +10,13 @@
  *    via `ON CONFLICT DO NOTHING`) and, only when the row is *newly* fired,
  *    queue an in-app alert + best-effort local push.
  *
- * The provider is evaluated in two places (PRD Epic E): right after a
- * transaction commits (the add-transaction screen calls `evaluateAndAlert`
- * with fresh rows) and when the budgets screen loads/foregrounds (it calls
- * `refresh`, which re-evaluates). Editing or deleting a transaction never
- * clears an already-fired alert — the dedup row stays, so there is no
- * double-fire in the same month.
+ * The provider evaluates after every spent-changing write (PRD Epic E): a
+ * transaction commit, a budget save, recurring catch-up births, and an undo
+ * restore all call `evaluateAndAlert`, which re-reads the server status
+ * first (V6: the cached list is pre-commit truth — evaluating it missed
+ * every crossing). Deleting a transaction only lowers spent and never
+ * evaluates; editing or deleting never clears an already-fired alert — the
+ * dedup row stays, so there is no double-fire in the same month.
  */
 import {
   createContext,
@@ -84,7 +85,11 @@ type BudgetsContextValue = {
   remove: (id: string) => Promise<void>;
   /**
    * Checks rows against thresholds, records newly-crossed ones, and notifies.
-   * Pass fresh rows after a transaction commit; defaults to the cached list.
+   * Without explicit `rows` the status is re-read from the server first: the
+   * caller typically just committed a write, so the cached list is still the
+   * pre-commit truth and evaluating it would miss the crossing it just made
+   * (V6 gate finding — alerts never fired). A failed re-read falls back to
+   * the cache rather than dropping the evaluation entirely. Never throws.
    */
   evaluateAndAlert: (input: {
     userId: string;
@@ -251,6 +256,28 @@ export function BudgetsProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(() => load(), [load]);
 
+  const evaluateAndAlert = useCallback(
+    async (input: {
+      userId: string;
+      rows?: BudgetStatus[];
+    }): Promise<FiredAlert[]> => {
+      let rows = input.rows;
+      if (!rows) {
+        try {
+          const tz = await fetchTimezone();
+          const current = await fetchCurrentMonth(tz);
+          rows = await listBudgetStatus(current);
+        } catch {
+          // Server unreadable — evaluate the cached list instead of going
+          // silent; a crossing already visible there still deserves its alert.
+          rows = budgets;
+        }
+      }
+      return evaluateRows(input.userId, rows);
+    },
+    [budgets, evaluateRows],
+  );
+
   const save = useCallback(
     async (input: {
       userId: string;
@@ -282,8 +309,13 @@ export function BudgetsProvider({ children }: { children: ReactNode }) {
       }
 
       await load();
+
+      // A budget created above already-crossed spent notifies immediately —
+      // otherwise it stays silent until the next transaction save.
+      // Best-effort and dedup-safe; never throws (see evaluateAndAlert).
+      await evaluateAndAlert({ userId: input.userId });
     },
-    [budgets.length, load, month],
+    [budgets.length, evaluateAndAlert, load, month],
   );
 
   const remove = useCallback(
@@ -292,14 +324,6 @@ export function BudgetsProvider({ children }: { children: ReactNode }) {
       await load();
     },
     [load],
-  );
-
-  const evaluateAndAlert = useCallback(
-    async (input: {
-      userId: string;
-      rows?: BudgetStatus[];
-    }): Promise<FiredAlert[]> => evaluateRows(input.userId, input.rows ?? budgets),
-    [budgets, evaluateRows],
   );
 
   const dismissAlert = useCallback((index: number) => {

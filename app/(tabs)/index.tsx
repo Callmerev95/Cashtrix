@@ -46,7 +46,7 @@ const DATE_FORMAT: Intl.DateTimeFormatOptions = {
 export default function DashboardScreen() {
   const { session } = useAuth();
   const { wallets, summary, loading, refresh: refreshWallets } = useWallets();
-  const { recentAlerts, refresh: refreshBudgets } = useBudgets();
+  const { recentAlerts, refresh: refreshBudgets, evaluateAndAlert } = useBudgets();
   const { refresh: refreshAnalytics } = useAnalytics();
   const { avatarSignedUrl, profile } = useProfile();
   const {
@@ -207,14 +207,20 @@ export default function DashboardScreen() {
         snack={lastDeleted}
         // A restore resurrects amounts everywhere: history (handled inside
         // `undoDelete`), balances, Spent and the Insight overview all re-read.
-        // Best-effort — the restore itself already committed.
+        // A restore can also push a category back over a threshold, so the
+        // budgets re-evaluate too (fresh server read — V6). Best-effort —
+        // the restore itself already committed.
         onUndo={() =>
           void undoDelete().then(() =>
             Promise.all([
               refreshWallets().catch(() => undefined),
               refreshBudgets().catch(() => undefined),
               refreshAnalytics().catch(() => undefined),
-            ]),
+            ]).then(() =>
+              evaluateAndAlert({ userId: session?.user.id ?? '' }).catch(
+                () => [],
+              ),
+            ),
           )
         }
         onDismiss={dismissUndo}
