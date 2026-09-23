@@ -76,6 +76,21 @@ baru; `KIND_LABELS` map di `search.tsx` hapus), `placeholder`, `idleHint`,
 `Batal` reuse `common.cancel`. `SearchKindControl` via `useLanguage`.
 Gate: lint bersih + typecheck + Jest 372 hijau + static-only 3/3.
 
+`analytics.*` (chunk analytics — BELUM commit; `7f87c40` = search):
+`range.*` (`rangeLabels` dari `id` + `rangeLabel(p, lang)`; id `1B/3B/6B/1T`,
+en `1M/3M/6M/1Y` — simbolik per bahasa), `rangeA11y`, `walletAll`,
+`kpi.*`, `section.*`, `empty.*`, `monthly.*` + `loadError`. `toBars(...,
+tz, lang)` (`monthLabel` id via list statis, en via `Intl` short);
+`formatDelta(d, lang)` (koma vs titik); `formatMonthTitle(k, lang)` via
+`Intl` + kapitalisasi. `KpiHeader`/`BreakdownList`/donut-center/
+`MonthlySummaryCard`/`RangeSegmentedControl`/`WalletFilterChips`/
+`AnalyticsEmptyState` via `useLanguage`; `OTHER_LABEL = 'Other'` disengaja
+TAK tersentuh (verbatim id, identik di en). Screen `analytics.tsx`: judul
+seksi + `toBars(..., 'Asia/Jakarta', language)` (tz eksplisit = perilaku
+lama, defaultnya memang itu). Hook-safety: `useLanguage` selalu sebelum
+early return (lint `rules-of-hooks` menangkap di `BreakdownList`).
+Gate: lint bersih + typecheck + Jest 376 hijau + static-only 3/3.
+
 ## Remaining catalog (from full audit: ~235 unique strings, ~230 keys)
 
 - **wallets** (~40): DONE — see Done section above.
@@ -83,11 +98,8 @@ Gate: lint bersih + typecheck + Jest 372 hijau + static-only 3/3.
   (`KIND_FILTER_OPTIONS` intentionally left for the search chunk).
 - **search** (~20, `app/search.tsx`):
 - **search** (~20, `app/search.tsx`): DONE — see Done section above.
-- **analytics** (~20): `analytics.range.*` (`1B/3B/6B/1T/Semua` — verify;
-  range labels may stay symbolic), `kpi.*`, `section.*` (`Distribusi
-  Pengeluaran`, `Tren Harian/Bulanan`), `empty.*` (`Belum ada data`),
-  `monthly.*` (reuse for dashboard card), `formatMonthTitle`
-  (`analytics/domain.ts:501` hardcodes `'id-ID'` → `localeTagFor`).
+- **analytics** (~20): DONE — see Done section above
+  (`OTHER_LABEL` untouched, verbatim).
 - **budgets screens** (~40): `budgets.screen.*`, `budgets.form.*`,
   `budgets.validation.*` in `app/(tabs)/budgets.tsx`, `app/budget-form.tsx`;
   month-name array `budgets.tsx:40-51` → `Intl` (same as calendar).

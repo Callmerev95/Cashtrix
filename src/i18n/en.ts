@@ -339,4 +339,37 @@ export const en: Dictionary = {
     saving: 'Saving…',
     applyFail: 'Failed to change category',
   },
+  analytics: {
+    range: {
+      '1M': '1M',
+      '3M': '3M',
+      '6M': '6M',
+      '1Y': '1Y',
+      ALL: 'All',
+    },
+    rangeA11y: '{label} range',
+    walletAll: 'All',
+    kpi: {
+      expense: 'Expenses',
+      income: 'Income',
+      net: 'Net',
+    },
+    section: {
+      distribution: 'Expense Breakdown',
+      trendDaily: 'Daily Trend',
+      trendMonthly: 'Monthly Trend',
+    },
+    empty: {
+      title: 'No data yet',
+      body: 'No transactions in this range. Try another range or record a new transaction.',
+    },
+    monthly: {
+      loading: 'Loading summary…',
+      unavailable: 'Summary unavailable.',
+      openA11y: '{month} summary, open Analytics',
+      title: 'Monthly summary',
+      invite: 'No transactions this month yet — record the first with the + button.',
+    },
+    loadError: 'Failed to load analytics',
+  },
 };

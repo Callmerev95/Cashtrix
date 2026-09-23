@@ -29,6 +29,7 @@ import {
 } from '@/features/analytics';
 import { Screen, AppHeader, ErrorStateCard } from '@/components';
 import { useProfile } from '@/features/profile';
+import { dictionaryFor, useLanguage } from '@/i18n';
 import { colors, gradients, radius, spacing, typography } from '@/theme';
 
 export default function AnalyticsScreen() {
@@ -45,11 +46,14 @@ export default function AnalyticsScreen() {
     refresh,
   } = useAnalytics();
   const { avatarSignedUrl } = useProfile();
+  // C6: section copy + bar labels follow the OS language (ADR-0008, R10).
+  const language = useLanguage();
+  const t = dictionaryFor(language);
 
   const window = resolveRange(range);
   const daily = isDailyRange(range);
   const slices = overview ? toDonutSlices(overview.breakdown) : [];
-  const bars = overview ? toBars(overview.series, window, daily) : [];
+  const bars = overview ? toBars(overview.series, window, daily, 'Asia/Jakarta', language) : [];
 
   return (
     <Screen style={styles.frame} testID="analytics-screen">
@@ -95,7 +99,7 @@ export default function AnalyticsScreen() {
               style={styles.card}
             >
               <Text style={[typography.labelUppercase, styles.cardKicker]}>
-                Distribusi Pengeluaran
+                {t.analytics.section.distribution}
               </Text>
               <DonutChart slices={slices} total={overview.totals.expense} />
               <View style={styles.legendDivider} />
@@ -107,7 +111,9 @@ export default function AnalyticsScreen() {
               style={styles.card}
             >
               <Text style={[typography.labelUppercase, styles.cardKicker]}>
-                {daily ? 'Tren Harian' : 'Tren Bulanan'}
+                {daily
+                  ? t.analytics.section.trendDaily
+                  : t.analytics.section.trendMonthly}
               </Text>
               <BarChart bars={bars} />
             </LinearGradient>

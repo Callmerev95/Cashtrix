@@ -21,6 +21,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, shadows, spacing, typography } from '@/theme';
+import { useLanguage } from '@/i18n';
 
 import { formatGrouped } from '../../transactions/domain';
 import { sliceColor } from './slice-ramp';
@@ -44,6 +45,8 @@ export function DonutChart({
   thickness?: number;
   testID?: string;
 }) {
+  // C6: center-total format follows the OS language (R10).
+  const language = useLanguage();
   const inner = size - thickness * 2;
   const half = size / 2;
 
@@ -158,7 +161,7 @@ export function DonutChart({
             numberOfLines={1}
             adjustsFontSizeToFit
           >
-            Rp {formatGrouped(total)}
+            Rp {formatGrouped(total, language)}
           </Text>
         </View>
       </View>

@@ -4,18 +4,21 @@
  * resting state, not an error.
  */
 import { EmptyStateCard } from '@/components/empty-state-card';
+import { dictionaryFor, useLanguage } from '@/i18n';
 
 export function AnalyticsEmptyState({
   testID = 'analytics-empty',
 }: {
   testID?: string;
 }) {
+  // C6: copy follows the OS language (ADR-0008).
+  const t = dictionaryFor(useLanguage());
   return (
     <EmptyStateCard
       testID={testID}
       icon="insights"
-      title="Belum ada data"
-      description="Tidak ada transaksi pada rentang ini. Coba rentang lain atau catat transaksi baru."
+      title={t.analytics.empty.title}
+      description={t.analytics.empty.body}
     />
   );
 }

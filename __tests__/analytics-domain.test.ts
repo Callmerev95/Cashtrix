@@ -17,6 +17,7 @@ import {
   isDailyRange,
   isEmptyRange,
   isRangePreset,
+  rangeLabel,
   rangeLabels,
   resolveRange,
   sliceIndexAtTurn,
@@ -62,6 +63,13 @@ describe('range presets', () => {
     expect(isRangePreset('ALL')).toBe(true);
     expect(isRangePreset('2M')).toBe(false);
     expect(isRangePreset(null)).toBe(false);
+  });
+
+  it('localises range labels with id defaults (C6)', () => {
+    expect(rangeLabel('1M')).toBe('1B');
+    expect(rangeLabel('ALL')).toBe('Semua');
+    expect(rangeLabel('1M', 'en')).toBe('1M');
+    expect(rangeLabel('ALL', 'en')).toBe('All');
   });
 
   it('only 1M uses daily buckets; everything longer is monthly', () => {
@@ -313,6 +321,22 @@ describe('toBars', () => {
     );
     expect(monthlyBars.map((bar) => bar.label)).toEqual(['Jul', 'Agu', 'Sep']);
   });
+
+  it('localises month labels in English (C6, R10)', () => {
+    const monthlyBars = toBars(
+      [],
+      {
+        start: new Date('2026-07-01T00:00:00+07:00'),
+        end: new Date('2026-10-01T00:00:00+07:00'),
+        previousStart: new Date('2026-04-01T00:00:00+07:00'),
+        previousEnd: new Date('2026-07-01T00:00:00+07:00'),
+      },
+      false,
+      'Asia/Jakarta',
+      'en',
+    );
+    expect(monthlyBars.map((bar) => bar.label)).toEqual(['Jul', 'Aug', 'Sep']);
+  });
 });
 
 describe('formatDelta', () => {
@@ -331,6 +355,12 @@ describe('formatDelta', () => {
   it('treats a near-zero delta as flat with no sign', () => {
     expect(formatDelta(0)).toBe('0,0%');
     expect(formatDelta(0.01)).toBe('0,0%');
+  });
+
+  it('uses a dot decimal in English (C6, R10)', () => {
+    expect(formatDelta(12.34, 'en')).toBe('+12.3%');
+    expect(formatDelta(-4.06, 'en')).toBe('-4.1%');
+    expect(formatDelta(null, 'en')).toBe('—');
   });
 });
 

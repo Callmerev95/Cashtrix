@@ -16,6 +16,10 @@
  *    `null` — this must never render `NaN`/`Infinity`, AC #7).
  */
 
+import { dictionaryFor, localeTagFor } from '@/i18n/dictionaries';
+import { id } from '@/i18n/id';
+import type { Language } from '@/i18n/locale';
+
 // ---------------------------------------------------------------------------
 // Types (mirror the `analytics_overview` JSON payload)
 // ---------------------------------------------------------------------------
@@ -73,14 +77,13 @@ export function isRangePreset(value: unknown): value is RangePreset {
   );
 }
 
-/** Human label for the segmented control. */
-export const rangeLabels: Record<RangePreset, string> = {
-  '1M': '1B',
-  '3M': '3B',
-  '6M': '6B',
-  '1Y': '1T',
-  ALL: 'Semua',
-};
+/** Human label for the segmented control — the id-ID source of truth. */
+export const rangeLabels: Record<RangePreset, string> = id.analytics.range;
+
+/** Range label in the active language (C6). */
+export function rangeLabel(preset: RangePreset, lang: Language = 'id'): string {
+  return dictionaryFor(lang).analytics.range[preset];
+}
 
 /** Months spanned by each preset; `ALL` is unbounded. */
 const PRESET_MONTHS: Record<Exclude<RangePreset, 'ALL'>, number> = {
@@ -260,6 +263,7 @@ export function toBars(
   range: DateRange,
   daily: boolean,
   tz: string = 'Asia/Jakarta',
+  lang: Language = 'id',
 ): BarDatum[] {
   const buckets = enumerateBuckets(range, daily, tz);
   const byKey = new Map(series.map((item) => [item.bucket, item.totalExpense]));
@@ -271,7 +275,7 @@ export function toBars(
     bucket,
     value: values[index] ?? 0,
     height: max > 0 ? (values[index] ?? 0) / max : 0,
-    label: daily ? dayLabel(bucket) : monthLabel(bucket),
+    label: daily ? dayLabel(bucket) : monthLabel(bucket, lang),
   }));
 }
 
@@ -351,8 +355,18 @@ function dayLabel(bucket: string): string {
   return String(Number(bucket.slice(8, 10)));
 }
 
-function monthLabel(bucket: string): string {
-  return MONTH_SHORT[Number(bucket.slice(5, 7)) - 1] ?? '';
+function monthLabel(bucket: string, lang: Language = 'id'): string {
+  if (lang === 'id') {
+    return MONTH_SHORT[Number(bucket.slice(5, 7)) - 1] ?? '';
+  }
+  const date = new Date(
+    Number(bucket.slice(0, 4)),
+    Number(bucket.slice(5, 7)) - 1,
+    1,
+  );
+  return new Intl.DateTimeFormat(localeTagFor(lang), { month: 'short' }).format(
+    date,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -362,16 +376,21 @@ function monthLabel(bucket: string): string {
 /**
  * The KPI delta string: `+12,3%` / `-4,1%` (id-ID decimal comma), or an em
  * dash when the previous period had no data (the API sends `null`). Never
- * returns `NaN`/`Infinity`/`undefined` (AC #7).
+ * returns `NaN`/`Infinity`/`undefined` (AC #7). Pass the active language
+ * (C6); the default keeps the locked id-ID behaviour.
  */
-export function formatDelta(delta: number | null | undefined): string {
+export function formatDelta(
+  delta: number | null | undefined,
+  lang: Language = 'id',
+): string {
   if (delta === null || delta === undefined || !Number.isFinite(delta)) {
     return '—';
   }
 
   const rounded = Math.abs(delta) < 0.05 ? 0 : delta;
   const sign = rounded > 0 ? '+' : rounded < 0 ? '-' : '';
-  const magnitude = Math.abs(rounded).toFixed(1).replace('.', ',');
+  const separator = lang === 'en' ? '.' : ',';
+  const magnitude = Math.abs(rounded).toFixed(1).replace('.', separator);
   return `${sign}${magnitude}%`;
 }
 
@@ -495,10 +514,10 @@ export function prevMonthKey(monthKey: string): string {
   return `${year}-${String(month - 1).padStart(2, '0')}-01`;
 }
 
-/** `September 2026` — the card title for a month key (id-ID). */
-export function formatMonthTitle(monthKey: string): string {
+/** `September 2026` — the card title for a month key (C6: `Intl`, R10). */
+export function formatMonthTitle(monthKey: string, lang: Language = 'id'): string {
   const date = new Date(`${monthKey}T00:00:00`);
-  const formatted = date.toLocaleDateString('id-ID', {
+  const formatted = date.toLocaleDateString(localeTagFor(lang), {
     month: 'long',
     year: 'numeric',
   });

@@ -26,6 +26,7 @@ export {
   monthKeyInTz,
   monthlyDelta,
   prevMonthKey,
+  rangeLabel,
   rangeLabels,
   resolveRange,
   sliceIndexAtTurn,

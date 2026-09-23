@@ -8,8 +8,9 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { colors, layout, radius, shadows, spacing, typography } from '@/theme';
+import { dictionaryFor, fill, useLanguage } from '@/i18n';
 
-import { RANGE_PRESETS, rangeLabels, type RangePreset } from '../domain';
+import { RANGE_PRESETS, rangeLabel, type RangePreset } from '../domain';
 
 export function RangeSegmentedControl({
   value,
@@ -20,17 +21,21 @@ export function RangeSegmentedControl({
   onChange: (value: RangePreset) => void;
   testID?: string;
 }) {
+  // C6: labels follow the OS language (ADR-0008).
+  const language = useLanguage();
+  const t = dictionaryFor(language);
   return (
     <View testID={testID} style={styles.well}>
       {RANGE_PRESETS.map((preset) => {
         const active = preset === value;
+        const label = rangeLabel(preset, language);
         return (
           <Pressable
             key={preset}
             testID={`range-option-${preset}`}
             accessibilityRole="button"
             accessibilityState={{ selected: active }}
-            accessibilityLabel={`Rentang ${rangeLabels[preset]}`}
+            accessibilityLabel={fill(t.analytics.rangeA11y, { label })}
             onPress={() => onChange(preset)}
             style={[styles.segment, active && styles.segmentActive]}
           >
@@ -41,7 +46,7 @@ export function RangeSegmentedControl({
                 active && styles.labelActive,
               ]}
             >
-              {rangeLabels[preset]}
+              {label}
             </Text>
           </Pressable>
         );
@@ -65,6 +70,8 @@ export function WalletFilterChips({
   onChange: (value: string | null) => void;
   testID?: string;
 }) {
+  // C6: the "All" chip follows the OS language; wallet names are user data.
+  const t = dictionaryFor(useLanguage());
   if (wallets.length === 0) return null;
 
   return (
@@ -76,7 +83,7 @@ export function WalletFilterChips({
         contentContainerStyle={styles.chips}
       >
         <FilterChip
-          label="Semua"
+          label={t.analytics.walletAll}
           active={value === null}
           testID="wallet-filter-all"
           onPress={() => onChange(null)}

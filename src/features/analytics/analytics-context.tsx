@@ -23,6 +23,7 @@ import {
 } from 'react';
 
 import { onLocalDataPurge } from '@/supabase';
+import { dictionaryFor, useLanguage } from '@/i18n';
 
 import { fetchMonthlySummary, fetchOverview, fetchTimezone, listWalletFilters } from './api';
 import {
@@ -71,6 +72,9 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   // Monotonic request id: a slow response for an older range must not overwrite
   // the payload for the range the user has since selected.
   const requestId = useRef(0);
+  // C6: load-error copy follows the OS language (ADR-0008).
+  const language = useLanguage();
+  const loadError = dictionaryFor(language).analytics.loadError;
 
   useEffect(() => {
     mounted.current = true;
@@ -140,11 +144,11 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
         .catch((cause: unknown) => {
           if (!mounted.current || ticket !== requestId.current) return;
           setError(
-            cause instanceof Error ? cause.message : 'Gagal memuat analytics',
+            cause instanceof Error ? cause.message : loadError,
           );
         });
     },
-    [],
+    [loadError],
   );
 
   // The effect only *starts* the async fetch. `loading` is derived: the screen

@@ -14,6 +14,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Card } from '@/components/card';
 import { colors, spacing, typography } from '@/theme';
+import { dictionaryFor, fill, useLanguage } from '@/i18n';
 
 import {
   formatMonthTitle,
@@ -34,11 +35,14 @@ export function MonthlySummaryCard({
   onPress: () => void;
   testID?: string;
 }) {
+  // C6: copy + month format follow the OS language (ADR-0008, R10).
+  const language = useLanguage();
+  const t = dictionaryFor(language);
   if (!summary) {
     return (
       <Card testID={testID} style={styles.card}>
         <Text style={[typography.bodySm, styles.meta]}>
-          {loading ? 'Memuat ringkasan…' : 'Ringkasan belum tersedia.'}
+          {loading ? t.analytics.monthly.loading : t.analytics.monthly.unavailable}
         </Text>
       </Card>
     );
@@ -46,21 +50,22 @@ export function MonthlySummaryCard({
 
   const { current, previous } = summary;
   const empty = isEmptyMonthly(summary);
+  const title = formatMonthTitle(current.month, language);
 
   return (
     <Pressable
       testID={testID}
       accessibilityRole="button"
-      accessibilityLabel={`Ringkasan ${formatMonthTitle(current.month)}, buka Analytics`}
+      accessibilityLabel={fill(t.analytics.monthly.openA11y, { month: title })}
       onPress={onPress}
     >
       <View style={styles.header}>
         <View style={styles.titles}>
           <Text style={[typography.labelUppercase, styles.kicker]}>
-            Ringkasan bulan
+            {t.analytics.monthly.title}
           </Text>
           <Text style={[typography.headlineSm, styles.title]}>
-            {formatMonthTitle(current.month)}
+            {title}
           </Text>
         </View>
         <MaterialIcons
@@ -84,7 +89,7 @@ export function MonthlySummaryCard({
       />
       {empty ? (
         <Text style={[typography.bodySm, styles.meta]}>
-          Belum ada transaksi bulan ini — catat yang pertama lewat tombol +.
+          {t.analytics.monthly.invite}
         </Text>
       ) : null}
     </Pressable>

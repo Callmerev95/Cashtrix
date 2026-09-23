@@ -10,6 +10,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { useLanguage } from '@/i18n';
 
 import { formatGrouped } from '../../transactions/domain';
 import { sliceColor } from './slice-ramp';
@@ -23,6 +24,8 @@ export function BreakdownList({
   slices: { id: string; label: string; icon: string; value: number; share: number }[];
   testID?: string;
 }) {
+  // C6: amount format follows the OS language (R10).
+  const language = useLanguage();
   if (slices.length === 0) return null;
 
   return (
@@ -48,7 +51,7 @@ export function BreakdownList({
           </Text>
 
           <Text style={[typography.currencySm, styles.amount]} numberOfLines={1}>
-            Rp {formatGrouped(slice.value)}
+            Rp {formatGrouped(slice.value, language)}
           </Text>
         </View>
       ))}

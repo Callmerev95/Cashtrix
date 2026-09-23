@@ -338,6 +338,40 @@ export const id = {
     saving: 'Menyimpan…',
     applyFail: 'Gagal mengubah kategori',
   },
+  analytics: {
+    range: {
+      '1M': '1B',
+      '3M': '3B',
+      '6M': '6B',
+      '1Y': '1T',
+      ALL: 'Semua',
+    },
+    rangeA11y: 'Rentang {label}',
+    walletAll: 'Semua',
+    kpi: {
+      expense: 'Pengeluaran',
+      income: 'Pemasukan',
+      net: 'Net',
+    },
+    section: {
+      distribution: 'Distribusi Pengeluaran',
+      trendDaily: 'Tren Harian',
+      trendMonthly: 'Tren Bulanan',
+    },
+    empty: {
+      title: 'Belum ada data',
+      body: 'Tidak ada transaksi pada rentang ini. Coba rentang lain atau catat transaksi baru.',
+    },
+    monthly: {
+      loading: 'Memuat ringkasan…',
+      unavailable: 'Ringkasan belum tersedia.',
+      openA11y: 'Ringkasan {month}, buka Analytics',
+      title: 'Ringkasan bulan',
+      invite:
+        'Belum ada transaksi bulan ini — catat yang pertama lewat tombol +.',
+    },
+    loadError: 'Gagal memuat analytics',
+  },
 };
 
 export type Dictionary = typeof id;

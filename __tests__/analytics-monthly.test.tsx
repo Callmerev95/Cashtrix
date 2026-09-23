@@ -57,6 +57,11 @@ describe('month keys (tz-aware)', () => {
     expect(formatMonthTitle('2026-09-01')).toBe('September 2026');
     expect(formatMonthTitle('2026-01-01')).toBe('Januari 2026');
   });
+
+  it('judul bulan mengikuti bahasa aktif (C6, R10)', () => {
+    expect(formatMonthTitle('2026-01-01', 'en')).toBe('January 2026');
+    expect(formatMonthTitle('2026-09-01', 'en')).toBe('September 2026');
+  });
 });
 
 describe('toMonthlyComparison', () => {
