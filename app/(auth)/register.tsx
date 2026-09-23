@@ -21,6 +21,7 @@ import {
   type FieldErrors,
 } from '@/features/auth';
 import { colors, radius, spacing, typography } from '@/theme';
+import { dictionaryFor, fill, useLanguage } from '@/i18n';
 
 // Legal URLs (GitHub Pages) — same for in-app and store listing (ADR-0006)
 const LEGAL = {
@@ -30,6 +31,9 @@ const LEGAL = {
 
 export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
+  // C6: copy follows the OS language (ADR-0008).
+  const language = useLanguage();
+  const t = dictionaryFor(language);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -37,7 +41,7 @@ export default function RegisterScreen() {
   const [busy, setBusy] = useState(false);
 
   async function onSubmit() {
-    const validation = validateRegister(email, password);
+    const validation = validateRegister(email, password, language);
     setErrors(validation);
     setFormError('');
     // Nothing leaves the device while the form is invalid.
@@ -56,7 +60,7 @@ export default function RegisterScreen() {
       // failed registration. The next login retries it.
       await runSeedUser().catch(() => undefined);
     } catch (error) {
-      setFormError(registerErrorMessage(error as { status?: number }));
+      setFormError(registerErrorMessage(error as { status?: number }, language));
     } finally {
       setBusy(false);
     }
@@ -80,9 +84,9 @@ export default function RegisterScreen() {
         <View style={styles.header}>
           <LogoMark size={72} />
           <Text style={[typography.labelUppercase, styles.kicker]}>Cashtrix</Text>
-          <Text style={[typography.headlineLg, styles.title]}>Buat akun</Text>
+          <Text style={[typography.headlineLg, styles.title]}>{t.auth.register.title}</Text>
           <Text style={[typography.bodyMd, styles.subtitle]}>
-            Satu akun untuk seluruh dompet dan transaksi Anda.
+            {t.auth.register.subtitle}
           </Text>
         </View>
 
@@ -124,7 +128,7 @@ export default function RegisterScreen() {
               <Text style={styles.fieldError}>{errors.password}</Text>
             ) : (
               <Text style={styles.hint}>
-                Minimal {PASSWORD_MIN_LENGTH} karakter, memuat huruf dan angka.
+                {fill(t.auth.register.passwordHint, { min: PASSWORD_MIN_LENGTH })}
               </Text>
             )}
           </View>
@@ -133,7 +137,7 @@ export default function RegisterScreen() {
 
           <PrimaryButton
             testID="register-submit"
-            label="Daftar"
+            label={t.auth.register.submit}
             onPress={onSubmit}
             loading={busy}
             style={styles.cta}
@@ -141,30 +145,30 @@ export default function RegisterScreen() {
         </Card>
 
         <View style={styles.footer}>
-          <Text style={[typography.bodySm, styles.footerText]}>Sudah punya akun?</Text>
+          <Text style={[typography.bodySm, styles.footerText]}>{t.auth.register.toLoginPrompt}</Text>
           <Link href="/(auth)/login" asChild>
-            <GhostButton label="Masuk" testID="register-to-login" />
+            <GhostButton label={t.auth.register.toLogin} testID="register-to-login" />
           </Link>
         </View>
 
         <View style={styles.legal}>
-          <Text style={[typography.bodySm, styles.legalText]}>Dengan mendaftar, Anda menyetujui </Text>
+          <Text style={[typography.bodySm, styles.legalText]}>{t.auth.legal.registerPrefix}</Text>
           <Text
             style={[typography.bodySm, styles.legalLink]}
             accessibilityRole="link"
             testID="register-terms-link"
             onPress={() => openLegal(LEGAL.terms)}
           >
-            Ketentuan Layanan
+            {t.auth.legal.terms}
           </Text>
-          <Text style={[typography.bodySm, styles.legalText]}> dan </Text>
+          <Text style={[typography.bodySm, styles.legalText]}>{t.auth.legal.and}</Text>
           <Text
             style={[typography.bodySm, styles.legalLink]}
             accessibilityRole="link"
             testID="register-privacy-link"
             onPress={() => openLegal(LEGAL.privacy)}
           >
-            Kebijakan Privasi
+            {t.auth.legal.privacy}
           </Text>
           <Text style={[typography.bodySm, styles.legalText]}>.</Text>
         </View>

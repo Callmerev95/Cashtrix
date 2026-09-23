@@ -7,15 +7,9 @@
  */
 import { useState } from 'react';
 
-import { en } from './en';
-import { id, type Dictionary } from './id';
-
 export type Language = 'id' | 'en';
 
-/** Dictionary for an explicitly resolved language. */
-export function dictionaryFor(language: Language): Dictionary {
-  return language === 'en' ? en : id;
-}
+export { fill } from './dictionaries';
 
 /** BCP-47 tag whose first subtag is `en` (case-insensitive) → English. */
 export function resolveLanguage(tag: string | null | undefined): Language {
@@ -27,16 +21,6 @@ export function resolveLanguage(tag: string | null | undefined): Language {
 /** `Intl` locale tag for the active language (R10: formatting follows it). */
 export function localeTagFor(language: Language): string {
   return language === 'en' ? 'en-US' : 'id-ID';
-}
-
-/** Minimal `{param}` interpolation — mirrors the dictionary templates. */
-export function fill(
-  template: string,
-  params: Record<string, string | number>,
-): string {
-  return template.replace(/\{(\w+)\}/g, (match, name: string) =>
-    name in params ? String(params[name]) : match,
-  );
 }
 
 type LocalesResult = {

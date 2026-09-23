@@ -14,10 +14,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card, GhostButton, LogoMark, PrimaryButton } from '@/components';
 import { exchangeAuthCallback, resendSignupEmail, useAuth } from '@/features/auth';
+import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, radius, spacing, typography } from '@/theme';
 
 export default function CheckEmailScreen() {
   const insets = useSafeAreaInsets();
+  // C6: copy follows the OS language (ADR-0008).
+  const language = useLanguage();
+  const t = dictionaryFor(language);
   const { session } = useAuth();
   const { email: paramEmail } = useLocalSearchParams<{ email?: string }>();
   // Register passes the address as a param; the gate-driven path has no
@@ -33,12 +37,8 @@ export default function CheckEmailScreen() {
   // effect body) per the `react-hooks/set-state-in-effect` rule.
   useEffect(() => {
     function handle(url: string) {
-      exchangeAuthCallback(url).catch((error: unknown) => {
-        setCallbackError(
-          error instanceof Error && error.message
-            ? 'Tautan verifikasi tidak valid atau kedaluwarsa. Minta tautan baru di bawah.'
-            : 'Tautan verifikasi tidak valid atau kedaluwarsa. Minta tautan baru di bawah.',
-        );
+      exchangeAuthCallback(url).catch(() => {
+        setCallbackError(t.auth.checkEmail.invalidLink);
       });
     }
     Linking.getInitialURL()
@@ -50,7 +50,8 @@ export default function CheckEmailScreen() {
     return () => {
       subscription.remove();
     };
-  }, []);
+    // `t` is stable for the component lifetime (resolved once per mount).
+  }, [t]);
 
   async function onResend() {
     if (!email.trim() || resending) return;
@@ -58,9 +59,9 @@ export default function CheckEmailScreen() {
     setResendMessage('');
     try {
       await resendSignupEmail(email);
-      setResendMessage('Tautan verifikasi dikirim ulang. Periksa kotak masuk Anda.');
+      setResendMessage(t.auth.checkEmail.resentOk);
     } catch {
-      setResendMessage('Gagal mengirim ulang. Coba lagi sebentar lagi.');
+      setResendMessage(t.auth.checkEmail.resendFail);
     } finally {
       setResending(false);
     }
@@ -79,15 +80,15 @@ export default function CheckEmailScreen() {
         <View style={styles.header}>
           <LogoMark size={72} />
           <Text style={[typography.labelUppercase, styles.kicker]}>Cashtrix</Text>
-          <Text style={[typography.headlineLg, styles.title]}>Cek email Anda</Text>
+          <Text style={[typography.headlineLg, styles.title]}>{t.auth.checkEmail.title}</Text>
         </View>
 
         <Card style={styles.card}>
           <View style={styles.message}>
             <Text style={[typography.bodyMd, styles.subtitle]}>
               {email
-                ? `Kami mengirim tautan verifikasi ke ${email}. Buka tautan itu untuk masuk — tidak perlu login ulang di perangkat ini.`
-                : 'Kami telah mengirim tautan verifikasi ke email Anda. Buka tautan itu, lalu masuk dengan akun Anda.'}
+                ? fill(t.auth.checkEmail.bodyWithEmail, { email })
+                : t.auth.checkEmail.bodyWithoutEmail}
             </Text>
           </View>
 
@@ -102,13 +103,13 @@ export default function CheckEmailScreen() {
           <View style={styles.actions}>
             <PrimaryButton
               testID="check-email-resend"
-              label={resending ? 'Mengirim…' : 'Kirim ulang'}
+              label={resending ? t.auth.checkEmail.resending : t.auth.checkEmail.resend}
               onPress={onResend}
               loading={resending}
               style={styles.resendButton}
             />
             <Link href="/(auth)/login" asChild>
-              <GhostButton label="Sudah terverifikasi? Masuk" testID="check-email-to-login" />
+              <GhostButton label={t.auth.checkEmail.toLogin} testID="check-email-to-login" />
             </Link>
           </View>
         </Card>

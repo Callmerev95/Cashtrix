@@ -8,7 +8,9 @@
  *     so a "small wording tweak" cannot silently drift from PRD.
  */
 
+import { dictionaryFor } from '@/i18n/dictionaries';
 import { id } from '@/i18n/id';
+import type { Language } from '@/i18n/locale';
 
 /** Exact user-facing copy — PRD §2.3 Epic A. Do not reword in components. */
 export const authMessages = id.auth.validation;
@@ -46,27 +48,34 @@ export function isValidPassword(password: string): boolean {
 /**
  * Register-form validation. Returns only the fields that failed, so the form
  * can render messages inline and skip the request entirely when non-empty.
+ * Pass the active language for localised copy (C6); the default keeps the
+ * locked id-ID behaviour.
  */
-export function validateRegister(email: string, password: string): FieldErrors {
+export function validateRegister(
+  email: string,
+  password: string,
+  lang: Language = 'id',
+): FieldErrors {
+  const messages = dictionaryFor(lang).auth.validation;
   const errors: FieldErrors = {};
   const trimmedEmail = email.trim();
 
   if (!trimmedEmail || !password) {
     // One shared message: the design pattern does not pinpoint which field is
     // empty (DESIGN.md §6 auth pattern).
-    if (!trimmedEmail) errors.email = authMessages.emailRequired;
-    if (!password) errors.password = authMessages.emailRequired;
+    if (!trimmedEmail) errors.email = messages.emailRequired;
+    if (!password) errors.password = messages.emailRequired;
     return errors;
   }
 
   if (!isValidEmail(trimmedEmail)) {
-    errors.email = authMessages.emailInvalid;
+    errors.email = messages.emailInvalid;
   }
 
   if (password.length < PASSWORD_MIN_LENGTH) {
-    errors.password = authMessages.passwordTooShort;
+    errors.password = messages.passwordTooShort;
   } else if (!isValidPassword(password)) {
-    errors.password = authMessages.passwordNeedsLetterAndNumber;
+    errors.password = messages.passwordNeedsLetterAndNumber;
   }
 
   return errors;
@@ -84,18 +93,22 @@ export function hasErrors(errors: FieldErrors): boolean {
  * else (offline, rate limit, server fault) must not masquerade as a wrong
  * password, or the user retypes a password that was correct all along.
  */
-export function loginErrorMessage(error: { status?: number; code?: string } | null): string {
+export function loginErrorMessage(
+  error: { status?: number; code?: string } | null,
+  lang: Language = 'id',
+): string {
   if (!error) return '';
+  const messages = dictionaryFor(lang).auth.validation;
 
   if (error.status === 0 || error.code === 'offline') {
-    return authMessages.networkError;
+    return messages.networkError;
   }
 
   if (isEmailNotConfirmedError(error)) {
-    return authMessages.emailNotConfirmed;
+    return messages.emailNotConfirmed;
   }
 
-  return authMessages.invalidCredentials;
+  return messages.invalidCredentials;
 }
 
 /**
@@ -108,9 +121,13 @@ export function isEmailNotConfirmedError(error: { code?: string } | null): boole
 }
 
 /** Register errors: duplicate email surfaces as a generic retry message. */
-export function registerErrorMessage(error: { status?: number } | null): string {
+export function registerErrorMessage(
+  error: { status?: number } | null,
+  lang: Language = 'id',
+): string {
+  const messages = dictionaryFor(lang).auth.validation;
   if (error && (error.status === 0 || error.status === undefined)) {
-    return authMessages.networkError;
+    return messages.networkError;
   }
-  return authMessages.signUpFailed;
+  return messages.signUpFailed;
 }

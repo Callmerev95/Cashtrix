@@ -12,7 +12,7 @@ export {
   deviceLanguageTag,
   detectLanguage,
   useLanguage,
-  dictionaryFor,
   type Language,
 } from './locale';
+export { dictionaryFor } from './dictionaries';
 export { translateSystemCategory } from './categories';

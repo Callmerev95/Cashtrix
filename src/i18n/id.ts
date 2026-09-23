@@ -23,6 +23,73 @@ export const id = {
       emailNotConfirmed: 'Email belum dikonfirmasi. Cek kotak masuk Anda.',
       signUpFailed: 'Pendaftaran gagal. Coba lagi sebentar lagi',
       networkError: 'Tidak dapat terhubung. Periksa koneksi Anda',
+      confirmRequired: 'Konfirmasi password wajib diisi',
+      mismatch: 'Password tidak cocok',
+    },
+    legal: {
+      loginPrefix: 'Dengan melanjutkan, Anda menyetujui ',
+      registerPrefix: 'Dengan mendaftar, Anda menyetujui ',
+      terms: 'Ketentuan Layanan',
+      and: ' dan ',
+      privacy: 'Kebijakan Privasi',
+    },
+    login: {
+      subtitle: 'Masuk untuk melihat posisi keuangan Anda.',
+      resend: 'Kirim ulang verifikasi',
+      submit: 'Masuk',
+      toRegisterPrompt: 'Belum punya akun?',
+      toRegister: 'Daftar',
+      forgot: 'Lupa password?',
+    },
+    register: {
+      title: 'Buat akun',
+      subtitle: 'Satu akun untuk seluruh dompet dan transaksi Anda.',
+      passwordHint: 'Minimal {min} karakter, memuat huruf dan angka.',
+      submit: 'Daftar',
+      toLoginPrompt: 'Sudah punya akun?',
+      toLogin: 'Masuk',
+    },
+    checkEmail: {
+      title: 'Cek email Anda',
+      bodyWithEmail:
+        'Kami mengirim tautan verifikasi ke {email}. Buka tautan itu untuk masuk — tidak perlu login ulang di perangkat ini.',
+      bodyWithoutEmail:
+        'Kami telah mengirim tautan verifikasi ke email Anda. Buka tautan itu, lalu masuk dengan akun Anda.',
+      invalidLink:
+        'Tautan verifikasi tidak valid atau kedaluwarsa. Minta tautan baru di bawah.',
+      resentOk: 'Tautan verifikasi dikirim ulang. Periksa kotak masuk Anda.',
+      resendFail: 'Gagal mengirim ulang. Coba lagi sebentar lagi.',
+      resending: 'Mengirim…',
+      resend: 'Kirim ulang',
+      toLogin: 'Sudah terverifikasi? Masuk',
+    },
+    forgot: {
+      title: 'Lupa Password',
+      subtitle:
+        'Masukkan email Anda, kami akan kirim tautan untuk mengatur password baru.',
+      submit: 'Kirim tautan reset',
+      toLoginPrompt: 'Ingat password?',
+      toLogin: 'Kembali ke Masuk',
+      success: 'Jika email terdaftar, tautan reset password telah dikirim.',
+      fail: 'Gagal mengirim tautan. Coba lagi sebentar lagi.',
+    },
+    reset: {
+      verifying: 'Memeriksa tautan reset…',
+      doneTitle: 'Password diubah',
+      doneBody:
+        'Password baru Anda sudah tersimpan. Anda sudah masuk — lanjutkan ke aplikasi.',
+      openApp: 'Buka aplikasi',
+      formTitle: 'Atur Password Baru',
+      formSubtitle:
+        'Masukkan password baru Anda. Password harus minimal 8 karakter dengan huruf dan angka.',
+      newPassword: 'Password Baru',
+      confirmPassword: 'Konfirmasi Password',
+      submit: 'Simpan Password Baru',
+      linkInvalid:
+        'Tautan reset tidak valid atau kedaluwarsa. Minta tautan baru dari layar Masuk.',
+      linkMissing:
+        'Buka tautan dari email reset password untuk mengatur password baru.',
+      updateFail: 'Gagal mengubah password. Coba lagi sebentar lagi.',
     },
   },
   budgets: {
@@ -59,6 +126,31 @@ export const id = {
       bonus: 'Bonus',
       investasi: 'Investasi',
       lainnya: 'Lainnya',
+    },
+  },
+  dashboard: {
+    greeting: {
+      morning: 'Selamat pagi',
+      afternoon: 'Selamat siang',
+      evening: 'Selamat sore',
+      night: 'Selamat malam',
+    },
+    notif: {
+      open: 'Buka Notifikasi',
+      unread: '{count} notifikasi belum dibaca, buka Notifikasi',
+    },
+    wallets: {
+      title: 'Dompet',
+      manage: 'Kelola',
+      emptyTitle: 'Dompet kosong',
+      emptyBody:
+        'Tambahkan dompet pertama Anda untuk mulai mencatat arus kas.',
+      emptyAction: 'Tambah Dompet',
+      moreRest: '+{rest} dompet lain · total {amount}',
+    },
+    history: {
+      title: 'Riwayat',
+      search: 'Cari',
     },
   },
   connectivity: {

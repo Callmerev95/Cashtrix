@@ -9,10 +9,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card, GhostButton, LogoMark, PrimaryButton, TextField } from '@/components';
 import { sendPasswordResetEmail, validateRegister, type FieldErrors } from '@/features/auth';
+import { dictionaryFor, useLanguage } from '@/i18n';
 import { colors, radius, spacing, typography } from '@/theme';
 
 export default function ForgotPasswordScreen() {
   const insets = useSafeAreaInsets();
+  // C6: copy follows the OS language (ADR-0008).
+  const language = useLanguage();
+  const t = dictionaryFor(language);
   const [email, setEmail] = useState('');
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState('');
@@ -20,7 +24,7 @@ export default function ForgotPasswordScreen() {
   const [busy, setBusy] = useState(false);
 
   async function onSubmit() {
-    const validation = validateRegister(email, '');
+    const validation = validateRegister(email, '', language);
     // Only validate email field for forgot password
     const emailError = validation.email;
     setErrors({ email: emailError });
@@ -31,9 +35,9 @@ export default function ForgotPasswordScreen() {
     setBusy(true);
     try {
       await sendPasswordResetEmail(email);
-      setSuccessMessage('Jika email terdaftar, tautan reset password telah dikirim.');
+      setSuccessMessage(t.auth.forgot.success);
     } catch {
-      setFormError('Gagal mengirim tautan. Coba lagi sebentar lagi.');
+      setFormError(t.auth.forgot.fail);
     } finally {
       setBusy(false);
     }
@@ -52,9 +56,9 @@ export default function ForgotPasswordScreen() {
         <View style={styles.header}>
           <LogoMark size={72} />
           <Text style={[typography.labelUppercase, styles.kicker]}>Cashtrix</Text>
-          <Text style={[typography.headlineLg, styles.title]}>Lupa Password</Text>
+          <Text style={[typography.headlineLg, styles.title]}>{t.auth.forgot.title}</Text>
           <Text style={[typography.bodyMd, styles.subtitle]}>
-            Masukkan email Anda, kami akan kirim tautan untuk mengatur password baru.
+            {t.auth.forgot.subtitle}
           </Text>
         </View>
 
@@ -83,7 +87,7 @@ export default function ForgotPasswordScreen() {
 
           <PrimaryButton
             testID="forgot-password-submit"
-            label="Kirim tautan reset"
+            label={t.auth.forgot.submit}
             onPress={onSubmit}
             loading={busy}
             style={styles.cta}
@@ -91,9 +95,9 @@ export default function ForgotPasswordScreen() {
         </Card>
 
         <View style={styles.footer}>
-          <Text style={[typography.bodySm, styles.footerText]}>Ingat password?</Text>
+          <Text style={[typography.bodySm, styles.footerText]}>{t.auth.forgot.toLoginPrompt}</Text>
           <Link href="/(auth)/login" asChild>
-            <GhostButton label="Kembali ke Masuk" testID="forgot-password-to-login" />
+            <GhostButton label={t.auth.forgot.toLogin} testID="forgot-password-to-login" />
           </Link>
         </View>
       </ScrollView>

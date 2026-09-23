@@ -8,7 +8,8 @@
  * language. Custom categories, wallet names and notes are user data and are
  * never translated — an unmatched name passes through untouched.
  */
-import { dictionaryFor, type Language } from './locale';
+import { dictionaryFor } from './dictionaries';
+import type { Language } from './locale';
 import { id } from './id';
 
 export type SystemCategoryKind = 'expense' | 'income';

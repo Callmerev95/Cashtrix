@@ -28,13 +28,16 @@ import {
 import { formatCurrency, useWallets } from '@/features/wallets';
 import { TotalBalanceCard } from '@/features/wallets/components/total-balance-card';
 import { WalletRow } from '@/features/wallets/components/wallet-row';
+import { dictionaryFor, fill, localeTagFor, useLanguage } from '@/i18n';
+import type { Language } from '@/i18n/locale';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 
-function greeting(hour: number): string {
-  if (hour < 11) return 'Selamat pagi';
-  if (hour < 15) return 'Selamat siang';
-  if (hour < 19) return 'Selamat sore';
-  return 'Selamat malam';
+function greeting(hour: number, lang: Language = 'id'): string {
+  const copy = dictionaryFor(lang).dashboard.greeting;
+  if (hour < 11) return copy.morning;
+  if (hour < 15) return copy.afternoon;
+  if (hour < 19) return copy.evening;
+  return copy.night;
 }
 
 const DATE_FORMAT: Intl.DateTimeFormatOptions = {
@@ -66,6 +69,9 @@ export default function DashboardScreen() {
     refresh: refreshTransactions,
   } = useTransactions();
   const insets = useSafeAreaInsets();
+  // C6: copy + date format follow the OS language (ADR-0008, R10).
+  const language = useLanguage();
+  const t = dictionaryFor(language);
 
   // Identity comes from the profile row (editable in Profile); a row still
   // carrying the seed default — or none at all — falls back to the email.
@@ -83,7 +89,7 @@ export default function DashboardScreen() {
 
       <View style={styles.titleBlock}>
         <Text style={[typography.labelUppercase, styles.dateKicker]}>
-          {new Date().toLocaleDateString('id-ID', DATE_FORMAT)}
+          {new Date().toLocaleDateString(localeTagFor(language), DATE_FORMAT)}
         </Text>
         <View style={styles.titleRow}>
           <Text
@@ -91,15 +97,15 @@ export default function DashboardScreen() {
             numberOfLines={1}
             adjustsFontSizeToFit
           >
-            {greeting(new Date().getHours())}, {name}
+            {greeting(new Date().getHours(), language)}, {name}
           </Text>
           <Pressable
             testID="dashboard-alerts"
             accessibilityRole="button"
             accessibilityLabel={
               unreadCount > 0
-                ? `${unreadCount} notifikasi belum dibaca, buka Notifikasi`
-                : 'Buka Notifikasi'
+                ? fill(t.dashboard.notif.unread, { count: unreadCount })
+                : t.dashboard.notif.open
             }
             onPress={() => router.push('/notifications')}
             style={styles.iconButton}
@@ -133,8 +139,8 @@ export default function DashboardScreen() {
       <View style={styles.section}>
         <SectionHeader
           testID="dashboard-wallets"
-          title="Dompet"
-          actionLabel="Kelola"
+          title={t.dashboard.wallets.title}
+          actionLabel={t.dashboard.wallets.manage}
           onAction={() => router.push('/wallets')}
         />
 
@@ -147,9 +153,9 @@ export default function DashboardScreen() {
         ) : wallets.length === 0 && !loading ? (
           <EmptyStateCard
             icon="account-balance-wallet"
-            title="Dompet kosong"
-            description="Tambahkan dompet pertama Anda untuk mulai mencatat arus kas."
-            actionLabel="Tambah Dompet"
+            title={t.dashboard.wallets.emptyTitle}
+            description={t.dashboard.wallets.emptyBody}
+            actionLabel={t.dashboard.wallets.emptyAction}
             onAction={() => router.push('/wallet-form')}
           />
         ) : (
@@ -172,8 +178,10 @@ export default function DashboardScreen() {
 
         {wallets.length > 3 ? (
           <Text style={[typography.bodySm, styles.meta]}>
-              +{wallets.length - 3} dompet lain · total{' '}
-            {formatCurrency(summary.totalBalance)}
+            {fill(t.dashboard.wallets.moreRest, {
+              rest: wallets.length - 3,
+              amount: formatCurrency(summary.totalBalance),
+            })}
           </Text>
         ) : null}
       </View>
@@ -191,8 +199,8 @@ export default function DashboardScreen() {
       <View style={styles.section}>
         <SectionHeader
           testID="dashboard-history"
-          title="Riwayat"
-          actionLabel="Cari"
+          title={t.dashboard.history.title}
+          actionLabel={t.dashboard.history.search}
           onAction={() => router.push('/search')}
         />
       </View>

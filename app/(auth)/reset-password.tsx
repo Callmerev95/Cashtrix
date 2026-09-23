@@ -23,11 +23,15 @@ import {
   type FieldErrors,
 } from '@/features/auth';
 import { colors, radius, spacing, typography } from '@/theme';
+import { dictionaryFor, useLanguage } from '@/i18n';
 
 type Phase = 'verifying' | 'form' | 'success';
 
 export default function ResetPasswordScreen() {
   const insets = useSafeAreaInsets();
+  // C6: copy follows the OS language (ADR-0008).
+  const language = useLanguage();
+  const t = dictionaryFor(language);
   const { session } = useAuth();
   const [phase, setPhase] = useState<Phase>('verifying');
   const [linkError, setLinkError] = useState('');
@@ -58,11 +62,11 @@ export default function ResetPasswordScreen() {
           // if a session already exists, otherwise report the link problem.
           if (exchanged) settle(true);
           else if (!session) {
-            settle(false, 'Tautan reset tidak valid atau kedaluwarsa. Minta tautan baru dari layar Masuk.');
+            settle(false, t.auth.reset.linkInvalid);
           } else settle(true);
         },
         () => {
-          settle(false, 'Tautan reset tidak valid atau kedaluwarsa. Minta tautan baru dari layar Masuk.');
+          settle(false, t.auth.reset.linkInvalid);
         },
       );
     }
@@ -74,11 +78,11 @@ export default function ResetPasswordScreen() {
           if (!active) return;
           if (url) handle(url);
           else {
-            settle(false, 'Buka tautan dari email reset password untuk mengatur password baru.');
+            settle(false, t.auth.reset.linkMissing);
           }
         })
         .catch(() => {
-          settle(false, 'Buka tautan dari email reset password untuk mengatur password baru.');
+          settle(false, t.auth.reset.linkMissing);
         });
       const subscription = Linking.addEventListener('url', ({ url }) => handle(url));
       return () => {
@@ -99,13 +103,13 @@ export default function ResetPasswordScreen() {
     if (!isValidPassword(password)) {
       next.password =
         password.length < PASSWORD_MIN_LENGTH
-          ? 'Password minimal 8 karakter'
-          : 'Password harus memuat huruf dan angka';
+          ? t.auth.validation.passwordTooShort
+          : t.auth.validation.passwordNeedsLetterAndNumber;
     }
     if (!confirmPassword) {
-      next.confirmPassword = 'Konfirmasi password wajib diisi';
+      next.confirmPassword = t.auth.validation.confirmRequired;
     } else if (password !== confirmPassword) {
-      next.confirmPassword = 'Password tidak cocok';
+      next.confirmPassword = t.auth.validation.mismatch;
     }
     setErrors(next);
     setFormError('');
@@ -116,7 +120,7 @@ export default function ResetPasswordScreen() {
       await updatePassword(password);
       setPhase('success');
     } catch {
-      setFormError('Gagal mengubah password. Coba lagi sebentar lagi.');
+      setFormError(t.auth.reset.updateFail);
     } finally {
       setBusy(false);
     }
@@ -127,7 +131,7 @@ export default function ResetPasswordScreen() {
       <View style={[styles.flex, styles.centered]}>
         <LogoMark size={72} />
         <Text style={[typography.labelUppercase, styles.kicker]}>Cashtrix</Text>
-        <Text style={[typography.bodyMd, styles.subtitle]}>Memeriksa tautan reset…</Text>
+        <Text style={[typography.bodyMd, styles.subtitle]}>{t.auth.reset.verifying}</Text>
       </View>
     );
   }
@@ -138,13 +142,13 @@ export default function ResetPasswordScreen() {
         <View style={styles.header}>
           <LogoMark size={72} />
           <Text style={[typography.labelUppercase, styles.kicker]}>Cashtrix</Text>
-          <Text style={[typography.headlineLg, styles.title]}>Password diubah</Text>
+          <Text style={[typography.headlineLg, styles.title]}>{t.auth.reset.doneTitle}</Text>
           <Text style={[typography.bodyMd, styles.subtitle]}>
-            Password baru Anda sudah tersimpan. Anda sudah masuk — lanjutkan ke aplikasi.
+            {t.auth.reset.doneBody}
           </Text>
         </View>
         <Link href="/" asChild>
-          <PrimaryButton label="Buka aplikasi" testID="reset-password-done" />
+          <PrimaryButton label={t.auth.reset.openApp} testID="reset-password-done" />
         </Link>
       </View>
     );
@@ -163,19 +167,19 @@ export default function ResetPasswordScreen() {
         <View style={styles.header}>
           <LogoMark size={72} />
           <Text style={[typography.labelUppercase, styles.kicker]}>Cashtrix</Text>
-          <Text style={[typography.headlineLg, styles.title]}>Atur Password Baru</Text>
+          <Text style={[typography.headlineLg, styles.title]}>{t.auth.reset.formTitle}</Text>
           <Text style={[typography.bodyMd, styles.subtitle]}>
-            Masukkan password baru Anda. Password harus minimal 8 karakter dengan huruf dan angka.
+            {t.auth.reset.formSubtitle}
           </Text>
         </View>
 
         <Card style={styles.card}>
           {linkError ? <Text style={styles.formError}>{linkError}</Text> : null}
           <View>
-            <Text style={[typography.labelUppercase, styles.fieldLabel]}>Password Baru</Text>
+            <Text style={[typography.labelUppercase, styles.fieldLabel]}>{t.auth.reset.newPassword}</Text>
             <TextField
               testID="reset-password-new"
-              accessibilityLabel="Password Baru"
+              accessibilityLabel={t.auth.reset.newPassword}
               placeholder="••••••••"
               icon="lock-outline"
               secureToggle
@@ -191,10 +195,10 @@ export default function ResetPasswordScreen() {
           </View>
 
           <View>
-            <Text style={[typography.labelUppercase, styles.fieldLabel]}>Konfirmasi Password</Text>
+            <Text style={[typography.labelUppercase, styles.fieldLabel]}>{t.auth.reset.confirmPassword}</Text>
             <TextField
               testID="reset-password-confirm"
-              accessibilityLabel="Konfirmasi Password"
+              accessibilityLabel={t.auth.reset.confirmPassword}
               placeholder="••••••••"
               icon="lock-outline"
               secureToggle
@@ -215,7 +219,7 @@ export default function ResetPasswordScreen() {
 
           <PrimaryButton
             testID="reset-password-submit"
-            label="Simpan Password Baru"
+            label={t.auth.reset.submit}
             onPress={onSubmit}
             loading={busy}
             style={styles.cta}
@@ -223,9 +227,9 @@ export default function ResetPasswordScreen() {
         </Card>
 
         <View style={styles.footer}>
-          <Text style={[typography.bodySm, styles.footerText]}>Ingat password?</Text>
+          <Text style={[typography.bodySm, styles.footerText]}>{t.auth.forgot.toLoginPrompt}</Text>
           <Link href="/(auth)/login" asChild>
-            <GhostButton label="Kembali ke Masuk" testID="reset-password-to-login" />
+            <GhostButton label={t.auth.forgot.toLogin} testID="reset-password-to-login" />
           </Link>
         </View>
       </ScrollView>

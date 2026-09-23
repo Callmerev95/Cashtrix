@@ -22,6 +22,7 @@ import {
   type FieldErrors,
 } from '@/features/auth';
 import { colors, radius, spacing, typography } from '@/theme';
+import { dictionaryFor, useLanguage } from '@/i18n';
 
 // Legal URLs (GitHub Pages) — same for in-app and store listing (ADR-0006)
 const LEGAL = {
@@ -31,6 +32,9 @@ const LEGAL = {
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
+  // C6: copy follows the OS language (ADR-0008).
+  const language = useLanguage();
+  const t = dictionaryFor(language);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -39,7 +43,7 @@ export default function LoginScreen() {
   const [busy, setBusy] = useState(false);
 
   async function onSubmit() {
-    const validation = validateRegister(email, password);
+    const validation = validateRegister(email, password, language);
     // Login only cares that both fields are present and well-formed; the
     // password *strength* rules belong to Register.
     const blocking = { email: validation.email };
@@ -59,7 +63,7 @@ export default function LoginScreen() {
       // the tabs; nothing to navigate here.
     } catch (error) {
       const err = error as { status?: number; code?: string };
-      setFormError(loginErrorMessage(err));
+      setFormError(loginErrorMessage(err, language));
       setUnconfirmed(isEmailNotConfirmedError(err));
     } finally {
       setBusy(false);
@@ -88,7 +92,7 @@ export default function LoginScreen() {
           <Text style={[typography.labelUppercase, styles.kicker]}>Cashtrix</Text>
           <Text style={[typography.headlineLg, styles.title]}>Welcome Back</Text>
           <Text style={[typography.bodyMd, styles.subtitle]}>
-            Masuk untuk melihat posisi keuangan Anda.
+            {t.auth.login.subtitle}
           </Text>
         </View>
 
@@ -138,7 +142,7 @@ export default function LoginScreen() {
           {formError ? <Text style={styles.formError}>{formError}</Text> : null}
           {unconfirmed ? (
             <GhostButton
-              label="Kirim ulang verifikasi"
+              label={t.auth.login.resend}
               testID="login-resend"
               onPress={() =>
                 router.push({ pathname: '/(auth)/check-email', params: { email: email.trim() } })
@@ -148,7 +152,7 @@ export default function LoginScreen() {
 
           <PrimaryButton
             testID="login-submit"
-            label="Masuk"
+            label={t.auth.login.submit}
             onPress={onSubmit}
             loading={busy}
             style={styles.cta}
@@ -156,36 +160,36 @@ export default function LoginScreen() {
         </Card>
 
         <View style={styles.footer}>
-          <Text style={[typography.bodySm, styles.footerText]}>Belum punya akun?</Text>
+          <Text style={[typography.bodySm, styles.footerText]}>{t.auth.login.toRegisterPrompt}</Text>
           <Link href="/(auth)/register" asChild>
-            <GhostButton label="Daftar" testID="login-to-register" />
+            <GhostButton label={t.auth.login.toRegister} testID="login-to-register" />
           </Link>
         </View>
 
         <View style={styles.footer}>
           <Link href="/(auth)/forgot-password" asChild>
-            <GhostButton label="Lupa password?" testID="login-forgot-password" />
+            <GhostButton label={t.auth.login.forgot} testID="login-forgot-password" />
           </Link>
         </View>
 
         <View style={styles.legal}>
-          <Text style={[typography.bodySm, styles.legalText]}>Dengan melanjutkan, Anda menyetujui </Text>
+          <Text style={[typography.bodySm, styles.legalText]}>{t.auth.legal.loginPrefix}</Text>
           <Text
             style={[typography.bodySm, styles.legalLink]}
             accessibilityRole="link"
             testID="login-terms-link"
             onPress={() => openLegal(LEGAL.terms)}
           >
-            Ketentuan Layanan
+            {t.auth.legal.terms}
           </Text>
-          <Text style={[typography.bodySm, styles.legalText]}> dan </Text>
+          <Text style={[typography.bodySm, styles.legalText]}>{t.auth.legal.and}</Text>
           <Text
             style={[typography.bodySm, styles.legalLink]}
             accessibilityRole="link"
             testID="login-privacy-link"
             onPress={() => openLegal(LEGAL.privacy)}
           >
-            Kebijakan Privasi
+            {t.auth.legal.privacy}
           </Text>
           <Text style={[typography.bodySm, styles.legalText]}>.</Text>
         </View>
