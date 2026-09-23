@@ -43,17 +43,34 @@ old callers/tests green), `type.*` (`walletTypeMeta` labels from `id` +
 `app/wallets.tsx`, `app/wallet-form.tsx`, dashboard `moreRest`). Gate:
 lint + typecheck + Jest 368 hijau + `verify-t11 --static-only` 3/3.
 
+`transactions.*` (chunk transaksi — BELUM commit; `04ea803` = dompet):
+`validation.*` (`{max}` template + `validateAmount(raw, lang)`; parsing tak
+tersentuh — `formatAmountInput` live-typing bukan target R10),
+`transfer.*` (`validateTransfer`, `transferFeedLabel(name, lang)`,
+`TRANSFER_ICON` untouched), `type.*` (`transactionTypeLabel`),
+`divider.*` (`formatDateDivider(iso, now, lang)` — cabang tanggal via
+`Intl.DateTimeFormat(localeTag)`, list statis bulan hapus),
+`undo.*` (`deletedTransactionLabel(tx, lang)` + fallback),
+`form.*`/`sheet.*` (+ `close`)/`history.*`/`calendar.*` + `loadError`.
+`WEEKDAY_LABELS` tetap sebagai sumber-id + `weekdayLabels(lang)` baru
+(`Intl` short weekday, Senin-dulu); `formatMonthLabel(m, lang)` via `Intl`
+(`MONTH_NAMES_ID` hapus). `formatGrouped(v, lang)` /
+`formatSignedAmount(t, v, ccy, lang)` thread `lang`;
+`formatSignedAmount` glyph `-`/tanpa-prefix untouched.
+`groupByDay(rows, now, lang)`; `TransactionHistoryList` resolve via
+`useLanguage` (`emptyLabel` prop = override, default dari kamus).
+`DeleteConfirmSheet` prop `cancelLabel`/`closeLabel` baru (default literal
+id, contract-safe). `localeTagFor` pindah ke leaf `dictionaries.ts`
+(`locale.ts` re-export) supaya modul murni tak menarik rantai React
+(aturan `958e996`). `KIND_FILTER_OPTIONS` disengaja TETAP — milik chunk
+search. Gate: lint bersih + typecheck + Jest 371 hijau + static-only 3/3.
+
 ## Remaining catalog (from full audit: ~235 unique strings, ~230 keys)
 
 - **wallets** (~40): DONE — see Done section above.
-- **transactions** (~55, biggest): `transactions.validation.*`,
-  `transfer.*` (incl. `Transfer ke {nama}` + `TRANSFER_ICON` untouched),
-  `type.*`, form strings in `app/add-transaction.tsx` (`Tanggal tidak boleh
-  di masa depan`, source/dest pickers, note placeholder), `undo-snackbar`
-  (`Urungkan penghapusan`), history list, `calendar-grid` (weekday labels —
-  audit flags hardcoded month/day names in `transactions/domain.ts:240-241,
-  444-455`; replace with `Intl.DateTimeFormat(localeTag)` per R10, no static
-  lists), `formatSignedAmount` untouched (glyphs, not words).
+- **transactions** (~55, biggest): DONE — see Done section above
+  (`KIND_FILTER_OPTIONS` intentionally left for the search chunk).
+- **search** (~20, `app/search.tsx`):
 - **search** (~20, `app/search.tsx`): placeholder `Cari catatan, kategori,
   dompet…`, `Transfer tidak punya kategori.`, `Tidak ada hasil untuk "…"`,
   kind chips, bulk-mode toolbar/grid/confirm strings.

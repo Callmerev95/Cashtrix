@@ -31,10 +31,12 @@ import {
   normalizeNote,
   startOfDay,
   toDateKey,
+  transactionTypeLabel,
   transferFeedLabel,
   transferMessages,
   validateAmount,
   validateTransfer,
+  weekdayLabels,
   type Category,
   type Transaction,
 } from '@/features/transactions';
@@ -315,6 +317,30 @@ describe('formatSignedAmount / formatGrouped', () => {
     const rendered = formatSignedAmount('expense', 50_000);
     expect(rendered.startsWith('-')).toBe(true);
   });
+
+  it("mengikuti bahasa aktif (en: ',' ribuan, '.' desimal)", () => {
+    expect(formatGrouped(1_250_000, 'en')).toBe('1,250,000');
+    expect(formatGrouped(1_250_000.5, 'en')).toBe('1,250,000.50');
+    expect(formatSignedAmount('expense', 50_000, 'Rp', 'en')).toBe(
+      '-Rp 50,000',
+    );
+  });
+
+  it('merender copy validasi + label tipe dalam bahasa aktif (C6)', () => {
+    expect(validateAmount('', 'en')).toEqual({
+      ok: false,
+      error: 'Amount is required',
+    });
+    expect(
+      validateTransfer(
+        { sourceWalletId: 'w1', destinationWalletId: 'w1' },
+        'en',
+      ),
+    ).toEqual({ ok: false, error: 'Source and destination wallets must differ' });
+    expect(transactionTypeLabel('expense')).toBe('Pengeluaran');
+    expect(transactionTypeLabel('expense', 'en')).toBe('Expense');
+    expect(transferFeedLabel('BCA', 'en')).toBe('Transfer to BCA');
+  });
 });
 
 describe('categoriesForKind', () => {
@@ -447,6 +473,24 @@ describe('kalender bulan (V5)', () => {
     ]);
     expect(formatMonthLabel(september)).toBe('September 2026');
     expect(formatMonthLabel(new Date(2026, 1, 1))).toBe('Februari 2026');
+  });
+
+  it('label hari + judul bulan mengikuti bahasa aktif (C6, Intl R10)', () => {
+    expect(weekdayLabels('en')).toEqual([
+      'Mon',
+      'Tue',
+      'Wed',
+      'Thu',
+      'Fri',
+      'Sat',
+      'Sun',
+    ]);
+    expect(formatMonthLabel(new Date(2026, 1, 1), 'en')).toBe(
+      'February 2026',
+    );
+    expect(
+      formatDateDivider(new Date(2026, 7, 1, 10, 0).toISOString(), now, 'en'),
+    ).toBe('Aug 1, 2026');
   });
 
   it('minggu lengkap 7 kolom Senin-dulu dan tanggal berurutan', () => {

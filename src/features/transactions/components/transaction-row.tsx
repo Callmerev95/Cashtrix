@@ -11,6 +11,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { useLanguage } from '@/i18n';
 
 import { formatSignedAmount, formatTime, transferFeedLabel, type Transaction } from '../domain';
 
@@ -35,12 +36,20 @@ export function TransactionRow({
 }) {
   const income = transaction.type === 'income';
   const transfer = transaction.type === 'transfer';
+  // C6: feed label + amount format follow the OS language (ADR-0008, R10).
+  const language = useLanguage();
   const title = transfer
-    ? transferFeedLabel(transaction.counterpartyWalletName)
+    ? transferFeedLabel(transaction.counterpartyWalletName, language)
     : transaction.categoryName;
   const accessibilityName = transfer
-    ? transferFeedLabel(transaction.counterpartyWalletName)
+    ? transferFeedLabel(transaction.counterpartyWalletName, language)
     : transaction.categoryName;
+  const amountText = formatSignedAmount(
+    transaction.type,
+    transaction.amount,
+    'Rp',
+    language,
+  );
 
   const content = (
     <>
@@ -83,7 +92,7 @@ export function TransactionRow({
         ]}
         numberOfLines={1}
       >
-        {formatSignedAmount(transaction.type, transaction.amount)}
+        {amountText}
       </Text>
     </>
   );
@@ -100,10 +109,7 @@ export function TransactionRow({
     <Pressable
       testID={testID}
       accessibilityRole="button"
-      accessibilityLabel={`${accessibilityName}, ${formatSignedAmount(
-        transaction.type,
-        transaction.amount,
-      )}, ${transaction.walletName}`}
+      accessibilityLabel={`${accessibilityName}, ${amountText}, ${transaction.walletName}`}
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,

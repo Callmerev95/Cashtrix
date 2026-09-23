@@ -9,18 +9,13 @@ import { useState } from 'react';
 
 export type Language = 'id' | 'en';
 
-export { fill } from './dictionaries';
+export { fill, localeTagFor } from './dictionaries';
 
 /** BCP-47 tag whose first subtag is `en` (case-insensitive) → English. */
 export function resolveLanguage(tag: string | null | undefined): Language {
   if (!tag) return 'id';
   const first = tag.trim().split(/[-_]/)[0]?.toLowerCase();
   return first === 'en' ? 'en' : 'id';
-}
-
-/** `Intl` locale tag for the active language (R10: formatting follows it). */
-export function localeTagFor(language: Language): string {
-  return language === 'en' ? 'en-US' : 'id-ID';
 }
 
 type LocalesResult = {

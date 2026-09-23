@@ -58,10 +58,12 @@ export {
   startOfDay,
   toDateKey,
   toggleBulkRow,
+  transactionTypeLabel,
   transferFeedLabel,
   transferMessages,
   validateAmount,
   validateTransfer,
+  weekdayLabels,
 } from './domain';
 export type {
   AmountValidation,

@@ -62,12 +62,17 @@ import {
   type Transaction,
   type TransactionType,
 } from '@/features/transactions';
+import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 
 export default function AddTransactionScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
   const isEdit = Boolean(params.id);
   const insets = useSafeAreaInsets();
+  // C6: copy + validation follow the OS language (ADR-0008).
+  const language = useLanguage();
+  const t = dictionaryFor(language);
+  const tf = t.transactions.form;
 
   const { session } = useAuth();
   const { refresh: refreshWallets } = useWallets();
@@ -164,7 +169,7 @@ export default function AddTransactionScreen() {
       .catch((cause: unknown) => {
         if (cancelled) return;
         setFormError(
-          cause instanceof Error ? cause.message : 'Gagal memuat transaksi',
+          cause instanceof Error ? cause.message : tf.loadFail,
         );
       })
       .finally(() => {
@@ -174,7 +179,7 @@ export default function AddTransactionScreen() {
     return () => {
       cancelled = true;
     };
-  }, [loadTransaction, params.id]);
+  }, [loadTransaction, params.id, tf.loadFail]);
 
   function onToggleType(next: TransactionType) {
     setTypeOverride(next);
@@ -191,7 +196,7 @@ export default function AddTransactionScreen() {
   }
 
   async function submit() {
-    const amount = validateAmount(amountRaw);
+    const amount = validateAmount(amountRaw, language);
     if (!amount.ok) {
       setAmountError(amount.error);
       return;
@@ -199,24 +204,27 @@ export default function AddTransactionScreen() {
     setAmountError(null);
 
     if (!walletId) {
-      setFormError('Pilih dompet terlebih dahulu');
+      setFormError(tf.walletRequired);
       return;
     }
     if (isTransfer) {
-      const transfer = validateTransfer({
-        sourceWalletId: walletId,
-        destinationWalletId,
-      });
+      const transfer = validateTransfer(
+        {
+          sourceWalletId: walletId,
+          destinationWalletId,
+        },
+        language,
+      );
       if (!transfer.ok) {
         setFormError(transfer.error);
         return;
       }
     } else if (!categoryId) {
-      setFormError('Pilih kategori terlebih dahulu');
+      setFormError(tf.categoryRequired);
       return;
     }
     if (isFutureDate(occurredAt)) {
-      setFormError('Tanggal tidak boleh di masa depan');
+      setFormError(tf.futureDate);
       return;
     }
 
@@ -273,8 +281,8 @@ export default function AddTransactionScreen() {
     } catch (cause) {
       setBusy(false);
       Alert.alert(
-        isEdit ? 'Gagal menyimpan perubahan' : 'Gagal menyimpan transaksi',
-        cause instanceof Error ? cause.message : 'Coba lagi sebentar lagi.',
+        isEdit ? tf.saveFailEdit : tf.saveFailCreate,
+        cause instanceof Error ? cause.message : t.common.retry,
       );
     }
   }
@@ -308,8 +316,8 @@ export default function AddTransactionScreen() {
       setBusy(false);
       setConfirmingDelete(false);
       Alert.alert(
-        'Gagal menghapus',
-        cause instanceof Error ? cause.message : 'Coba lagi sebentar lagi.',
+        tf.deleteFail,
+        cause instanceof Error ? cause.message : t.common.retry,
       );
     }
   }
@@ -324,7 +332,7 @@ export default function AddTransactionScreen() {
           <Pressable
             testID="add-transaction-close"
             accessibilityRole="button"
-            accessibilityLabel="Kembali"
+            accessibilityLabel={tf.back}
             onPress={() => router.back()}
             style={styles.close}
           >
@@ -332,13 +340,13 @@ export default function AddTransactionScreen() {
           </Pressable>
           <LogoMark size={32} />
           <Text style={[typography.headlineMd, styles.title]}>
-            {isEdit ? 'Ubah transaksi' : 'Transaksi baru'}
+            {isEdit ? tf.editTitle : tf.createTitle}
           </Text>
           {isEdit ? (
             <Pressable
               testID="transaction-delete"
               accessibilityRole="button"
-              accessibilityLabel="Hapus transaksi"
+              accessibilityLabel={tf.deleteA11y}
               onPress={() => setConfirmingDelete(true)}
               style={styles.close}
             >
@@ -359,7 +367,7 @@ export default function AddTransactionScreen() {
         >
           {loadingExisting ? (
             <Text style={[typography.bodyMd, styles.hint]}>
-              Memuat transaksi…
+              {tf.loading}
             </Text>
           ) : null}
 
@@ -371,7 +379,7 @@ export default function AddTransactionScreen() {
 
           <Card style={[styles.entryCard, styles.gap]}>
             <Text style={[typography.labelUppercase, styles.kicker]}>
-              Nominal
+              {tf.amount}
             </Text>
             <AmountField
               testID="amount-input"
@@ -387,7 +395,7 @@ export default function AddTransactionScreen() {
               style={styles.note}
               value={note}
               onChangeText={(text) => setNote(text.slice(0, 200))}
-              placeholder="Catatan (opsional): kopi pagi, transfer teman…"
+              placeholder={tf.notePlaceholder}
               placeholderTextColor={colors.textSecondary}
               selectionColor={colors.accent}
               maxLength={200}
@@ -399,8 +407,10 @@ export default function AddTransactionScreen() {
             <View style={styles.gap}>
               <SectionHeader
                 testID="category-header"
-                title="Kategori"
-                actionLabel={`${categoriesForKind(categories, type).length} kategori`}
+                title={tf.category}
+                actionLabel={fill(tf.categoryCount, {
+                  count: categoriesForKind(categories, type).length,
+                })}
               />
               <CategoryGrid
                 testID="category-grid"
@@ -415,7 +425,7 @@ export default function AddTransactionScreen() {
           <View style={styles.gap}>
             <SectionHeader
               testID="wallet-header"
-              title={isTransfer ? 'Dompet sumber' : 'Dompet'}
+              title={isTransfer ? tf.walletSource : tf.wallet}
             />
             <View testID="wallet-picker" style={styles.chips}>
               {wallets.map((wallet) => {
@@ -452,7 +462,7 @@ export default function AddTransactionScreen() {
               })}
               {wallets.length === 0 ? (
                 <Text style={[typography.bodySm, styles.hint]}>
-                  Belum ada dompet. Buat satu dulu di menu Dompet.
+                  {tf.walletEmpty}
                 </Text>
               ) : null}
             </View>
@@ -460,7 +470,7 @@ export default function AddTransactionScreen() {
 
           {isTransfer ? (
             <View style={styles.gap}>
-              <SectionHeader testID="destination-header" title="Dompet tujuan" />
+              <SectionHeader testID="destination-header" title={tf.destination} />
               <View testID="destination-picker" style={styles.chips}>
                 {wallets
                   .filter((wallet) => wallet.id !== walletId)
@@ -496,8 +506,7 @@ export default function AddTransactionScreen() {
                 {wallets.filter((wallet) => wallet.id !== walletId).length ===
                 0 ? (
                   <Text style={[typography.bodySm, styles.hint]}>
-                    Butuh dua dompet untuk transfer. Buat satu lagi di menu
-                    Dompet.
+                    {tf.destinationEmpty}
                   </Text>
                 ) : null}
               </View>
@@ -505,7 +514,7 @@ export default function AddTransactionScreen() {
           ) : null}
 
           <View style={styles.gap}>
-            <SectionHeader testID="date-header" title="Tanggal" />
+            <SectionHeader testID="date-header" title={tf.date} />
             <CalendarGrid
               testID="date-calendar"
               value={occurredAt}
@@ -523,13 +532,13 @@ export default function AddTransactionScreen() {
         <View style={styles.footer}>
           <PrimaryButton
             testID="transaction-save"
-            label={isEdit ? 'Simpan perubahan' : 'Simpan'}
+            label={isEdit ? tf.saveEdit : t.common.save}
             onPress={submit}
             loading={busy}
           />
           <GhostButton
             testID="transaction-cancel"
-            label="Batal"
+            label={t.common.cancel}
             onPress={() => router.back()}
           />
         </View>
@@ -538,6 +547,11 @@ export default function AddTransactionScreen() {
       <DeleteConfirmSheet
         visible={confirmingDelete}
         loading={busy}
+        title={t.transactions.sheet.title}
+        body={t.transactions.sheet.body}
+        confirmLabel={t.transactions.sheet.confirm}
+        cancelLabel={t.common.cancel}
+        closeLabel={t.transactions.sheet.close}
         onCancel={() => setConfirmingDelete(false)}
         onConfirm={confirmDelete}
       />

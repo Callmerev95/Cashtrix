@@ -25,6 +25,7 @@ import {
 } from 'react';
 
 import { onLocalDataPurge } from '@/supabase';
+import { dictionaryFor, useLanguage } from '@/i18n';
 
 import {
   createTransaction,
@@ -125,6 +126,9 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
 
   const mounted = useRef(true);
   const inflight = useRef<Promise<void> | null>(null);
+  // C6: load-error + undo copy follow the OS language (ADR-0008).
+  const language = useLanguage();
+  const loadError = dictionaryFor(language).transactions.loadError;
   // Guards `loadMore` against a double-fire from `onEndReached` while a page
   // is already in flight — appending twice would duplicate rows.
   const fetchingPage = useRef(false);
@@ -156,7 +160,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
         } catch (cause) {
           if (!mounted.current) return;
           setError(
-            cause instanceof Error ? cause.message : 'Gagal memuat transaksi',
+            cause instanceof Error ? cause.message : loadError,
           );
         } finally {
           if (mounted.current) setLoading(false);
@@ -166,7 +170,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       });
     }
     return inflight.current;
-  }, []);
+  }, [loadError]);
 
   useEffect(() => {
     let cancelled = false;
@@ -190,7 +194,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       })
       .catch((cause: unknown) => {
         if (cancelled || !mounted.current) return;
-        setError(cause instanceof Error ? cause.message : 'Gagal memuat transaksi');
+        setError(cause instanceof Error ? cause.message : loadError);
       })
       .finally(() => {
         if (!cancelled && mounted.current) setLoading(false);
@@ -199,7 +203,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadError]);
 
   // Sign out drops the cached history and every remembered preference.
   useEffect(
@@ -231,12 +235,12 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       setHasMore(hasMoreAfter(PAGE_SIZE, next.length));
     } catch (cause) {
       if (!mounted.current) return;
-      setError(cause instanceof Error ? cause.message : 'Gagal memuat transaksi');
+      setError(cause instanceof Error ? cause.message : loadError);
     } finally {
       fetchingPage.current = false;
       if (mounted.current) setLoadingMore(false);
     }
-  }, [transactions.length]);
+  }, [transactions.length, loadError]);
 
   const loadTransaction = useCallback(
     async (id: string) => getTransaction(id),
@@ -327,7 +331,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
         deleted
           ? {
               id,
-              label: deletedTransactionLabel(deleted),
+              label: deletedTransactionLabel(deleted, language),
               createdAt: Date.now(),
             }
           : null,
@@ -335,7 +339,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
 
       await refresh();
     },
-    [refresh, transactions],
+    [refresh, transactions, language],
   );
 
   /**

@@ -30,6 +30,7 @@ import { router } from 'expo-router';
 import { EmptyStateCard } from '@/components/empty-state-card';
 import { ErrorStateCard } from '@/components/error-state-card';
 import { colors, spacing, typography } from '@/theme';
+import { dictionaryFor, useLanguage } from '@/i18n';
 
 import { groupByDay, type Transaction } from '../domain';
 import { TransactionRow } from './transaction-row';
@@ -43,7 +44,7 @@ export function TransactionHistoryList({
   onPressTransaction,
   ListHeaderComponent,
   contentContainerStyle,
-  emptyLabel = 'Belum ada riwayat transaksi.',
+  emptyLabel,
   testID = 'transaction-history',
   selecting = false,
   selectedIds = [],
@@ -65,14 +66,18 @@ export function TransactionHistoryList({
   /** D4: empty-because-error renders retry instead of the "Catat" card. */
   listError?: { message: string; onRetry: () => void } | null;
 }) {
+  // C6: day dividers + empty copy follow the OS language (ADR-0008).
+  const language = useLanguage();
+  const t = dictionaryFor(language);
+  const resolvedEmpty = emptyLabel ?? t.transactions.history.emptyDefault;
   const sections = useMemo(
     () =>
-      groupByDay(transactions).map((group) => ({
+      groupByDay(transactions, new Date(), language).map((group) => ({
         key: group.key,
         title: group.label,
         data: group.transactions,
       })),
-    [transactions],
+    [transactions, language],
   );
 
   return (
@@ -112,7 +117,7 @@ export function TransactionHistoryList({
       ListHeaderComponent={ListHeaderComponent}
       ListEmptyComponent={
         loading ? (
-          <Text style={[typography.bodyMd, styles.empty]}>Memuat riwayat…</Text>
+          <Text style={[typography.bodyMd, styles.empty]}>{t.transactions.history.loading}</Text>
         ) : listError ? (
           <ErrorStateCard
             testID={`${testID}-error`}
@@ -123,9 +128,9 @@ export function TransactionHistoryList({
           <EmptyStateCard
             testID={`${testID}-empty`}
             icon="receipt-long"
-            title="Tidak ada transaksi"
-            description={emptyLabel}
-            actionLabel="Catat Transaksi"
+            title={t.transactions.history.emptyTitle}
+            description={resolvedEmpty}
+            actionLabel={t.transactions.history.emptyAction}
             onAction={() => router.push('/add-transaction')}
           />
         )
@@ -137,7 +142,7 @@ export function TransactionHistoryList({
           </View>
         ) : hasMore || transactions.length === 0 ? null : (
           <Text style={[typography.bodySm, styles.footerLabel]}>
-            Akhir riwayat
+            {t.transactions.history.end}
           </Text>
         )
       }

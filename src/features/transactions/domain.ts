@@ -11,6 +11,10 @@
  * signed string is a *display* concern only.
  */
 
+import { dictionaryFor, fill, localeTagFor } from '@/i18n/dictionaries';
+import { id } from '@/i18n/id';
+import type { Language } from '@/i18n/locale';
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -154,41 +158,48 @@ export type AmountValidation =
   | { ok: false; error: string };
 
 export const amountMessages = {
-  required: 'Nominal wajib diisi',
-  invalid: 'Nominal tidak valid',
-  tooLarge: `Nominal maksimal ${AMOUNT_MAX}`,
-  tooManyDecimals: 'Maksimal 2 angka desimal',
-  zero: 'Nominal harus lebih dari 0',
+  required: id.transactions.validation.required,
+  invalid: id.transactions.validation.invalid,
+  tooLarge: fill(id.transactions.validation.tooLarge, { max: AMOUNT_MAX }),
+  tooManyDecimals: id.transactions.validation.tooManyDecimals,
+  zero: id.transactions.validation.zero,
 } as const;
 
 /**
  * Validates a formatted amount field. Accepts `1.250.000`, `1.250.000,50`
  * and `0,5`; rejects empty, non-numeric, zero, >12 integer digits, >2 decimals
- * and non-finite values (AC #17).
+ * and non-finite values (AC #17). Pass the active language for localised
+ * copy (C6); the default keeps the locked id-ID behaviour.
  */
-export function validateAmount(raw: string): AmountValidation {
+export function validateAmount(
+  raw: string,
+  lang: Language = 'id',
+): AmountValidation {
+  const messages = dictionaryFor(lang).transactions.validation;
   const trimmed = raw.trim();
-  if (trimmed === '') return { ok: false, error: amountMessages.required };
+  if (trimmed === '') return { ok: false, error: messages.required };
 
   // Shape check first (grouping must be well-formed), then the specific
   // decimal/digit rules so the user gets the precise message rather than a
   // generic "invalid".
   if (!/^\d{1,3}(\.\d{3})*(,\d*)?$|^\d+(,\d*)?$/.test(trimmed)) {
-    return { ok: false, error: amountMessages.invalid };
+    return { ok: false, error: messages.invalid };
   }
 
   const [wholePart, decimalPart] = trimmed.split(',');
   if (decimalPart !== undefined && decimalPart.length > 2) {
-    return { ok: false, error: amountMessages.tooManyDecimals };
+    return { ok: false, error: messages.tooManyDecimals };
   }
   if (integerDigitCount(trimmed) > 12) {
-    return { ok: false, error: amountMessages.tooLarge };
+    return { ok: false, error: fill(messages.tooLarge, { max: AMOUNT_MAX }) };
   }
 
   const value = Number(`${wholePart.replace(/\./g, '')}.${decimalPart ?? '0'}`);
-  if (!Number.isFinite(value)) return { ok: false, error: amountMessages.invalid };
-  if (value <= 0) return { ok: false, error: amountMessages.zero };
-  if (value > AMOUNT_MAX) return { ok: false, error: amountMessages.tooLarge };
+  if (!Number.isFinite(value)) return { ok: false, error: messages.invalid };
+  if (value <= 0) return { ok: false, error: messages.zero };
+  if (value > AMOUNT_MAX) {
+    return { ok: false, error: fill(messages.tooLarge, { max: AMOUNT_MAX }) };
+  }
 
   return { ok: true, value };
 }
@@ -228,33 +239,29 @@ export function toDateKey(date: Date): string {
 
 /**
  * The day divider label. `Hari ini` / `Kemarin` for the two freshest days,
- * otherwise a grouped `id-ID` date (`18 Sep 2026`) rendered uppercase by the
- * `label-uppercase` token.
+ * otherwise a grouped date (`18 Sep 2026` in id-ID via `Intl`, R10) rendered
+ * uppercase by the `label-uppercase` token. Pass the active language (C6);
+ * the default keeps the locked id-ID behaviour.
  */
-export function formatDateDivider(iso: string, now: Date = new Date()): string {
+export function formatDateDivider(
+  iso: string,
+  now: Date = new Date(),
+  lang: Language = 'id',
+): string {
   const date = new Date(iso);
   const today = startOfDay(now).getTime();
   const day = startOfDay(date).getTime();
   const daysApart = Math.round((today - day) / 86_400_000);
 
-  if (daysApart === 0) return 'Hari ini';
-  if (daysApart === 1) return 'Kemarin';
+  const copy = dictionaryFor(lang).transactions.divider;
+  if (daysApart === 0) return copy.today;
+  if (daysApart === 1) return copy.yesterday;
 
-  const months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'Mei',
-    'Jun',
-    'Jul',
-    'Agu',
-    'Sep',
-    'Okt',
-    'Nov',
-    'Des',
-  ];
-  return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+  return new Intl.DateTimeFormat(localeTagFor(lang), {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(date);
 }
 
 /** `14:30` in local time — the row's secondary metadata. */
@@ -279,16 +286,31 @@ export function formatSignedAmount(
   type: TransactionType,
   amount: number,
   currency = 'Rp',
+  lang: Language = 'id',
 ): string {
-  const body = `${currency} ${formatGrouped(Math.abs(amount))}`;
+  const body = `${currency} ${formatGrouped(Math.abs(amount), lang)}`;
   return type === 'expense' ? `-${body}` : body;
 }
 
-/** id-ID grouped digits, max two decimals, trailing `,00` dropped. */
-export function formatGrouped(value: number): string {
+/**
+ * Grouped digits, max two decimals, trailing `,00` dropped (C6: separators
+ * follow the active language — `.`/`,` in id-ID, `,`/`.` in en-US; the
+ * default keeps the locked id-ID behaviour).
+ */
+export function formatGrouped(value: number, lang: Language = 'id'): string {
+  const thousand = lang === 'en' ? ',' : '.';
+  const decimal = lang === 'en' ? '.' : ',';
   const [whole, decimals] = Math.abs(value).toFixed(2).split('.');
-  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  return decimals === '00' ? grouped : `${grouped},${decimals}`;
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, thousand);
+  return decimals === '00' ? grouped : `${grouped}${decimal}${decimals}`;
+}
+
+/** Type label in the active language (C6). */
+export function transactionTypeLabel(
+  type: TransactionType,
+  lang: Language = 'id',
+): string {
+  return dictionaryFor(lang).transactions.type[type];
 }
 
 // ---------------------------------------------------------------------------
@@ -312,9 +334,9 @@ export function categoriesForKind(
 // ---------------------------------------------------------------------------
 
 export const transferMessages = {
-  sourceRequired: 'Pilih dompet sumber terlebih dahulu',
-  destinationRequired: 'Pilih dompet tujuan terlebih dahulu',
-  sameWallet: 'Dompet sumber dan tujuan harus berbeda',
+  sourceRequired: id.transactions.transfer.sourceRequired,
+  destinationRequired: id.transactions.transfer.destinationRequired,
+  sameWallet: id.transactions.transfer.sameWallet,
 } as const;
 
 export type TransferValidation =
@@ -326,18 +348,22 @@ export type TransferValidation =
  * Amount/date rules are shared (`validateAmount` / `isFutureDate`); no
  * category is involved — the DB check enforces `category_id is null`.
  */
-export function validateTransfer(input: {
-  sourceWalletId: string | null;
-  destinationWalletId: string | null;
-}): TransferValidation {
+export function validateTransfer(
+  input: {
+    sourceWalletId: string | null;
+    destinationWalletId: string | null;
+  },
+  lang: Language = 'id',
+): TransferValidation {
+  const messages = dictionaryFor(lang).transactions.transfer;
   if (!input.sourceWalletId) {
-    return { ok: false, error: transferMessages.sourceRequired };
+    return { ok: false, error: messages.sourceRequired };
   }
   if (!input.destinationWalletId) {
-    return { ok: false, error: transferMessages.destinationRequired };
+    return { ok: false, error: messages.destinationRequired };
   }
   if (input.sourceWalletId === input.destinationWalletId) {
-    return { ok: false, error: transferMessages.sameWallet };
+    return { ok: false, error: messages.sameWallet };
   }
   return { ok: true };
 }
@@ -348,25 +374,38 @@ export const TRANSFER_ICON = 'swap-horiz';
 /**
  * The single feed line for a transfer (V2 AC): `Transfer ke {nama}`.
  * Falls back to a bare `Transfer` when the destination name is missing
- * (e.g. an optimistic row before the refresh lands).
+ * (e.g. an optimistic row before the refresh lands). Pass the active
+ * language (C6); the default keeps the locked id-ID behaviour.
  */
 export function transferFeedLabel(
   destinationName: string | null | undefined,
+  lang: Language = 'id',
 ): string {
-  return destinationName ? `Transfer ke ${destinationName}` : 'Transfer';
+  const copy = dictionaryFor(lang).transactions.transfer;
+  return destinationName
+    ? fill(copy.feedTo, { name: destinationName })
+    : copy.feedBare;
 }
 
 /**
  * The one-line confirmation the undo snackbar shows (V4) — the row that just
  * disappeared, named, plus its amount. `formatGrouped` is the same digits the
  * history row renders, so the snackbar cannot disagree with the list.
+ * Pass the active language (C6); the default keeps id-ID.
  */
-export function deletedTransactionLabel(transaction: Transaction): string {
+export function deletedTransactionLabel(
+  transaction: Transaction,
+  lang: Language = 'id',
+): string {
+  const copy = dictionaryFor(lang).transactions.undo;
   const name =
     transaction.type === 'transfer'
-      ? transferFeedLabel(transaction.counterpartyWalletName)
+      ? transferFeedLabel(transaction.counterpartyWalletName, lang)
       : transaction.categoryName;
-  return `${name || 'Transaksi'} · Rp ${formatGrouped(transaction.amount)} dihapus`;
+  return fill(copy.label, {
+    name: name || copy.fallback,
+    amount: formatGrouped(transaction.amount, lang),
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -388,6 +427,7 @@ export type TransactionDayGroup = {
 export function groupByDay(
   transactions: Transaction[],
   now: Date = new Date(),
+  lang: Language = 'id',
 ): TransactionDayGroup[] {
   const groups: TransactionDayGroup[] = [];
 
@@ -402,7 +442,7 @@ export function groupByDay(
 
     groups.push({
       key,
-      label: formatDateDivider(transaction.occurredAt, now),
+      label: formatDateDivider(transaction.occurredAt, now, lang),
       transactions: [transaction],
     });
   }
@@ -429,7 +469,7 @@ export function hasMoreAfter(pageSize: number, received: number): boolean {
 // `isFutureDate` submit guard as defence in depth (income/expense/transfer).
 // ---------------------------------------------------------------------------
 
-/** Short `id-ID` weekday headers, Monday-first. */
+/** Short weekday headers, Monday-first — the id-ID source of truth. */
 export const WEEKDAY_LABELS = [
   'Sen',
   'Sel',
@@ -440,20 +480,18 @@ export const WEEKDAY_LABELS = [
   'Min',
 ] as const;
 
-const MONTH_NAMES_ID = [
-  'Januari',
-  'Februari',
-  'Maret',
-  'April',
-  'Mei',
-  'Juni',
-  'Juli',
-  'Agustus',
-  'September',
-  'Oktober',
-  'November',
-  'Desember',
-];
+/** Weekday headers in the active language (C6: `Intl` short weekday, R10). */
+export function weekdayLabels(lang: Language = 'id'): readonly string[] {
+  if (lang === 'id') return WEEKDAY_LABELS;
+  // Monday-first English shorts anchored to a known Monday (2026-09-14).
+  const monday = new Date(2026, 8, 14);
+  return Array.from({ length: 7 }, (_, i) => {
+    const day = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
+    return new Intl.DateTimeFormat(localeTagFor(lang), {
+      weekday: 'short',
+    }).format(day);
+  });
+}
 
 export type CalendarDay = {
   /** Local midnight of the cell's date — stable key via `toDateKey`. */
@@ -544,9 +582,12 @@ export function canSelectDay(day: Date, now: Date = new Date()): boolean {
   return !isFutureDate(day, now);
 }
 
-/** `September 2026` — the grid's month header in `id-ID`. */
-export function formatMonthLabel(month: Date): string {
-  return `${MONTH_NAMES_ID[month.getMonth()]} ${month.getFullYear()}`;
+/** `September 2026` — the grid's month header (C6: `Intl`, R10). */
+export function formatMonthLabel(month: Date, lang: Language = 'id'): string {
+  return new Intl.DateTimeFormat(localeTagFor(lang), {
+    month: 'long',
+    year: 'numeric',
+  }).format(month);
 }
 
 // ---------------------------------------------------------------------------

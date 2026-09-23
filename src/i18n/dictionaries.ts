@@ -20,3 +20,12 @@ export function fill(
     name in params ? String(params[name]) : match,
   );
 }
+
+/**
+ * `Intl` locale tag for the active language (R10: formatting follows it).
+ * Lives on this leaf (not in `locale.ts`) so pure domain modules can format
+ * dates/numbers without pulling the React chain the hook module carries.
+ */
+export function localeTagFor(language: Language): string {
+  return language === 'en' ? 'en-US' : 'id-ID';
+}

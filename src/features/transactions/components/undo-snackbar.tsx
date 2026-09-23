@@ -12,6 +12,7 @@ import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { dictionaryFor, useLanguage } from '@/i18n';
 
 export const UNDO_SNACKBAR_MS = 10_000;
 
@@ -33,6 +34,11 @@ export function UndoSnackbar({
     return () => clearTimeout(timer);
   }, [snack, onDismiss, durationMs]);
 
+  // C6: copy follows the OS language (ADR-0008); the label itself was built
+  // in it at delete time by `deletedTransactionLabel`.
+  const language = useLanguage();
+  const t = dictionaryFor(language);
+
   if (!snack) return null;
 
   return (
@@ -48,13 +54,13 @@ export function UndoSnackbar({
       <Pressable
         testID="undo-button"
         accessibilityRole="button"
-        accessibilityLabel="Urungkan penghapusan"
+        accessibilityLabel={t.transactions.undo.actionA11y}
         onPress={onUndo}
         hitSlop={spacing.sm}
         style={({ pressed }) => [styles.undo, pressed && styles.pressed]}
       >
         <Text style={[typography.labelUppercase, styles.undoLabel]}>
-          Urungkan
+          {t.transactions.undo.action}
         </Text>
       </Pressable>
     </View>

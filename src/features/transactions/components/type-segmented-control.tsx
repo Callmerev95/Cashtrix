@@ -8,14 +8,13 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { useLanguage } from '@/i18n';
 
-import type { TransactionType } from '../domain';
-
-const OPTIONS: { value: TransactionType; label: string }[] = [
-  { value: 'expense', label: 'Pengeluaran' },
-  { value: 'income', label: 'Pemasukan' },
-  { value: 'transfer', label: 'Transfer' },
-];
+import {
+  TRANSACTION_TYPES,
+  transactionTypeLabel,
+  type TransactionType,
+} from '../domain';
 
 export function TypeSegmentedControl({
   value,
@@ -26,18 +25,21 @@ export function TypeSegmentedControl({
   onChange: (value: TransactionType) => void;
   testID?: string;
 }) {
+  // C6: labels follow the OS language (ADR-0008).
+  const language = useLanguage();
   return (
     <View testID={testID} style={styles.well}>
-      {OPTIONS.map((option) => {
-        const active = option.value === value;
+      {TRANSACTION_TYPES.map((option) => {
+        const active = option === value;
+        const label = transactionTypeLabel(option, language);
         return (
           <Pressable
-            key={option.value}
-            testID={`type-option-${option.value}`}
+            key={option}
+            testID={`type-option-${option}`}
             accessibilityRole="button"
             accessibilityState={{ selected: active }}
-            accessibilityLabel={option.label}
-            onPress={() => onChange(option.value)}
+            accessibilityLabel={label}
+            onPress={() => onChange(option)}
             style={[styles.segment, active && styles.segmentActive]}
           >
             <Text
@@ -47,7 +49,7 @@ export function TypeSegmentedControl({
                 active && styles.labelActive,
               ]}
             >
-              {option.label}
+              {label}
             </Text>
           </Pressable>
         );

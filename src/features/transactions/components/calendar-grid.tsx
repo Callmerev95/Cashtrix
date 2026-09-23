@@ -17,12 +17,13 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { dictionaryFor, useLanguage } from '@/i18n';
 
 import {
-  WEEKDAY_LABELS,
   buildMonthGrid,
   formatMonthLabel,
   toDateKey,
+  weekdayLabels,
 } from '../domain';
 
 function monthKey(date: Date): string {
@@ -40,6 +41,9 @@ export function CalendarGrid({
 }) {
   const [visibleKey, setVisibleKey] = useState(() => monthKey(value));
   const [lastValueKey, setLastValueKey] = useState(() => monthKey(value));
+  // C6: weekday/month copy + format follow the OS language (ADR-0008, R10).
+  const language = useLanguage();
+  const t = dictionaryFor(language);
 
   // Render-adjust (not an effect): follow `value` into another month after an
   // async edit-load, but leave chevron navigation alone while the value stays
@@ -65,7 +69,7 @@ export function CalendarGrid({
         <Pressable
           testID={`${testID}-prev`}
           accessibilityRole="button"
-          accessibilityLabel="Bulan sebelumnya"
+          accessibilityLabel={t.transactions.calendar.prev}
           onPress={() => shiftMonth(-1)}
           style={styles.nav}
         >
@@ -79,12 +83,12 @@ export function CalendarGrid({
           testID={`${testID}-title`}
           style={[typography.bodyMd, styles.title]}
         >
-          {formatMonthLabel(visible)}
+          {formatMonthLabel(visible, language)}
         </Text>
         <Pressable
           testID={`${testID}-next`}
           accessibilityRole="button"
-          accessibilityLabel="Bulan berikutnya"
+          accessibilityLabel={t.transactions.calendar.next}
           onPress={() => shiftMonth(1)}
           style={styles.nav}
         >
@@ -97,7 +101,7 @@ export function CalendarGrid({
       </View>
 
       <View style={styles.weekRow}>
-        {WEEKDAY_LABELS.map((label) => (
+        {weekdayLabels(language).map((label) => (
           <Text
             key={label}
             style={[typography.labelUppercase, styles.weekday]}

@@ -16,6 +16,8 @@ export function DeleteConfirmSheet({
   title = 'Hapus transaksi ini?',
   body = 'Transaksi dipindahkan ke sampah dan dihapus permanen setelah 30 hari.',
   confirmLabel = 'Hapus',
+  cancelLabel = 'Batal',
+  closeLabel = 'Tutup',
   loading = false,
   onCancel,
   onConfirm,
@@ -25,6 +27,8 @@ export function DeleteConfirmSheet({
   title?: string;
   body?: string;
   confirmLabel?: string;
+  cancelLabel?: string;
+  closeLabel?: string;
   loading?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
@@ -40,7 +44,7 @@ export function DeleteConfirmSheet({
       <Pressable
         style={styles.scrim}
         accessibilityRole="button"
-        accessibilityLabel="Tutup"
+        accessibilityLabel={closeLabel}
         onPress={onCancel}
       >
         <Pressable
@@ -59,11 +63,11 @@ export function DeleteConfirmSheet({
             <Pressable
               testID={`${testID}-cancel`}
               accessibilityRole="button"
-              accessibilityLabel="Batal"
+              accessibilityLabel={cancelLabel}
               onPress={onCancel}
               style={({ pressed }) => [styles.ghost, pressed && styles.pressed]}
             >
-              <Text style={[typography.bodyLg, styles.ghostLabel]}>Batal</Text>
+              <Text style={[typography.bodyLg, styles.ghostLabel]}>{cancelLabel}</Text>
             </Pressable>
 
             <Pressable
