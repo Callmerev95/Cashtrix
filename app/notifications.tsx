@@ -165,6 +165,7 @@ export default function NotificationsScreen() {
                 accessibilityLabel={inboxAlertTitle(
                   item.categoryName,
                   item.threshold,
+                  language,
                 )}
                 onPress={() => void openAlert(item)}
                 style={styles.row}
@@ -183,7 +184,7 @@ export default function NotificationsScreen() {
                 </View>
                 <View style={styles.center}>
                   <Text style={[typography.bodyMd, styles.name]} numberOfLines={2}>
-                    {inboxAlertTitle(item.categoryName, item.threshold)}
+                    {inboxAlertTitle(item.categoryName, item.threshold, language)}
                   </Text>
                   <Text
                     style={[typography.bodySm, styles.meta]}

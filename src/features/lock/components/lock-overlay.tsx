@@ -40,7 +40,12 @@ export function LockOverlay() {
       accessibilityViewIsModal
     >
       <View style={styles.card}>
-        <MaterialIcons name="lock" size={28} color={colors.accent} />
+        <MaterialIcons
+          name="lock"
+          size={28}
+          color={colors.accent}
+          style={styles.icon}
+        />
         <Text style={[typography.headlineMd, styles.title]}>
           {ts.title}
         </Text>
@@ -53,6 +58,7 @@ export function LockOverlay() {
           onPress={() => void onUnlock()}
           disabled={busy}
           loading={busy}
+          style={styles.button}
         />
       </View>
     </View>
@@ -72,10 +78,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   card: {
-    alignItems: 'center',
+    flex: 1,
     gap: spacing.md,
-    padding: spacing.xl,
-    minWidth: layout.minTapTarget,
+    paddingHorizontal: layout.screenMargin,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  icon: {
+    marginBottom: spacing.xs,
   },
   title: {
     color: colors.textPrimary,
@@ -83,5 +93,8 @@ const styles = StyleSheet.create({
   subtitle: {
     color: colors.textSecondary,
     textAlign: 'center',
+  },
+  button: {
+    alignSelf: 'stretch',
   },
 });
