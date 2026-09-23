@@ -21,6 +21,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from 'react-native';
@@ -28,6 +29,7 @@ import {
 import { Card, GhostButton, PrimaryButton, Screen, TextField } from '@/components';
 import { signOut, useAuth } from '@/features/auth';
 import { exportAndShareTransactions } from '@/features/data-ownership';
+import { useLock } from '@/features/lock';
 import {
   SUPPORTED_CURRENCIES,
   formatMoney,
@@ -57,6 +59,7 @@ export default function ProfileScreen() {
     saveAvatar,
   } = useProfile();
   const { rules: recurringRules } = useRecurring();
+  const { enabled: lockEnabled, biometricsReady, setEnabled } = useLock();
   // C6: copy follows the OS language (ADR-0008).
   const language = useLanguage();
   const t = dictionaryFor(language);
@@ -341,6 +344,36 @@ export default function ProfileScreen() {
                 );
               })}
             </View>
+
+            <Text style={[typography.labelUppercase, styles.kicker, styles.gap]}>
+              {t.lock.section}
+            </Text>
+            <Card style={styles.row}>
+              <View style={styles.rowIcon}>
+                <MaterialIcons
+                  name="fingerprint"
+                  size={20}
+                  color={colors.accent}
+                />
+              </View>
+              <View style={styles.rowBody}>
+                <Text style={[typography.bodyMd, styles.rowTitle]}>
+                  {t.lock.title}
+                </Text>
+                <Text style={[typography.bodySm, styles.rowSubtitle]}>
+                  {biometricsReady ? t.lock.subtitle : t.lock.unavailable}
+                </Text>
+              </View>
+              <Switch
+                testID="profile-lock-toggle"
+                accessibilityLabel={t.lock.toggleA11y}
+                value={lockEnabled}
+                onValueChange={(value) => void setEnabled(value)}
+                disabled={!biometricsReady}
+                trackColor={{ false: colors.surfaceElevated, true: colors.accent }}
+                thumbColor={colors.textPrimary}
+              />
+            </Card>
 
             <Text style={[typography.labelUppercase, styles.kicker, styles.gap]}>
               {ts.settings}
