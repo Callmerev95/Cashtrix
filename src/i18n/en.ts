@@ -576,4 +576,15 @@ export const en: Dictionary = {
     },
     loadError: 'Failed to load recurring rules',
   },
+  notifications: {
+    back: 'Back',
+    kicker: 'Inbox',
+    title: 'Notifications',
+    markAllA11y: 'Mark all as read',
+    markAll: 'Mark as read',
+    loading: 'Loading notifications…',
+    emptyTitle: 'No notifications',
+    emptyBody: 'Budget alerts appear here when spending reaches 80% or 100%.',
+    emptyAction: 'View Budgets',
+  },
 };

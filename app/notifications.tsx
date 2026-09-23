@@ -26,6 +26,7 @@ import {
   type InboxAlert,
 } from '@/features/budgets';
 import { formatMonthLabel, formatTime } from '@/features/transactions';
+import { dictionaryFor, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 
 type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
@@ -42,16 +43,20 @@ export default function NotificationsScreen() {
   } = useBudgets();
   const [busy, setBusy] = useState(false);
   const insets = useSafeAreaInsets();
+  // C6: copy follows the OS language (ADR-0008).
+  const language = useLanguage();
+  const t = dictionaryFor(language);
+  const tn = t.notifications;
 
   // Month groups, newest month first — rows keep their newest-first order.
   const sections = useMemo(
     () =>
       groupAlertsByMonth(alerts).map((group) => ({
         key: group.month,
-        title: formatMonthLabel(new Date(`${group.month}T00:00:00`)),
+        title: formatMonthLabel(new Date(`${group.month}T00:00:00`), language),
         data: group.alerts,
       })),
-    [alerts],
+    [alerts, language],
   );
 
   async function openAlert(alert: InboxAlert) {
@@ -82,7 +87,7 @@ export default function NotificationsScreen() {
         <View style={styles.headerRow}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Kembali"
+            accessibilityLabel={tn.back}
             onPress={() => router.back()}
             style={styles.back}
           >
@@ -94,22 +99,22 @@ export default function NotificationsScreen() {
           </Pressable>
           <View style={styles.headerText}>
             <Text style={[typography.labelUppercase, styles.kicker]}>
-              Kotak masuk
+              {tn.kicker}
             </Text>
             <Text style={[typography.headlineLg, styles.title]}>
-              Notifikasi
+              {tn.title}
             </Text>
           </View>
           {unreadCount > 0 ? (
             <Pressable
               testID="notifications-mark-all"
               accessibilityRole="button"
-              accessibilityLabel="Tandai semua dibaca"
+              accessibilityLabel={tn.markAllA11y}
               onPress={() => void readAll()}
               hitSlop={spacing.sm}
             >
               <Text style={[typography.labelUppercase, styles.action]}>
-                {busy ? '…' : 'Tandai dibaca'}
+                {busy ? '…' : tn.markAll}
               </Text>
             </Pressable>
           ) : null}
@@ -125,15 +130,15 @@ export default function NotificationsScreen() {
 
         {alerts.length === 0 && loading ? (
           <Text style={[typography.bodyMd, styles.meta]}>
-            Memuat notifikasi…
+            {tn.loading}
           </Text>
         ) : alerts.length === 0 ? (
           <EmptyStateCard
             testID="notifications-empty"
             icon="notifications-none"
-            title="Belum ada notifikasi"
-            description="Alert budget muncul di sini saat pengeluaran menyentuh 80% atau 100%."
-            actionLabel="Lihat Budget"
+            title={tn.emptyTitle}
+            description={tn.emptyBody}
+            actionLabel={tn.emptyAction}
             onAction={() => router.push('/(tabs)/budgets')}
           />
         ) : (

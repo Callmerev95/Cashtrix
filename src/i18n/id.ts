@@ -577,6 +577,18 @@ export const id = {
     },
     loadError: 'Gagal memuat aturan berulang',
   },
+  notifications: {
+    back: 'Kembali',
+    kicker: 'Kotak masuk',
+    title: 'Notifikasi',
+    markAllA11y: 'Tandai semua dibaca',
+    markAll: 'Tandai dibaca',
+    loading: 'Memuat notifikasi…',
+    emptyTitle: 'Belum ada notifikasi',
+    emptyBody:
+      'Alert budget muncul di sini saat pengeluaran menyentuh 80% atau 100%.',
+    emptyAction: 'Lihat Budget',
+  },
 };
 
 export type Dictionary = typeof id;
