@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kebijakan Privasi — Cashtrix</title>
+  <style>
+    body { font-family: -apple-system, system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1a1a1a; }
+    h1 { font-size: 1.6rem; } h2 { font-size: 1.15rem; margin-top: 2rem; }
+    footer { margin-top: 3rem; font-size: 0.85rem; color: #666; }
+  </style>
+</head>
+<body>
+  <h1>Kebijakan Privasi — Cashtrix</h1>
+  <p><strong>Tanggal berlaku:</strong> 23 September 2026</p>
+
+  <p>Cashtrix ("kami") adalah aplikasi pencatat keuangan pribadi. Kebijakan ini
+  menjelaskan data yang dikumpulkan aplikasi Cashtrix, cara data itu digunakan,
+  dan pilihan yang Anda miliki. Dokumen yang sama ditautkan dari dalam aplikasi
+  (Login, Daftar, Profile) dan dari halaman toko aplikasi.</p>
+
+  <h2>1. Data yang kami kumpulkan</h2>
+  <ul>
+    <li><strong>Data akun:</strong> alamat email dan hash kata sandi Anda,
+    dikelola oleh penyedia autentikasi kami (Supabase Auth).</li>
+    <li><strong>Data keuangan yang Anda masukkan:</strong> dompet, transaksi
+    (nominal, tanggal, catatan), kategori, budget, nama tampilan, mata uang, dan
+    preferensi zona waktu.</li>
+    <li><strong>Gambar avatar:</strong> hanya jika Anda mengunggahnya; disimpan
+    di penyimpanan privat milik tiap pengguna.</li>
+    <li><strong>Diagnostik:</strong> laporan kerusakan (crash) dan peristiwa
+    penggunaan anonim (layar dibuka, transaksi disimpan, ambang budget tercapai).
+    Peristiwa ini tidak pernah memuat nominal transaksi atau catatan.</li>
+  </ul>
+
+  <h2>2. Cara kami menggunakan data</h2>
+  <ul>
+    <li>Menyediakan aplikasi: masuk, saldo, riwayat, budget, analitik.</li>
+    <li>Menjaga keamanan akun Anda dan mengirim email terkait akun (verifikasi,
+    reset kata sandi).</li>
+    <li>Memperbaiki crash dan meningkatkan kestabilan melalui diagnostik
+    agregat.</li>
+  </ul>
+  <p>Kami tidak menjual data Anda. Kami tidak memakai data untuk periklanan.</p>
+
+  <h2>3. Penyimpanan dan keamanan</h2>
+  <ul>
+    <li>Data aplikasi disimpan di Supabase (Postgres) dengan row-level security:
+    setiap kueri dibatasi pada pengguna yang sudah masuk; akses tanpa autentikasi
+    ditolak.</li>
+    <li>Kata sandi disimpan sebagai hash oleh Supabase Auth; kami tidak pernah
+    melihatnya.</li>
+    <li>Token sesi Anda hanya tersimpan di perangkat Anda dan dihapus saat keluar.</li>
+    <li>Berkas avatar berada di bucket privat, hanya dapat dibaca oleh pemiliknya.</li>
+  </ul>
+
+  <h2>4. Hak Anda: ekspor dan penghapusan</h2>
+  <p>Di dalam aplikasi (Profile) Anda dapat <strong>mengekspor</strong> seluruh
+  transaksi sebagai CSV, dan dapat <strong>menghapus akun Anda</strong>.
+  Menghapus akun secara permanen menghapus profil, dompet, transaksi, budget,
+  avatar, dan login Anda — tindakan ini tidak dapat dibatalkan.</p>
+
+  <h2>5. Anak-anak</h2>
+  <p>Cashtrix tidak ditujukan untuk anak di bawah 13 tahun. Kami tidak dengan
+  sengaja mengumpulkan data anak di bawah 13 tahun; akun yang terbukti milik
+  pengguna di bawah 13 tahun akan dihapus.</p>
+
+  <h2>6. Perubahan</h2>
+  <p>Kami dapat memperbarui kebijakan ini seiring perkembangan aplikasi.
+  Perubahan material akan diumumkan di dalam aplikasi atau di repositori sebelum
+  berlaku. Penggunaan berkelanjutan setelah perubahan berarti Anda menyetujui
+  kebijakan yang diperbarui.</p>
+
+  <h2>7. Kontak</h2>
+  <p>Pertanyaan tentang kebijakan ini:
+  <a href="https://github.com/Callmerev95/Cashtrix">github.com/Callmerev95/Cashtrix</a>.</p>
+
+  <footer>Cashtrix · Kebijakan Privasi v1.1 (Indonesia). Versi bahasa Inggris tersedia di <a href="privacy.html">privacy.html</a>.</footer>
+</body>
+</html>
