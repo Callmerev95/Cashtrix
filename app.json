@@ -37,6 +37,12 @@
           "resizeMode": "contain",
           "backgroundColor": "#0A0A0A"
         }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow $(PRODUCT_NAME) to unlock the app with Face ID."
+        }
       ]
     ],
     "experiments": {

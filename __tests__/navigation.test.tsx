@@ -194,3 +194,25 @@ describe('auth gate', () => {
     expect(await screen.findByTestId('forgot-password-submit')).toBeTruthy();
   });
 });
+
+describe('app lock gate (B4)', () => {
+  const LOCK_KEY = 'cashtrix:app-lock-enabled';
+
+  afterEach(() => {
+    require('./mocks/async-storage').sessionStorageSeed.delete(LOCK_KEY);
+  });
+
+  it('covers the tabs with the lock overlay on a cold start with the flag set', async () => {
+    // A prior `signOut()` in this file cleared the seeded session; restore a
+    // confirmed one so the gate parks at the tabs, then set the lock flag.
+    seedSession('2026-09-17T00:00:00Z');
+    require('./mocks/async-storage').sessionStorageSeed.set(LOCK_KEY, '1');
+    const { getPathname } = await renderSignedInApp();
+
+    // The overlay is opaque and full-screen over the Stack — no Dashboard
+    // content is reachable while locked.
+    expect(await screen.findByTestId('lock-overlay')).toBeTruthy();
+    expect(screen.getByTestId('lock-unlock')).toBeTruthy();
+    expect(getPathname()).toBe('/');
+  });
+});

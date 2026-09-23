@@ -288,6 +288,19 @@ export const id = {
   connectivity: {
     offline: 'Tidak ada koneksi',
   },
+  lock: {
+    section: 'Keamanan',
+    title: 'Kunci aplikasi',
+    subtitle: 'Minta biometrik setiap kali membuka Cashtrix.',
+    unavailable:
+      'Daftarkan biometrik di Pengaturan perangkat untuk mengaktifkan.',
+    toggleA11y: 'Kunci aplikasi dengan biometrik',
+    body: 'Buka kunci untuk melanjutkan.',
+    failedBody: 'Buka kunci gagal. Coba lagi.',
+    unlock: 'Buka kunci',
+    unlocking: 'Memeriksa…',
+    unlockPrompt: 'Buka kunci Cashtrix',
+  },
   wallets: {
     validation: {
       nameRequired: 'Nama dompet wajib diisi',

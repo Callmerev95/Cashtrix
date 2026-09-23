@@ -288,6 +288,18 @@ export const en: Dictionary = {
   connectivity: {
     offline: 'No connection',
   },
+  lock: {
+    section: 'Security',
+    title: 'App lock',
+    subtitle: 'Ask for biometrics every time Cashtrix is opened.',
+    unavailable: 'Register biometrics in Settings to enable this.',
+    toggleA11y: 'Lock app with biometrics',
+    body: 'Unlock to continue.',
+    failedBody: 'Could not unlock. Try again.',
+    unlock: 'Unlock',
+    unlocking: 'Checking…',
+    unlockPrompt: 'Unlock Cashtrix',
+  },
   wallets: {
     validation: {
       nameRequired: 'Wallet name is required',

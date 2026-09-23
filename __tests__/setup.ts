@@ -25,6 +25,15 @@ jest.mock(
   () => require('./mocks/expo-localization'),
 );
 
+// B4 (issue #50): expo-local-authentication is a native module whose bridge
+// is absent in Jest (same shape as Expo Go before the rebuild). Default
+// stand-in makes every call throw so the degrade path is the tested one;
+// happy-path tests inject their own mock and never touch this file.
+jest.mock(
+  require.resolve('expo-local-authentication'),
+  () => require('./mocks/expo-local-authentication'),
+);
+
 // V1 (issue #30): the observability sink imports `@sentry/react-native`
 // statically and `app/_layout.tsx` calls `initSentry()` on mount, which the
 // navigation tests exercise. The native module cannot load in Jest, so it is

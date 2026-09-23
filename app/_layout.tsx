@@ -12,12 +12,14 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import { appFonts } from '@/fonts';
 import { AuthProvider, useAuth } from '@/features/auth';
 import { AnalyticsProvider } from '@/features/analytics';
 import { BudgetsProvider } from '@/features/budgets';
 import { ConnectivityProvider, ReconnectRefresh } from '@/features/connectivity';
+import { LockOverlay, LockProvider, useLock } from '@/features/lock';
 import {
   initObservability,
   initSentry,
@@ -84,6 +86,7 @@ function AuthGate() {
 
 function RootNavigator() {
   const { status } = useAuth();
+  const { locked } = useLock();
 
   useEffect(() => {
     if (status !== 'loading') {
@@ -97,31 +100,54 @@ function RootNavigator() {
     return null;
   }
 
+  // B4 (ADR-0007): the lock gate follows the auth-gate pattern — the Stack is
+  // hidden from the accessibility tree while locked, and the overlay is a
+  // full-screen opaque sibling painted last, so no balance, name, or amount
+  // is ever visible. Lock ≠ sign-out: the Supabase session persists.
+  const lockedIn = locked && status === 'authenticated';
+
   return (
     <>
       <AuthGate />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: colors.background },
-        }}
-      >
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="add-transaction" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="budget-form" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="wallets" />
-        <Stack.Screen name="wallet-form" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="categories" />
-        <Stack.Screen name="category-form" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="recurring" />
-        <Stack.Screen name="recurring-form" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="delete-account" />
-      </Stack>
+      <View style={styles.viewport}>
+        <View
+          style={styles.viewport}
+          accessibilityElementsHidden={lockedIn}
+          importantForAccessibility={
+            lockedIn ? 'no-hide-descendants' : 'auto'
+          }
+        >
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: colors.background },
+            }}
+          >
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="add-transaction" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="budget-form" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="wallets" />
+            <Stack.Screen name="wallet-form" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="categories" />
+            <Stack.Screen name="category-form" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="recurring" />
+            <Stack.Screen name="recurring-form" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="delete-account" />
+          </Stack>
+        </View>
+        {lockedIn ? <LockOverlay /> : null}
+      </View>
       <StatusBar style="light" />
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  viewport: {
+    flex: 1,
+  },
+});
 
 /**
  * Data providers, remounted per user.
@@ -180,9 +206,11 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <DataProviders>
-        <RootNavigator />
-      </DataProviders>
+      <LockProvider>
+        <DataProviders>
+          <RootNavigator />
+        </DataProviders>
+      </LockProvider>
     </AuthProvider>
   );
 }
