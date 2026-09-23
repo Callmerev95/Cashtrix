@@ -139,6 +139,20 @@ describe('formatting', () => {
     expect(formatPercent(NaN)).toBe('0%');
   });
 
+  it('uses a dot decimal in English (C6, R10)', () => {
+    expect(formatPercent(79.9, 'en')).toBe('79.9%');
+    expect(formatPercent(100, 'en')).toBe('100%');
+  });
+
+  it('renders validation copy in the active language (C6)', () => {
+    expect(
+      validateBudget(
+        { categoryId: null, categoryKind: null, amountRaw: '1.000.000' },
+        'en',
+      ).categoryError,
+    ).toBe('Select an expense category');
+  });
+
   it('rounds the ring centre to whole percent', () => {
     expect(formatRingPercent(79.9)).toBe('80%');
     expect(formatRingPercent(120)).toBe('120%');

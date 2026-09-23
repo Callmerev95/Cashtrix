@@ -124,41 +124,47 @@ export type BudgetValidation = {
 };
 
 export const budgetMessages = {
-  categoryRequired: 'Pilih kategori pengeluaran',
-  categoryNotExpense: 'Budget hanya untuk kategori pengeluaran',
-  amountRequired: 'Nominal budget wajib diisi',
-  amountInvalid: 'Nominal budget tidak valid',
-  amountTooSmall: 'Nominal budget harus lebih dari 0',
-  amountTooLarge: `Nominal maksimal ${AMOUNT_MAX}`,
+  categoryRequired: id.budgets.validation.categoryRequired,
+  categoryNotExpense: id.budgets.validation.categoryNotExpense,
+  amountRequired: id.budgets.validation.amountRequired,
+  amountInvalid: id.budgets.validation.amountInvalid,
+  amountTooSmall: id.budgets.validation.amountTooSmall,
+  amountTooLarge: fill(id.budgets.validation.amountTooLarge, {
+    max: AMOUNT_MAX,
+  }),
 } as const;
 
-export function validateBudget(input: {
-  /** `null` = no category picked yet. */
-  categoryId: string | null;
-  /** `kind` of the picked category (`income` is rejected). */
-  categoryKind: 'income' | 'expense' | null;
-  /** Raw amount string (grouped `id-ID`, e.g. `1.500.000`). */
-  amountRaw: string;
-}): BudgetValidation {
+export function validateBudget(
+  input: {
+    /** `null` = no category picked yet. */
+    categoryId: string | null;
+    /** `kind` of the picked category (`income` is rejected). */
+    categoryKind: 'income' | 'expense' | null;
+    /** Raw amount string (grouped `id-ID`, e.g. `1.500.000`). */
+    amountRaw: string;
+  },
+  lang: Language = 'id',
+): BudgetValidation {
+  const messages = dictionaryFor(lang).budgets.validation;
   let categoryError: string | null = null;
   if (!input.categoryId || !input.categoryKind) {
-    categoryError = budgetMessages.categoryRequired;
+    categoryError = messages.categoryRequired;
   } else if (input.categoryKind !== 'expense') {
-    categoryError = budgetMessages.categoryNotExpense;
+    categoryError = messages.categoryNotExpense;
   }
 
   let amountError: string | null = null;
   const digits = input.amountRaw.replace(/[^0-9]/g, '');
   if (digits.length === 0) {
-    amountError = budgetMessages.amountRequired;
+    amountError = messages.amountRequired;
   } else {
     const value = Number(digits);
     if (!Number.isFinite(value)) {
-      amountError = budgetMessages.amountInvalid;
+      amountError = messages.amountInvalid;
     } else if (value <= 0) {
-      amountError = budgetMessages.amountTooSmall;
+      amountError = messages.amountTooSmall;
     } else if (value > AMOUNT_MAX) {
-      amountError = budgetMessages.amountTooLarge;
+      amountError = fill(messages.amountTooLarge, { max: AMOUNT_MAX });
     }
   }
 
@@ -192,14 +198,16 @@ export function budgetStateLabel(
   return dictionaryFor(lang).budgets.state[state];
 }
 
-/** `79,9%` — id-ID decimal comma, never `NaN`/`Infinity`. */
-export function formatPercent(percent: number): string {
+/** `79,9%` — id-ID decimal comma, never `NaN`/`Infinity` (C6: separator
+ * follows the active language). */
+export function formatPercent(percent: number, lang: Language = 'id'): string {
   if (!Number.isFinite(percent)) return '0%';
   const rounded = Math.round(percent * 10) / 10;
+  const separator = lang === 'en' ? '.' : ',';
   const text =
     Number.isInteger(rounded)
       ? String(rounded)
-      : rounded.toFixed(1).replace('.', ',');
+      : rounded.toFixed(1).replace('.', separator);
   return `${text}%`;
 }
 

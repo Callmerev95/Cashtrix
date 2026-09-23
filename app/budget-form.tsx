@@ -41,6 +41,7 @@ import {
   formatAmountInput,
   useTransactions,
 } from '@/features/transactions';
+import { dictionaryFor, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 
 export default function BudgetFormScreen() {
@@ -49,6 +50,10 @@ export default function BudgetFormScreen() {
   const { budgets, save, remove } = useBudgets();
   const { categories } = useTransactions();
   const insets = useSafeAreaInsets();
+  // C6: copy follows the OS language (ADR-0008); validation renders it too.
+  const language = useLanguage();
+  const t = dictionaryFor(language);
+  const tb = t.budgets;
 
   const editing = useMemo(
     () => budgets.find((budget) => budget.budgetId === params.id),
@@ -75,11 +80,14 @@ export default function BudgetFormScreen() {
   );
 
   async function handleSave() {
-    const validation = validateBudget({
-      categoryId,
-      categoryKind: pickedKind,
-      amountRaw,
-    });
+    const validation = validateBudget(
+      {
+        categoryId,
+        categoryKind: pickedKind,
+        amountRaw,
+      },
+      language,
+    );
     setErrors({
       category: validation.categoryError,
       amount: validation.amountError,
@@ -89,7 +97,7 @@ export default function BudgetFormScreen() {
     if (!categoryId) return;
     setBusy(true);
     try {
-      if (!session?.user.id) throw new Error('Sesi tidak ditemukan');
+      if (!session?.user.id) throw new Error(tb.form.noSession);
       await save({
         userId: session.user.id,
         categoryId,
@@ -99,8 +107,8 @@ export default function BudgetFormScreen() {
     } catch (cause) {
       setBusy(false);
       Alert.alert(
-        isEdit ? 'Gagal menyimpan perubahan' : 'Gagal membuat budget',
-        cause instanceof Error ? cause.message : 'Coba lagi sebentar lagi.',
+        isEdit ? tb.form.saveFailEdit : tb.form.saveFailCreate,
+        cause instanceof Error ? cause.message : t.common.retry,
       );
     }
   }
@@ -116,8 +124,8 @@ export default function BudgetFormScreen() {
       setBusy(false);
       setConfirmingDelete(false);
       Alert.alert(
-        'Gagal menghapus',
-        cause instanceof Error ? cause.message : 'Coba lagi sebentar lagi.',
+        tb.form.deleteFail,
+        cause instanceof Error ? cause.message : t.common.retry,
       );
     }
   }
@@ -131,7 +139,7 @@ export default function BudgetFormScreen() {
         <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Tutup"
+            accessibilityLabel={tb.form.close}
             testID="budget-form-close"
             onPress={() => router.back()}
             style={styles.close}
@@ -139,7 +147,7 @@ export default function BudgetFormScreen() {
             <MaterialIcons name="close" size={24} color={colors.textSecondary} />
           </Pressable>
           <Text style={[typography.headlineMd, styles.title]}>
-            {isEdit ? 'Ubah budget' : 'Buat budget'}
+            {isEdit ? tb.form.editTitle : tb.form.createTitle}
           </Text>
           <View style={styles.close} />
         </View>
@@ -150,7 +158,7 @@ export default function BudgetFormScreen() {
           showsVerticalScrollIndicator={false}
         >
           <Text style={[typography.labelUppercase, styles.label]}>
-            Kategori pengeluaran
+            {tb.form.category}
           </Text>
           <CategoryGrid
             testID="budget-category-grid"
@@ -169,7 +177,7 @@ export default function BudgetFormScreen() {
           ) : null}
 
           <Text style={[typography.labelUppercase, styles.label]}>
-            Batas per bulan
+            {tb.form.limit}
           </Text>
           <AmountField
             testID="budget-amount"
@@ -183,14 +191,14 @@ export default function BudgetFormScreen() {
 
           <PrimaryButton
             testID="budget-save"
-            label={busy ? 'Menyimpan…' : isEdit ? 'Simpan perubahan' : 'Buat budget'}
+            label={busy ? tb.form.saving : isEdit ? tb.form.saveEdit : tb.form.create}
             onPress={() => void handleSave()}
           />
 
           {isEdit ? (
             <GhostButton
               testID="budget-delete"
-              label="Hapus budget"
+              label={tb.form.delete}
               onPress={() => setConfirmingDelete(true)}
             />
           ) : null}
@@ -200,17 +208,16 @@ export default function BudgetFormScreen() {
           <View style={styles.sheet}>
             <View style={styles.sheetCard}>
               <Text style={[typography.headlineSm, styles.sheetTitle]}>
-                Hapus budget ini?
+                {tb.form.deleteTitle}
               </Text>
               <Text style={[typography.bodyMd, styles.sheetBody]}>
-                Batas bulan berjalan ikut terhapus. Transaksi tidak ikut
-                terhapus — alert yang sudah terkirim tetap tercatat.
+                {tb.form.deleteBody}
               </Text>
               <View style={styles.sheetActions}>
-                <GhostButton testID="budget-delete-cancel" label="Batal" onPress={() => setConfirmingDelete(false)} style={styles.sheetAction} />
+                <GhostButton testID="budget-delete-cancel" label={t.common.cancel} onPress={() => setConfirmingDelete(false)} style={styles.sheetAction} />
                 <PrimaryButton
                   testID="budget-delete-confirm"
-                  label={busy ? 'Menghapus…' : 'Hapus'}
+                  label={busy ? tb.form.deleting : t.common.delete}
                   onPress={() => void handleDelete()}
                   style={styles.sheetAction}
                 />

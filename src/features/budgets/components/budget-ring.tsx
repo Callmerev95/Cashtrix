@@ -18,9 +18,10 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, spacing, typography } from '@/theme';
+import { useLanguage } from '@/i18n';
 
 import {
-  budgetStateLabels,
+  budgetStateLabel,
   ringFillFor,
   type BudgetState,
 } from '../domain';
@@ -41,6 +42,8 @@ export function BudgetRing({
   thickness?: number;
   testID?: string;
 }) {
+  // C6: state label follows the OS language (ADR-0008).
+  const language = useLanguage();
   const fill = ringFillFor(percent);
   const sweep = Math.min(Math.max(fill, 0), 1) * 360;
   const inner = size - thickness * 2;
@@ -147,7 +150,7 @@ export function BudgetRing({
             {formatRingPercent(percent)}
           </Text>
           <Text style={[typography.bodySm, styles.holeState]} numberOfLines={1}>
-            {budgetStateLabels[state]}
+            {budgetStateLabel(state, language)}
           </Text>
         </View>
       </View>

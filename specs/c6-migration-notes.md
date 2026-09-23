@@ -91,18 +91,28 @@ lama, defaultnya memang itu). Hook-safety: `useLanguage` selalu sebelum
 early return (lint `rules-of-hooks` menangkap di `BreakdownList`).
 Gate: lint bersih + typecheck + Jest 376 hijau + static-only 3/3.
 
+`budgets.*` (chunk budgets screens — BELUM commit; `cacb74d` = analytics):
+`validation.*` (6, `{max}` + `validateBudget(input, lang)`;
+`budgetMessages` alias-id terisi), `screen.*`, `form.*` +
+`loadError` (budgets-context). `formatPercent(p, lang)` (koma vs titik);
+`budgetStateLabel(state, lang)` dipakai `BudgetRing` (ganti
+`budgetStateLabels[state]`). `app/(tabs)/budgets.tsx`: `formatMonthLabel(m,
+lang)` via `Intl` + `localeTagFor` (`MONTH_NAMES` hapus), count/alloc/add/
+card a11y/dismiss/empty via `tb`, `AlertBanner` reuse `budgets.alert.*` +
+`fill`, `BudgetCard` amount+percent via `formatGrouped`/`formatPercent`
+lang. `app/budget-form.tsx`: labels + validasi (`language`) +
+sheet hapus. Gate: lint bersih + typecheck + Jest 378 hijau +
+static-only 3/3.
+
 ## Remaining catalog (from full audit: ~235 unique strings, ~230 keys)
 
 - **wallets** (~40): DONE — see Done section above.
 - **transactions** (~55, biggest): DONE — see Done section above
   (`KIND_FILTER_OPTIONS` intentionally left for the search chunk).
-- **search** (~20, `app/search.tsx`):
 - **search** (~20, `app/search.tsx`): DONE — see Done section above.
 - **analytics** (~20): DONE — see Done section above
   (`OTHER_LABEL` untouched, verbatim).
-- **budgets screens** (~40): `budgets.screen.*`, `budgets.form.*`,
-  `budgets.validation.*` in `app/(tabs)/budgets.tsx`, `app/budget-form.tsx`;
-  month-name array `budgets.tsx:40-51` → `Intl` (same as calendar).
+- **budgets screens** (~40): DONE — see Done section above.
 - **profile** (~55): `profile.screen.*` (`Mata uang tampilan`, `Contoh: …,
   tanpa konversi kurs.`, `Kelola kategori`, export/delete/sign-out/photo
   strings), `profile.validation.*`, `categories.screen.*`,

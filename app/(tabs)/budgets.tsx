@@ -34,31 +34,20 @@ import {
 import { BudgetRing } from '@/features/budgets/components/budget-ring';
 import { useProfile } from '@/features/profile';
 import { formatGrouped } from '@/features/transactions/domain';
+import { dictionaryFor, fill, localeTagFor, useLanguage } from '@/i18n';
+import type { Language } from '@/i18n/locale';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 
-const MONTH_NAMES = [
-  'Januari',
-  'Februari',
-  'Maret',
-  'April',
-  'Mei',
-  'Juni',
-  'Juli',
-  'Agustus',
-  'September',
-  'Oktober',
-  'November',
-  'Desember',
-];
-
 /** `2026-09-01` → `September 2026`. Falls back to the raw string. */
-export function formatMonthLabel(month: string | null): string {
+export function formatMonthLabel(month: string | null, lang: Language = 'id'): string {
   if (!month) return '';
-  const year = Number(month.slice(0, 4));
-  const index = Number(month.slice(5, 7)) - 1;
-  const name = MONTH_NAMES[index];
-  if (!name || !Number.isFinite(year)) return month;
-  return `${name} ${year}`;
+  const date = new Date(`${month}T00:00:00`);
+  if (!Number.isFinite(date.getTime())) return month;
+  const formatted = date.toLocaleDateString(localeTagFor(lang), {
+    month: 'long',
+    year: 'numeric',
+  });
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }
 
 export default function BudgetsScreen() {
@@ -72,6 +61,10 @@ export default function BudgetsScreen() {
     refresh,
   } = useBudgets();
   const { avatarSignedUrl } = useProfile();
+  // C6: copy + month format follow the OS language (ADR-0008, R10).
+  const language = useLanguage();
+  const t = dictionaryFor(language);
+  const tb = t.budgets;
 
   return (
     <Screen style={styles.frame} testID="budgets-screen">
@@ -83,8 +76,10 @@ export default function BudgetsScreen() {
         </Text>
         {month ? (
           <Text testID="budgets-month" style={[typography.bodySm, styles.month]}>
-            {formatMonthLabel(month)}
-            {budgets.length > 0 ? ` · ${budgets.length} alokasi aktif` : ''}
+            {formatMonthLabel(month, language)}
+            {budgets.length > 0
+              ? ` · ${fill(tb.screen.countActive, { count: budgets.length })}`
+              : ''}
           </Text>
         ) : null}
       </Card>
@@ -118,8 +113,8 @@ export default function BudgetsScreen() {
           <>
             <SectionHeader
               testID="budgets-allocations"
-              title="Alokasi Kategori"
-              actionLabel="Tambah"
+              title={tb.screen.allocations}
+              actionLabel={tb.screen.add}
               onAction={() => router.push('/budget-form')}
             />
             {budgets.map((budget) => (
@@ -133,12 +128,18 @@ export default function BudgetsScreen() {
 }
 
 function BudgetCard({ budget }: { budget: BudgetStatus }) {
+  // C6: labels + amount/percent format follow the OS language (ADR-0008, R10).
+  const language = useLanguage();
+  const t = dictionaryFor(language);
   return (
     <Card style={styles.card}>
       <Pressable
         testID={`budget-card-${budget.budgetId}`}
         accessibilityRole="button"
-        accessibilityLabel={`Budget ${budget.categoryName}, ${formatPercent(budget.percent)}`}
+        accessibilityLabel={fill(t.budgets.screen.cardA11y, {
+          name: budget.categoryName,
+          percent: formatPercent(budget.percent, language),
+        })}
         onPress={() =>
           router.push({ pathname: '/budget-form', params: { id: budget.budgetId } })
         }
@@ -157,8 +158,8 @@ function BudgetCard({ budget }: { budget: BudgetStatus }) {
           </Text>
         </View>
         <Text style={[typography.currencySm, styles.spent]} numberOfLines={1}>
-          Rp {formatGrouped(budget.spent)}
-          <Text style={styles.limit}> / Rp {formatGrouped(budget.amountLimit)}</Text>
+          Rp {formatGrouped(budget.spent, language)}
+          <Text style={styles.limit}> / Rp {formatGrouped(budget.amountLimit, language)}</Text>
         </Text>
         <View
           testID={`budget-state-${budget.budgetId}`}
@@ -168,7 +169,7 @@ function BudgetCard({ budget }: { budget: BudgetStatus }) {
           ]}
         >
           <Text style={[typography.bodySm, styles.stateText]}>
-            {budgetStateLabels[budget.state]} · {formatPercent(budget.percent)}
+            {budgetStateLabels[budget.state]} · {formatPercent(budget.percent, language)}
           </Text>
         </View>
       </View>
@@ -184,6 +185,9 @@ function AlertBanner({
   alert: FiredAlert;
   onDismiss: () => void;
 }) {
+  // C6: alert banner copy follows the OS language (ADR-0008).
+  const language = useLanguage();
+  const t = dictionaryFor(language);
   return (
     <View testID={`budget-alert-${alert.categoryId}`} style={styles.alert}>
       <MaterialIcons
@@ -193,14 +197,17 @@ function AlertBanner({
       />
       <View style={styles.alertBody}>
         <Text style={[typography.bodyMd, styles.alertTitle]} numberOfLines={2}>
-          {alert.threshold === 'exceeded_100'
-            ? `Budget ${alert.categoryName} terlampaui`
-            : `Budget ${alert.categoryName} hampir habis`}
+          {fill(
+            alert.threshold === 'exceeded_100'
+              ? t.budgets.alert.exceededTitle
+              : t.budgets.alert.warningTitle,
+            { categoryName: alert.categoryName },
+          )}
         </Text>
       </View>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Tutup notifikasi"
+        accessibilityLabel={t.budgets.screen.dismissAlert}
         onPress={onDismiss}
         style={styles.alertCloseButton}
       >
@@ -211,13 +218,15 @@ function AlertBanner({
 }
 
 function BudgetsEmptyState() {
+  // C6: empty-state copy follows the OS language (ADR-0008).
+  const t = dictionaryFor(useLanguage());
   return (
     <EmptyStateCard
       testID="budgets-empty"
       icon="savings"
-      title="Belum ada budget bulan ini"
-      description="Tetapkan batas belanja per kategori. Bulan baru mulai otomatis dari nol. Tanpa perlu reset manual."
-      actionLabel="Buat budget pertama"
+      title={t.budgets.screen.emptyTitle}
+      description={t.budgets.screen.emptyBody}
+      actionLabel={t.budgets.screen.emptyAction}
       onAction={() => router.push('/budget-form')}
     />
   );
