@@ -23,7 +23,7 @@ import {
   View,
 } from 'react-native';
 
-import { EmptyStateCard, AppHeader, Card, PrimaryButton, Screen, SectionHeader } from '@/components';
+import { EmptyStateCard, AppHeader, Card, ErrorStateCard, Screen, SectionHeader } from '@/components';
 import {
   budgetStateLabels,
   formatPercent,
@@ -107,12 +107,11 @@ export default function BudgetsScreen() {
             <ActivityIndicator color={colors.accent} />
           </View>
         ) : error ? (
-          <View style={styles.center}>
-            <Text testID="budgets-error" style={[typography.bodyMd, styles.error]}>
-              {error}
-            </Text>
-            <PrimaryButton label="Coba lagi" onPress={() => void refresh()} />
-          </View>
+          <ErrorStateCard
+            testID="budgets-error"
+            message={error}
+            onRetry={() => void refresh()}
+          />
         ) : budgets.length === 0 ? (
           <BudgetsEmptyState />
         ) : (

@@ -95,3 +95,18 @@ Hasil review preview build Android + Expo Go oleh owner, diverifikasi di HP:
 - Jangan menutup issue #28 (spec v1.1) sampai V6 lolos dan bukti terlampir.
 - Ambil ticket dari frontier: semua blocker harus already closed.
 - Istilah mengikuti `CONTEXT.md`. Keputusan keras: ADR-0001..0006, PRD R6–R8.
+
+---
+
+## v1.2 batch 1 — nilai user langsung, risiko kecil
+
+Sumber: `docs/roadmap.md` §6.2. Urutan mengikat: A6 → A3 → A4 → A5 → D4.
+Semua ticket `ready-for-agent`. Tanpa DDL baru sejauh view/RPC yang ada mencukupi.
+
+| Ticket | Issue | Blocked by | Deliverable |
+|---|---|---|---|
+| A6 — Ringkasan bulan lalu di Dashboard | #45 | — | Kartu Dashboard dari `v_monthly_summary` (bulan berjalan vs bulan lalu, delta %, tap → Analytics) — implementasi di working tree, lolos review device 2026-09-22 |
+| A3 — Cari & filter riwayat | #46 | #45 | Layar `/search`: teks (note+kategori+dompet) + segmen jenis, pola query untuk A4 |
+| A4 — Bulk edit kategori | #47 | #46 | Mode pilih di `/search` + ubah kategori bulk (sejenis terkunci, transfer nonaktif) |
+| A5 — Inbox notifikasi | #48 | #47 | `read_at` di `budget_alerts` + layar `/notifications` (bel → inbox, tap baca + ke Budgets) — kode selesai, migrasi siap apply, menunggu apply sebelum review device |
+| D4 — Error handling terlihat | #49 | #48 | Banner offline + auto-refresh + `ErrorStateCard` retry seragam |

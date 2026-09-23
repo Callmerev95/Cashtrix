@@ -24,13 +24,14 @@ import {
 
 import { onLocalDataPurge } from '@/supabase';
 
-import { fetchOverview, fetchTimezone, listWalletFilters } from './api';
+import { fetchMonthlySummary, fetchOverview, fetchTimezone, listWalletFilters } from './api';
 import {
   RANGE_PRESETS,
   isDailyRange,
   isEmptyRange,
   resolveRange,
   type AnalyticsOverview,
+  type MonthlyComparison,
   type RangePreset,
 } from './domain';
 
@@ -46,6 +47,9 @@ type AnalyticsContextValue = {
   loading: boolean;
   error: string | null;
   isEmpty: boolean;
+  /** Current vs previous calendar month from `v_monthly_summary` (A6). */
+  monthly: MonthlyComparison | null;
+  monthlyLoading: boolean;
   refresh: () => Promise<void>;
 };
 
@@ -58,6 +62,10 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // A6 monthly pair: independent of the selected range — it always shows the
+  // current calendar month vs the previous one.
+  const [monthly, setMonthly] = useState<MonthlyComparison | null>(null);
+  const [monthlyLoaded, setMonthlyLoaded] = useState(false);
 
   const mounted = useRef(true);
   // Monotonic request id: a slow response for an older range must not overwrite
@@ -100,6 +108,8 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
         setRangeState('1M');
         setWallets([]);
         setError(null);
+        setMonthly(null);
+        setMonthlyLoaded(false);
       }),
     [],
   );
@@ -143,6 +153,28 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     void load(range, walletId);
   }, [load, range, walletId]);
 
+  // A6: the monthly pair follows the same shape — fetched once on mount and
+  // re-read by `refresh()` (so every transaction mutation refreshes it), but
+  // never on range/wallet changes, which it does not depend on. Failures are
+  // best-effort: a missing summary hides the card's numbers, not the screen.
+  const loadMonthly = useCallback((): Promise<void> => {
+    return fetchTimezone()
+      .then((tz) => fetchMonthlySummary(tz))
+      .then((payload) => {
+        if (!mounted.current) return;
+        setMonthly(payload);
+        setMonthlyLoaded(true);
+      })
+      .catch(() => {
+        if (!mounted.current) return;
+        setMonthlyLoaded(true);
+      });
+  }, []);
+
+  useEffect(() => {
+    void loadMonthly();
+  }, [loadMonthly]);
+
   const requestedKey = rangeKey(range, walletId);
   const loading = loadedKey !== requestedKey && error === null;
 
@@ -156,8 +188,11 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refresh = useCallback(
-    () => Promise.all([load(range, walletId), loadWallets()]).then(() => undefined),
-    [load, loadWallets, range, walletId],
+    () =>
+      Promise.all([load(range, walletId), loadWallets(), loadMonthly()]).then(
+        () => undefined,
+      ),
+    [load, loadWallets, loadMonthly, range, walletId],
   );
 
   const value = useMemo<AnalyticsContextValue>(
@@ -171,9 +206,23 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       loading,
       error,
       isEmpty: isEmptyRange(overview),
+      monthly,
+      monthlyLoading: !monthlyLoaded,
       refresh,
     }),
-    [range, setRange, wallets, walletId, setWalletId, overview, loading, error, refresh],
+    [
+      range,
+      setRange,
+      wallets,
+      walletId,
+      setWalletId,
+      overview,
+      loading,
+      error,
+      refresh,
+      monthly,
+      monthlyLoaded,
+    ],
   );
 
   return (

@@ -446,3 +446,107 @@ export function donutSegmentSliceIndices(
     sliceIndexAtTurn(slices, (index + 0.5) / segments),
   );
 }
+
+// ---------------------------------------------------------------------------
+// Monthly summary (A6 — "ringkasan bulan lalu" on the Dashboard)
+// ---------------------------------------------------------------------------
+
+/**
+ * One month of server-aggregated totals, as read from `v_monthly_summary`.
+ * `month` is the first-of-month key (`YYYY-MM-01`) in the user's timezone —
+ * the same grain the view groups by, so the client never re-derives a month
+ * boundary (PRD §4.2).
+ */
+export type MonthlyTotals = {
+  month: string;
+  income: number;
+  expense: number;
+  net: number;
+};
+
+/** Current calendar month next to the one before it (both server rows). */
+export type MonthlyComparison = {
+  current: MonthlyTotals;
+  previous: MonthlyTotals;
+};
+
+const ZERO_MONTH = (month: string): MonthlyTotals => ({
+  month,
+  income: 0,
+  expense: 0,
+  net: 0,
+});
+
+/**
+ * First-of-month key (`YYYY-MM-01`) of the month `now` falls in, as seen in
+ * `tz`. Reuses `formatDateKey` so the WIB/UTC boundary behaves exactly like
+ * the server's `month` column (a 1 Okt 00:30 WIB transaction belongs to
+ * October, not September).
+ */
+export function monthKeyInTz(now: Date = new Date(), tz: string = 'Asia/Jakarta'): string {
+  return `${formatDateKey(now, tz).slice(0, 7)}-01`;
+}
+
+/** First-of-month key of the month immediately before `monthKey`. */
+export function prevMonthKey(monthKey: string): string {
+  const year = Number(monthKey.slice(0, 4));
+  const month = Number(monthKey.slice(5, 7));
+  if (month <= 1) return `${year - 1}-12-01`;
+  return `${year}-${String(month - 1).padStart(2, '0')}-01`;
+}
+
+/** `September 2026` — the card title for a month key (id-ID). */
+export function formatMonthTitle(monthKey: string): string {
+  const date = new Date(`${monthKey}T00:00:00`);
+  const formatted = date.toLocaleDateString('id-ID', {
+    month: 'long',
+    year: 'numeric',
+  });
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+}
+
+/**
+ * Folds `v_monthly_summary` rows into the current/previous pair. A month with
+ * no row means "no transactions that month", so it zero-fills — the card
+ * renders zeros with an invitation, never a hole.
+ */
+export function toMonthlyComparison(
+  rows: { month: string; income: number; expense: number; net: number }[],
+  currKey: string,
+  prevKey: string,
+): MonthlyComparison {
+  const byMonth = new Map(rows.map((row) => [row.month, row]));
+  const current = byMonth.get(currKey) ?? ZERO_MONTH(currKey);
+  const previous = byMonth.get(prevKey) ?? ZERO_MONTH(prevKey);
+  return {
+    current: { ...current, month: currKey },
+    previous: { ...previous, month: prevKey },
+  };
+}
+
+/**
+ * Month-over-month delta in percent: `(current - previous) / |previous| * 100`,
+ * or `null` when the previous month was zero (the KPI renders `—`). The
+ * absolute denominator mirrors the server's net-delta formula in
+ * `analytics_overview`; for income/expense the previous total is never
+ * negative, so this agrees with the plain formula there too. Never returns
+ * `NaN`/`Infinity` — like `formatDelta`, this is presentation math over server
+ * aggregates, not aggregation itself (cf. `toBars` heights).
+ */
+export function monthlyDelta(current: number, previous: number): number | null {
+  if (previous === 0) return null;
+  const value = ((current - previous) / Math.abs(previous)) * 100;
+  return Number.isFinite(value) ? value : null;
+}
+
+/** `true` when neither month has any movement — the card shows the invite. */
+export function isEmptyMonthly(comparison: MonthlyComparison | null): boolean {
+  if (!comparison) return true;
+  const { current, previous } = comparison;
+  return (
+    current.income === 0 &&
+    current.expense === 0 &&
+    previous.income === 0 &&
+    previous.expense === 0
+  );
+}

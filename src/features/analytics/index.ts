@@ -1,5 +1,10 @@
 export { AnalyticsProvider, useAnalytics } from './analytics-context';
-export { fetchOverview, fetchTimezone, listWalletFilters } from './api';
+export {
+  fetchMonthlySummary,
+  fetchOverview,
+  fetchTimezone,
+  listWalletFilters,
+} from './api';
 export type { FetchOverviewInput } from './api';
 export {
   DONUT_SEGMENTS,
@@ -13,15 +18,21 @@ export {
   enumerateBuckets,
   formatDateKey,
   formatDelta,
+  formatMonthTitle,
   isDailyRange,
+  isEmptyMonthly,
   isEmptyRange,
   isRangePreset,
+  monthKeyInTz,
+  monthlyDelta,
+  prevMonthKey,
   rangeLabels,
   resolveRange,
   sliceIndexAtTurn,
   toArcOffsets,
   toBars,
   toDonutSlices,
+  toMonthlyComparison,
 } from './domain';
 export type {
   AnalyticsOverview,
@@ -32,12 +43,15 @@ export type {
   DonutSlice,
   MoneyDelta,
   MoneyTotals,
+  MonthlyComparison,
+  MonthlyTotals,
   RangePreset,
   SeriesBucket,
 } from './domain';
 export { DonutChart } from './components/donut-chart';
 export { BarChart } from './components/bar-chart';
 export { KpiHeader } from './components/kpi-header';
+export { MonthlySummaryCard } from './components/monthly-summary-card';
 export { BreakdownList } from './components/breakdown-list';
 export { AnalyticsEmptyState } from './components/empty-state';
 export {

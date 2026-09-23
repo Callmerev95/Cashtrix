@@ -8,6 +8,15 @@ jest.mock(
   () => require('./mocks/async-storage'),
 );
 
+// D4 (issue #49): NetInfo's internals touch the native bridge, which does not
+// exist in Jest (`isInternetReachable` reads undefined and throws on mount).
+// Default stand-in is always-online; tests that drive connectivity inject
+// their own mock and never touch this one.
+jest.mock(
+  require.resolve('@react-native-community/netinfo'),
+  () => require('./mocks/netinfo'),
+);
+
 // V1 (issue #30): the observability sink imports `@sentry/react-native`
 // statically and `app/_layout.tsx` calls `initSentry()` on mount, which the
 // navigation tests exercise. The native module cannot load in Jest, so it is

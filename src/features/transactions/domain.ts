@@ -548,3 +548,97 @@ export function canSelectDay(day: Date, now: Date = new Date()): boolean {
 export function formatMonthLabel(month: Date): string {
   return `${MONTH_NAMES_ID[month.getMonth()]} ${month.getFullYear()}`;
 }
+
+// ---------------------------------------------------------------------------
+// Search (A3 — "cari & filter riwayat")
+//
+// The query builder A4 (bulk edit) reuses: `TransactionKindFilter` narrows by
+// `type`, `buildSearchPattern` turns free text into one PostgREST `ilike`
+// pattern matched OR-wise against note/category/wallet names server-side.
+// ---------------------------------------------------------------------------
+
+/** Kind narrow-down for search; `all` means "no type filter". */
+export type TransactionKindFilter = 'all' | TransactionType;
+
+export const KIND_FILTER_OPTIONS: {
+  value: TransactionKindFilter;
+  label: string;
+}[] = [
+  { value: 'all', label: 'Semua' },
+  { value: 'expense', label: 'Pengeluaran' },
+  { value: 'income', label: 'Pemasukan' },
+  { value: 'transfer', label: 'Transfer' },
+];
+
+/** Text input debounce so every keystroke is not a round-trip. */
+export const SEARCH_DEBOUNCE_MS = 300;
+
+/**
+ * Turns free text into a single `*…*` contains-pattern for the server `.or()`
+ * clause, or `null` when there is nothing to match. `,()\"` are structural to
+ * the PostgREST `or()` grammar and cannot appear in a value — they are
+ * stripped (not escaped) so a paste can never break the query. A `%`/`_`
+ * typed by the user keeps its LIKE meaning; that only ever widens, never
+ * hides, and the row set stays server-truth.
+ */
+export function buildSearchPattern(query: string): string | null {
+  const cleaned = query.replace(/[,()"]/g, '').trim();
+  return cleaned.length > 0 ? `*${cleaned}*` : null;
+}
+
+/** Whether the screen should query at all (vs showing the idle hint). */
+export function isSearchActive(
+  query: string,
+  kind: TransactionKindFilter,
+): boolean {
+  return buildSearchPattern(query) !== null || kind !== 'all';
+}
+
+// ---------------------------------------------------------------------------
+// Bulk select (A4 — bulk edit kategori)
+//
+// Selection is a plain id list; the locked kind derives from the selected
+// rows (first row wins), so there is no kind state to drift. `toggleBulkRow`
+// is the single gate: transfers can never enter, and a second kind can never
+// join — the screen turns the rejection code into a hint.
+// ---------------------------------------------------------------------------
+
+/** Ids currently checked + the kind they locked (null when empty). */
+export type BulkSelection = {
+  ids: string[];
+  kind: TransactionType | null;
+};
+
+export type BulkRejectReason = 'transfer' | 'kind';
+
+/**
+ * Derives the selection from the checked ids and the rows on screen. Ids
+ * that left the page (a refetch raced a check) are ignored for the kind, so
+ * the lock never points at a row the user cannot see.
+ */
+export function bulkSelectionFor(
+  ids: string[],
+  rows: Pick<Transaction, 'id' | 'type'>[],
+): BulkSelection {
+  const first = rows.find((row) => ids.includes(row.id)) ?? null;
+  return { ids, kind: first?.type ?? null };
+}
+
+/**
+ * One tap on a row in select mode. Returns the next id list, or a rejection
+ * code the screen renders as a hint (the list is then unchanged).
+ */
+export function toggleBulkRow(
+  ids: string[],
+  row: Pick<Transaction, 'id' | 'type'>,
+  lockedKind: TransactionType | null,
+): { ids: string[]; rejected: BulkRejectReason | null } {
+  if (row.type === 'transfer') return { ids, rejected: 'transfer' };
+  if (ids.includes(row.id)) {
+    return { ids: ids.filter((id) => id !== row.id), rejected: null };
+  }
+  if (lockedKind !== null && row.type !== lockedKind) {
+    return { ids, rejected: 'kind' };
+  }
+  return { ids: [...ids, row.id], rejected: null };
+}

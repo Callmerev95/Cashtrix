@@ -17,8 +17,10 @@ import { supabase } from '@/supabase';
 
 import {
   PAGE_SIZE,
+  buildSearchPattern,
   type Category,
   type Transaction,
+  type TransactionKindFilter,
   type TransactionType,
   type WalletOption,
 } from './domain';
@@ -92,6 +94,82 @@ export async function getTransaction(id: string): Promise<Transaction | null> {
 
   if (error) throw error;
   return data ? toTransaction(data as FeedRow) : null;
+}
+
+export type SearchTransactionsInput = {
+  query: string;
+  kind: TransactionKindFilter;
+  limit?: number;
+  offset?: number;
+};
+
+/**
+ * Search + kind filter over `v_transactions_feed` (A3). Same total order and
+ * page size as the history feed, so the result list reuses
+ * `TransactionHistoryList` unchanged — and A4 (bulk edit) reuses this query
+ * with its own selection state on top.
+ *
+ * Text matches OR-wise against note, category name and both wallet names
+ * (source + transfer destination), so "makanan" finds an un-noted food row
+ * and "gopay" finds a transfer into GoPay. `RLS` scopes everything to the
+ * caller, like the feed.
+ */
+export async function searchTransactions(
+  input: SearchTransactionsInput,
+): Promise<Transaction[]> {
+  const limit = input.limit ?? PAGE_SIZE;
+  const offset = input.offset ?? 0;
+  const pattern = buildSearchPattern(input.query);
+
+  let query = supabase
+    .from('v_transactions_feed')
+    .select(FEED_COLUMNS)
+    .order('occurred_at', { ascending: false })
+    .order('id', { ascending: false });
+
+  if (input.kind !== 'all') {
+    query = query.eq('type', input.kind);
+  }
+  if (pattern) {
+    query = query.or(
+      `note.ilike.${pattern},category_name.ilike.${pattern},wallet_name.ilike.${pattern},counterparty_wallet_name.ilike.${pattern}`,
+    );
+  }
+
+  const { data, error } = await query.range(offset, offset + limit - 1);
+
+  if (error) throw error;
+  return ((data ?? []) as FeedRow[]).map(toTransaction);
+}
+
+export type BulkUpdateCategoryInput = {
+  ids: string[];
+  categoryId: string;
+  /** Server-enforced uniformity: only rows of this type move. */
+  kind: TransactionType;
+};
+
+/**
+ * Bulk recategorise (A4): one UPDATE for the whole checked set. RLS scopes
+ * the write to the caller's rows (a foreign id silently no-ops and is
+ * excluded from the count), and the `type` guard keeps a UI bug from parking
+ * an expense row under an income category where no budget/ring would see it.
+ * Returns the number of rows that actually moved.
+ */
+export async function bulkUpdateCategory(
+  input: BulkUpdateCategoryInput,
+): Promise<number> {
+  if (input.ids.length === 0) return 0;
+
+  const { data, error } = await supabase
+    .from('transactions')
+    .update({ category_id: input.categoryId })
+    .in('id', input.ids)
+    .eq('type', input.kind)
+    .select('id');
+
+  if (error) throw error;
+  return ((data ?? []) as { id: string }[]).length;
 }
 
 export type TransactionDraft = {

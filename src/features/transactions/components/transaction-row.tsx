@@ -20,10 +20,18 @@ export function TransactionRow({
   transaction,
   onPress,
   testID,
+  selecting = false,
+  selected = false,
+  dimmed = false,
 }: {
   transaction: Transaction;
   onPress?: () => void;
   testID?: string;
+  /** A4 select mode: the icon well becomes a check circle. */
+  selecting?: boolean;
+  selected?: boolean;
+  /** Non-selectable rows (transfers in select mode) render muted. */
+  dimmed?: boolean;
 }) {
   const income = transaction.type === 'income';
   const transfer = transaction.type === 'transfer';
@@ -36,13 +44,26 @@ export function TransactionRow({
 
   const content = (
     <>
-      <View style={styles.iconWell}>
-        <MaterialIcons
-          name={transaction.categoryIcon as MaterialIconName}
-          size={20}
-          color={income ? colors.accent : colors.textPrimary}
-        />
-      </View>
+      {selecting ? (
+        <View
+          testID={testID ? `${testID}-check` : undefined}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: selected, disabled: dimmed }}
+          style={[styles.check, selected && styles.checkSelected]}
+        >
+          {selected ? (
+            <MaterialIcons name="check" size={18} color={colors.textOnAccent} />
+          ) : null}
+        </View>
+      ) : (
+        <View style={styles.iconWell}>
+          <MaterialIcons
+            name={transaction.categoryIcon as MaterialIconName}
+            size={20}
+            color={income ? colors.accent : colors.textPrimary}
+          />
+        </View>
+      )}
 
       <View style={styles.center}>
         <Text style={[typography.bodyMd, styles.name]} numberOfLines={1}>
@@ -69,7 +90,7 @@ export function TransactionRow({
 
   if (!onPress) {
     return (
-      <View testID={testID} style={styles.row}>
+      <View testID={testID} style={[styles.row, dimmed && styles.dimmed]}>
         {content}
       </View>
     );
@@ -84,7 +105,11 @@ export function TransactionRow({
         transaction.amount,
       )}, ${transaction.walletName}`}
       onPress={onPress}
-      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.row,
+        dimmed && styles.dimmed,
+        pressed && styles.pressed,
+      ]}
     >
       {content}
     </Pressable>
@@ -109,6 +134,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surfaceElevated,
+  },
+  check: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
+  },
+  checkSelected: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  dimmed: {
+    opacity: 0.5,
   },
   center: {
     flex: 1,

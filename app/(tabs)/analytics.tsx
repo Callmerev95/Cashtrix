@@ -27,7 +27,7 @@ import {
   toDonutSlices,
   useAnalytics,
 } from '@/features/analytics';
-import { Screen, AppHeader } from '@/components';
+import { Screen, AppHeader, ErrorStateCard } from '@/components';
 import { useProfile } from '@/features/profile';
 import { colors, gradients, radius, spacing, typography } from '@/theme';
 
@@ -42,6 +42,7 @@ export default function AnalyticsScreen() {
     loading,
     error,
     isEmpty,
+    refresh,
   } = useAnalytics();
   const { avatarSignedUrl } = useProfile();
 
@@ -78,9 +79,11 @@ export default function AnalyticsScreen() {
             <ActivityIndicator color={colors.accent} />
           </View>
         ) : error ? (
-          <Text testID="analytics-error" style={[typography.bodyMd, styles.error]}>
-            {error}
-          </Text>
+          <ErrorStateCard
+            testID="analytics-error"
+            message={error}
+            onRetry={() => void refresh()}
+          />
         ) : isEmpty || !overview ? (
           <AnalyticsEmptyState />
         ) : (

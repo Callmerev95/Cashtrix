@@ -28,6 +28,7 @@ import {
 import { router } from 'expo-router';
 
 import { EmptyStateCard } from '@/components/empty-state-card';
+import { ErrorStateCard } from '@/components/error-state-card';
 import { colors, spacing, typography } from '@/theme';
 
 import { groupByDay, type Transaction } from '../domain';
@@ -44,6 +45,9 @@ export function TransactionHistoryList({
   contentContainerStyle,
   emptyLabel = 'Belum ada riwayat transaksi.',
   testID = 'transaction-history',
+  selecting = false,
+  selectedIds = [],
+  listError = null,
 }: {
   transactions: Transaction[];
   loading?: boolean;
@@ -55,6 +59,11 @@ export function TransactionHistoryList({
   contentContainerStyle?: StyleProp<ViewStyle>;
   emptyLabel?: string;
   testID?: string;
+  /** A4 select mode: rows render check circles; transfers render dimmed. */
+  selecting?: boolean;
+  selectedIds?: string[];
+  /** D4: empty-because-error renders retry instead of the "Catat" card. */
+  listError?: { message: string; onRetry: () => void } | null;
 }) {
   const sections = useMemo(
     () =>
@@ -76,6 +85,9 @@ export function TransactionHistoryList({
           key={item.id}
           testID={`transaction-${item.id}`}
           transaction={item}
+          selecting={selecting}
+          selected={selectedIds.includes(item.id)}
+          dimmed={selecting && item.type === 'transfer'}
           onPress={
             onPressTransaction ? () => onPressTransaction(item) : undefined
           }
@@ -83,6 +95,11 @@ export function TransactionHistoryList({
       )}
       renderSectionHeader={({ section }) => (
         <View style={styles.dividerWrap}>
+          {/* No rule above the first group: the section header (Riwayat /
+              search controls) already carries the divider above it. */}
+          {section.key === sections[0]?.key ? null : (
+            <View style={styles.rule} />
+          )}
           <Text
             testID={`${testID}-day-${section.key}`}
             style={[typography.labelUppercase, styles.divider]}
@@ -96,6 +113,12 @@ export function TransactionHistoryList({
       ListEmptyComponent={
         loading ? (
           <Text style={[typography.bodyMd, styles.empty]}>Memuat riwayat…</Text>
+        ) : listError ? (
+          <ErrorStateCard
+            testID={`${testID}-error`}
+            message={listError.message}
+            onRetry={listError.onRetry}
+          />
         ) : (
           <EmptyStateCard
             testID={`${testID}-empty`}
@@ -131,6 +154,13 @@ const styles = StyleSheet.create({
   dividerWrap: {
     backgroundColor: colors.background,
     paddingTop: spacing.md,
+  },
+  // Hairline separating one day group from the previous (owner review A3:
+  // the kicker alone did not read as a boundary on device).
+  rule: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginBottom: spacing.sm,
   },
   divider: {
     marginBottom: spacing.xs,

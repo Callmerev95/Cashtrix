@@ -40,15 +40,20 @@ import {
   deleteBudget,
   fetchCurrentMonth,
   fetchTimezone,
+  listAlerts,
   listBudgetStatus,
+  markAlertRead,
+  markAllAlertsRead,
   recordAlert,
   upsertBudget,
 } from './api';
 import {
   thresholdForState,
+  unreadAlerts,
   type BudgetAlertThreshold,
   type BudgetState,
   type BudgetStatus,
+  type InboxAlert,
 } from './domain';
 import {
   alertCopy,
@@ -76,7 +81,13 @@ type BudgetsContextValue = {
   error: string | null;
   /** Alerts fired this session — rendered as in-app banners (work offline). */
   recentAlerts: FiredAlert[];
+  /** Persisted inbox (A5): fired alerts newest-first with read flags. */
+  alerts: InboxAlert[];
+  unreadCount: number;
+  alertsError: string | null;
   refresh: () => Promise<void>;
+  markRead: (id: string) => Promise<void>;
+  markAllRead: () => Promise<void>;
   save: (input: {
     userId: string;
     categoryId: string;
@@ -106,6 +117,8 @@ export function BudgetsProvider({ children }: { children: ReactNode }) {
   const [loadedMonth, setLoadedMonth] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [recentAlerts, setRecentAlerts] = useState<FiredAlert[]>([]);
+  const [alerts, setAlerts] = useState<InboxAlert[]>([]);
+  const [alertsError, setAlertsError] = useState<string | null>(null);
 
   const mounted = useRef(true);
   const inflight = useRef<Promise<void> | null>(null);
@@ -120,6 +133,24 @@ export function BudgetsProvider({ children }: { children: ReactNode }) {
     return () => {
       mounted.current = false;
     };
+  }, []);
+
+  // A5 inbox read. Independent from the status load below: an additive read
+  // must never fail the Budgets screen (e.g. an app version running ahead of
+  // its migration). Failures surface as `alertsError` on the inbox only.
+  const loadAlerts = useCallback((): Promise<void> => {
+    return listAlerts()
+      .then((next) => {
+        if (!mounted.current) return;
+        setAlerts(next);
+        setAlertsError(null);
+      })
+      .catch((cause: unknown) => {
+        if (!mounted.current) return;
+        setAlertsError(
+          cause instanceof Error ? cause.message : 'Gagal memuat notifikasi',
+        );
+      });
   }, []);
 
   const evaluateRows = useCallback(
@@ -193,6 +224,9 @@ export function BudgetsProvider({ children }: { children: ReactNode }) {
             // the notification (AC #8 — works without permission).
             await sendBudgetAlert(copy);
           }
+          // A5: the inbox re-reads so the bell dot lights on this same commit
+          // (never throws — see loadAlerts).
+          await loadAlerts();
         }
 
         return fired;
@@ -200,7 +234,7 @@ export function BudgetsProvider({ children }: { children: ReactNode }) {
         evaluating.current = false;
       }
     },
-    [],
+    [loadAlerts],
   );
 
   // State updates happen inside `.then`/`.catch`, never synchronously in the
@@ -243,6 +277,8 @@ export function BudgetsProvider({ children }: { children: ReactNode }) {
         setBudgets([]);
         setLoadedMonth(null);
         setRecentAlerts([]);
+        setAlerts([]);
+        setAlertsError(null);
         setError(null);
       }),
     [],
@@ -250,11 +286,15 @@ export function BudgetsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void load();
-  }, [load]);
+    void loadAlerts();
+  }, [load, loadAlerts]);
 
   const loading = loadedMonth === null && error === null;
 
-  const refresh = useCallback(() => load(), [load]);
+  const refresh = useCallback(
+    () => Promise.all([load(), loadAlerts()]).then(() => undefined),
+    [load, loadAlerts],
+  );
 
   const evaluateAndAlert = useCallback(
     async (input: {
@@ -330,6 +370,33 @@ export function BudgetsProvider({ children }: { children: ReactNode }) {
     setRecentAlerts((current) => current.filter((_, i) => i !== index));
   }, []);
 
+  // A5: pessimistic mark-read — the server commits first, the dot follows.
+  // A foreign id is an RLS no-op server-side; the local filter then changes
+  // nothing, which is the honest render of that outcome.
+  const markRead = useCallback(async (id: string) => {
+    await markAlertRead(id);
+    if (!mounted.current) return;
+    const stamped = new Date().toISOString();
+    setAlerts((current) =>
+      current.map((alert) =>
+        alert.id === id ? { ...alert, readAt: alert.readAt ?? stamped } : alert,
+      ),
+    );
+  }, []);
+
+  const markAllRead = useCallback(async () => {
+    await markAllAlertsRead();
+    if (!mounted.current) return;
+    const stamped = new Date().toISOString();
+    setAlerts((current) =>
+      current.map((alert) =>
+        alert.readAt === null ? { ...alert, readAt: stamped } : alert,
+      ),
+    );
+  }, []);
+
+  const unreadCount = useMemo(() => unreadAlerts(alerts).length, [alerts]);
+
   const value = useMemo<BudgetsContextValue>(
     () => ({
       month,
@@ -337,7 +404,12 @@ export function BudgetsProvider({ children }: { children: ReactNode }) {
       loading,
       error,
       recentAlerts,
+      alerts,
+      unreadCount,
+      alertsError,
       refresh,
+      markRead,
+      markAllRead,
       save,
       remove,
       evaluateAndAlert,
@@ -349,7 +421,12 @@ export function BudgetsProvider({ children }: { children: ReactNode }) {
       loading,
       error,
       recentAlerts,
+      alerts,
+      unreadCount,
+      alertsError,
       refresh,
+      markRead,
+      markAllRead,
       save,
       remove,
       evaluateAndAlert,

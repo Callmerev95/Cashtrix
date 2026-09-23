@@ -17,6 +17,7 @@ import { appFonts } from '@/fonts';
 import { AuthProvider, useAuth } from '@/features/auth';
 import { AnalyticsProvider } from '@/features/analytics';
 import { BudgetsProvider } from '@/features/budgets';
+import { ConnectivityProvider, ReconnectRefresh } from '@/features/connectivity';
 import {
   initObservability,
   initSentry,
@@ -143,17 +144,22 @@ export function DataProviders({ children }: { children: ReactNode }) {
   const userKey = session?.user.id ?? 'guest';
 
   return (
-    <WalletsProvider key={userKey}>
-      <TransactionsProvider>
-        <BudgetsProvider>
-          <AnalyticsProvider>
-            <RecurringProvider>
-              <ProfileProvider>{children}</ProfileProvider>
-            </RecurringProvider>
-          </AnalyticsProvider>
-        </BudgetsProvider>
-      </TransactionsProvider>
-    </WalletsProvider>
+    <ConnectivityProvider>
+      <WalletsProvider key={userKey}>
+        <TransactionsProvider>
+          <BudgetsProvider>
+            <AnalyticsProvider>
+              <RecurringProvider>
+                <ProfileProvider>
+                  <ReconnectRefresh />
+                  {children}
+                </ProfileProvider>
+              </RecurringProvider>
+            </AnalyticsProvider>
+          </BudgetsProvider>
+        </TransactionsProvider>
+      </WalletsProvider>
+    </ConnectivityProvider>
   );
 }
 

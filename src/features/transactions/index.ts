@@ -6,6 +6,7 @@ export {
 } from './transactions-context';
 export type { SaveInput, LatestTransaction } from './transactions-context';
 export {
+  bulkUpdateCategory,
   createTransaction,
   getTransaction,
   lastUsedWalletId,
@@ -14,21 +15,30 @@ export {
   listTransactions,
   listWalletOptions,
   restoreTransaction,
+  searchTransactions,
   softDeleteTransaction,
   updateTransaction,
 } from './api';
-export type { TransactionDraft } from './api';
+export type {
+  BulkUpdateCategoryInput,
+  SearchTransactionsInput,
+  TransactionDraft,
+} from './api';
 export {
   AMOUNT_MAX,
   CATEGORY_KINDS,
   DEFAULT_TRANSACTION_TYPE,
+  KIND_FILTER_OPTIONS,
   NOTE_MAX_LENGTH,
   PAGE_SIZE,
+  SEARCH_DEBOUNCE_MS,
   TRANSACTION_TYPES,
   TRANSFER_ICON,
   WEEKDAY_LABELS,
   amountMessages,
   buildMonthGrid,
+  buildSearchPattern,
+  bulkSelectionFor,
   canSelectDay,
   categoriesForKind,
   deletedTransactionLabel,
@@ -41,11 +51,13 @@ export {
   groupByDay,
   hasMoreAfter,
   isFutureDate,
+  isSearchActive,
   isTransactionType,
   newIdempotencyKey,
   normalizeNote,
   startOfDay,
   toDateKey,
+  toggleBulkRow,
   transferFeedLabel,
   transferMessages,
   validateAmount,
@@ -53,11 +65,14 @@ export {
 } from './domain';
 export type {
   AmountValidation,
+  BulkRejectReason,
+  BulkSelection,
   CalendarDay,
   Category,
   CategoryKind,
   Transaction,
   TransactionDayGroup,
+  TransactionKindFilter,
   TransactionType,
   TransferValidation,
   WalletOption,
@@ -66,6 +81,7 @@ export { TransactionRow } from './components/transaction-row';
 export { CategoryGrid } from './components/category-grid';
 export { CalendarGrid } from './components/calendar-grid';
 export { TypeSegmentedControl } from './components/type-segmented-control';
+export { SearchKindControl } from './components/search-kind-control';
 export { AmountField } from './components/amount-field';
 export { DeleteConfirmSheet } from './components/delete-confirm-sheet';
 export { TransactionHistoryList } from './components/transaction-history-list';

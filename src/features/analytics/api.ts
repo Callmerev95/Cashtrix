@@ -13,7 +13,8 @@
  */
 import { supabase } from '@/supabase';
 
-import type { AnalyticsOverview, DateRange } from './domain';
+import type { AnalyticsOverview, DateRange, MonthlyComparison } from './domain';
+import { monthKeyInTz, prevMonthKey, toMonthlyComparison } from './domain';
 
 /** Raw JSON shape returned by the `analytics_overview` RPC. */
 type OverviewPayload = {
@@ -143,4 +144,40 @@ export async function fetchTimezone(): Promise<string> {
 
   if (error) throw error;
   return (data as { timezone: string } | null)?.timezone ?? 'Asia/Jakarta';
+}
+
+/** Raw `v_monthly_summary` row (numeric columns arrive as strings). */
+type MonthlySummaryRow = {
+  month: string;
+  total_income: number | string;
+  total_expense: number | string;
+  net: number | string;
+};
+
+/**
+ * The Dashboard's "ringkasan bulan lalu" (A6): the current calendar month next
+ * to the previous one, read from `v_monthly_summary` — no new DDL, no client
+ * aggregation. The view is `security invoker`, so RLS scopes both rows to the
+ * caller; a month with no row zero-fills in `toMonthlyComparison`.
+ */
+export async function fetchMonthlySummary(
+  tz: string,
+  now: Date = new Date(),
+): Promise<MonthlyComparison> {
+  const currKey = monthKeyInTz(now, tz);
+  const prevKey = prevMonthKey(currKey);
+
+  const { data, error } = await supabase
+    .from('v_monthly_summary')
+    .select('month,total_income,total_expense,net')
+    .in('month', [prevKey, currKey]);
+
+  if (error) throw error;
+  const rows = ((data ?? []) as MonthlySummaryRow[]).map((row) => ({
+    month: row.month,
+    income: num(row.total_income),
+    expense: num(row.total_expense),
+    net: num(row.net),
+  }));
+  return toMonthlyComparison(rows, currKey, prevKey);
 }

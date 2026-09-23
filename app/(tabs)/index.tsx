@@ -15,8 +15,8 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { EmptyStateCard, AppHeader, Screen, SectionHeader } from '@/components';
-import { useAnalytics } from '@/features/analytics';
+import { EmptyStateCard, AppHeader, ErrorStateCard, Screen, SectionHeader } from '@/components';
+import { MonthlySummaryCard, useAnalytics } from '@/features/analytics';
 import { useAuth } from '@/features/auth';
 import { useBudgets } from '@/features/budgets';
 import { displayNameOrEmail, useProfile } from '@/features/profile';
@@ -45,9 +45,13 @@ const DATE_FORMAT: Intl.DateTimeFormatOptions = {
 
 export default function DashboardScreen() {
   const { session } = useAuth();
-  const { wallets, summary, loading, refresh: refreshWallets } = useWallets();
-  const { recentAlerts, refresh: refreshBudgets, evaluateAndAlert } = useBudgets();
-  const { refresh: refreshAnalytics } = useAnalytics();
+  const { wallets, summary, loading, error: walletsError, refresh: refreshWallets } = useWallets();
+  const { unreadCount, refresh: refreshBudgets, evaluateAndAlert } = useBudgets();
+  const {
+    monthly,
+    monthlyLoading,
+    refresh: refreshAnalytics,
+  } = useAnalytics();
   const { avatarSignedUrl, profile } = useProfile();
   const {
     transactions,
@@ -58,6 +62,8 @@ export default function DashboardScreen() {
     lastDeleted,
     undoDelete,
     dismissUndo,
+    error: transactionsError,
+    refresh: refreshTransactions,
   } = useTransactions();
   const insets = useSafeAreaInsets();
 
@@ -91,27 +97,27 @@ export default function DashboardScreen() {
             testID="dashboard-alerts"
             accessibilityRole="button"
             accessibilityLabel={
-              recentAlerts.length > 0
-                ? `${recentAlerts.length} notifikasi budget, buka Budgets`
-                : 'Buka Budgets'
+              unreadCount > 0
+                ? `${unreadCount} notifikasi belum dibaca, buka Notifikasi`
+                : 'Buka Notifikasi'
             }
-            onPress={() => router.push('/(tabs)/budgets')}
+            onPress={() => router.push('/notifications')}
             style={styles.iconButton}
           >
             <MaterialIcons
               name={
-                recentAlerts.length > 0
+                unreadCount > 0
                   ? 'notifications-active'
                   : 'notifications-none'
               }
               size={22}
               color={
-                recentAlerts.length > 0
+                unreadCount > 0
                   ? colors.accent
                   : colors.textSecondary
               }
             />
-            {recentAlerts.length > 0 ? (
+            {unreadCount > 0 ? (
               <View style={styles.alertDot} />
             ) : null}
           </Pressable>
@@ -132,7 +138,13 @@ export default function DashboardScreen() {
           onAction={() => router.push('/wallets')}
         />
 
-        {wallets.length === 0 && !loading ? (
+        {walletsError && wallets.length === 0 && !loading ? (
+          <ErrorStateCard
+            testID="dashboard-wallets-error"
+            message={walletsError}
+            onRetry={() => void refreshWallets()}
+          />
+        ) : wallets.length === 0 && !loading ? (
           <EmptyStateCard
             icon="account-balance-wallet"
             title="Dompet kosong"
@@ -167,14 +179,21 @@ export default function DashboardScreen() {
       </View>
 
       <View style={styles.section}>
+        <MonthlySummaryCard
+          summary={monthly}
+          loading={monthlyLoading}
+          onPress={() => router.push('/(tabs)/analytics')}
+        />
+      </View>
+
+      <View style={styles.rule} />
+
+      <View style={styles.section}>
         <SectionHeader
           testID="dashboard-history"
           title="Riwayat"
-          actionLabel={
-            transactions.length > 0
-              ? `${transactions.length} transaksi`
-              : undefined
-          }
+          actionLabel="Cari"
+          onAction={() => router.push('/search')}
         />
       </View>
     </View>
@@ -190,6 +209,14 @@ export default function DashboardScreen() {
         onEndReached={() => {
           if (hasMore && !loadingMore) void loadMore();
         }}
+        listError={
+          transactionsError && !loadingTransactions
+            ? {
+                message: transactionsError,
+                onRetry: () => void refreshTransactions(),
+              }
+            : null
+        }
         contentContainerStyle={[
           styles.body,
           { paddingTop: insets.top + spacing.xl },
@@ -270,6 +297,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
   },
   section: {
+    marginTop: spacing.xl,
+  },
+  // Hairline between the monthly summary and the history (owner review A3).
+  rule: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
     marginTop: spacing.xl,
   },
   meta: {

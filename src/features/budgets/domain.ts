@@ -193,3 +193,66 @@ export function formatPercent(percent: number): string {
       : rounded.toFixed(1).replace('.', ',');
   return `${text}%`;
 }
+
+// ---------------------------------------------------------------------------
+// Inbox (A5 — riwayat alert di app)
+// ---------------------------------------------------------------------------
+
+/**
+ * One persisted alert row for the inbox: the fired alert plus its read flag.
+ * `readAt` null = unread (including every pre-A5 row — the migration leaves
+ * them NULL rather than backfilling).
+ */
+export type InboxAlert = {
+  id: string;
+  categoryId: string;
+  categoryName: string;
+  categoryIcon: string;
+  month: string;
+  threshold: BudgetAlertThreshold;
+  firedAt: string;
+  readAt: string | null;
+};
+
+/** Unread-first would reorder history; the inbox stays newest-first, the dot marks unread. */
+export function unreadAlerts(alerts: InboxAlert[]): InboxAlert[] {
+  return alerts.filter((alert) => alert.readAt === null);
+}
+
+/**
+ * Inbox row title (the Jest seam — the push body stays in `notifications.ts`).
+ * `Makanan menyentuh 80% budget` / `Makanan melampaui 100% budget`.
+ */
+export function inboxAlertTitle(
+  categoryName: string,
+  threshold: BudgetAlertThreshold,
+): string {
+  return threshold === 'warning_80'
+    ? `${categoryName} menyentuh 80% budget`
+    : `${categoryName} melampaui 100% budget`;
+}
+
+/** One inbox month group, newest month first (input already newest-first). */
+export type InboxMonthGroup = {
+  month: string;
+  alerts: InboxAlert[];
+};
+
+/**
+ * Groups inbox rows by budget month for the `/notifications` screen, so a
+ * year of history reads as "September 2026 / Agustus 2026" instead of one
+ * endless list. Order is stable: first-seen month wins, rows keep their
+ * newest-first order — never re-sorted (A5 follow-up).
+ */
+export function groupAlertsByMonth(alerts: InboxAlert[]): InboxMonthGroup[] {
+  const groups: InboxMonthGroup[] = [];
+  for (const alert of alerts) {
+    const group = groups.find((entry) => entry.month === alert.month);
+    if (group) {
+      group.alerts.push(alert);
+    } else {
+      groups.push({ month: alert.month, alerts: [alert] });
+    }
+  }
+  return groups;
+}

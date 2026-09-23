@@ -14,6 +14,7 @@ import {
   isBudgetState,
   type BudgetAlertThreshold,
   type BudgetStatus,
+  type InboxAlert,
 } from './domain';
 
 type StatusRow = {
@@ -138,6 +139,67 @@ export async function recordAlert(input: {
 
   if (error) throw error;
   return ((data ?? []) as { id: string }[]).length > 0;
+}
+
+type AlertRow = {
+  id: string;
+  category_id: string;
+  month: string;
+  threshold: string;
+  fired_at: string;
+  read_at: string | null;
+  // PostgREST types a to-one embed as an array — normalize both shapes.
+  categories: { name: string; icon: string } | { name: string; icon: string }[] | null;
+};
+
+/**
+ * Inbox reads (A5): the caller's fired alerts, newest first, with the
+ * category name/icon joined server-side. RLS scopes every row to the caller;
+ * `read_at` null = unread.
+ */
+export async function listAlerts(): Promise<InboxAlert[]> {
+  const { data, error } = await supabase
+    .from('budget_alerts')
+    .select('id,category_id,month,threshold,fired_at,read_at,categories(name,icon)')
+    .order('fired_at', { ascending: false })
+    .order('id', { ascending: false });
+
+  if (error) throw error;
+  return ((data ?? []) as AlertRow[]).map((row) => {
+    const embedded = Array.isArray(row.categories)
+      ? row.categories[0]
+      : row.categories;
+    return {
+      id: row.id,
+      categoryId: row.category_id,
+      categoryName: embedded?.name ?? '',
+      categoryIcon: embedded?.icon ?? 'notifications',
+      month: row.month,
+      threshold: row.threshold as BudgetAlertThreshold,
+      firedAt: row.fired_at,
+      readAt: row.read_at,
+    };
+  });
+}
+
+/** Marks one alert read. A foreign id is an RLS no-op (0 rows, no error). */
+export async function markAlertRead(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('budget_alerts')
+    .update({ read_at: new Date().toISOString() })
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
+/** Marks every unread alert read — RLS scopes the write to the caller. */
+export async function markAllAlertsRead(): Promise<void> {
+  const { error } = await supabase
+    .from('budget_alerts')
+    .update({ read_at: new Date().toISOString() })
+    .is('read_at', null);
+
+  if (error) throw error;
 }
 
 /** The user's timezone, so month arithmetic matches the server's. */

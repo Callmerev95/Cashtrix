@@ -1,4 +1,5 @@
 export { EmptyStateCard } from './empty-state-card';
+export { ErrorStateCard } from './error-state-card';
 export { Screen } from './screen';
 export { ScaffoldScreen } from './scaffold-screen';
 export { FloatingTabBar } from './floating-tab-bar';
