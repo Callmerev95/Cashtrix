@@ -8,9 +8,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, spacing, typography } from '@/theme';
+import { dictionaryFor, useLanguage } from '@/i18n';
 
 import { useConnectivity } from '../connectivity-context';
-import { OFFLINE_MESSAGE } from '../domain';
 
 export function OfflineBanner({
   testID = 'offline-banner',
@@ -19,6 +19,8 @@ export function OfflineBanner({
 }) {
   const { isOnline } = useConnectivity();
   const insets = useSafeAreaInsets();
+  // C6: banner copy follows the OS language (ADR-0008).
+  const message = dictionaryFor(useLanguage()).connectivity.offline;
 
   if (isOnline) return null;
 
@@ -29,7 +31,7 @@ export function OfflineBanner({
         size={16}
         color={colors.textSecondary}
       />
-      <Text style={[typography.bodySm, styles.text]}>{OFFLINE_MESSAGE}</Text>
+      <Text style={[typography.bodySm, styles.text]}>{message}</Text>
     </View>
   );
 }

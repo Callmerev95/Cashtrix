@@ -1,3 +1,5 @@
+import { id } from '@/i18n/id';
+
 /**
  * Connectivity domain (D4) — pure helpers only.
  *
@@ -16,5 +18,6 @@ export function toOnlineStatus(reading: ConnectivityReading): boolean {
   );
 }
 
-/** Banner copy (id-ID). Short by owner request — no "stale data" tail. */
-export const OFFLINE_MESSAGE = 'Tidak ada koneksi';
+/** Banner copy (C6: source is the dictionary; still id-ID here). Short by
+ * owner request — no "stale data" tail. */
+export const OFFLINE_MESSAGE = id.connectivity.offline;

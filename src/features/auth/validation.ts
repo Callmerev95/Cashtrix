@@ -8,23 +8,10 @@
  *     so a "small wording tweak" cannot silently drift from PRD.
  */
 
+import { id } from '@/i18n/id';
+
 /** Exact user-facing copy — PRD §2.3 Epic A. Do not reword in components. */
-export const authMessages = {
-  emailRequired: 'Email dan password wajib diisi',
-  emailInvalid: 'Email tidak valid',
-  passwordTooShort: 'Password minimal 8 karakter',
-  passwordNeedsLetterAndNumber: 'Password harus memuat huruf dan angka',
-  /** Login failure is deliberately generic (PRD §2.3 Epic A). */
-  invalidCredentials: 'Email atau password salah',
-  /**
-   * V0: sign-in with an unconfirmed email is rejected by Supabase
-   * (`email_not_confirmed`). Unlike a wrong password this is actionable, so
-   * it gets its own copy that points at the Check Email screen.
-   */
-  emailNotConfirmed: 'Email belum dikonfirmasi. Cek kotak masuk Anda.',
-  signUpFailed: 'Pendaftaran gagal. Coba lagi sebentar lagi',
-  networkError: 'Tidak dapat terhubung. Periksa koneksi Anda',
-} as const;
+export const authMessages = id.auth.validation;
 
 export const PASSWORD_MIN_LENGTH = 8;
 

@@ -15,6 +15,7 @@
  */
 
 import { AMOUNT_MAX } from '../transactions/domain';
+import { dictionaryFor, fill, id, type Language } from '@/i18n';
 
 // ---------------------------------------------------------------------------
 // Thresholds (PRD §2.3 Epic E)
@@ -174,14 +175,20 @@ export function budgetLimitFromInput(amountRaw: string): number {
 }
 
 // ---------------------------------------------------------------------------
-// Labels (id-ID copy for the screen + notifications)
+// Labels (C6: screen + notification copy lives in the central dictionary;
+// these stay as the id-ID source of truth for unmigrated callers)
 // ---------------------------------------------------------------------------
 
-export const budgetStateLabels: Record<BudgetState, string> = {
-  ok: 'Aman',
-  warning: 'Hampir habis',
-  exceeded: 'Terlampaui',
-};
+export const budgetStateLabels: Record<BudgetState, string> =
+  id.budgets.state;
+
+/** State chip label in the active language (C6). */
+export function budgetStateLabel(
+  state: BudgetState,
+  lang: Language = 'id',
+): string {
+  return dictionaryFor(lang).budgets.state[state];
+}
 
 /** `79,9%` — id-ID decimal comma, never `NaN`/`Infinity`. */
 export function formatPercent(percent: number): string {
@@ -221,15 +228,18 @@ export function unreadAlerts(alerts: InboxAlert[]): InboxAlert[] {
 
 /**
  * Inbox row title (the Jest seam — the push body stays in `notifications.ts`).
- * `Makanan menyentuh 80% budget` / `Makanan melampaui 100% budget`.
+ * `Makanan menyentuh 80% budget` / `Makanan melampaui 100% budget` in id-ID;
+ * pass the active language for the localised form (C6).
  */
 export function inboxAlertTitle(
   categoryName: string,
   threshold: BudgetAlertThreshold,
+  lang: Language = 'id',
 ): string {
+  const copy = dictionaryFor(lang).budgets.inbox;
   return threshold === 'warning_80'
-    ? `${categoryName} menyentuh 80% budget`
-    : `${categoryName} melampaui 100% budget`;
+    ? fill(copy.warningTitle, { categoryName })
+    : fill(copy.exceededTitle, { categoryName });
 }
 
 /** One inbox month group, newest month first (input already newest-first). */

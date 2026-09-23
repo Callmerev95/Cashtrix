@@ -17,6 +17,14 @@ jest.mock(
   () => require('./mocks/netinfo'),
 );
 
+// C6 (issue #51): expo-localization touches the native bridge, which does
+// not exist in Jest. Default stand-in is an Indonesian OS locale; tests that
+// drive English inject their own mock and never touch this one.
+jest.mock(
+  require.resolve('expo-localization'),
+  () => require('./mocks/expo-localization'),
+);
+
 // V1 (issue #30): the observability sink imports `@sentry/react-native`
 // statically and `app/_layout.tsx` calls `initSentry()` on mount, which the
 // navigation tests exercise. The native module cannot load in Jest, so it is

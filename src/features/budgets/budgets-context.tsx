@@ -34,6 +34,7 @@ import {
   budgetThresholdEvent,
   trackEvent,
 } from '@/features/observability';
+import { useLanguage } from '@/i18n';
 import { formatGrouped } from '../transactions/domain';
 
 import {
@@ -122,6 +123,8 @@ export function BudgetsProvider({ children }: { children: ReactNode }) {
 
   const mounted = useRef(true);
   const inflight = useRef<Promise<void> | null>(null);
+  // C6: push copy follows the OS language (ADR-0008).
+  const language = useLanguage();
   // Guards `evaluateAndAlert` against concurrent runs (a save racing a
   // foreground refresh): without it the same crossing could notify twice
   // before either `recordAlert` lands.
@@ -214,12 +217,16 @@ export function BudgetsProvider({ children }: { children: ReactNode }) {
             }
           }
           for (const alert of fired) {
-            const copy = alertCopy({
-              categoryName: alert.categoryName,
-              threshold: alert.threshold,
-              spent: `Rp ${formatGrouped(alert.spent)}`,
-              limit: `Rp ${formatGrouped(alert.amountLimit)}`,
-            });
+            const copy = alertCopy(
+              {
+                categoryName: alert.categoryName,
+                threshold: alert.threshold,
+                spent: `Rp ${formatGrouped(alert.spent)}`,
+                limit: `Rp ${formatGrouped(alert.amountLimit)}`,
+              },
+              // C6: the push body follows the OS language (ADR-0008).
+              language,
+            );
             // Best-effort: when push is unavailable the in-app banner above is
             // the notification (AC #8 — works without permission).
             await sendBudgetAlert(copy);
@@ -234,7 +241,7 @@ export function BudgetsProvider({ children }: { children: ReactNode }) {
         evaluating.current = false;
       }
     },
-    [loadAlerts],
+    [loadAlerts, language],
   );
 
   // State updates happen inside `.then`/`.catch`, never synchronously in the

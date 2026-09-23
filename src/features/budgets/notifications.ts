@@ -19,6 +19,8 @@
 import type * as NotificationsType from 'expo-notifications';
 import Constants from 'expo-constants';
 
+import { dictionaryFor, fill, type Language } from '@/i18n';
+
 let cached: typeof NotificationsType | null | undefined;
 
 /**
@@ -117,21 +119,34 @@ export async function sendBudgetAlert(input: {
   }
 }
 
-/** Copy for a fired threshold (id-ID, the OS locale path is a v1.1 item). */
-export function alertCopy(input: {
-  categoryName: string;
-  threshold: 'warning_80' | 'exceeded_100';
-  spent: string;
-  limit: string;
-}): { title: string; body: string } {
+/**
+ * Copy for a fired threshold (C6: rendered in the OS language — the caller
+ * passes the active language; default keeps the historic id-ID behaviour so
+ * existing callers and tests are unaffected until they migrate).
+ */
+export function alertCopy(
+  input: {
+    categoryName: string;
+    threshold: 'warning_80' | 'exceeded_100';
+    spent: string;
+    limit: string;
+  },
+  lang: Language = 'id',
+): { title: string; body: string } {
+  const copy = dictionaryFor(lang).budgets.alert;
+  const params = {
+    categoryName: input.categoryName,
+    spent: input.spent,
+    limit: input.limit,
+  };
   if (input.threshold === 'exceeded_100') {
     return {
-      title: `Budget ${input.categoryName} terlampaui`,
-      body: `Terpakai ${input.spent} dari ${input.limit}. Kurangi belanja kategori ini bulan ini.`,
+      title: fill(copy.exceededTitle, params),
+      body: fill(copy.exceededBody, params),
     };
   }
   return {
-    title: `Budget ${input.categoryName} hampir habis`,
-    body: `Terpakai ${input.spent} dari ${input.limit} (≥80%).`,
+    title: fill(copy.warningTitle, params),
+    body: fill(copy.warningBody, params),
   };
 }
