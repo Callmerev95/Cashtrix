@@ -31,6 +31,7 @@ import {
   validateCategoryName,
   type CategoryKind,
 } from '@/features/profile';
+import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 
 const KINDS: { value: CategoryKind; label: string }[] = [
@@ -47,6 +48,10 @@ export default function CategoryFormScreen() {
     updateManagedCategory,
   } = useProfile();
   const insets = useSafeAreaInsets();
+  // C6: copy follows the OS language (ADR-0008); validation renders it too.
+  const language = useLanguage();
+  const t = dictionaryFor(language);
+  const tcf = t.profile.categoryForm;
 
   const editing = useMemo(
     () => categories.find((item) => item.id === params.id && !item.isSystem),
@@ -64,8 +69,8 @@ export default function CategoryFormScreen() {
   const [busy, setBusy] = useState(false);
 
   async function save() {
-    const nextNameError = validateCategoryName(name);
-    const nextIconError = validateCategoryIcon(icon);
+    const nextNameError = validateCategoryName(name, language);
+    const nextIconError = validateCategoryIcon(icon, language);
     setNameError(nextNameError);
     setIconError(nextIconError);
     if (nextNameError || nextIconError) return;
@@ -75,7 +80,7 @@ export default function CategoryFormScreen() {
       if (isEdit && params.id) {
         await updateManagedCategory({ id: params.id, name, icon });
       } else {
-        if (!session?.user.id) throw new Error('Sesi tidak ditemukan');
+        if (!session?.user.id) throw new Error(tcf.noSession);
         await createManagedCategory({
           userId: session.user.id,
           name,
@@ -87,8 +92,8 @@ export default function CategoryFormScreen() {
     } catch (cause) {
       setBusy(false);
       Alert.alert(
-        isEdit ? 'Gagal menyimpan kategori' : 'Gagal membuat kategori',
-        cause instanceof Error ? cause.message : 'Coba lagi sebentar lagi.',
+        isEdit ? tcf.saveFailEdit : tcf.saveFailCreate,
+        cause instanceof Error ? cause.message : t.common.retry,
       );
     }
   }
@@ -102,14 +107,14 @@ export default function CategoryFormScreen() {
         <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Tutup"
+            accessibilityLabel={tcf.close}
             onPress={() => router.back()}
             style={styles.close}
           >
             <MaterialIcons name="close" size={24} color={colors.textSecondary} />
           </Pressable>
           <Text style={[typography.headlineMd, styles.title]}>
-            {isEdit ? 'Ubah Kategori' : 'Kategori Baru'}
+            {isEdit ? tcf.editTitle : tcf.createTitle}
           </Text>
         </View>
 
@@ -118,15 +123,15 @@ export default function CategoryFormScreen() {
           contentContainerStyle={styles.body}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={[typography.labelUppercase, styles.kicker]}>Nama</Text>
+          <Text style={[typography.labelUppercase, styles.kicker]}>{tcf.name}</Text>
           <TextField
             testID="category-name"
             value={name}
             onChangeText={(text) => {
               setName(text);
-              if (nameError) setNameError(validateCategoryName(text));
+              if (nameError) setNameError(validateCategoryName(text, language));
             }}
-            placeholder="Langganan, Jajan, Sampingan…"
+            placeholder={tcf.namePlaceholder}
             autoCapitalize="words"
             maxLength={50}
             hasError={Boolean(nameError)}
@@ -141,18 +146,22 @@ export default function CategoryFormScreen() {
           {!isEdit ? (
             <>
               <Text style={[typography.labelUppercase, styles.kicker, styles.gap]}>
-                Tipe
+                {tcf.type}
               </Text>
               <View style={styles.segmented}>
                 {KINDS.map((option) => {
                   const active = kind === option.value;
+                  const label =
+                    option.value === 'expense'
+                      ? t.transactions.type.expense
+                      : t.transactions.type.income;
                   return (
                     <Pressable
                       key={option.value}
                       testID={`category-kind-${option.value}`}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
-                      accessibilityLabel={option.label}
+                      accessibilityLabel={label}
                       onPress={() => setKind(option.value)}
                       style={[styles.segment, active && styles.segmentActive]}
                     >
@@ -163,7 +172,7 @@ export default function CategoryFormScreen() {
                           active && styles.segmentTextActive,
                         ]}
                       >
-                        {option.label}
+                        {label}
                       </Text>
                     </Pressable>
                   );
@@ -173,7 +182,7 @@ export default function CategoryFormScreen() {
           ) : null}
 
           <Text style={[typography.labelUppercase, styles.kicker, styles.gap]}>
-            Ikon
+            {tcf.icon}
           </Text>
           <View style={styles.iconGrid}>
             {ICON_CATALOG.map((entry) => {
@@ -184,7 +193,7 @@ export default function CategoryFormScreen() {
                   testID={`category-icon-${entry}`}
                   accessibilityRole="button"
                   accessibilityState={{ selected: active }}
-                  accessibilityLabel={`Ikon ${entry}`}
+                  accessibilityLabel={fill(tcf.iconA11y, { name: entry })}
                   onPress={() => {
                     setIcon(entry);
                     if (iconError) setIconError(null);
@@ -204,20 +213,20 @@ export default function CategoryFormScreen() {
             <Text style={[typography.bodySm, styles.error]}>{iconError}</Text>
           ) : null}
           <Text style={[typography.bodySm, styles.hint]}>
-            Warna ikon mengikuti tema, tanpa color picker.
+            {tcf.hint}
           </Text>
         </ScrollView>
 
         <View style={[styles.footer, { paddingBottom: spacing.md }]}>
           <PrimaryButton
             testID="category-save"
-            label={isEdit ? 'Simpan' : 'Buat Kategori'}
+            label={isEdit ? t.common.save : tcf.create}
             onPress={save}
             loading={busy}
           />
           <GhostButton
             testID="category-cancel"
-            label="Batal"
+            label={t.common.cancel}
             onPress={() => router.back()}
           />
         </View>

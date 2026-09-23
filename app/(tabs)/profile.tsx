@@ -36,6 +36,7 @@ import {
   type CurrencyCode,
 } from '@/features/profile';
 import { useRecurring } from '@/features/recurring';
+import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, gradients, layout, radius, spacing, typography } from '@/theme';
 
 // Legal URLs (GitHub Pages) — same for in-app and store listing (ADR-0006)
@@ -56,6 +57,10 @@ export default function ProfileScreen() {
     saveAvatar,
   } = useProfile();
   const { rules: recurringRules } = useRecurring();
+  // C6: copy follows the OS language (ADR-0008).
+  const language = useLanguage();
+  const t = dictionaryFor(language);
+  const ts = t.profile.screen;
 
   const [name, setName] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
@@ -84,7 +89,7 @@ export default function ProfileScreen() {
   );
 
   async function onSaveName() {
-    const message = validateDisplayName(draftName);
+    const message = validateDisplayName(draftName, language);
     setNameError(message);
     if (message) return;
     setSavingName(true);
@@ -93,7 +98,7 @@ export default function ProfileScreen() {
       setName(null);
     } catch (cause) {
       setNameError(
-        cause instanceof Error ? cause.message : 'Gagal menyimpan nama',
+        cause instanceof Error ? cause.message : ts.nameFail,
       );
     } finally {
       setSavingName(false);
@@ -107,8 +112,8 @@ export default function ProfileScreen() {
       await saveProfile({ currencyCode: code });
     } catch (cause) {
       Alert.alert(
-        'Gagal menyimpan mata uang',
-        cause instanceof Error ? cause.message : 'Coba lagi sebentar lagi.',
+        ts.currencyFail,
+        cause instanceof Error ? cause.message : t.common.retry,
       );
     } finally {
       setSavingCurrency(false);
@@ -123,8 +128,8 @@ export default function ProfileScreen() {
       await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       Alert.alert(
-        'Izin galeri ditolak',
-        'Aktifkan akses foto di pengaturan agar avatar bisa diganti.',
+        ts.avatarPermissionTitle,
+        ts.avatarPermissionBody,
       );
       return;
     }
@@ -144,8 +149,8 @@ export default function ProfileScreen() {
       await saveAvatar({ userId, sourceUri: asset.uri });
     } catch (cause) {
       Alert.alert(
-        'Gagal mengunggah avatar',
-        cause instanceof Error ? cause.message : 'Coba lagi sebentar lagi.',
+        ts.avatarFail,
+        cause instanceof Error ? cause.message : t.common.retry,
       );
     } finally {
       setUploadingAvatar(false);
@@ -159,14 +164,14 @@ export default function ProfileScreen() {
       const outcome = await exportAndShareTransactions();
       if (outcome === 'unavailable') {
         Alert.alert(
-          'Berbagi tidak tersedia',
-          'Perangkat ini tidak mendukung share sheet.',
+          ts.exportUnavailableTitle,
+          ts.exportUnavailableBody,
         );
       }
     } catch (cause) {
       Alert.alert(
-        'Gagal mengekspor data',
-        cause instanceof Error ? cause.message : 'Coba lagi sebentar lagi.',
+        ts.exportFail,
+        cause instanceof Error ? cause.message : t.common.retry,
       );
     } finally {
       setExportingCsv(false);
@@ -180,17 +185,17 @@ export default function ProfileScreen() {
       // AuthGate swaps to Login; nothing to navigate here.
     } catch {
       setSigningOut(false);
-      Alert.alert('Gagal keluar', 'Coba lagi sebentar lagi.');
+      Alert.alert(ts.signOutFail, t.common.retry);
     }
   }
 
   function onSignOutPress() {
     Alert.alert(
-      'Keluar dari Cashtrix?',
-      'Sesi dan data lokal di perangkat ini akan dihapus.',
+      ts.signOutTitle,
+      ts.signOutBody,
       [
-        { text: 'Batal', style: 'cancel' },
-        { text: 'Keluar', style: 'destructive', onPress: confirmSignOut },
+        { text: t.common.cancel, style: 'cancel' },
+        { text: ts.signOutAction, style: 'destructive', onPress: confirmSignOut },
       ],
     );
   }
@@ -212,7 +217,7 @@ export default function ProfileScreen() {
             <Pressable
               testID="profile-avatar"
               accessibilityRole="button"
-              accessibilityLabel="Ubah foto profil"
+              accessibilityLabel={ts.changeAvatarA11y}
               onPress={onChangeAvatar}
               disabled={uploadingAvatar}
               style={styles.avatarPress}
@@ -235,7 +240,7 @@ export default function ProfileScreen() {
           </LinearGradient>
           <View style={styles.nameRow}>
             <Text style={[typography.headlineMd, styles.avatarName]} numberOfLines={1}>
-              {profile?.displayName ?? 'Profile'}
+              {profile?.displayName ?? ts.fallbackName}
             </Text>
             <MaterialIcons
               name="verified-user"
@@ -248,7 +253,7 @@ export default function ProfileScreen() {
           </Text>
           <GhostButton
             testID="profile-change-avatar"
-            label={uploadingAvatar ? 'Mengunggah…' : 'Ubah foto'}
+            label={uploadingAvatar ? ts.uploading : ts.changeAvatar}
             onPress={onChangeAvatar}
             disabled={uploadingAvatar}
           />
@@ -263,21 +268,21 @@ export default function ProfileScreen() {
             <Text testID="profile-error" style={[typography.bodyMd, styles.errorText]}>
               {error}
             </Text>
-            <PrimaryButton label="Coba lagi" onPress={() => void refresh()} />
+            <PrimaryButton label={ts.retry} onPress={() => void refresh()} />
           </View>
         ) : (
           <>
             <Text style={[typography.labelUppercase, styles.kicker]}>
-              Nama tampilan
+              {ts.nameLabel}
             </Text>
             <TextField
               testID="profile-name"
               value={draftName}
               onChangeText={(text) => {
                 setName(text);
-                if (nameError) setNameError(validateDisplayName(text));
+                if (nameError) setNameError(validateDisplayName(text, language));
               }}
-              placeholder="Nama Anda"
+              placeholder={ts.namePlaceholder}
               autoCapitalize="words"
               maxLength={70}
               hasError={Boolean(nameError)}
@@ -292,17 +297,23 @@ export default function ProfileScreen() {
             {name !== null ? (
               <PrimaryButton
                 testID="profile-save-name"
-                label="Simpan nama"
+                label={ts.saveName}
                 onPress={() => void onSaveName()}
                 loading={savingName}
               />
             ) : null}
 
             <Text style={[typography.labelUppercase, styles.kicker, styles.gap]}>
-              Mata uang tampilan
+              {ts.currencyLabel}
             </Text>
             <Text style={[typography.bodySm, styles.hint]}>
-              Contoh: {formatMoney(1250000, profile?.currencyCode ?? 'IDR', profile?.locale ?? 'id-ID')}, tanpa konversi kurs.
+              {fill(ts.currencyHint, {
+                example: formatMoney(
+                  1250000,
+                  profile?.currencyCode ?? 'IDR',
+                  language,
+                ),
+              })}
             </Text>
             <View style={styles.currencyGrid}>
               {SUPPORTED_CURRENCIES.map((code) => {
@@ -313,7 +324,7 @@ export default function ProfileScreen() {
                     testID={`profile-currency-${code}`}
                     accessibilityRole="button"
                     accessibilityState={{ selected: active }}
-                    accessibilityLabel={`Mata uang ${code}`}
+                    accessibilityLabel={fill(ts.currencyA11y, { code })}
                     onPress={() => void onSelectCurrency(code)}
                     style={[styles.chip, active && styles.chipActive]}
                   >
@@ -332,13 +343,13 @@ export default function ProfileScreen() {
             </View>
 
             <Text style={[typography.labelUppercase, styles.kicker, styles.gap]}>
-              Pengaturan
+              {ts.settings}
             </Text>
             {archivedPauses.length > 0 ? (
               <Pressable
                 testID="profile-recurring-banner"
                 accessibilityRole="button"
-                accessibilityLabel="Aturan berulang yang dijeda"
+                accessibilityLabel={ts.pausedA11y}
                 onPress={() => router.push('/recurring')}
                 style={styles.rowPress}
               >
@@ -352,10 +363,10 @@ export default function ProfileScreen() {
                   </View>
                   <View style={styles.rowBody}>
                     <Text style={[typography.bodyMd, styles.rowTitle]}>
-                      {archivedPauses.length} aturan dijeda
+                      {fill(ts.pausedTitle, { count: archivedPauses.length })}
                     </Text>
                     <Text style={[typography.bodySm, styles.rowSubtitle]}>
-                      Dompetnya diarsipkan — ketuk untuk meninjau
+                      {ts.pausedSubtitle}
                     </Text>
                   </View>
                   <MaterialIcons
@@ -369,7 +380,7 @@ export default function ProfileScreen() {
             <Pressable
               testID="profile-recurring-row"
               accessibilityRole="button"
-              accessibilityLabel="Kelola transaksi berulang"
+              accessibilityLabel={ts.recurringA11y}
               onPress={() => router.push('/recurring')}
               style={styles.rowPress}
             >
@@ -379,10 +390,10 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.rowBody}>
                 <Text style={[typography.bodyMd, styles.rowTitle]}>
-                  Transaksi berulang
+                  {ts.recurringTitle}
                 </Text>
                 <Text style={[typography.bodySm, styles.rowSubtitle]}>
-                  Gaji & tagihan otomatis tiap bulan
+                  {ts.recurringSubtitle}
                 </Text>
               </View>
               <MaterialIcons
@@ -395,7 +406,7 @@ export default function ProfileScreen() {
             <Pressable
               testID="profile-categories-row"
               accessibilityRole="button"
-              accessibilityLabel="Kelola kategori"
+              accessibilityLabel={ts.categoriesA11y}
               onPress={() => router.push('/categories')}
               style={styles.rowPress}
             >
@@ -405,10 +416,10 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.rowBody}>
                 <Text style={[typography.bodyMd, styles.rowTitle]}>
-                  Kategori saya
+                  {ts.categoriesTitle}
                 </Text>
                 <Text style={[typography.bodySm, styles.rowSubtitle]}>
-                  Buat, arsipkan, dan atur kategori belanja
+                  {ts.categoriesSubtitle}
                 </Text>
               </View>
               <MaterialIcons
@@ -421,7 +432,7 @@ export default function ProfileScreen() {
             <Pressable
               testID="profile-export-row"
               accessibilityRole="button"
-              accessibilityLabel="Ekspor data sebagai CSV"
+              accessibilityLabel={ts.exportA11y}
               onPress={() => void onExportCsv()}
               disabled={exportingCsv}
               style={styles.rowPress}
@@ -436,10 +447,10 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.rowBody}>
                 <Text style={[typography.bodyMd, styles.rowTitle]}>
-                  {exportingCsv ? 'Menyiapkan CSV…' : 'Ekspor data (CSV)'}
+                  {exportingCsv ? ts.exportBusy : ts.exportTitle}
                 </Text>
                 <Text style={[typography.bodySm, styles.rowSubtitle]}>
-                  Unduh seluruh transaksi lewat share sheet
+                  {ts.exportSubtitle}
                 </Text>
               </View>
               {exportingCsv ? (
@@ -456,7 +467,7 @@ export default function ProfileScreen() {
             <Pressable
               testID="profile-delete-account-row"
               accessibilityRole="button"
-              accessibilityLabel="Hapus akun permanen"
+              accessibilityLabel={ts.deleteA11y}
               onPress={() => router.push('/delete-account')}
               style={styles.rowPress}
             >
@@ -470,10 +481,10 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.rowBody}>
                 <Text style={[typography.bodyMd, styles.rowTitleDanger]}>
-                  Hapus akun
+                  {ts.deleteTitle}
                 </Text>
                 <Text style={[typography.bodySm, styles.rowSubtitle]}>
-                  Permanen, tidak bisa dibatalkan
+                  {ts.deleteSubtitle}
                 </Text>
               </View>
               <MaterialIcons
@@ -487,7 +498,7 @@ export default function ProfileScreen() {
             <Pressable
               testID="profile-privacy-row"
               accessibilityRole="link"
-              accessibilityLabel="Kebijakan Privasi"
+              accessibilityLabel={ts.privacyTitle}
               onPress={() => Linking.openURL(LEGAL.privacy).catch(() => undefined)}
               style={styles.rowPress}
             >
@@ -497,10 +508,10 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.rowBody}>
                 <Text style={[typography.bodyMd, styles.rowTitle]}>
-                  Kebijakan Privasi
+                  {ts.privacyTitle}
                 </Text>
                 <Text style={[typography.bodySm, styles.rowSubtitle]}>
-                  Cara kami melindungi data Anda
+                  {ts.privacySubtitle}
                 </Text>
               </View>
               <MaterialIcons
@@ -514,7 +525,7 @@ export default function ProfileScreen() {
             <Pressable
               testID="profile-terms-row"
               accessibilityRole="link"
-              accessibilityLabel="Ketentuan Layanan"
+              accessibilityLabel={ts.termsTitle}
               onPress={() => Linking.openURL(LEGAL.terms).catch(() => undefined)}
               style={styles.rowPress}
             >
@@ -524,10 +535,10 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.rowBody}>
                 <Text style={[typography.bodyMd, styles.rowTitle]}>
-                  Ketentuan Layanan
+                  {ts.termsTitle}
                 </Text>
                 <Text style={[typography.bodySm, styles.rowSubtitle]}>
-                  Syarat penggunaan aplikasi
+                  {ts.termsSubtitle}
                 </Text>
               </View>
               <MaterialIcons
@@ -541,7 +552,7 @@ export default function ProfileScreen() {
             <View style={styles.signOut}>
               <GhostButton
                 testID="sign-out"
-                label={signingOut ? 'Keluar…' : 'Keluar dari Cashtrix'}
+                label={signingOut ? ts.signOutBusy : ts.signOut}
                 onPress={onSignOutPress}
                 disabled={signingOut}
                 danger

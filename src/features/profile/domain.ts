@@ -9,6 +9,9 @@
  * `category_mutes` for shared system categories.
  */
 
+import { dictionaryFor, fill, localeTagFor } from '@/i18n/dictionaries';
+import type { Language } from '@/i18n/locale';
+
 export const DISPLAY_NAME_MAX_LENGTH = 60;
 export const CATEGORY_NAME_MAX_LENGTH = 40;
 
@@ -145,34 +148,38 @@ export const DEFAULT_CURRENCY: CurrencyCode = 'IDR';
 // ---------------------------------------------------------------------------
 
 /** Returns the inline error, or `null` when the name is acceptable. */
-export function validateDisplayName(name: string): string | null {
+export function validateDisplayName(name: string, lang: Language = 'id'): string | null {
+  const messages = dictionaryFor(lang).profile.validation;
   const trimmed = name.trim();
-  if (trimmed === '') return 'Nama wajib diisi';
+  if (trimmed === '') return messages.nameRequired;
   if (trimmed.length > DISPLAY_NAME_MAX_LENGTH) {
-    return `Nama maksimal ${DISPLAY_NAME_MAX_LENGTH} karakter`;
+    return fill(messages.nameTooLong, { max: DISPLAY_NAME_MAX_LENGTH });
   }
   return null;
 }
 
 /** Returns the inline error, or `null` when the name is acceptable. */
-export function validateCategoryName(name: string): string | null {
+export function validateCategoryName(name: string, lang: Language = 'id'): string | null {
+  const messages = dictionaryFor(lang).profile.validation;
   const trimmed = name.trim();
-  if (trimmed === '') return 'Nama kategori wajib diisi';
+  if (trimmed === '') return messages.categoryNameRequired;
   if (trimmed.length > CATEGORY_NAME_MAX_LENGTH) {
-    return `Nama kategori maksimal ${CATEGORY_NAME_MAX_LENGTH} karakter`;
+    return fill(messages.categoryNameTooLong, { max: CATEGORY_NAME_MAX_LENGTH });
   }
   return null;
 }
 
 /** Returns the inline error, or `null` when the icon is in the catalog. */
-export function validateCategoryIcon(icon: string): string | null {
-  if (!isCatalogIcon(icon)) return 'Pilih ikon dari katalog';
+export function validateCategoryIcon(icon: string, lang: Language = 'id'): string | null {
+  if (!isCatalogIcon(icon)) return dictionaryFor(lang).profile.validation.iconInvalid;
   return null;
 }
 
 /** Returns the inline error, or `null` when the code is supported. */
-export function validateCurrency(code: string): string | null {
-  if (!isCurrencyCode(code)) return 'Mata uang tidak didukung';
+export function validateCurrency(code: string, lang: Language = 'id'): string | null {
+  if (!isCurrencyCode(code)) {
+    return dictionaryFor(lang).profile.validation.currencyUnsupported;
+  }
   return null;
 }
 
@@ -188,9 +195,9 @@ export function validateCurrency(code: string): string | null {
 export function formatMoney(
   amount: number,
   currency: CurrencyCode,
-  locale = 'id-ID',
+  lang: Language = 'id',
 ): string {
-  return new Intl.NumberFormat(locale, {
+  return new Intl.NumberFormat(localeTagFor(lang), {
     style: 'currency',
     currency,
     maximumFractionDigits: 2,

@@ -104,6 +104,19 @@ lang. `app/budget-form.tsx`: labels + validasi (`language`) +
 sheet hapus. Gate: lint bersih + typecheck + Jest 378 hijau +
 static-only 3/3.
 
+`profile.*` (chunk profile — BELUM commit; `708a379` = budgets screens):
+`validation.*` (6, `{max}` + `validateDisplayName`/`validateCategoryName`/
+`validateCategoryIcon`/`validateCurrency` + `lang`), `screen.*` (~40:
+avatar, nama, mata uang, settings rows, privacy/terms, sign-out, alert
+copy), `categories.*` (screen manager: kicker kustom/sistem, a11y,
+hapus confirm), `categoryForm.*` (+ labels + `kinds` via
+`transactions.type.*`), `loadError` (profile-context). `formatMoney(a, ccy,
+lang)` thread `lang` via `localeTagFor` (signatura ganti dari `locale`,
+test `'en-US'` → `'en'`). `app/(tabs)/profile.tsx`, `app/categories.tsx`
+(`CategoryRow` via `dictionaryFor(useLanguage())` — helper di luar layar),
+`app/category-form.tsx` via `useLanguage`. Gate: lint bersih + typecheck +
+Jest 378 hijau + static-only 3/3.
+
 ## Remaining catalog (from full audit: ~235 unique strings, ~230 keys)
 
 - **wallets** (~40): DONE — see Done section above.
@@ -113,12 +126,7 @@ static-only 3/3.
 - **analytics** (~20): DONE — see Done section above
   (`OTHER_LABEL` untouched, verbatim).
 - **budgets screens** (~40): DONE — see Done section above.
-- **profile** (~55): `profile.screen.*` (`Mata uang tampilan`, `Contoh: …,
-  tanpa konversi kurs.`, `Kelola kategori`, export/delete/sign-out/photo
-  strings), `profile.validation.*`, `categories.screen.*`,
-  `categoryForm.*` in `app/(tabs)/profile.tsx`, `app/categories.tsx`,
-  `app/category-form.tsx`. `formatMoney` default locale (`profile/domain.ts`)
-  → thread language (see numbers below).
+- **profile** (~55): DONE — see Done section above.
 - **recurring** (~45): `recurring.validation.*`, `recurring.status.*`
   (`Jeda`), `recurring.due.lastDay` (`Akhir bulan`),
   `recurring.screen.*`, `recurring.form.*` in `app/recurring.tsx`,
@@ -130,11 +138,13 @@ static-only 3/3.
   `Hapus akun permanen?`, `Ketik HAPUS untuk melanjutkan.` — the `HAPUS`
   confirm word stays a literal gate (one key, do NOT translate the gate
   itself), `app/delete-account.tsx` strings.
-- **numbers** (R10): `formatCurrency` (`wallets/domain.ts:78`), `formatMoney`
-  (`profile/domain.ts`), `formatPercent` decimal comma
-  (`budgets/domain.ts`), grouped `formatGrouped` — thread `lang` (default
-  `'id'`) and switch `Intl` locale via `localeTagFor`. Tests asserting
-  `id-ID` output keep defaults green; add `'en'` cases.
+- **numbers** (R10): DONE — threaded per-chunk commits: `formatCurrency`
+  (wallets chunk), `formatGrouped`/`formatSignedAmount` (transactions),
+  `formatDelta`/`formatMonthTitle`/monthLabel (analytics), `formatPercent`
+  (budgets), `formatMoney` (profile). Every formatter takes `lang:
+  Language = 'id'` (default keeps id-ID output, tests green) and passes
+  `localeTagFor(lang)` to `Intl`; separators are manual `.`/`,` swap so
+  trailing decimals stay two digits.
 - **legal ID**: `docs/legal/` privacy+terms in Indonesian (hutang v1.1);
   same URLs pattern as EN (ADR-0006); in-app links unchanged.
 - **B4 strings** (#50) must be written through the dictionary from the

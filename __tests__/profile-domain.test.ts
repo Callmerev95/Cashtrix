@@ -107,7 +107,7 @@ describe('currency', () => {
     const rendered = formatMoney(1250000, 'IDR');
     expect(rendered).toContain('Rp');
     expect(rendered).not.toContain('NaN');
-    expect(formatMoney(99.5, 'USD', 'en-US')).toContain('$');
+    expect(formatMoney(99.5, 'USD', 'en')).toContain('$');
   });
 });
 

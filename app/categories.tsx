@@ -26,6 +26,7 @@ import {
   useProfile,
   type ManagedCategory,
 } from '@/features/profile';
+import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 
 export default function CategoriesScreen() {
@@ -40,6 +41,10 @@ export default function CategoriesScreen() {
     deleteManagedCategory,
   } = useProfile();
   const [busyId, setBusyId] = useState<string | null>(null);
+  // C6: copy follows the OS language (ADR-0008).
+  const language = useLanguage();
+  const t = dictionaryFor(language);
+  const tc = t.profile.categories;
 
   const custom = useMemo(
     () => categories.filter((item) => !item.isSystem),
@@ -70,8 +75,8 @@ export default function CategoriesScreen() {
       }
     } catch (cause) {
       Alert.alert(
-        'Gagal mengubah arsip',
-        cause instanceof Error ? cause.message : 'Coba lagi sebentar lagi.',
+        tc.archiveFail,
+        cause instanceof Error ? cause.message : t.common.retry,
       );
     } finally {
       setBusyId(null);
@@ -80,12 +85,12 @@ export default function CategoriesScreen() {
 
   function confirmDelete(item: ManagedCategory) {
     Alert.alert(
-      `Hapus "${item.name}"?`,
-      'Kategori yang punya riwayat transaksi tidak bisa dihapus — arsipkan saja.',
+      fill(tc.deleteTitle, { name: item.name }),
+      tc.deleteBody,
       [
-        { text: 'Batal', style: 'cancel' },
+        { text: t.common.cancel, style: 'cancel' },
         {
-          text: 'Hapus',
+          text: t.common.delete,
           style: 'destructive',
           onPress: () => void remove(item),
         },
@@ -100,8 +105,8 @@ export default function CategoriesScreen() {
       await deleteManagedCategory({ id: item.id, isSystem: item.isSystem });
     } catch (cause) {
       Alert.alert(
-        'Gagal menghapus',
-        cause instanceof Error ? cause.message : 'Coba lagi sebentar lagi.',
+        tc.deleteFail,
+        cause instanceof Error ? cause.message : t.common.retry,
       );
     } finally {
       setBusyId(null);
@@ -114,7 +119,9 @@ export default function CategoriesScreen() {
         <Text style={[typography.labelUppercase, styles.kicker]}>
           Personalize
         </Text>
-        <Text style={[typography.headlineLg, styles.title]}>Kategori saya</Text>
+        <Text style={[typography.headlineLg, styles.title]}>
+          {t.profile.screen.categoriesTitle}
+        </Text>
       </View>
 
       <ScrollView
@@ -131,16 +138,16 @@ export default function CategoriesScreen() {
             <Text testID="categories-error" style={[typography.bodyMd, styles.errorText]}>
               {error}
             </Text>
-            <PrimaryButton label="Coba lagi" onPress={() => void refresh()} />
+            <PrimaryButton label={tc.retry} onPress={() => void refresh()} />
           </View>
         ) : (
           <>
             <Text style={[typography.labelUppercase, styles.kicker]}>
-              Kustom · {custom.length}
+              {fill(tc.customKicker, { count: custom.length })}
             </Text>
             {custom.length === 0 ? (
               <Text style={[typography.bodyMd, styles.empty]}>
-                Belum ada kategori kustom. Buat yang mencerminkan gaya hidup Anda.
+                {tc.empty}
               </Text>
             ) : (
               custom.map((item) => (
@@ -161,12 +168,12 @@ export default function CategoriesScreen() {
             )}
             <PrimaryButton
               testID="categories-add"
-              label="Buat kategori"
+              label={tc.add}
               onPress={() => router.push('/category-form')}
             />
 
             <Text style={[typography.labelUppercase, styles.kicker, styles.gap]}>
-              Bawaan · hanya bisa diarsipkan
+              {tc.systemKicker}
             </Text>
             {system.map((item) => (
               <CategoryRow
@@ -196,6 +203,9 @@ function CategoryRow({
   onEdit?: () => void;
   onDelete?: () => void;
 }) {
+  // C6: labels follow the OS language (ADR-0008).
+  const t = dictionaryFor(useLanguage());
+  const tc = t.profile.categories;
   const hidden = item.archived || item.muted;
   return (
     <Card style={[styles.card, hidden && styles.cardHidden]}>
@@ -211,9 +221,9 @@ function CategoryRow({
           {item.name}
         </Text>
         <Text style={[typography.bodySm, styles.cardMeta]}>
-          {item.kind === 'expense' ? 'Pengeluaran' : 'Pemasukan'}
-          {item.isSystem ? ' · bawaan' : ''}
-          {hidden ? ' · diarsipkan' : ''}
+          {item.kind === 'expense' ? t.transactions.type.expense : t.transactions.type.income}
+          {item.isSystem ? tc.systemSuffix : ''}
+          {hidden ? tc.archivedSuffix : ''}
         </Text>
       </View>
       {busy ? (
@@ -224,7 +234,7 @@ function CategoryRow({
             <Pressable
               testID={`category-edit-${item.id}`}
               accessibilityRole="button"
-              accessibilityLabel={`Ubah ${item.name}`}
+              accessibilityLabel={fill(tc.editA11y, { name: item.name })}
               onPress={onEdit}
               hitSlop={12}
             >
@@ -235,7 +245,9 @@ function CategoryRow({
             testID={`category-archive-${item.id}`}
             accessibilityRole="button"
             accessibilityLabel={
-              hidden ? `Tampilkan ${item.name}` : `Arsipkan ${item.name}`
+              hidden
+                ? fill(tc.unarchiveA11y, { name: item.name })
+                : fill(tc.archiveA11y, { name: item.name })
             }
             onPress={onToggle}
             hitSlop={12}
@@ -250,7 +262,7 @@ function CategoryRow({
             <Pressable
               testID={`category-delete-${item.id}`}
               accessibilityRole="button"
-              accessibilityLabel={`Hapus ${item.name}`}
+              accessibilityLabel={fill(tc.deleteA11y, { name: item.name })}
               onPress={onDelete}
               hitSlop={12}
             >
