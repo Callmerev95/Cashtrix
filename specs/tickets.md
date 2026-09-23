@@ -120,4 +120,6 @@ Sumber: `docs/roadmap.md` §6.3. Syarat mulai per item mengikat; urutan tidak se
 | Ticket | Issue | Blocked by | Deliverable |
 |---|---|---|---|
 | B4 — Biometric app lock (device-local) | #50 | — | Flag lokal + toggle Profile opt-in + overlay penuh pola auth gate (grace 60 dtk, cold start selalu kunci); rebuild preview DITUNDA, degrade gracefully di Expo Go — keputusan terkunci R9 + ADR-0007 (OPEN-3 closed via grill 2026-09-23) |
-| C6 — i18n ID/EN + pass terminologi | #51 | — | Bahasa ikut OS via `expo-localization` + kamus terpusat `src/i18n/{id,en}.ts` (fallback ID, Jest kelengkapan); cakupan UI + notifikasi + legal ID; kategori sistem mapping client-side; format ikut bahasa; `expo-localization` gabung rebuild tertunda B4 — keputusan terkunci R10 + ADR-0008 (grill 2026-09-23) |
+| C6 — i18n ID/EN + pass terminologi | #51 | — | Bahasa ikut OS via `expo-localization` + kamus terpusat `src/i18n/{id,en}.ts` (fallback ID, Jest kelengkapan); cakupan UI + notifikasi + legal ID; kategori sistem mapping client-side; format ikut bahasa; `expo-localization` gabung rebuild tertunda B4 — keputusan terkunci R10 + ADR-0008 (grill 2026-09-23) — selesai, closed 2026-09-23 (HEAD `5046d1f`) |
+
+Frontier batch 2: **#50 (B4 — Biometric app lock)** — satu-satunya ticket terbuka; tanpa blocker; string wajib lewat kamus `src/i18n` sejak awal (C6 sudah menyediakannya).
