@@ -504,6 +504,79 @@ export const id = {
     },
     loadError: 'Gagal memuat analytics',
   },
+  recurring: {
+    status: {
+      active: 'Aktif',
+      paused: 'Jeda',
+    },
+    due: {
+      day: 'Tgl {day}',
+      lastDay: 'Akhir bulan',
+    },
+    window: {
+      range: '{start} – {end}',
+      open: 'Mulai {month}',
+    },
+    validation: {
+      kindRequired: 'Pilih Pengeluaran atau Pemasukan',
+      walletRequired: 'Pilih dompet terlebih dahulu',
+      categoryRequired: 'Pilih kategori terlebih dahulu',
+      dueRequired: 'Pilih tanggal jatuh tempo',
+      startsRequired: 'Bulan mulai wajib diisi',
+      startsNotDayOne: 'Bulan mulai harus tanggal 1',
+      endsNotDayOne: 'Bulan akhir harus tanggal 1',
+      endsBeforeStarts: 'Bulan akhir tidak boleh sebelum bulan mulai',
+    },
+    screen: {
+      kicker: 'Otomatisasi',
+      title: 'Transaksi berulang',
+      retry: 'Coba lagi',
+      bannerTitle: '{count} aturan dijeda',
+      bannerBody:
+        'Dompetnya diarsipkan — buka arsip dompet atau pilih dompet lain agar tagihan jalan lagi.',
+      empty:
+        'Belum ada aturan. Buat satu untuk gaji atau tagihan yang datang tiap bulan — occurrence-nya lahir otomatis saat app dibuka.',
+      add: 'Buat aturan',
+      statusFail: 'Gagal mengubah status',
+      deleteFail: 'Gagal menghapus',
+      deleteTitle: 'Hapus aturan "{name}"?',
+      deleteBody:
+        'Transaksi yang sudah tercatat tetap tersimpan sebagai transaksi biasa.',
+      editA11y: 'Ubah aturan {name}',
+      pauseA11y: 'Jeda aturan {name}',
+      resumeA11y: 'Lanjutkan aturan {name}',
+      deleteA11y: 'Hapus aturan {name}',
+      archivedSuffix: ' · dompet diarsipkan',
+    },
+    form: {
+      close: 'Tutup',
+      editTitle: 'Ubah Aturan',
+      createTitle: 'Aturan Baru',
+      kindLocked:
+        'Jenis terkunci — yang sudah tercatat tidak berubah artinya. Perubahan hanya berlaku untuk occurrence yang belum lahir.',
+      amount: 'Nominal',
+      walletSection: 'Dompet',
+      walletEmpty: 'Belum ada dompet aktif. Buat satu dulu di menu Dompet.',
+      categorySection: 'Kategori',
+      dueSection: 'Jatuh tempo tiap bulan',
+      dueDayA11y: 'Tanggal {day}',
+      dueLastA11y: 'Hari terakhir bulan',
+      dueLast: 'Akhir bulan',
+      startsSection: 'Mulai',
+      startsLoading: 'Memuat bulan berjalan…',
+      startsBumped:
+        'Due bulan ini sudah lewat — occurrence pertama lahir bulan depan agar tidak mengarang pembayaran lalu.',
+      endsToggle: 'Ada bulan akhir',
+      endsPrevA11y: 'Bulan akhir sebelumnya',
+      endsNextA11y: 'Bulan akhir berikutnya',
+      loadMonthFail: 'Bulan berjalan belum termuat, coba lagi sebentar lagi.',
+      noSession: 'Sesi tidak ditemukan',
+      saveFail: 'Gagal menyimpan aturan',
+      saveEdit: 'Simpan perubahan',
+      saveCreate: 'Simpan aturan',
+    },
+    loadError: 'Gagal memuat aturan berulang',
+  },
 };
 
 export type Dictionary = typeof id;

@@ -27,6 +27,7 @@ import {
 } from 'react';
 
 import { onLocalDataPurge } from '@/supabase';
+import { dictionaryFor, useLanguage } from '@/i18n';
 import { useAuth } from '@/features/auth';
 import { useAnalytics } from '@/features/analytics';
 import { useBudgets } from '@/features/budgets';
@@ -88,6 +89,8 @@ export function RecurringProvider({ children }: { children: ReactNode }) {
 
   const { session, status } = useAuth();
   const { refresh: refreshWallets } = useWallets();
+  // C6: fallback error follows the OS language (ADR-0008).
+  const loadError = dictionaryFor(useLanguage()).recurring.loadError;
   const { refresh: refreshTransactions } = useTransactions();
   const { refresh: refreshBudgets, evaluateAndAlert } = useBudgets();
   const { refresh: refreshAnalytics } = useAnalytics();
@@ -115,13 +118,13 @@ export function RecurringProvider({ children }: { children: ReactNode }) {
         setError(
           cause instanceof Error
             ? cause.message
-            : 'Gagal memuat aturan berulang',
+            : loadError,
         );
       })
       .finally(() => {
         if (mounted.current) setLoading(false);
       });
-  }, []);
+  }, [loadError]);
 
   const runCatchUp = useCallback(async (): Promise<number> => {
     const userId = session?.user.id;

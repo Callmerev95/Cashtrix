@@ -16,6 +16,10 @@
  *    before `starts_on` is simply out of window.
  */
 
+import { dictionaryFor, fill, localeTagFor } from '@/i18n/dictionaries';
+import { id } from '@/i18n/id';
+import type { Language } from '@/i18n/locale';
+
 export const RECURRING_KINDS = ['expense', 'income'] as const;
 export type RecurringKind = (typeof RECURRING_KINDS)[number];
 
@@ -72,49 +76,58 @@ export type RecurringRule = {
 // Labels
 // ---------------------------------------------------------------------------
 
-/** `Tgl 5` / `Akhir bulan` — the due line on rule cards. */
-export function dueLabel(dueDay: number | null, dueLast: boolean): string {
-  if (dueLast) return 'Akhir bulan';
-  return `Tgl ${dueDay ?? '—'}`;
+/** `Tgl 5` / `Akhir bulan` — the due line on rule cards (C6: lang-aware). */
+export function dueLabel(
+  dueDay: number | null,
+  dueLast: boolean,
+  lang: Language = 'id',
+): string {
+  const due = dictionaryFor(lang).recurring.due;
+  if (dueLast) return due.lastDay;
+  return fill(due.day, { day: dueDay ?? '—' });
 }
 
 /** UI copy uses "Jeda", never "pause" (CONTEXT.md glossary). */
-export function statusLabel(status: RuleStatus): string {
-  return status === 'paused' ? 'Jeda' : 'Aktif';
+export function statusLabel(status: RuleStatus, lang: Language = 'id'): string {
+  const labels = dictionaryFor(lang).recurring.status;
+  return status === 'paused' ? labels.paused : labels.active;
 }
 
 export function isPaused(rule: Pick<RecurringRule, 'status'>): boolean {
   return rule.status === 'paused';
 }
 
-const MONTH_NAMES = [
-  'Januari',
-  'Februari',
-  'Maret',
-  'April',
-  'Mei',
-  'Juni',
-  'Juli',
-  'Agustus',
-  'September',
-  'Oktober',
-  'November',
-  'Desember',
-];
-
-/** `2026-09-01` → `September 2026`. Falls back to the raw string. */
-export function formatRuleMonth(dayOne: string): string {
+/**
+ * `2026-09-01` → `September 2026`. Falls back to the raw string when the input
+ * is not a day-1 key. Month names come from `Intl` (R10) — no static list.
+ */
+export function formatRuleMonth(dayOne: string, lang: Language = 'id'): string {
   const year = Number(dayOne.slice(0, 4));
-  const index = Number(dayOne.slice(5, 7)) - 1;
-  const name = MONTH_NAMES[index];
-  if (!name || !Number.isFinite(year)) return dayOne;
-  return `${name} ${year}`;
+  const monthIndex = Number(dayOne.slice(5, 7)) - 1;
+  if (
+    !Number.isFinite(year) ||
+    !Number.isInteger(monthIndex) ||
+    monthIndex < 0 ||
+    monthIndex > 11
+  ) {
+    return dayOne;
+  }
+  return new Intl.DateTimeFormat(localeTagFor(lang), {
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(year, monthIndex, 1));
 }
 
 /** `2026-09-01` → `September 2026 – Desember 2026`, or `Mulai …` when open. */
-export function formatRuleWindow(startsOn: string, endsOn: string | null): string {
-  const start = formatRuleMonth(startsOn);
-  return endsOn ? `${start} – ${formatRuleMonth(endsOn)}` : `Mulai ${start}`;
+export function formatRuleWindow(
+  startsOn: string,
+  endsOn: string | null,
+  lang: Language = 'id',
+): string {
+  const start = formatRuleMonth(startsOn, lang);
+  const windowCopy = dictionaryFor(lang).recurring.window;
+  if (!endsOn) return fill(windowCopy.open, { month: start });
+  return fill(windowCopy.range, { start, end: formatRuleMonth(endsOn, lang) });
 }
 
 // ---------------------------------------------------------------------------
@@ -228,14 +241,14 @@ export function defaultStartsOn(input: {
 // ---------------------------------------------------------------------------
 
 export const recurringMessages = {
-  kindRequired: 'Pilih Pengeluaran atau Pemasukan',
-  walletRequired: 'Pilih dompet terlebih dahulu',
-  categoryRequired: 'Pilih kategori terlebih dahulu',
-  dueRequired: 'Pilih tanggal jatuh tempo',
-  startsRequired: 'Bulan mulai wajib diisi',
-  startsNotDayOne: 'Bulan mulai harus tanggal 1',
-  endsNotDayOne: 'Bulan akhir harus tanggal 1',
-  endsBeforeStarts: 'Bulan akhir tidak boleh sebelum bulan mulai',
+  kindRequired: id.recurring.validation.kindRequired,
+  walletRequired: id.recurring.validation.walletRequired,
+  categoryRequired: id.recurring.validation.categoryRequired,
+  dueRequired: id.recurring.validation.dueRequired,
+  startsRequired: id.recurring.validation.startsRequired,
+  startsNotDayOne: id.recurring.validation.startsNotDayOne,
+  endsNotDayOne: id.recurring.validation.endsNotDayOne,
+  endsBeforeStarts: id.recurring.validation.endsBeforeStarts,
 } as const;
 
 function isDayOne(value: string): boolean {
@@ -247,20 +260,24 @@ function isDayOne(value: string): boolean {
  * in the form — same split as the transaction form). Returns the first
  * inline error, or `null` when the rule may be sent.
  */
-export function validateRecurringRule(input: {
-  kind: RecurringKind | null;
-  walletId: string | null;
-  categoryId: string | null;
-  dueDay: number | null;
-  dueLast: boolean;
-  startsOn: string;
-  endsOn: string | null;
-}): string | null {
+export function validateRecurringRule(
+  input: {
+    kind: RecurringKind | null;
+    walletId: string | null;
+    categoryId: string | null;
+    dueDay: number | null;
+    dueLast: boolean;
+    startsOn: string;
+    endsOn: string | null;
+  },
+  lang: Language = 'id',
+): string | null {
+  const messages = dictionaryFor(lang).recurring.validation;
   if (!input.kind || !isRecurringKind(input.kind)) {
-    return recurringMessages.kindRequired;
+    return messages.kindRequired;
   }
-  if (!input.walletId) return recurringMessages.walletRequired;
-  if (!input.categoryId) return recurringMessages.categoryRequired;
+  if (!input.walletId) return messages.walletRequired;
+  if (!input.categoryId) return messages.categoryRequired;
   if (!input.dueLast) {
     if (
       input.dueDay === null ||
@@ -268,15 +285,15 @@ export function validateRecurringRule(input: {
       input.dueDay < DUE_DAY_MIN ||
       input.dueDay > DUE_DAY_MAX
     ) {
-      return recurringMessages.dueRequired;
+      return messages.dueRequired;
     }
   }
-  if (!input.startsOn) return recurringMessages.startsRequired;
-  if (!isDayOne(input.startsOn)) return recurringMessages.startsNotDayOne;
+  if (!input.startsOn) return messages.startsRequired;
+  if (!isDayOne(input.startsOn)) return messages.startsNotDayOne;
   if (input.endsOn !== null) {
-    if (!isDayOne(input.endsOn)) return recurringMessages.endsNotDayOne;
+    if (!isDayOne(input.endsOn)) return messages.endsNotDayOne;
     if (input.endsOn < input.startsOn) {
-      return recurringMessages.endsBeforeStarts;
+      return messages.endsBeforeStarts;
     }
   }
   return null;

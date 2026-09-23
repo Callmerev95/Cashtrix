@@ -29,11 +29,15 @@ import {
   type RecurringRule,
 } from '@/features/recurring';
 import { formatGrouped } from '@/features/transactions';
+import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 
 export default function RecurringScreen() {
   const { rules, loading, error, refresh, setPaused, remove } = useRecurring();
   const [busyId, setBusyId] = useState<string | null>(null);
+  // C6: copy follows the OS language (ADR-0008).
+  const t = dictionaryFor(useLanguage());
+  const tr = t.recurring;
 
   const archivedPauses = useMemo(
     () => rules.filter((rule) => rule.status === 'paused' && rule.walletArchived),
@@ -47,8 +51,8 @@ export default function RecurringScreen() {
       await setPaused({ id: rule.id, paused: rule.status !== 'paused' });
     } catch (cause) {
       Alert.alert(
-        'Gagal mengubah status',
-        cause instanceof Error ? cause.message : 'Coba lagi sebentar lagi.',
+        tr.screen.statusFail,
+        cause instanceof Error ? cause.message : t.common.retry,
       );
     } finally {
       setBusyId(null);
@@ -57,12 +61,12 @@ export default function RecurringScreen() {
 
   function confirmDelete(rule: RecurringRule) {
     Alert.alert(
-      `Hapus aturan "${rule.categoryName}"?`,
-      'Transaksi yang sudah tercatat tetap tersimpan sebagai transaksi biasa.',
+      fill(tr.screen.deleteTitle, { name: rule.categoryName }),
+      tr.screen.deleteBody,
       [
-        { text: 'Batal', style: 'cancel' },
+        { text: t.common.cancel, style: 'cancel' },
         {
-          text: 'Hapus',
+          text: t.common.delete,
           style: 'destructive',
           onPress: () => void destroy(rule),
         },
@@ -77,8 +81,8 @@ export default function RecurringScreen() {
       await remove(rule.id);
     } catch (cause) {
       Alert.alert(
-        'Gagal menghapus',
-        cause instanceof Error ? cause.message : 'Coba lagi sebentar lagi.',
+        tr.screen.deleteFail,
+        cause instanceof Error ? cause.message : t.common.retry,
       );
     } finally {
       setBusyId(null);
@@ -89,10 +93,10 @@ export default function RecurringScreen() {
     <Screen style={styles.frame} testID="recurring-screen">
       <View style={styles.header}>
         <Text style={[typography.labelUppercase, styles.kicker]}>
-          Otomatisasi
+          {tr.screen.kicker}
         </Text>
         <Text style={[typography.headlineLg, styles.title]}>
-          Transaksi berulang
+          {tr.screen.title}
         </Text>
       </View>
 
@@ -110,7 +114,10 @@ export default function RecurringScreen() {
             <Text testID="recurring-error" style={[typography.bodyMd, styles.errorText]}>
               {error}
             </Text>
-            <PrimaryButton label="Coba lagi" onPress={() => void refresh()} />
+            <PrimaryButton
+              label={tr.screen.retry}
+              onPress={() => void refresh()}
+            />
           </View>
         ) : (
           <>
@@ -123,19 +130,19 @@ export default function RecurringScreen() {
                 />
                 <View style={styles.bannerBody}>
                   <Text style={[typography.bodyMd, styles.bannerTitle]}>
-                    {archivedPauses.length} aturan dijeda
+                    {fill(tr.screen.bannerTitle, {
+                      count: archivedPauses.length,
+                    })}
                   </Text>
                   <Text style={[typography.bodySm, styles.bannerSubtitle]}>
-                    Dompetnya diarsipkan — buka arsip dompet atau pilih dompet
-                    lain agar tagihan jalan lagi.
+                    {tr.screen.bannerBody}
                   </Text>
                 </View>
               </Card>
             ) : null}
             {rules.length === 0 ? (
               <Text style={[typography.bodyMd, styles.empty]}>
-                Belum ada aturan. Buat satu untuk gaji atau tagihan yang datang
-                tiap bulan — occurrence-nya lahir otomatis saat app dibuka.
+                {tr.screen.empty}
               </Text>
             ) : (
               rules.map((rule) => (
@@ -156,7 +163,7 @@ export default function RecurringScreen() {
             )}
             <PrimaryButton
               testID="recurring-add"
-              label="Buat aturan"
+              label={tr.screen.add}
               onPress={() => router.push('/recurring-form')}
             />
           </>
@@ -179,6 +186,9 @@ function RuleRow({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const language = useLanguage();
+  const t = dictionaryFor(language);
+  const tr = t.recurring;
   const paused = rule.status === 'paused';
   return (
     <Card style={[styles.card, paused && styles.cardPaused]}>
@@ -191,16 +201,16 @@ function RuleRow({
       </View>
       <View style={styles.cardBody}>
         <Text style={[typography.bodyMd, styles.cardTitle]} numberOfLines={1}>
-          {rule.categoryName} · Rp {formatGrouped(rule.amount)}
+          {rule.categoryName} · Rp {formatGrouped(rule.amount, language)}
         </Text>
         <Text style={[typography.bodySm, styles.cardMeta]} numberOfLines={2}>
-          {rule.kind === 'expense' ? 'Pengeluaran' : 'Pemasukan'} ·{' '}
-          {rule.walletName} · {dueLabel(rule.dueDay, rule.dueLast)}
+          {t.transactions.type[rule.kind]} ·{' '}
+          {rule.walletName} · {dueLabel(rule.dueDay, rule.dueLast, language)}
         </Text>
         <Text style={[typography.bodySm, styles.cardMeta]} numberOfLines={1}>
-          {formatRuleWindow(rule.startsOn, rule.endsOn)} ·{' '}
-          {statusLabel(rule.status)}
-          {rule.walletArchived ? ' · dompet diarsipkan' : ''}
+          {formatRuleWindow(rule.startsOn, rule.endsOn, language)} ·{' '}
+          {statusLabel(rule.status, language)}
+          {rule.walletArchived ? tr.screen.archivedSuffix : ''}
         </Text>
       </View>
       {busy ? (
@@ -210,7 +220,9 @@ function RuleRow({
           <Pressable
             testID={`recurring-edit-${rule.id}`}
             accessibilityRole="button"
-            accessibilityLabel={`Ubah aturan ${rule.categoryName}`}
+            accessibilityLabel={fill(tr.screen.editA11y, {
+              name: rule.categoryName,
+            })}
             onPress={onEdit}
             hitSlop={12}
           >
@@ -219,11 +231,10 @@ function RuleRow({
           <Pressable
             testID={`recurring-pause-${rule.id}`}
             accessibilityRole="button"
-            accessibilityLabel={
-              paused
-                ? `Lanjutkan aturan ${rule.categoryName}`
-                : `Jeda aturan ${rule.categoryName}`
-            }
+            accessibilityLabel={fill(
+              paused ? tr.screen.resumeA11y : tr.screen.pauseA11y,
+              { name: rule.categoryName },
+            )}
             onPress={onToggle}
             hitSlop={12}
           >
@@ -236,7 +247,9 @@ function RuleRow({
           <Pressable
             testID={`recurring-delete-${rule.id}`}
             accessibilityRole="button"
-            accessibilityLabel={`Hapus aturan ${rule.categoryName}`}
+            accessibilityLabel={fill(tr.screen.deleteA11y, {
+              name: rule.categoryName,
+            })}
             onPress={onDelete}
             hitSlop={12}
           >

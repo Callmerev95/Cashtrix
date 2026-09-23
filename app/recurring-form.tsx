@@ -45,12 +45,10 @@ import {
   useTransactions,
   validateAmount,
 } from '@/features/transactions';
+import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 
-const KINDS: { value: RecurringKind; label: string }[] = [
-  { value: 'expense', label: 'Pengeluaran' },
-  { value: 'income', label: 'Pemasukan' },
-];
+const KINDS: RecurringKind[] = ['expense', 'income'];
 
 /** `2026-09-01` shifted by delta months, still day-1. */
 function shiftMonth(dayOne: string, delta: number): string {
@@ -67,6 +65,10 @@ export default function RecurringFormScreen() {
   const { rules, save } = useRecurring();
   const { categories, wallets } = useTransactions();
   const insets = useSafeAreaInsets();
+  // C6: copy + validation follow the OS language (ADR-0008).
+  const language = useLanguage();
+  const t = dictionaryFor(language);
+  const tr = t.recurring;
 
   const editing = useMemo(
     () => rules.find((rule) => rule.id === params.id),
@@ -128,7 +130,7 @@ export default function RecurringFormScreen() {
     startsOn !== currentMonthOne;
 
   async function onSave() {
-    const amountResult = validateAmount(amountRaw);
+    const amountResult = validateAmount(amountRaw, language);
     setAmountError(amountResult.ok ? null : amountResult.error);
     if (!amountResult.ok) return;
 
@@ -136,19 +138,22 @@ export default function RecurringFormScreen() {
     const categoryId =
       category && category.kind === kind ? category.id : null;
 
-    const ruleError = validateRecurringRule({
-      kind,
-      walletId: walletChoice,
-      categoryId,
-      dueDay,
-      dueLast,
-      startsOn: startsOn ?? '',
-      endsOn: endsEnabled ? (endsMonth ?? startsOn) : null,
-    });
+    const ruleError = validateRecurringRule(
+      {
+        kind,
+        walletId: walletChoice,
+        categoryId,
+        dueDay,
+        dueLast,
+        startsOn: startsOn ?? '',
+        endsOn: endsEnabled ? (endsMonth ?? startsOn) : null,
+      },
+      language,
+    );
     setFormError(ruleError);
     if (ruleError || !startsOn) {
       if (!startsOn && !ruleError) {
-        setFormError('Bulan berjalan belum termuat, coba lagi sebentar lagi.');
+        setFormError(tr.form.loadMonthFail);
       }
       return;
     }
@@ -169,7 +174,7 @@ export default function RecurringFormScreen() {
           endsOn: endsEnabled ? (endsMonth ?? startsOn) : null,
         });
       } else {
-        if (!session?.user.id) throw new Error('Sesi tidak ditemukan');
+        if (!session?.user.id) throw new Error(tr.form.noSession);
         await save({
           userId: session.user.id,
           kind,
@@ -186,7 +191,7 @@ export default function RecurringFormScreen() {
     } catch (cause) {
       setBusy(false);
       setFormError(
-        cause instanceof Error ? cause.message : 'Gagal menyimpan aturan',
+        cause instanceof Error ? cause.message : tr.form.saveFail,
       );
     }
   }
@@ -206,14 +211,14 @@ export default function RecurringFormScreen() {
         <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Tutup"
+            accessibilityLabel={tr.form.close}
             onPress={() => router.back()}
             style={styles.close}
           >
             <MaterialIcons name="close" size={24} color={colors.textSecondary} />
           </Pressable>
           <Text style={[typography.headlineMd, styles.title]}>
-            {isEdit ? 'Ubah Aturan' : 'Aturan Baru'}
+            {isEdit ? tr.form.editTitle : tr.form.createTitle}
           </Text>
         </View>
 
@@ -224,22 +229,22 @@ export default function RecurringFormScreen() {
         >
           {isEdit ? (
             <Text style={[typography.bodySm, styles.hint]}>
-              Jenis terkunci — yang sudah tercatat tidak berubah artinya.
-              Perubahan hanya berlaku untuk occurrence yang belum lahir.
+              {tr.form.kindLocked}
             </Text>
           ) : (
             <View testID="recurring-kind" style={styles.chips}>
-              {KINDS.map((option) => {
-                const active = kind === option.value;
+              {KINDS.map((value) => {
+                const active = kind === value;
+                const label = t.transactions.type[value];
                 return (
                   <Pressable
-                    key={option.value}
-                    testID={`recurring-kind-${option.value}`}
+                    key={value}
+                    testID={`recurring-kind-${value}`}
                     accessibilityRole="button"
                     accessibilityState={{ selected: active }}
-                    accessibilityLabel={option.label}
+                    accessibilityLabel={label}
                     onPress={() => {
-                      setKind(option.value);
+                      setKind(value);
                       setCategoryChoice(null);
                     }}
                     style={[styles.chip, active && styles.chipActive]}
@@ -251,7 +256,7 @@ export default function RecurringFormScreen() {
                         active && styles.chipLabelActive,
                       ]}
                     >
-                      {option.label}
+                      {label}
                     </Text>
                   </Pressable>
                 );
@@ -260,7 +265,7 @@ export default function RecurringFormScreen() {
           )}
 
           <Text style={[typography.labelUppercase, styles.kicker, styles.gap]}>
-            Nominal
+            {tr.form.amount}
           </Text>
           <AmountField
             testID="recurring-amount"
@@ -273,7 +278,10 @@ export default function RecurringFormScreen() {
           />
 
           <View style={styles.gap}>
-            <SectionHeader testID="recurring-wallet-header" title="Dompet" />
+            <SectionHeader
+              testID="recurring-wallet-header"
+              title={tr.form.walletSection}
+            />
             <View testID="recurring-wallet-picker" style={styles.chips}>
               {wallets.map((wallet) => {
                 const active = wallet.id === walletChoice;
@@ -301,14 +309,17 @@ export default function RecurringFormScreen() {
               })}
               {wallets.length === 0 ? (
                 <Text style={[typography.bodySm, styles.hint]}>
-                  Belum ada dompet aktif. Buat satu dulu di menu Dompet.
+                  {tr.form.walletEmpty}
                 </Text>
               ) : null}
             </View>
           </View>
 
           <View style={styles.gap}>
-            <SectionHeader testID="recurring-category-header" title="Kategori" />
+            <SectionHeader
+              testID="recurring-category-header"
+              title={tr.form.categorySection}
+            />
             <CategoryGrid
               testID="recurring-category-grid"
               categories={categories}
@@ -321,7 +332,7 @@ export default function RecurringFormScreen() {
           <View style={styles.gap}>
             <SectionHeader
               testID="recurring-due-header"
-              title="Jatuh tempo tiap bulan"
+              title={tr.form.dueSection}
             />
             <View testID="recurring-due-picker" style={styles.chips}>
               {dueDays.map((day) => {
@@ -332,7 +343,7 @@ export default function RecurringFormScreen() {
                     testID={`recurring-due-${day}`}
                     accessibilityRole="button"
                     accessibilityState={{ selected: active }}
-                    accessibilityLabel={`Tanggal ${day}`}
+                    accessibilityLabel={fill(tr.form.dueDayA11y, { day })}
                     onPress={() => {
                       setDueDay(day);
                       setDueLast(false);
@@ -355,7 +366,7 @@ export default function RecurringFormScreen() {
                 testID="recurring-due-last"
                 accessibilityRole="button"
                 accessibilityState={{ selected: dueLast }}
-                accessibilityLabel="Hari terakhir bulan"
+                accessibilityLabel={tr.form.dueLastA11y}
                 onPress={() => {
                   setDueLast(true);
                   setDueDay(null);
@@ -369,21 +380,25 @@ export default function RecurringFormScreen() {
                     dueLast && styles.chipLabelActive,
                   ]}
                 >
-                  Akhir bulan
+                  {tr.form.dueLast}
                 </Text>
               </Pressable>
             </View>
           </View>
 
           <View style={styles.gap}>
-            <SectionHeader testID="recurring-starts-header" title="Mulai" />
+            <SectionHeader
+              testID="recurring-starts-header"
+              title={tr.form.startsSection}
+            />
             <Text style={[typography.bodyMd, styles.startsText]}>
-              {startsOn ? formatRuleMonth(startsOn) : 'Memuat bulan berjalan…'}
+              {startsOn
+                ? formatRuleMonth(startsOn, language)
+                : tr.form.startsLoading}
             </Text>
             {startsBumped ? (
               <Text style={[typography.bodySm, styles.hint]}>
-                Due bulan ini sudah lewat — occurrence pertama lahir bulan
-                depan agar tidak mengarang pembayaran lalu.
+                {tr.form.startsBumped}
               </Text>
             ) : null}
           </View>
@@ -393,7 +408,7 @@ export default function RecurringFormScreen() {
               testID="recurring-ends-toggle"
               accessibilityRole="checkbox"
               accessibilityState={{ checked: endsEnabled }}
-              accessibilityLabel="Ada bulan akhir"
+              accessibilityLabel={tr.form.endsToggle}
               onPress={() => {
                 if (!endsEnabled && !endsMonth && startsOn) {
                   setEndsMonth(startsOn);
@@ -408,7 +423,7 @@ export default function RecurringFormScreen() {
                 color={endsEnabled ? colors.accent : colors.textSecondary}
               />
               <Text style={[typography.bodyMd, styles.endsLabel]}>
-                Ada bulan akhir
+                {tr.form.endsToggle}
               </Text>
             </Pressable>
             {endsEnabled ? (
@@ -416,7 +431,7 @@ export default function RecurringFormScreen() {
                 <Pressable
                   testID="recurring-ends-prev"
                   accessibilityRole="button"
-                  accessibilityLabel="Bulan akhir sebelumnya"
+                  accessibilityLabel={tr.form.endsPrevA11y}
                   accessibilityState={{
                     disabled:
                       !endsMonth || !startsOn || endsMonth <= startsOn,
@@ -436,12 +451,12 @@ export default function RecurringFormScreen() {
                   />
                 </Pressable>
                 <Text style={[typography.bodyMd, styles.endsText]}>
-                  {endsMonth ? formatRuleMonth(endsMonth) : '—'}
+                  {endsMonth ? formatRuleMonth(endsMonth, language) : '—'}
                 </Text>
                 <Pressable
                   testID="recurring-ends-next"
                   accessibilityRole="button"
-                  accessibilityLabel="Bulan akhir berikutnya"
+                  accessibilityLabel={tr.form.endsNextA11y}
                   onPress={() =>
                     setEndsMonth((current) =>
                       current
@@ -471,13 +486,13 @@ export default function RecurringFormScreen() {
         <View style={styles.footer}>
           <PrimaryButton
             testID="recurring-save"
-            label={isEdit ? 'Simpan perubahan' : 'Simpan aturan'}
+            label={isEdit ? tr.form.saveEdit : tr.form.saveCreate}
             onPress={() => void onSave()}
             loading={busy}
           />
           <GhostButton
             testID="recurring-cancel"
-            label="Batal"
+            label={t.common.cancel}
             onPress={() => router.back()}
           />
         </View>
