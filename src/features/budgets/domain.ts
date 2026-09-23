@@ -15,7 +15,9 @@
  */
 
 import { AMOUNT_MAX } from '../transactions/domain';
-import { dictionaryFor, fill, id, type Language } from '@/i18n';
+import { dictionaryFor, fill } from '@/i18n/dictionaries';
+import { id } from '@/i18n/id';
+import type { Language } from '@/i18n/locale';
 
 // ---------------------------------------------------------------------------
 // Thresholds (PRD §2.3 Epic E)

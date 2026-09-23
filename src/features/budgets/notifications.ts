@@ -19,7 +19,8 @@
 import type * as NotificationsType from 'expo-notifications';
 import Constants from 'expo-constants';
 
-import { dictionaryFor, fill, type Language } from '@/i18n';
+import { dictionaryFor, fill } from '@/i18n/dictionaries';
+import type { Language } from '@/i18n/locale';
 
 let cached: typeof NotificationsType | null | undefined;
 
