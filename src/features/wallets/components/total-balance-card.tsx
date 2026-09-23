@@ -9,6 +9,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { formatCurrency } from '@/features/wallets';
+import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, gradients, layout, radius, spacing, typography } from '@/theme';
 
 export function TotalBalanceCard({
@@ -20,6 +21,9 @@ export function TotalBalanceCard({
   walletCount: number;
   loading?: boolean;
 }) {
+  // C6: copy + amount format follow the OS language (ADR-0008, R10).
+  const language = useLanguage();
+  const t = dictionaryFor(language);
   return (
     <LinearGradient
       testID="total-balance-card"
@@ -31,7 +35,7 @@ export function TotalBalanceCard({
       <View style={styles.inner}>
         <View style={styles.ambience} pointerEvents="none" />
         <Text style={[typography.labelUppercase, styles.kicker]}>
-          Total Saldo
+          {t.wallets.card.total}
         </Text>
         <Text
           testID="total-balance"
@@ -39,10 +43,10 @@ export function TotalBalanceCard({
           numberOfLines={1}
           adjustsFontSizeToFit
         >
-          {loading ? '—' : formatCurrency(total)}
+          {loading ? '—' : formatCurrency(total, 'Rp', language)}
         </Text>
         <Text style={[typography.bodySm, styles.meta]}>
-          {walletCount} dompet
+          {fill(t.wallets.card.count, { count: walletCount })}
         </Text>
       </View>
     </LinearGradient>

@@ -23,6 +23,7 @@ export {
   summarizeWallets,
   validateWallet,
   walletMessages,
+  walletTypeLabel,
   walletTypeMeta,
 } from './domain';
 export type {

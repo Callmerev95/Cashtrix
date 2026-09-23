@@ -19,6 +19,7 @@ import {
 } from 'react';
 
 import { onLocalDataPurge } from '@/supabase';
+import { dictionaryFor, useLanguage } from '@/i18n';
 
 import { listWallets } from './api';
 import {
@@ -54,6 +55,9 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
   const inflight = useRef<Promise<void> | null>(null);
+  // C6: load-error copy follows the OS language (ADR-0008).
+  const language = useLanguage();
+  const loadError = dictionaryFor(language).wallets.loadError;
 
   useEffect(() => {
     mounted.current = true;
@@ -76,7 +80,7 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
         } catch (cause) {
           if (!mounted.current) return;
           setError(
-            cause instanceof Error ? cause.message : 'Gagal memuat dompet',
+            cause instanceof Error ? cause.message : loadError,
           );
         } finally {
           if (mounted.current) setLoading(false);
@@ -86,7 +90,7 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
       });
     }
     return inflight.current;
-  }, []);
+  }, [loadError]);
 
   useEffect(() => {
     let cancelled = false;
@@ -101,7 +105,7 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
       })
       .catch((cause: unknown) => {
         if (cancelled || !mounted.current) return;
-        setError(cause instanceof Error ? cause.message : 'Gagal memuat dompet');
+        setError(cause instanceof Error ? cause.message : loadError);
       })
       .finally(() => {
         if (!cancelled && mounted.current) setLoading(false);
@@ -110,7 +114,7 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadError]);
 
   // Sign out clears the in-memory copy along with the persisted cache.
   useEffect(

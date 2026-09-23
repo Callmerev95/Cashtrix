@@ -8,7 +8,13 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing, typography } from '@/theme';
-import { WALLET_TYPES, walletTypeMeta, type WalletType } from '@/features/wallets';
+import {
+  WALLET_TYPES,
+  walletTypeLabel,
+  walletTypeMeta,
+  type WalletType,
+} from '@/features/wallets';
+import { useLanguage } from '@/i18n';
 
 type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
 
@@ -19,10 +25,13 @@ export function WalletTypePicker({
   value: WalletType;
   onChange: (next: WalletType) => void;
 }) {
+  // C6: type labels follow the OS language (ADR-0008).
+  const language = useLanguage();
   return (
     <View style={styles.well}>
       {WALLET_TYPES.map((type) => {
         const meta = walletTypeMeta[type];
+        const label = walletTypeLabel(type, language);
         const active = type === value;
 
         return (
@@ -31,7 +40,7 @@ export function WalletTypePicker({
             testID={`wallet-type-${type}`}
             accessibilityRole="button"
             accessibilityState={{ selected: active }}
-            accessibilityLabel={meta.label}
+            accessibilityLabel={label}
             onPress={() => onChange(type)}
             style={[styles.segment, active && styles.segmentActive]}
           >
@@ -47,7 +56,7 @@ export function WalletTypePicker({
                 active && styles.labelActive,
               ]}
             >
-              {meta.label}
+              {label}
             </Text>
           </Pressable>
         );

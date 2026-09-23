@@ -35,11 +35,11 @@ import {
   updateWallet,
   useWallets,
   validateWallet,
-  walletMessages,
   type WalletFieldErrors,
   type WalletType,
 } from '@/features/wallets';
 import { WalletTypePicker } from '@/features/wallets/components/wallet-type-picker';
+import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, fontFamily, layout, radius, spacing, typography } from '@/theme';
 
 export default function WalletFormScreen() {
@@ -47,6 +47,10 @@ export default function WalletFormScreen() {
   const { session } = useAuth();
   const { wallets, summary, refresh } = useWallets();
   const insets = useSafeAreaInsets();
+  // C6: copy follows the OS language (ADR-0008); validation renders it too.
+  const language = useLanguage();
+  const t = dictionaryFor(language);
+  const tf = t.wallets.form;
 
   const editing = useMemo(
     () => wallets.find((wallet) => wallet.id === params.id),
@@ -65,13 +69,16 @@ export default function WalletFormScreen() {
   const atLimit = !isEdit && summary.remainingSlots <= 0;
 
   async function save() {
-    const nextErrors = validateWallet({
-      name,
-      openingBalanceRaw: openingRaw,
-      existingNames: wallets
-        .filter((wallet) => wallet.id !== params.id)
-        .map((wallet) => wallet.name),
-    });
+    const nextErrors = validateWallet(
+      {
+        name,
+        openingBalanceRaw: openingRaw,
+        existingNames: wallets
+          .filter((wallet) => wallet.id !== params.id)
+          .map((wallet) => wallet.name),
+      },
+      language,
+    );
     setErrors(nextErrors);
     if (hasWalletErrors(nextErrors)) return;
 
@@ -82,7 +89,7 @@ export default function WalletFormScreen() {
       if (isEdit && params.id) {
         await updateWallet({ id: params.id, name, type, openingBalance });
       } else {
-        if (!session?.user.id) throw new Error('Sesi tidak ditemukan');
+        if (!session?.user.id) throw new Error(tf.noSession);
         await createWallet({
           userId: session.user.id,
           name,
@@ -96,8 +103,8 @@ export default function WalletFormScreen() {
     } catch (cause) {
       setBusy(false);
       Alert.alert(
-        isEdit ? 'Gagal menyimpan perubahan' : 'Gagal membuat dompet',
-        cause instanceof Error ? cause.message : 'Coba lagi sebentar lagi.',
+        isEdit ? tf.saveFailEdit : tf.saveFailCreate,
+        cause instanceof Error ? cause.message : t.common.retry,
       );
     }
   }
@@ -111,14 +118,14 @@ export default function WalletFormScreen() {
         <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Tutup"
+            accessibilityLabel={tf.close}
             onPress={() => router.back()}
             style={styles.close}
           >
             <MaterialIcons name="close" size={24} color={colors.textSecondary} />
           </Pressable>
           <Text style={[typography.headlineMd, styles.title]}>
-            {isEdit ? 'Ubah dompet' : 'Dompet baru'}
+            {isEdit ? tf.editTitle : tf.createTitle}
           </Text>
         </View>
 
@@ -127,12 +134,12 @@ export default function WalletFormScreen() {
           contentContainerStyle={styles.body}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={[typography.labelUppercase, styles.kicker]}>Nama</Text>
+          <Text style={[typography.labelUppercase, styles.kicker]}>{tf.name}</Text>
           <TextField
             testID="wallet-name"
             value={name}
             onChangeText={setName}
-            placeholder="BCA, GoPay, Dompet…"
+            placeholder={tf.namePlaceholder}
             autoCapitalize="words"
             maxLength={70}
             hasError={Boolean(errors.name)}
@@ -143,12 +150,12 @@ export default function WalletFormScreen() {
           ) : null}
 
           <Text style={[typography.labelUppercase, styles.kicker, styles.gap]}>
-            Tipe
+            {tf.type}
           </Text>
           <WalletTypePicker value={type} onChange={setType} />
 
           <Text style={[typography.labelUppercase, styles.kicker, styles.gap]}>
-            Saldo Awal
+            {tf.opening}
           </Text>
           <View style={[styles.amountWell, errors.openingBalance && styles.amountError]}>
             <Text style={[typography.currencyMd, styles.rp]}>Rp</Text>
@@ -180,26 +187,26 @@ export default function WalletFormScreen() {
           ) : null}
 
           <Text style={[typography.bodySm, styles.hint]}>
-            Maksimal {MAX_WALLETS} dompet per akun.
+            {fill(tf.hint, { max: MAX_WALLETS })}
           </Text>
         </ScrollView>
 
         <View style={[styles.footer, { paddingBottom: spacing.md }]}>
           <PrimaryButton
             testID="wallet-save"
-            label={isEdit ? 'Simpan' : 'Buat Dompet'}
+            label={isEdit ? t.common.save : tf.create}
             onPress={save}
             loading={busy}
             disabled={atLimit}
           />
           {atLimit ? (
             <Text style={[typography.bodySm, styles.error, styles.limit]}>
-              {walletMessages.limitReached}
+              {fill(t.wallets.validation.limitReached, { max: MAX_WALLETS })}
             </Text>
           ) : null}
           <GhostButton
             testID="wallet-cancel"
-            label="Batal"
+            label={t.common.cancel}
             onPress={() => router.back()}
           />
         </View>

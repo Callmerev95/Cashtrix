@@ -17,6 +17,7 @@ import {
   summarizeWallets,
   validateWallet,
   walletMessages,
+  walletTypeLabel,
   walletTypeMeta,
   type Wallet,
 } from '@/features/wallets';
@@ -84,6 +85,12 @@ describe('formatAmount / formatCurrency', () => {
     expect(formatCurrency(1_250_000)).toBe('Rp 1.250.000');
     expect(formatCurrency(-500_000)).toBe('-Rp 500.000');
   });
+
+  it("mengikuti bahasa aktif (en: ',' ribuan, '.' desimal)", () => {
+    expect(formatAmount(1_250_000, 'en')).toBe('1,250,000');
+    expect(formatAmount(1_250_000.5, 'en')).toBe('1,250,000.50');
+    expect(formatCurrency(1_250_000, 'Rp', 'en')).toBe('Rp 1,250,000');
+  });
 });
 
 describe('validateWallet', () => {
@@ -132,6 +139,16 @@ describe('validateWallet', () => {
       existingNames: ['Mandiri'],
     });
     expect(hasWalletErrors(errors)).toBe(false);
+  });
+
+  it('merender copy validasi dalam bahasa aktif (C6)', () => {
+    expect(
+      validateWallet({ name: '   ', openingBalanceRaw: '' }, 'en').name,
+    ).toBe('Wallet name is required');
+    expect(
+      validateWallet({ name: 'bca', openingBalanceRaw: '', existingNames: ['BCA'] }, 'en')
+        .name,
+    ).toBe('Wallet name is already used');
   });
 });
 
@@ -193,6 +210,12 @@ describe('walletTypeMeta', () => {
     expect(isWalletType('bank')).toBe(true);
     expect(isWalletType('crypto')).toBe(false);
     expect(isWalletType(null)).toBe(false);
+  });
+
+  it('melabeli tipe dalam bahasa aktif (C6)', () => {
+    expect(walletTypeLabel('cash')).toBe('Tunai');
+    expect(walletTypeLabel('cash', 'en')).toBe('Cash');
+    expect(walletTypeLabel('card', 'en')).toBe('Card');
   });
 });
 

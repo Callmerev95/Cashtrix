@@ -30,10 +30,11 @@ import {
   reassignAndDeleteWallet,
   setWalletArchived,
   useWallets,
-  walletTypeMeta,
+  walletTypeLabel,
   type Wallet,
 } from '@/features/wallets';
 import { WalletRow } from '@/features/wallets/components/wallet-row';
+import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 
 export default function WalletsScreen() {
@@ -41,6 +42,10 @@ export default function WalletsScreen() {
     useWallets();
   const { refresh: refreshAnalytics } = useAnalytics();
   const insets = useSafeAreaInsets();
+  // C6: copy + amount format follow the OS language (ADR-0008, R10).
+  const language = useLanguage();
+  const t = dictionaryFor(language);
+  const tw = t.wallets;
 
   /** Wallet queued for deletion; non-null opens the reassignment sheet. */
   const [pendingDelete, setPendingDelete] = useState<Wallet | null>(null);
@@ -53,8 +58,8 @@ export default function WalletsScreen() {
       await refresh();
     } catch (cause) {
       Alert.alert(
-        'Gagal menghapus dompet',
-        cause instanceof Error ? cause.message : 'Coba lagi sebentar lagi.',
+        tw.list.deleteFail,
+        cause instanceof Error ? cause.message : t.common.retry,
       );
     } finally {
       setBusy(false);
@@ -64,12 +69,12 @@ export default function WalletsScreen() {
   function onDeletePress(wallet: Wallet) {
     if (wallet.transactionCount === 0) {
       Alert.alert(
-        'Hapus dompet?',
-        `"${wallet.name}" tidak punya transaksi dan akan dihapus permanen.`,
+        tw.list.deleteTitle,
+        fill(tw.list.deleteBody, { name: wallet.name }),
         [
-          { text: 'Batal', style: 'cancel' },
+          { text: t.common.cancel, style: 'cancel' },
           {
-            text: 'Hapus',
+            text: t.common.delete,
             style: 'destructive',
             onPress: () => void removeEmptyWallet(wallet),
           },
@@ -87,15 +92,15 @@ export default function WalletsScreen() {
       await setWalletArchived(wallet.id, archived);
       await refresh();
       Alert.alert(
-        archived ? 'Dompet diarsipkan' : 'Dompet dibuka dari arsip',
-        archived
-          ? `"${wallet.name}" disembunyikan dari Dashboard dan transaksi baru. Riwayatnya tetap tersimpan.`
-          : `"${wallet.name}" kembali tersedia.`,
+        archived ? tw.list.archivedOk : tw.list.unarchivedOk,
+        fill(archived ? tw.list.archivedBody : tw.list.unarchivedBody, {
+          name: wallet.name,
+        }),
       );
     } catch (cause) {
       Alert.alert(
-        'Gagal mengubah dompet',
-        cause instanceof Error ? cause.message : 'Coba lagi sebentar lagi.',
+        tw.list.archiveFail,
+        cause instanceof Error ? cause.message : t.common.retry,
       );
     } finally {
       setBusy(false);
@@ -115,18 +120,21 @@ export default function WalletsScreen() {
       // Rows changed wallets, so per-wallet Insight filters re-read too.
       // Best-effort: the move already committed.
       await refreshAnalytics().catch(() => undefined);
-      Alert.alert('Selesai', `${moved} transaksi dipindahkan ke ${target.name}.`);
+      Alert.alert(
+        tw.list.moveDone,
+        fill(tw.list.moveDoneBody, { moved, name: target.name }),
+      );
     } catch (cause) {
       Alert.alert(
-        'Gagal memindahkan transaksi',
-        cause instanceof Error ? cause.message : 'Coba lagi sebentar lagi.',
+        tw.list.moveFail,
+        cause instanceof Error ? cause.message : t.common.retry,
       );
     } finally {
       setBusy(false);
     }
   }
 
-  const totalLabel = formatCurrency(summary.totalBalance);
+  const totalLabel = formatCurrency(summary.totalBalance, 'Rp', language);
 
   return (
     <Screen>
@@ -138,27 +146,27 @@ export default function WalletsScreen() {
         <View style={styles.headerRow}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Kembali"
+            accessibilityLabel={tw.list.back}
             onPress={() => router.back()}
             style={styles.back}
           >
             <MaterialIcons name="arrow-back" size={24} color={colors.textSecondary} />
           </Pressable>
           <View style={styles.headerText}>
-            <Text style={[typography.labelUppercase, styles.kicker]}>Kelola</Text>
-            <Text style={[typography.headlineLg, styles.title]}>Dompet</Text>
+            <Text style={[typography.labelUppercase, styles.kicker]}>{tw.list.kicker}</Text>
+            <Text style={[typography.headlineLg, styles.title]}>{tw.list.title}</Text>
           </View>
         </View>
 
         <Card style={styles.summaryCard}>
           <Text style={[typography.labelUppercase, styles.kicker]}>
-            Total Saldo
+            {tw.list.total}
           </Text>
           <Text style={[typography.currencyDisplay, styles.total]} numberOfLines={1}>
             {loading ? '—' : totalLabel}
           </Text>
           <Text style={[typography.bodySm, styles.meta]}>
-            {summary.count} dari {MAX_WALLETS} dompet
+            {fill(tw.list.count, { count: summary.count, max: MAX_WALLETS })}
           </Text>
         </Card>
 
@@ -169,7 +177,7 @@ export default function WalletsScreen() {
         <View style={styles.list}>
           {wallets.length === 0 && !loading ? (
             <Text style={[typography.bodyMd, styles.empty]}>
-              Belum ada dompet. Buat dompet pertama Anda untuk mulai mencatat.
+              {tw.list.empty}
             </Text>
           ) : (
             wallets.map((wallet) => (
@@ -188,17 +196,19 @@ export default function WalletsScreen() {
                     <Pressable
                       testID={`wallet-archive-${wallet.id}`}
                       accessibilityRole="button"
-                      accessibilityLabel={`Arsipkan ${wallet.name}`}
+                      accessibilityLabel={fill(tw.list.archiveA11y, {
+                        name: wallet.name,
+                      })}
                       disabled={busy}
                       hitSlop={spacing.sm}
                       onPress={() =>
                         Alert.alert(
-                          'Arsipkan dompet?',
-                          `"${wallet.name}" disembunyikan dari Dashboard dan picker. Riwayat transaksi tetap ada.`,
+                          tw.list.archiveTitle,
+                          fill(tw.list.archiveBody, { name: wallet.name }),
                           [
-                            { text: 'Batal', style: 'cancel' },
+                            { text: t.common.cancel, style: 'cancel' },
                             {
-                              text: 'Arsipkan',
+                              text: tw.list.archiveAction,
                               onPress: () => void archiveWallet(wallet, true),
                             },
                           ],
@@ -215,7 +225,9 @@ export default function WalletsScreen() {
                     <Pressable
                       testID={`wallet-delete-${wallet.id}`}
                       accessibilityRole="button"
-                      accessibilityLabel={`Hapus ${wallet.name}`}
+                      accessibilityLabel={fill(tw.list.deleteA11y, {
+                        name: wallet.name,
+                      })}
                       disabled={busy}
                       hitSlop={spacing.sm}
                       onPress={() => onDeletePress(wallet)}
@@ -237,7 +249,7 @@ export default function WalletsScreen() {
         {archivedWallets.length > 0 ? (
           <View style={styles.archivedSection}>
             <Text style={[typography.labelUppercase, styles.kicker]}>
-              Arsip
+              {tw.list.archived}
             </Text>
             {archivedWallets.map((wallet) => (
               <WalletRow
@@ -248,7 +260,9 @@ export default function WalletsScreen() {
                   <Pressable
                     testID={`wallet-unarchive-${wallet.id}`}
                     accessibilityRole="button"
-                    accessibilityLabel={`Buka arsip ${wallet.name}`}
+                    accessibilityLabel={fill(tw.list.unarchiveA11y, {
+                      name: wallet.name,
+                    })}
                     disabled={busy}
                     hitSlop={spacing.sm}
                     onPress={() => void archiveWallet(wallet, false)}
@@ -271,13 +285,13 @@ export default function WalletsScreen() {
             testID="add-wallet"
             label={
               summary.remainingSlots > 0
-                ? 'Tambah Dompet'
-                : `Maksimal ${MAX_WALLETS} dompet`
+                ? tw.list.add
+                : fill(t.wallets.validation.limitReached, { max: MAX_WALLETS })
             }
             disabled={summary.remainingSlots <= 0}
             onPress={() => router.push('/wallet-form')}
           />
-          <GhostButton label="Kembali" onPress={() => router.back()} />
+          <GhostButton label={tw.list.back} onPress={() => router.back()} />
         </View>
       </ScrollView>
 
@@ -285,11 +299,12 @@ export default function WalletsScreen() {
         <View style={styles.sheet} testID="reassign-sheet">
           <View style={styles.sheetCard}>
             <Text style={[typography.headlineSm, styles.sheetTitle]}>
-              Pindahkan transaksi {pendingDelete.name}
+              {fill(t.wallets.sheet.title, { name: pendingDelete.name })}
             </Text>
             <Text style={[typography.bodySm, styles.sheetBody]}>
-              Dompet ini punya {pendingDelete.transactionCount} transaksi. Pilih
-              dompet tujuan, lalu dompet ini dihapus.
+              {fill(t.wallets.sheet.body, {
+                count: pendingDelete.transactionCount,
+              })}
             </Text>
 
             <View style={styles.sheetList}>
@@ -300,7 +315,9 @@ export default function WalletsScreen() {
                     key={wallet.id}
                     testID={`reassign-target-${wallet.id}`}
                     accessibilityRole="button"
-                    accessibilityLabel={`Pindahkan ke ${wallet.name}`}
+                    accessibilityLabel={fill(tw.list.moveToA11y, {
+                      name: wallet.name,
+                    })}
                     disabled={busy}
                     onPress={() => void reassignTo(wallet)}
                     style={({ pressed }) => [
@@ -320,8 +337,8 @@ export default function WalletsScreen() {
                         {wallet.name}
                       </Text>
                       <Text style={[typography.bodySm, styles.meta]}>
-                        {walletTypeMeta[wallet.type].label} ·{' '}
-                        {formatCurrency(wallet.balance)}
+                        {walletTypeLabel(wallet.type, language)} ·{' '}
+                        {formatCurrency(wallet.balance, 'Rp', language)}
                       </Text>
                     </View>
                     <MaterialIcons
@@ -333,8 +350,7 @@ export default function WalletsScreen() {
                 ))}
               {wallets.length <= 1 ? (
                 <Text style={[typography.bodySm, styles.empty]}>
-                  Tidak ada dompet lain. Buat dompet baru dulu untuk memindahkan
-                  transaksi.
+                  {t.wallets.sheet.empty}
                 </Text>
               ) : null}
             </View>
@@ -342,7 +358,7 @@ export default function WalletsScreen() {
             <View style={styles.sheetActions}>
               <PrimaryButton
                 testID="add-wallet-from-sheet"
-                label="Dompet baru"
+                label={t.wallets.sheet.create}
                 onPress={() => {
                   setPendingDelete(null);
                   router.push('/wallet-form');
@@ -350,7 +366,7 @@ export default function WalletsScreen() {
               />
               <GhostButton
                 testID="reassign-cancel"
-                label="Batal"
+                label={t.common.cancel}
                 onPress={() => setPendingDelete(null)}
               />
             </View>

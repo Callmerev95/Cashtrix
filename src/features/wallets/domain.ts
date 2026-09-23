@@ -13,6 +13,10 @@
  *    (`walletTypeMeta`). The DB stores only `type`.
  */
 
+import { dictionaryFor, fill } from '@/i18n/dictionaries';
+import { id } from '@/i18n/id';
+import type { Language } from '@/i18n/locale';
+
 export const MAX_WALLETS = 10;
 
 export const WALLET_TYPES = ['bank', 'ewallet', 'cash', 'card'] as const;
@@ -66,17 +70,26 @@ export function parseAmountInput(raw: string): number | null {
   return value;
 }
 
-/** Formats a number as `id-ID` grouped digits (no currency glyph). */
-export function formatAmount(value: number): string {
+/** Grouped digits (C6: separators follow the active language — `.`/`,` in
+ * id-ID, `,`/`.` in en-US; the default keeps the locked id-ID behaviour). */
+export function formatAmount(value: number, lang: Language = 'id'): string {
+  const thousand = lang === 'en' ? ',' : '.';
+  const decimal = lang === 'en' ? '.' : ',';
   const sign = value < 0 ? '-' : '';
   const [whole, decimals] = Math.abs(value).toFixed(2).split('.');
-  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  return decimals === '00' ? `${sign}${grouped}` : `${sign}${grouped},${decimals}`;
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, thousand);
+  return decimals === '00'
+    ? `${sign}${grouped}`
+    : `${sign}${grouped}${decimal}${decimals}`;
 }
 
 /** `Rp 1.250.000` — the dashboard/list rendering shared by every wallet UI. */
-export function formatCurrency(value: number, currency = 'Rp'): string {
-  return `${value < 0 ? '-' : ''}${currency} ${formatAmount(Math.abs(value))}`;
+export function formatCurrency(
+  value: number,
+  currency = 'Rp',
+  lang: Language = 'id',
+): string {
+  return `${value < 0 ? '-' : ''}${currency} ${formatAmount(Math.abs(value), lang)}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -84,14 +97,20 @@ export function formatCurrency(value: number, currency = 'Rp'): string {
 // ---------------------------------------------------------------------------
 
 export const walletMessages = {
-  nameRequired: 'Nama dompet wajib diisi',
-  nameTooLong: `Nama dompet maksimal ${WALLET_NAME_MAX} karakter`,
-  nameDuplicate: 'Nama dompet sudah dipakai',
-  amountInvalid: `Nominal harus antara 0 dan ${AMOUNT_MAX}`,
-  amountInvalidNumber: 'Nominal tidak valid',
-  limitReached: `Maksimal ${MAX_WALLETS} dompet`,
-  deleteConfirm: 'Hapus dompet ini?',
-  reassignRequired: 'Pilih dompet tujuan untuk memindahkan transaksi',
+  nameRequired: id.wallets.validation.nameRequired,
+  nameTooLong: fill(id.wallets.validation.nameTooLong, {
+    max: WALLET_NAME_MAX,
+  }),
+  nameDuplicate: id.wallets.validation.nameDuplicate,
+  amountInvalid: fill(id.wallets.validation.amountInvalid, {
+    max: AMOUNT_MAX,
+  }),
+  amountInvalidNumber: id.wallets.validation.amountInvalidNumber,
+  limitReached: fill(id.wallets.validation.limitReached, {
+    max: MAX_WALLETS,
+  }),
+  deleteConfirm: id.wallets.validation.deleteConfirm,
+  reassignRequired: id.wallets.validation.reassignRequired,
 } as const;
 
 export type WalletFieldErrors = {
@@ -104,24 +123,28 @@ export type WalletFieldErrors = {
  * user (case-insensitive), because `unique(user_id, name)` in the DB rejects
  * duplicates and a 409 after a round trip is a worse experience than inline.
  */
-export function validateWallet(input: {
-  name: string;
-  openingBalanceRaw: string;
-  existingNames?: string[];
-}): WalletFieldErrors {
+export function validateWallet(
+  input: {
+    name: string;
+    openingBalanceRaw: string;
+    existingNames?: string[];
+  },
+  lang: Language = 'id',
+): WalletFieldErrors {
+  const messages = dictionaryFor(lang).wallets.validation;
   const errors: WalletFieldErrors = {};
 
   const name = input.name.trim();
   if (name === '') {
-    errors.name = walletMessages.nameRequired;
+    errors.name = messages.nameRequired;
   } else if (name.length > WALLET_NAME_MAX) {
-    errors.name = walletMessages.nameTooLong;
+    errors.name = fill(messages.nameTooLong, { max: WALLET_NAME_MAX });
   } else if (
     (input.existingNames ?? []).some(
       (existing) => existing.trim().toLowerCase() === name.toLowerCase(),
     )
   ) {
-    errors.name = walletMessages.nameDuplicate;
+    errors.name = messages.nameDuplicate;
   }
 
   const raw = input.openingBalanceRaw.trim();
@@ -129,8 +152,8 @@ export function validateWallet(input: {
     const parsed = parseAmountInput(raw);
     if (parsed === null) {
       errors.openingBalance = /[^0-9.,\s-]/.test(raw)
-        ? walletMessages.amountInvalidNumber
-        : walletMessages.amountInvalid;
+        ? messages.amountInvalidNumber
+        : fill(messages.amountInvalid, { max: AMOUNT_MAX });
     }
   }
 
@@ -161,11 +184,16 @@ export type WalletTypeMeta = {
 };
 
 export const walletTypeMeta: Record<WalletType, WalletTypeMeta> = {
-  bank: { label: 'Bank', icon: 'account-balance', accent: 'accent' },
-  ewallet: { label: 'E-Wallet', icon: 'smartphone', accent: 'accent' },
-  cash: { label: 'Tunai', icon: 'payments', accent: 'accent' },
-  card: { label: 'Kartu', icon: 'credit-card', accent: 'textSecondary' },
+  bank: { label: id.wallets.type.bank, icon: 'account-balance', accent: 'accent' },
+  ewallet: { label: id.wallets.type.ewallet, icon: 'smartphone', accent: 'accent' },
+  cash: { label: id.wallets.type.cash, icon: 'payments', accent: 'accent' },
+  card: { label: id.wallets.type.card, icon: 'credit-card', accent: 'textSecondary' },
 };
+
+/** Type label in the active language (C6). */
+export function walletTypeLabel(type: WalletType, lang: Language = 'id'): string {
+  return dictionaryFor(lang).wallets.type[type];
+}
 
 // ---------------------------------------------------------------------------
 // Archive split (V4) — Dashboard and pickers render `activeWallets` only;

@@ -180,7 +180,7 @@ export default function DashboardScreen() {
           <Text style={[typography.bodySm, styles.meta]}>
             {fill(t.dashboard.wallets.moreRest, {
               rest: wallets.length - 3,
-              amount: formatCurrency(summary.totalBalance),
+              amount: formatCurrency(summary.totalBalance, 'Rp', language),
             })}
           </Text>
         ) : null}

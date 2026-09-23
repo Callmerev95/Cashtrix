@@ -8,7 +8,13 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, layout, radius, spacing, typography } from '@/theme';
-import { formatCurrency, walletTypeMeta, type Wallet } from '@/features/wallets';
+import {
+  formatCurrency,
+  walletTypeLabel,
+  walletTypeMeta,
+  type Wallet,
+} from '@/features/wallets';
+import { dictionaryFor, fill, useLanguage } from '@/i18n';
 
 type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
 
@@ -25,6 +31,11 @@ export function WalletRow({
 }) {
   const meta = walletTypeMeta[wallet.type];
   const negative = wallet.balance < 0;
+  // C6: labels + amount format follow the OS language (ADR-0008, R10).
+  const language = useLanguage();
+  const t = dictionaryFor(language);
+  const typeLabel = walletTypeLabel(wallet.type, language);
+  const balanceText = formatCurrency(wallet.balance, 'Rp', language);
 
   const content = (
     <>
@@ -40,9 +51,9 @@ export function WalletRow({
           {wallet.name}
         </Text>
         <Text style={[typography.bodySm, styles.meta]} numberOfLines={1}>
-          {meta.label}
+          {typeLabel}
           {wallet.transactionCount > 0
-            ? ` · ${wallet.transactionCount} transaksi`
+            ? ` · ${fill(t.wallets.row.transactions, { count: wallet.transactionCount })}`
             : ''}
         </Text>
       </View>
@@ -50,7 +61,7 @@ export function WalletRow({
         style={[typography.currencyMd, styles.amount, negative && styles.amountNegative]}
         numberOfLines={1}
       >
-        {formatCurrency(wallet.balance)}
+        {balanceText}
       </Text>
       {trailing}
     </>
@@ -68,7 +79,10 @@ export function WalletRow({
     <Pressable
       testID={testID}
       accessibilityRole="button"
-      accessibilityLabel={`${wallet.name}, saldo ${formatCurrency(wallet.balance)}`}
+      accessibilityLabel={fill(t.wallets.row.balanceLabel, {
+        name: wallet.name,
+        balance: balanceText,
+      })}
       onPress={onPress}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >

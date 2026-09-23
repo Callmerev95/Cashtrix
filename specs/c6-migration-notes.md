@@ -32,13 +32,20 @@ names; twins `investasi`/`lainnya` keyed per kind),
 banner, `translateSystemCategory(kind, dbName, lang)`. Dashboard date kicker
 uses `localeTagFor(language)` (first R10 formatting live).
 
+`wallets.*` (chunk dompet): `validation.*` (8 keys, `{max}` templates +
+`validateWallet(input, lang)`; `walletMessages` stays as filled-id alias so
+old callers/tests green), `type.*` (`walletTypeMeta` labels from `id` +
+`walletTypeLabel(type, lang)`), `card.*`/`row.*`/`list.*`/`sheet.*`/`form.*`
++ `loadError` (wallets-context via `useLanguage`). `formatAmount(v, lang)` /
+`formatCurrency(v, ccy, lang)` thread `lang` (manual `.`/`,` swap — not
+`Intl`, so `,50` stays two decimals); screens/components render via
+`useLanguage` (`TotalBalanceCard`, `WalletRow`, `WalletTypePicker`,
+`app/wallets.tsx`, `app/wallet-form.tsx`, dashboard `moreRest`). Gate:
+lint + typecheck + Jest 368 hijau + `verify-t11 --static-only` 3/3.
+
 ## Remaining catalog (from full audit: ~235 unique strings, ~230 keys)
 
-- **wallets** (~40): `wallets.validation.*`, `wallets.type.{bank,ewallet,cash,card}`
-  (`Tunai` lives in `wallets/domain.ts:166` — verify verbatim), list kicker/
-  title/total/count/empty/add/max-6/archive/move/toast strings in
-  `app/(tabs)/index.tsx` (done), `app/wallets.tsx`, `app/wallet-form.tsx`,
-  `TotalBalanceCard` (`N dompet`), `WalletRow`.
+- **wallets** (~40): DONE — see Done section above.
 - **transactions** (~55, biggest): `transactions.validation.*`,
   `transfer.*` (incl. `Transfer ke {nama}` + `TRANSFER_ICON` untouched),
   `type.*`, form strings in `app/add-transaction.tsx` (`Tanggal tidak boleh
