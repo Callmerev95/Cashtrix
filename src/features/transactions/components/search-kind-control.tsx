@@ -9,8 +9,13 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { useLanguage } from '@/i18n';
 
-import { KIND_FILTER_OPTIONS, type TransactionKindFilter } from '../domain';
+import {
+  KIND_FILTER_OPTIONS,
+  kindFilterLabel,
+  type TransactionKindFilter,
+} from '../domain';
 
 export function SearchKindControl({
   value,
@@ -21,17 +26,20 @@ export function SearchKindControl({
   onChange: (value: TransactionKindFilter) => void;
   testID?: string;
 }) {
+  // C6: labels follow the OS language (ADR-0008).
+  const language = useLanguage();
   return (
     <View testID={testID} style={styles.row}>
       {KIND_FILTER_OPTIONS.map((option) => {
         const active = option.value === value;
+        const label = kindFilterLabel(option.value, language);
         return (
           <Pressable
             key={option.value}
             testID={`search-kind-${option.value}`}
             accessibilityRole="button"
             accessibilityState={{ selected: active }}
-            accessibilityLabel={option.label}
+            accessibilityLabel={label}
             onPress={() => onChange(option.value)}
             style={[styles.chip, active && styles.chipActive]}
           >
@@ -45,7 +53,7 @@ export function SearchKindControl({
               adjustsFontSizeToFit
               minimumFontScale={0.75}
             >
-              {option.label}
+              {label}
             </Text>
           </Pressable>
         );

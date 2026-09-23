@@ -42,6 +42,7 @@ import {
   buildSearchPattern,
   hasMoreAfter,
   isSearchActive,
+  kindFilterLabel,
   searchTransactions,
   toggleBulkRow,
   useTransactions,
@@ -49,14 +50,8 @@ import {
   type Transaction,
   type TransactionKindFilter,
 } from '@/features/transactions';
+import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, radius, spacing, typography } from '@/theme';
-
-const KIND_LABELS: Record<TransactionKindFilter, string> = {
-  all: 'Semua',
-  expense: 'Pengeluaran',
-  income: 'Pemasukan',
-  transfer: 'Transfer',
-};
 
 export default function SearchScreen() {
   const [query, setQuery] = useState('');
@@ -80,6 +75,10 @@ export default function SearchScreen() {
   const { categories, refresh: refreshTransactions } = useTransactions();
   const { refresh: refreshBudgets, evaluateAndAlert } = useBudgets();
   const { refresh: refreshAnalytics } = useAnalytics();
+  // C6: copy follows the OS language (ADR-0008).
+  const language = useLanguage();
+  const t = dictionaryFor(language);
+  const ts = t.search;
 
   const mounted = useRef(true);
   // A slow response for an older query must not overwrite newer results.
@@ -125,11 +124,11 @@ export default function SearchScreen() {
         .catch((cause: unknown) => {
           if (!mounted.current || ticket !== requestId.current) return;
           setError(
-            cause instanceof Error ? cause.message : 'Gagal mencari',
+            cause instanceof Error ? cause.message : ts.error,
           );
         });
     },
-    [],
+    [ts.error],
   );
 
   // Debounced text search; a kind tap searches immediately via its handler.
@@ -164,13 +163,13 @@ export default function SearchScreen() {
       })
       .catch((cause: unknown) => {
         if (!mounted.current) return;
-        setError(cause instanceof Error ? cause.message : 'Gagal mencari');
+        setError(cause instanceof Error ? cause.message : ts.error);
       })
       .finally(() => {
         fetchingPage.current = false;
         if (mounted.current) setLoadingMore(false);
       });
-  }, [query, kind, results.length]);
+  }, [query, kind, results.length, ts.error]);
 
   function exitSelect() {
     setSelecting(false);
@@ -191,12 +190,12 @@ export default function SearchScreen() {
       lockedKind,
     );
     if (next.rejected === 'transfer') {
-      setSelectHint('Transfer tidak punya kategori.');
+      setSelectHint(ts.transferHint);
       return;
     }
     if (next.rejected === 'kind' && lockedKind) {
       setSelectHint(
-        `Pilihan dikunci ke ${KIND_LABELS[lockedKind]} — selesaikan atau batalkan dulu.`,
+        fill(ts.kindLocked, { kind: kindFilterLabel(lockedKind, language) }),
       );
       return;
     }
@@ -227,17 +226,19 @@ export default function SearchScreen() {
       await runSearch(query, kind);
     } catch (cause) {
       if (!mounted.current) return;
-      setError(cause instanceof Error ? cause.message : 'Gagal mengubah kategori');
+      setError(cause instanceof Error ? cause.message : ts.applyFail);
     } finally {
       if (mounted.current) setApplying(false);
     }
   }
 
   const emptyLabel = pattern
-    ? `Tidak ada hasil untuk "${pattern.slice(1, -1)}".`
-    : 'Tidak ada transaksi jenis ini.';
+    ? fill(ts.noResult, { query: pattern.slice(1, -1) })
+    : ts.noKindResults;
   const resultLabel =
-    loading && results.length === 0 ? 'Mencari…' : `${results.length} hasil`;
+    loading && results.length === 0
+      ? ts.searching
+      : fill(ts.resultCount, { count: results.length });
 
   return (
     <Screen>
@@ -245,7 +246,7 @@ export default function SearchScreen() {
         <TextField
           testID="search-input"
           icon="search"
-          placeholder="Cari catatan, kategori, dompet…"
+          placeholder={ts.placeholder}
           placeholderTextColor={colors.textSecondary}
           value={query}
           onChangeText={(text) => {
@@ -273,8 +274,7 @@ export default function SearchScreen() {
         ) : null}
         {!active ? (
           <Text style={[typography.bodyMd, styles.hint]}>
-            Ketik untuk mencari di catatan, nama kategori, dan nama dompet —
-            atau pilih jenis di atas.
+            {ts.idleHint}
           </Text>
         ) : (
           <>
@@ -284,24 +284,24 @@ export default function SearchScreen() {
                   <Pressable
                     testID="search-select-cancel"
                     accessibilityRole="button"
-                    accessibilityLabel="Batalkan pilihan"
+                    accessibilityLabel={ts.cancelSelect}
                     onPress={exitSelect}
                     hitSlop={spacing.sm}
                   >
                     <Text style={[typography.labelUppercase, styles.action]}>
-                      Batal
+                      {t.common.cancel}
                     </Text>
                   </Pressable>
                   <Text
                     testID="search-select-count"
                     style={[typography.labelUppercase, styles.meta]}
                   >
-                    {selectedIds.length} dipilih
+                    {fill(ts.selectedCount, { count: selectedIds.length })}
                   </Text>
                   <Pressable
                     testID="search-select-apply"
                     accessibilityRole="button"
-                    accessibilityLabel="Ubah kategori yang dipilih"
+                    accessibilityLabel={ts.applyA11y}
                     disabled={selectedIds.length === 0}
                     onPress={() => {
                       setChoosingCategory(true);
@@ -315,7 +315,7 @@ export default function SearchScreen() {
                         selectedIds.length === 0 ? styles.meta : styles.action,
                       ]}
                     >
-                      Ubah
+                      {ts.apply}
                     </Text>
                   </Pressable>
                 </>
@@ -327,7 +327,7 @@ export default function SearchScreen() {
                   <Pressable
                     testID="search-select-toggle"
                     accessibilityRole="button"
-                    accessibilityLabel="Pilih beberapa transaksi"
+                    accessibilityLabel={ts.selectToggleA11y}
                     onPress={() => {
                       setSelecting(true);
                       setSelectHint(null);
@@ -335,7 +335,7 @@ export default function SearchScreen() {
                     hitSlop={spacing.sm}
                   >
                     <Text style={[typography.labelUppercase, styles.action]}>
-                      Pilih
+                      {ts.select}
                     </Text>
                   </Pressable>
                 </>
@@ -361,14 +361,16 @@ export default function SearchScreen() {
                 {pickedCategory ? (
                   <View style={styles.confirm}>
                     <Text style={[typography.bodyMd, styles.confirmText]}>
-                      Ubah {selectedIds.length} transaksi ke{' '}
-                      {pickedCategory.name}?
+                      {fill(ts.bulkConfirm, {
+                        count: selectedIds.length,
+                        name: pickedCategory.name,
+                      })}
                     </Text>
                     <View style={styles.confirmRow}>
                       <Pressable
                         testID="search-bulk-cancel"
                         accessibilityRole="button"
-                        accessibilityLabel="Batalkan ubah kategori"
+                        accessibilityLabel={ts.bulkCancelA11y}
                         onPress={() => {
                           setChoosingCategory(false);
                           setPickedCategory(null);
@@ -378,13 +380,15 @@ export default function SearchScreen() {
                         <Text
                           style={[typography.labelUppercase, styles.meta]}
                         >
-                          Batal
+                          {t.common.cancel}
                         </Text>
                       </Pressable>
                       <Pressable
                         testID="search-bulk-confirm"
                         accessibilityRole="button"
-                        accessibilityLabel={`Ubah ${selectedIds.length} transaksi`}
+                        accessibilityLabel={fill(ts.bulkConfirmA11y, {
+                          count: selectedIds.length,
+                        })}
                         disabled={applying}
                         onPress={() => void applyBulk()}
                         hitSlop={spacing.sm}
@@ -392,7 +396,7 @@ export default function SearchScreen() {
                         <Text
                           style={[typography.labelUppercase, styles.action]}
                         >
-                          {applying ? 'Menyimpan…' : 'Ubah'}
+                          {applying ? ts.saving : ts.apply}
                         </Text>
                       </Pressable>
                     </View>

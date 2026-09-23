@@ -12,6 +12,7 @@ import {
   SearchKindControl,
   buildSearchPattern,
   isSearchActive,
+  kindFilterLabel,
 } from '@/features/transactions';
 
 describe('buildSearchPattern', () => {
@@ -56,6 +57,12 @@ describe('search constants', () => {
       'income',
       'transfer',
     ]);
+  });
+
+  it('label kind mengikuti bahasa aktif (C6)', () => {
+    expect(kindFilterLabel('all')).toBe('Semua');
+    expect(kindFilterLabel('expense', 'en')).toBe('Expense');
+    expect(kindFilterLabel('all', 'en')).toBe('All');
   });
 });
 

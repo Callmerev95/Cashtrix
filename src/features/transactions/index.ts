@@ -53,6 +53,7 @@ export {
   isFutureDate,
   isSearchActive,
   isTransactionType,
+  kindFilterLabel,
   newIdempotencyKey,
   normalizeNote,
   startOfDay,

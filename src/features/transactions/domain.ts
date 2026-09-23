@@ -605,11 +605,19 @@ export const KIND_FILTER_OPTIONS: {
   value: TransactionKindFilter;
   label: string;
 }[] = [
-  { value: 'all', label: 'Semua' },
-  { value: 'expense', label: 'Pengeluaran' },
-  { value: 'income', label: 'Pemasukan' },
-  { value: 'transfer', label: 'Transfer' },
+  { value: 'all', label: id.search.kind.all },
+  { value: 'expense', label: id.search.kind.expense },
+  { value: 'income', label: id.search.kind.income },
+  { value: 'transfer', label: id.search.kind.transfer },
 ];
+
+/** Kind-chip label in the active language (C6). */
+export function kindFilterLabel(
+  filter: TransactionKindFilter,
+  lang: Language = 'id',
+): string {
+  return dictionaryFor(lang).search.kind[filter];
+}
 
 /** Text input debounce so every keystroke is not a round-trip. */
 export const SEARCH_DEBOUNCE_MS = 300;

@@ -309,6 +309,35 @@ export const id = {
     },
     loadError: 'Gagal memuat transaksi',
   },
+  search: {
+    kind: {
+      all: 'Semua',
+      expense: 'Pengeluaran',
+      income: 'Pemasukan',
+      transfer: 'Transfer',
+    },
+    placeholder: 'Cari catatan, kategori, dompet…',
+    idleHint:
+      'Ketik untuk mencari di catatan, nama kategori, dan nama dompet — atau pilih jenis di atas.',
+    error: 'Gagal mencari',
+    noResult: 'Tidak ada hasil untuk "{query}".',
+    noKindResults: 'Tidak ada transaksi jenis ini.',
+    searching: 'Mencari…',
+    resultCount: '{count} hasil',
+    cancelSelect: 'Batalkan pilihan',
+    selectedCount: '{count} dipilih',
+    applyA11y: 'Ubah kategori yang dipilih',
+    apply: 'Ubah',
+    selectToggleA11y: 'Pilih beberapa transaksi',
+    select: 'Pilih',
+    transferHint: 'Transfer tidak punya kategori.',
+    kindLocked: 'Pilihan dikunci ke {kind} — selesaikan atau batalkan dulu.',
+    bulkCancelA11y: 'Batalkan ubah kategori',
+    bulkConfirmA11y: 'Ubah {count} transaksi',
+    bulkConfirm: 'Ubah {count} transaksi ke {name}?',
+    saving: 'Menyimpan…',
+    applyFail: 'Gagal mengubah kategori',
+  },
 };
 
 export type Dictionary = typeof id;

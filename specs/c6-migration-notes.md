@@ -65,15 +65,24 @@ id, contract-safe). `localeTagFor` pindah ke leaf `dictionaries.ts`
 (aturan `958e996`). `KIND_FILTER_OPTIONS` disengaja TETAP — milik chunk
 search. Gate: lint bersih + typecheck + Jest 371 hijau + static-only 3/3.
 
+`search.*` (chunk search — BELUM commit; `34e7266` = transaksi):
+`kind.*` (`KIND_FILTER_OPTIONS` label dari `id` + `kindFilterLabel(f, lang)`
+baru; `KIND_LABELS` map di `search.tsx` hapus), `placeholder`, `idleHint`,
+`error` (`Gagal mencari` ×2 via dep `ts.error`), `noResult`/`noKindResults`,
+`searching`/`resultCount`, toolbar select (`cancelSelect`,
+`selectedCount`, `applyA11y`/`apply`, `selectToggleA11y`/`select`),
+`transferHint` + `kindLocked` (`{kind}` dari `kindFilterLabel`),
+`bulkCancelA11y`/`bulkConfirmA11y`/`bulkConfirm`/`saving`, `applyFail`.
+`Batal` reuse `common.cancel`. `SearchKindControl` via `useLanguage`.
+Gate: lint bersih + typecheck + Jest 372 hijau + static-only 3/3.
+
 ## Remaining catalog (from full audit: ~235 unique strings, ~230 keys)
 
 - **wallets** (~40): DONE — see Done section above.
 - **transactions** (~55, biggest): DONE — see Done section above
   (`KIND_FILTER_OPTIONS` intentionally left for the search chunk).
 - **search** (~20, `app/search.tsx`):
-- **search** (~20, `app/search.tsx`): placeholder `Cari catatan, kategori,
-  dompet…`, `Transfer tidak punya kategori.`, `Tidak ada hasil untuk "…"`,
-  kind chips, bulk-mode toolbar/grid/confirm strings.
+- **search** (~20, `app/search.tsx`): DONE — see Done section above.
 - **analytics** (~20): `analytics.range.*` (`1B/3B/6B/1T/Semua` — verify;
   range labels may stay symbolic), `kpi.*`, `section.*` (`Distribusi
   Pengeluaran`, `Tren Harian/Bulanan`), `empty.*` (`Belum ada data`),
