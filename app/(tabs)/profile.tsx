@@ -161,7 +161,7 @@ export default function ProfileScreen() {
     if (exportingCsv) return;
     setExportingCsv(true);
     try {
-      const outcome = await exportAndShareTransactions();
+      const outcome = await exportAndShareTransactions(language);
       if (outcome === 'unavailable') {
         Alert.alert(
           ts.exportUnavailableTitle,

@@ -589,6 +589,20 @@ export const id = {
       'Alert budget muncul di sini saat pengeluaran menyentuh 80% atau 100%.',
     emptyAction: 'Lihat Budget',
   },
+  dataOwnership: {
+    shareTitle: 'Bagikan data Cashtrix',
+    deleteTitle: 'Hapus akun',
+    warningBody:
+      'Menghapus akun bersifat permanen dan tidak dapat dibatalkan. Seluruh dompet, transaksi, budget, kategori kustom, dan avatar Anda akan dihapus.',
+    instruction: 'Ketik {word} untuk melanjutkan.',
+    confirmTitle: 'Hapus akun permanen?',
+    confirmBody:
+      'Ini langkah terakhir. Seluruh data akan dihapus dan tidak bisa dikembalikan.',
+    confirmAction: 'Ya, hapus',
+    deleting: 'Menghapus…',
+    deleteAction: 'Hapus akun permanen',
+    deleteFail: 'Gagal menghapus akun',
+  },
 };
 
 export type Dictionary = typeof id;

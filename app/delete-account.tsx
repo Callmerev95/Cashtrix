@@ -29,22 +29,30 @@ import {
   deleteAccount,
   isDeleteConfirmation,
 } from '@/features/data-ownership';
+import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 
 export default function DeleteAccountScreen() {
   const insets = useSafeAreaInsets();
   const [confirmation, setConfirmation] = useState('');
   const [busy, setBusy] = useState(false);
+  // C6: copy follows the OS language (ADR-0008); the HAPUS gate stays literal.
+  const t = dictionaryFor(useLanguage());
+  const td = t.dataOwnership;
 
   const confirmed = isDeleteConfirmation(confirmation);
 
   function confirmDelete() {
     Alert.alert(
-      'Hapus akun permanen?',
-      'Ini langkah terakhir. Seluruh data akan dihapus dan tidak bisa dikembalikan.',
+      td.confirmTitle,
+      td.confirmBody,
       [
-        { text: 'Batal', style: 'cancel' },
-        { text: 'Ya, hapus', style: 'destructive', onPress: () => void remove() },
+        { text: t.common.cancel, style: 'cancel' },
+        {
+          text: td.confirmAction,
+          style: 'destructive',
+          onPress: () => void remove(),
+        },
       ],
     );
   }
@@ -60,8 +68,8 @@ export default function DeleteAccountScreen() {
     } catch (cause) {
       setBusy(false);
       Alert.alert(
-        'Gagal menghapus akun',
-        cause instanceof Error ? cause.message : 'Coba lagi sebentar lagi.',
+        td.deleteFail,
+        cause instanceof Error ? cause.message : t.common.retry,
       );
     }
   }
@@ -76,7 +84,9 @@ export default function DeleteAccountScreen() {
           <Text style={[typography.labelUppercase, styles.kicker]}>
             Danger zone
           </Text>
-          <Text style={[typography.headlineLg, styles.title]}>Hapus akun</Text>
+          <Text style={[typography.headlineLg, styles.title]}>
+            {td.deleteTitle}
+          </Text>
         </View>
 
         <ScrollView
@@ -91,14 +101,12 @@ export default function DeleteAccountScreen() {
               color={colors.error}
             />
             <Text style={[typography.bodyMd, styles.warningText]}>
-              Menghapus akun bersifat permanen dan tidak dapat dibatalkan.
-              Seluruh dompet, transaksi, budget, kategori kustom, dan avatar
-              Anda akan dihapus.
+              {td.warningBody}
             </Text>
           </Card>
 
           <Text style={[typography.bodyMd, styles.instruction]}>
-            Ketik {DELETE_CONFIRMATION_WORD} untuk melanjutkan.
+            {fill(td.instruction, { word: DELETE_CONFIRMATION_WORD })}
           </Text>
           <TextField
             testID="delete-account-confirmation"
@@ -118,7 +126,7 @@ export default function DeleteAccountScreen() {
           <View style={styles.deleteFrame}>
             <PrimaryButton
               testID="delete-account-submit"
-              label={busy ? 'Menghapus…' : 'Hapus akun permanen'}
+              label={busy ? td.deleting : td.deleteAction}
               onPress={confirmDelete}
               loading={busy}
               disabled={!confirmed}
@@ -126,7 +134,7 @@ export default function DeleteAccountScreen() {
           </View>
           <GhostButton
             testID="delete-account-cancel"
-            label="Batal"
+            label={t.common.cancel}
             onPress={() => router.back()}
           />
         </View>

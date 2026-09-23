@@ -9,6 +9,9 @@
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 
+import { dictionaryFor } from '@/i18n/dictionaries';
+import type { Language } from '@/i18n/locale';
+
 import { exportCsv } from './api';
 
 export type ShareOutcome = 'shared' | 'unavailable';
@@ -19,7 +22,9 @@ export type ShareOutcome = 'shared' | 'unavailable';
  * where sharing isn't supported (e.g. web). Throws on network, function, or
  * filesystem errors — the caller surfaces them.
  */
-export async function exportAndShareTransactions(): Promise<ShareOutcome> {
+export async function exportAndShareTransactions(
+  lang: Language = 'id',
+): Promise<ShareOutcome> {
   const csv = await exportCsv();
   const file = new File(Paths.cache, 'cashtrix-export.csv');
   await file.write(csv);
@@ -28,7 +33,7 @@ export async function exportAndShareTransactions(): Promise<ShareOutcome> {
     return 'unavailable';
   }
   await Sharing.shareAsync(file.uri, {
-    dialogTitle: 'Bagikan data Cashtrix',
+    dialogTitle: dictionaryFor(lang).dataOwnership.shareTitle,
     mimeType: 'text/csv',
   });
   return 'shared';

@@ -587,4 +587,18 @@ export const en: Dictionary = {
     emptyBody: 'Budget alerts appear here when spending reaches 80% or 100%.',
     emptyAction: 'View Budgets',
   },
+  dataOwnership: {
+    shareTitle: 'Share Cashtrix data',
+    deleteTitle: 'Delete account',
+    warningBody:
+      'Deleting your account is permanent and cannot be undone. All your wallets, transactions, budgets, custom categories, and avatar will be deleted.',
+    instruction: 'Type {word} to continue.',
+    confirmTitle: 'Delete account permanently?',
+    confirmBody:
+      'This is the final step. All data will be deleted and cannot be recovered.',
+    confirmAction: 'Yes, delete',
+    deleting: 'Deleting…',
+    deleteAction: 'Delete account permanently',
+    deleteFail: 'Failed to delete account',
+  },
 };
