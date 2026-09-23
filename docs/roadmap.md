@@ -169,7 +169,7 @@ checklist visual, tag git `v1.1.0`.
 |---|---|---|---|
 | OPEN-1 | closed ADR-0004 | Transfer = satu baris + `counterparty_wallet_id` | — |
 | OPEN-2 | closed ADR-0005 | Recurring = catch-up RPC; semua terlewat dilahirkan; identik Spent/Alert | — |
-| OPEN-3 | OPEN, diparkir v1.2 | App lock: kunci perangkat saja vs state server | B4 v1.2 |
+| OPEN-3 | closed ADR-0007 | App lock = kunci perangkat saja (flag lokal; grace 60 dtk; cold start selalu kunci; biometrik + passcode OS; opt-in) | B4 v1.2 |
 
 Transfer, Recurring, Undo, Archive, V0 auth/legal: **tertutup** (R7–R8, ADR-0004..0006). Frontier desain v1.1 kosong.
 

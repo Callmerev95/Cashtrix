@@ -110,3 +110,13 @@ Semua ticket `ready-for-agent`. Tanpa DDL baru sejauh view/RPC yang ada mencukup
 | A4 — Bulk edit kategori | #47 | #46 | Mode pilih di `/search` + ubah kategori bulk (sejenis terkunci, transfer nonaktif) |
 | A5 — Inbox notifikasi | #48 | #47 | `read_at` di `budget_alerts` + layar `/notifications` (bel → inbox, tap baca + ke Budgets) — kode selesai, migrasi siap apply, menunggu apply sebelum review device |
 | D4 — Error handling terlihat | #49 | #48 | Banner offline + auto-refresh + `ErrorStateCard` retry seragam |
+
+---
+
+## v1.2 batch 2 — butuh keputusan / setup native
+
+Sumber: `docs/roadmap.md` §6.3. Syarat mulai per item mengikat; urutan tidak seketat batch 1.
+
+| Ticket | Issue | Blocked by | Deliverable |
+|---|---|---|---|
+| B4 — Biometric app lock (device-local) | #50 | — | Flag lokal + toggle Profile opt-in + overlay penuh pola auth gate (grace 60 dtk, cold start selalu kunci); rebuild preview DITUNDA, degrade gracefully di Expo Go — keputusan terkunci R9 + ADR-0007 (OPEN-3 closed via grill 2026-09-23) |
