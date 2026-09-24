@@ -31,7 +31,8 @@ export const SKELETON_REST_OPACITY = 0.5;
 export const SKELETON_PEAK_OPACITY = 1;
 const SKELETON_PULSE_MS = 700;
 
-function useReducedMotion(): boolean {
+/** OS reduce-motion setting; shared with the cold-open fade (app/_layout). */
+export function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
   useEffect(() => {
     let active = true;

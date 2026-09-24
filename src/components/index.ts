@@ -5,6 +5,7 @@ export {
   SkeletonBlock,
   SkeletonList,
   SkeletonRow,
+  useReducedMotion,
 } from './skeleton';
 export { Screen } from './screen';
 export { ScaffoldScreen } from './scaffold-screen';

@@ -10,9 +10,9 @@ import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet, View } from 'react-native';
 
 import { appFonts } from '@/fonts';
 import { AuthProvider, useAuth } from '@/features/auth';
@@ -31,6 +31,7 @@ import { ProfileProvider } from '@/features/profile';
 import { RecurringProvider } from '@/features/recurring';
 import { TransactionsProvider } from '@/features/transactions';
 import { WalletsProvider } from '@/features/wallets';
+import { useReducedMotion } from '@/components/skeleton';
 import { colors } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -87,12 +88,43 @@ function AuthGate() {
 function RootNavigator() {
   const { status } = useAuth();
   const { locked } = useLock();
+  const reduceMotion = useReducedMotion();
+  // Cold-open fade (DESIGN.md §8): the native splash hides with a hard cut,
+  // so the first JS frame eases in once to mask it — opacity plus a slight
+  // settle-up scale. Content is already mounted — this adds no latency.
+  // RootNavigator mounts once per process launch and status leaves 'loading'
+  // exactly once, so this runs once.
+  const [fade] = useState(() => new Animated.Value(0));
+  const [scale] = useState(() => new Animated.Value(0.97));
 
   useEffect(() => {
     if (status !== 'loading') {
       SplashScreen.hideAsync();
     }
   }, [status]);
+
+  useEffect(() => {
+    if (status === 'loading') return;
+    if (reduceMotion) {
+      fade.setValue(1);
+      scale.setValue(1);
+      return;
+    }
+    const entrance = Animated.parallel([
+      Animated.timing(fade, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scale, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]);
+    entrance.start();
+    return () => entrance.stop();
+  }, [status, reduceMotion, fade, scale]);
 
   // Hold the splash until the persisted session has been read back, otherwise
   // a returning user sees Login flash before the Dashboard.
@@ -109,7 +141,9 @@ function RootNavigator() {
   return (
     <>
       <AuthGate />
-      <View style={styles.viewport}>
+      <Animated.View
+        style={[styles.viewport, { opacity: fade, transform: [{ scale }] }]}
+      >
         <View
           style={styles.viewport}
           accessibilityElementsHidden={lockedIn}
@@ -137,7 +171,7 @@ function RootNavigator() {
           </Stack>
         </View>
         {lockedIn ? <LockOverlay /> : null}
-      </View>
+      </Animated.View>
       <StatusBar style="light" />
     </>
   );

@@ -246,3 +246,8 @@ Motion is reserved for loading feedback — no decorative animation elsewhere.
   (auth-gate behavior, T3), then hides. Provider data still streams in, so the
   visible transition is splash → skeleton → content, never splash → blank
   canvas → content.
+- **Cold-open fade:** the native splash hides with a hard cut (the OS draws
+  it — it cannot be animated), so the first JS frame eases the root viewport
+  in once per process launch: opacity 0 → 1 plus a slight settle-up scale
+  0.97 → 1, 400ms. Content is already mounted, so this masks the cut with
+  zero added latency. Skipped when the OS reduce-motion setting is on.
