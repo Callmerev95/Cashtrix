@@ -13,6 +13,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Card } from '@/components/card';
+import { Skeleton, SkeletonBlock } from '@/components/skeleton';
 import { colors, spacing, typography } from '@/theme';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 
@@ -39,10 +40,21 @@ export function MonthlySummaryCard({
   const language = useLanguage();
   const t = dictionaryFor(language);
   if (!summary) {
+    if (loading) {
+      return (
+        <Card testID={testID} style={styles.card}>
+          <Skeleton style={styles.skeleton}>
+            <SkeletonBlock width="40%" height={14} />
+            <SkeletonBlock width="70%" height={20} style={styles.skeletonRow} />
+            <SkeletonBlock width="70%" height={20} />
+          </Skeleton>
+        </Card>
+      );
+    }
     return (
       <Card testID={testID} style={styles.card}>
         <Text style={[typography.bodySm, styles.meta]}>
-          {loading ? t.analytics.monthly.loading : t.analytics.monthly.unavailable}
+          {t.analytics.monthly.unavailable}
         </Text>
       </Card>
     );
@@ -99,6 +111,12 @@ export function MonthlySummaryCard({
 const styles = StyleSheet.create({
   card: {
     padding: spacing.md,
+  },
+  skeleton: {
+    gap: spacing.sm,
+  },
+  skeletonRow: {
+    marginTop: spacing.xs,
   },
   header: {
     flexDirection: 'row',

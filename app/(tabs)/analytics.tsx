@@ -9,7 +9,7 @@
  * A range with no transactions renders `AnalyticsEmptyState` instead of charts
  * (AC #7), so a new account never sees a NaN/Infinity axis.
  */
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -27,7 +27,7 @@ import {
   toDonutSlices,
   useAnalytics,
 } from '@/features/analytics';
-import { Screen, AppHeader, ErrorStateCard } from '@/components';
+import { Screen, AppHeader, ErrorStateCard, Skeleton, SkeletonBlock } from '@/components';
 import { useProfile } from '@/features/profile';
 import { dictionaryFor, useLanguage } from '@/i18n';
 import { colors, gradients, radius, spacing, typography } from '@/theme';
@@ -79,9 +79,26 @@ export default function AnalyticsScreen() {
         contentContainerStyle={styles.content}
       >
         {loading && !overview ? (
-          <View testID="analytics-loading" style={styles.loading}>
-            <ActivityIndicator color={colors.accent} />
-          </View>
+          <Skeleton testID="analytics-loading" style={styles.skeleton}>
+            <View style={styles.skeletonKpiRow}>
+              <SkeletonBlock width="30%" height={32} />
+              <SkeletonBlock width="30%" height={32} />
+              <SkeletonBlock width="30%" height={32} />
+            </View>
+            <View style={styles.card}>
+              <SkeletonBlock width="40%" height={12} />
+              <SkeletonBlock
+                width={140}
+                height={140}
+                borderRadius={radius.full}
+                style={styles.skeletonDonut}
+              />
+            </View>
+            <View style={styles.card}>
+              <SkeletonBlock width="40%" height={12} />
+              <SkeletonBlock width="100%" height={120} />
+            </View>
+          </Skeleton>
         ) : error ? (
           <ErrorStateCard
             testID="analytics-error"
@@ -157,9 +174,17 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
   },
-  loading: {
-    paddingVertical: spacing.xl,
-    alignItems: 'center',
+  skeleton: {
+    gap: spacing.md,
+  },
+  skeletonKpiRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  skeletonDonut: {
+    alignSelf: 'center',
+    marginTop: spacing.sm,
   },
   error: {
     paddingVertical: spacing.lg,

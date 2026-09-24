@@ -29,6 +29,7 @@ import { router } from 'expo-router';
 
 import { EmptyStateCard } from '@/components/empty-state-card';
 import { ErrorStateCard } from '@/components/error-state-card';
+import { SkeletonList } from '@/components/skeleton';
 import { colors, spacing, typography } from '@/theme';
 import { dictionaryFor, useLanguage } from '@/i18n';
 
@@ -117,7 +118,7 @@ export function TransactionHistoryList({
       ListHeaderComponent={ListHeaderComponent}
       ListEmptyComponent={
         loading ? (
-          <Text style={[typography.bodyMd, styles.empty]}>{t.transactions.history.loading}</Text>
+          <SkeletonList testID={`${testID}-loading`} rows={5} />
         ) : listError ? (
           <ErrorStateCard
             testID={`${testID}-error`}
@@ -169,10 +170,6 @@ const styles = StyleSheet.create({
   },
   divider: {
     marginBottom: spacing.xs,
-    color: colors.textSecondary,
-  },
-  empty: {
-    paddingVertical: spacing.md,
     color: colors.textSecondary,
   },
   footer: {

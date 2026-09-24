@@ -26,7 +26,7 @@ import {
   View,
 } from 'react-native';
 
-import { Card, GhostButton, PrimaryButton, Screen, TextField } from '@/components';
+import { Card, GhostButton, PrimaryButton, Screen, SkeletonList, TextField } from '@/components';
 import { signOut, useAuth } from '@/features/auth';
 import { exportAndShareTransactions } from '@/features/data-ownership';
 import { useLock } from '@/features/lock';
@@ -263,9 +263,7 @@ export default function ProfileScreen() {
         </View>
 
         {loading ? (
-          <View testID="profile-loading" style={styles.center}>
-            <ActivityIndicator color={colors.accent} />
-          </View>
+          <SkeletonList testID="profile-loading" rows={4} />
         ) : error ? (
           <View style={styles.center}>
             <Text testID="profile-error" style={[typography.bodyMd, styles.errorText]}>

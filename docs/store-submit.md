@@ -59,7 +59,7 @@ email dukungan + (opsional) situs. Penghapusan data: in-app
 | Splash (`assets/splash-icon.png`) | ✅ ada | |
 | Privacy Policy + Terms (EN, GitHub Pages) | ✅ live 200 | `https://callmerev95.github.io/Cashtrix/privacy.html` dan `.../terms.html` — URL yang sama dibuka in-app |
 | Screenshot HP (min 2 Play; set App Store 6.5"+5.5") | ❌ TODO pemilik | Ambil di HP: Dashboard, Add, Analytics, Budgets, Recurring — tanpa data asli |
-| Feature graphic Play 1024×500 | ❌ TODO pemilik | Satu banner: logo + tagline di atas, latar `#0A0A0A` + aksen gold `#D4AF37` (token `DESIGN.md` §1) |
+| Feature graphic Play 1024×500 | ✅ ada (`docs/store/feature-graphic.png`, sumber vektor `feature-graphic.svg`) | Logo + tagline di atas, latar `#0A0A0A` + aksen gold `#D4AF37` (token `DESIGN.md` §1); raster via `qlmanage` + `sips` dari SVG (lihat SVG untuk rebuild) |
 
 ## 5. Data Safety Play (jawaban final, siap salin)
 

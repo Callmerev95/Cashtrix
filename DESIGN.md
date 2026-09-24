@@ -216,3 +216,33 @@ Depth = tonal layering + hairline edges + diffuse gold glow (never heavy drop sh
 4. Numbers in JetBrains Mono, everything else Inter.
 5. Section labels in `label-uppercase` kickers instead of divider lines.
 6. Every scrollable screen leaves room for the floating nav (≥96px + safe-area inset).
+
+---
+
+## 8. Motion (Preloader + skeleton)
+
+Motion is reserved for loading feedback — no decorative animation elsewhere.
+
+### Skeleton pulse (shimmer)
+
+- **Fill:** `surface-elevated` `#2C2C2E` blocks — the existing L2 token, never gold
+  (gold is a scalpel, golden-rule 1) and never a new hex.
+- **Shape:** mirrors the element it stands in for (card → `rounded-2xl` block,
+  row → 40px circle + two text lines + amount block, hero → `currency-display`
+  bar). No trailing sweep — a single shared opacity pulse keeps the View-only
+  rule (T6 donut, T7 ring, V5 calendar).
+- **Pulse:** opacity `0.5 ↔ 1.0`, 700ms per leg, ease-in-out, infinite while
+  the surface is loading. One animation per group, so every block in a list
+  pulses in unison.
+- **Swap:** content replaces the skeleton the moment data lands — no cross-fade,
+  no minimum display time (it exists only to cover real latency, never to add
+  perceived latency).
+- **Reduce-motion (OS setting):** the pulse never starts; blocks render static
+  at rest opacity `0.5`.
+
+### Startup transition
+
+- The `expo-splash-screen` holds until the persisted session is restored
+  (auth-gate behavior, T3), then hides. Provider data still streams in, so the
+  visible transition is splash → skeleton → content, never splash → blank
+  canvas → content.

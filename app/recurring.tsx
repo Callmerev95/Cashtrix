@@ -20,7 +20,7 @@ import {
   View,
 } from 'react-native';
 
-import { Card, PrimaryButton, Screen } from '@/components';
+import { Card, PrimaryButton, Screen, SkeletonList } from '@/components';
 import {
   dueLabel,
   formatRuleWindow,
@@ -106,9 +106,7 @@ export default function RecurringScreen() {
         contentContainerStyle={styles.content}
       >
         {loading ? (
-          <View testID="recurring-loading" style={styles.center}>
-            <ActivityIndicator color={colors.accent} />
-          </View>
+          <SkeletonList testID="recurring-loading" rows={3} />
         ) : error ? (
           <View style={styles.center}>
             <Text testID="recurring-error" style={[typography.bodyMd, styles.errorText]}>

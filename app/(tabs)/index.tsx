@@ -15,7 +15,7 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { EmptyStateCard, AppHeader, ErrorStateCard, Screen, SectionHeader } from '@/components';
+import { EmptyStateCard, AppHeader, ErrorStateCard, Screen, SectionHeader, SkeletonList } from '@/components';
 import { MonthlySummaryCard, useAnalytics } from '@/features/analytics';
 import { useAuth } from '@/features/auth';
 import { useBudgets } from '@/features/budgets';
@@ -144,13 +144,15 @@ export default function DashboardScreen() {
           onAction={() => router.push('/wallets')}
         />
 
-        {walletsError && wallets.length === 0 && !loading ? (
+        {loading ? (
+          <SkeletonList testID="dashboard-wallets-loading" rows={3} />
+        ) : walletsError && wallets.length === 0 ? (
           <ErrorStateCard
             testID="dashboard-wallets-error"
             message={walletsError}
             onRetry={() => void refreshWallets()}
           />
-        ) : wallets.length === 0 && !loading ? (
+        ) : wallets.length === 0 ? (
           <EmptyStateCard
             icon="account-balance-wallet"
             title={t.dashboard.wallets.emptyTitle}

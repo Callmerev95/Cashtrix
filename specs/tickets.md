@@ -86,7 +86,7 @@ Hasil review preview build Android + Expo Go oleh owner, diverifikasi di HP:
 
 ### Setelah V6 (rencana tercatat, belum jadi ticket)
 
-1. **Preloader + skeleton** (cakupan dikunci: startup transition + shimmer generik + placeholder per layar: hero saldo, baris riwayat, KPI/donut, ring budget). Perlu amandemen `DESIGN.md` (motion belum diatur). Sengaja setelah V6 — menyentuh semua permukaan loading → re-gate visual ringan khusus untuknya.
+1. **Preloader + skeleton** — selesai 2026-09-23 (working tree, belum commit): `DESIGN.md` §8 Motion + `src/components/skeleton.tsx` (`Skeleton`/`SkeletonBlock`/`SkeletonRow`/`SkeletonList`, pulse opacity View-only, reduce-motion) + skeleton per permukaan (hero, riwayat, dompet, KPI/donut/bar, ring budget, search, notifikasi, recurring, kategori). Gate: lint/typecheck/Jest 393/393/`verify-t11 --static-only` 3/3/bundle Android hijau.
 2. Mock network Supabase di test navigasi (ganti ketergantungan kecepatan runner; paket dengan assert state error/empty) — prasyarat sinyal gate yang kredibel, bagian dari V6 bila sempat.
 
 ### Aturan

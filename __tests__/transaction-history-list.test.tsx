@@ -45,12 +45,12 @@ describe('TransactionHistoryList (SectionList)', () => {
     expect(screen.getByTestId('transaction-t3')).toBeTruthy();
   });
 
-  it('menampilkan empty state saat kosong dan teks muat saat loading', () => {
+  it('menampilkan empty state saat kosong dan skeleton saat loading', () => {
     const { rerender } = render(<TransactionHistoryList transactions={[]} />);
     expect(screen.getByTestId('transaction-history-empty')).toBeTruthy();
 
     rerender(<TransactionHistoryList transactions={[]} loading />);
-    expect(screen.getByText('Memuat riwayat…')).toBeTruthy();
+    expect(screen.getByTestId('transaction-history-loading')).toBeTruthy();
   });
 
   it('footer: spinner saat loadingMore, "Akhir riwayat" saat habis', () => {

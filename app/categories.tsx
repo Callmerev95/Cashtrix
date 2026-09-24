@@ -20,7 +20,7 @@ import {
   View,
 } from 'react-native';
 
-import { Card, PrimaryButton, Screen } from '@/components';
+import { Card, PrimaryButton, Screen, SkeletonList } from '@/components';
 import { useAuth } from '@/features/auth';
 import {
   useProfile,
@@ -130,9 +130,7 @@ export default function CategoriesScreen() {
         contentContainerStyle={styles.content}
       >
         {loading ? (
-          <View testID="categories-loading" style={styles.center}>
-            <ActivityIndicator color={colors.accent} />
-          </View>
+          <SkeletonList testID="categories-loading" rows={6} />
         ) : error ? (
           <View style={styles.center}>
             <Text testID="categories-error" style={[typography.bodyMd, styles.errorText]}>

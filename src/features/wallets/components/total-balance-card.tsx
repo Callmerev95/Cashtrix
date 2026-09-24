@@ -8,6 +8,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { SkeletonBlock } from '@/components/skeleton';
 import { formatCurrency } from '@/features/wallets';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, gradients, layout, radius, spacing, typography } from '@/theme';
@@ -37,14 +38,24 @@ export function TotalBalanceCard({
         <Text style={[typography.labelUppercase, styles.kicker]}>
           {t.wallets.card.total}
         </Text>
-        <Text
-          testID="total-balance"
-          style={[typography.currencyDisplay, styles.amount]}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-        >
-          {loading ? '—' : formatCurrency(total, 'Rp', language)}
-        </Text>
+        {loading ? (
+          <SkeletonBlock
+            testID="total-balance-skeleton"
+            width={180}
+            height={40}
+            borderRadius={radius.sm}
+            style={styles.skeletonAmount}
+          />
+        ) : (
+          <Text
+            testID="total-balance"
+            style={[typography.currencyDisplay, styles.amount]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+          >
+            {formatCurrency(total, 'Rp', language)}
+          </Text>
+        )}
         <Text style={[typography.bodySm, styles.meta]}>
           {fill(t.wallets.card.count, { count: walletCount })}
         </Text>
@@ -83,6 +94,9 @@ const styles = StyleSheet.create({
   amount: {
     marginTop: spacing.sm,
     color: colors.textPrimary,
+  },
+  skeletonAmount: {
+    marginTop: spacing.sm,
   },
   meta: {
     marginTop: spacing.xs,

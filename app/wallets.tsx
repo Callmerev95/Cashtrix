@@ -21,7 +21,7 @@ import {
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Card, GhostButton, PrimaryButton, Screen } from '@/components';
+import { Card, GhostButton, PrimaryButton, Screen, Skeleton, SkeletonBlock, SkeletonList } from '@/components';
 import { useAnalytics } from '@/features/analytics';
 import {
   MAX_WALLETS,
@@ -162,9 +162,20 @@ export default function WalletsScreen() {
           <Text style={[typography.labelUppercase, styles.kicker]}>
             {tw.list.total}
           </Text>
-          <Text style={[typography.currencyDisplay, styles.total]} numberOfLines={1}>
-            {loading ? '—' : totalLabel}
-          </Text>
+          {loading ? (
+            <Skeleton testID="wallets-total-skeleton">
+              <SkeletonBlock
+                width={180}
+                height={40}
+                borderRadius={radius.sm}
+                style={styles.skeletonTotal}
+              />
+            </Skeleton>
+          ) : (
+            <Text style={[typography.currencyDisplay, styles.total]} numberOfLines={1}>
+              {totalLabel}
+            </Text>
+          )}
           <Text style={[typography.bodySm, styles.meta]}>
             {fill(tw.list.count, { count: summary.count, max: MAX_WALLETS })}
           </Text>
@@ -175,7 +186,9 @@ export default function WalletsScreen() {
         ) : null}
 
         <View style={styles.list}>
-          {wallets.length === 0 && !loading ? (
+          {loading ? (
+            <SkeletonList testID="wallets-loading" rows={3} />
+          ) : wallets.length === 0 ? (
             <Text style={[typography.bodyMd, styles.empty]}>
               {tw.list.empty}
             </Text>
@@ -412,6 +425,9 @@ const styles = StyleSheet.create({
   },
   total: {
     color: colors.textPrimary,
+  },
+  skeletonTotal: {
+    marginTop: spacing.sm,
   },
   meta: {
     color: colors.textSecondary,

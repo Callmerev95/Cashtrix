@@ -7,6 +7,7 @@
  * (`testID="dashboard-monthly-summary"`, tap → Analytics).
  */
 import { fireEvent, render, screen } from '@testing-library/react-native';
+import { View } from 'react-native';
 
 import {
   MonthlySummaryCard,
@@ -166,12 +167,14 @@ describe('MonthlySummaryCard', () => {
     ).toBeTruthy();
   });
 
-  it('loading tanpa data menampilkan placeholder', () => {
-    render(
+  it('loading tanpa data menampilkan skeleton', () => {
+    const { UNSAFE_getByType } = render(
       <MonthlySummaryCard summary={null} loading onPress={jest.fn()} />,
     );
 
-    expect(screen.getByText('Memuat ringkasan…')).toBeTruthy();
+    // Skeleton primitive renders (raw View blocks — no readable copy).
+    expect(screen.getByTestId('dashboard-monthly-summary')).toBeTruthy();
+    expect(UNSAFE_getByType(View)).toBeTruthy();
   });
 
   it('tap kartu memanggil onPress (menuju Analytics)', () => {

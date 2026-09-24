@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { EmptyStateCard, ErrorStateCard, Screen } from '@/components';
+import { EmptyStateCard, ErrorStateCard, Screen, SkeletonList } from '@/components';
 import {
   groupAlertsByMonth,
   inboxAlertTitle,
@@ -129,9 +129,7 @@ export default function NotificationsScreen() {
         ) : null}
 
         {alerts.length === 0 && loading ? (
-          <Text style={[typography.bodyMd, styles.meta]}>
-            {tn.loading}
-          </Text>
+          <SkeletonList testID="notifications-loading" rows={4} />
         ) : alerts.length === 0 ? (
           <EmptyStateCard
             testID="notifications-empty"

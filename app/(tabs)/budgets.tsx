@@ -15,7 +15,6 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -23,7 +22,7 @@ import {
   View,
 } from 'react-native';
 
-import { EmptyStateCard, AppHeader, Card, ErrorStateCard, Screen, SectionHeader } from '@/components';
+import { EmptyStateCard, AppHeader, Card, ErrorStateCard, Screen, SectionHeader, Skeleton, SkeletonBlock } from '@/components';
 import {
   budgetStateLabels,
   formatPercent,
@@ -98,9 +97,36 @@ export default function BudgetsScreen() {
         contentContainerStyle={styles.content}
       >
         {loading ? (
-          <View testID="budgets-loading" style={styles.loading}>
-            <ActivityIndicator color={colors.accent} />
-          </View>
+          <Skeleton testID="budgets-loading" style={styles.skeleton}>
+            <View style={styles.card}>
+              <View style={styles.cardPress}>
+                <SkeletonBlock
+                  width={104}
+                  height={104}
+                  borderRadius={radius.full}
+                />
+                <View style={styles.cardBody}>
+                  <SkeletonBlock width="60%" height={18} />
+                  <SkeletonBlock width="80%" height={14} />
+                  <SkeletonBlock width="45%" height={14} />
+                </View>
+              </View>
+            </View>
+            <View style={styles.card}>
+              <View style={styles.cardPress}>
+                <SkeletonBlock
+                  width={104}
+                  height={104}
+                  borderRadius={radius.full}
+                />
+                <View style={styles.cardBody}>
+                  <SkeletonBlock width="60%" height={18} />
+                  <SkeletonBlock width="80%" height={14} />
+                  <SkeletonBlock width="45%" height={14} />
+                </View>
+              </View>
+            </View>
+          </Skeleton>
         ) : error ? (
           <ErrorStateCard
             testID="budgets-error"
@@ -255,9 +281,8 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingBottom: spacing.xl,
   },
-  loading: {
-    paddingVertical: spacing.xl,
-    alignItems: 'center',
+  skeleton: {
+    gap: spacing.md,
   },
   center: {
     gap: spacing.md,
