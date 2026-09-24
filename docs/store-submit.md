@@ -46,8 +46,8 @@ Tanpa iklan, tanpa penjualan data. Butuh koneksi untuk menyimpan.
 **Kategori store:** Keuangan/Finance. **Rating konten:** 4+ / Everyone
 (tanpa konten sensitif, tanpa konten buatan user yang dibagikan, tanpa chat).
 
-**Kontak developer (TODO pemilik — wajib diisi saat submit):**
-email dukungan + (opsional) situs. Penghapusan data: in-app
+**Kontak developer (wajib diisi saat submit):**
+email dukungan `support@cashtrix.my.id` (+ situs opsional). Penghapusan data: in-app
 (Profile → Hapus akun), jadi tidak perlu URL penghapusan terpisah.
 
 ## 4. Inventaris aset
@@ -63,7 +63,7 @@ email dukungan + (opsional) situs. Penghapusan data: in-app
 
 ## 5. Data Safety Play (jawaban final, siap salin)
 
-- Email developer: **[TODO — email pemilik]**
+- Email developer: **support@cashtrix.my.id**
 - Kebijakan privasi: URL §4. Penghapusan akun: **ya, in-app**.
 - Data dikumpulkan: email (login), info keuangan yang diketik user
   (transaksi, budget, aturan berulang), log crash.
