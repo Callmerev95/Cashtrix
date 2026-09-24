@@ -132,7 +132,7 @@ Sumber: `docs/roadmap.md` §6.3. Scope beku di body issue masing-masing (tanpa s
 
 | Ticket | Issue | Blocked by | Deliverable |
 |---|---|---|---|
-| C2 — 2FA (TOTP) | #53 | — | Toggle Profile + enroll QR + login challenge + unenroll; recovery = reset email (tanpa backup codes/SMS) — dibuat 2026-09-24 |
+| C2 — 2FA (TOTP) | #53 | — | Toggle Profile + enroll QR + login challenge + unenroll; recovery = reset email (tanpa backup codes/SMS) — dibuat 2026-09-24 — **kode selesai, gate Jest (412 hijau) + lint + typecheck + static t11 hijau; menunggu review device** (tanpa gambar QR: pengganti secret + otpauth-link, lihat AGENTS.md) |
 | D5 — Rate limiting Edge Functions | #54 | #53 | Mekanisme guard `seed-user` + fungsi berikut; ambang didokumentasi di issue dulu — dibuat 2026-09-24 |
 | D3 — Maestro di CI (riset time-box) | #52 | #54 | Satu sesi; "tetap manual" hasil sah — dibuat 2026-09-24 |
 

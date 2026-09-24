@@ -288,6 +288,44 @@ export const en: Dictionary = {
   connectivity: {
     offline: 'No connection',
   },
+  mfa: {
+    validation: {
+      codeRequired: 'Verification code is required',
+      codeInvalid: 'Code must be 6 digits',
+    },
+    title: 'Two-step verification',
+    subtitleOn: 'On — authenticator code on every sign-in.',
+    subtitleOff: 'Password-only sign-in.',
+    toggleA11y: 'Two-step verification',
+    unenrollTitle: 'Turn off two-step verification?',
+    unenrollBody:
+      'Signing in goes back to password-only. You can turn it on again anytime.',
+    unenrollAction: 'Turn off',
+    unenrollFail: 'Failed to turn off 2FA',
+    enroll: {
+      title: 'Turn on two-step verification',
+      intro:
+        'Add this account in your authenticator app (Google Authenticator, 1Password, etc.), then enter its 6-digit code below.',
+      secretLabel: 'Secret key — copy manually if needed',
+      openAuth: 'Open authenticator app',
+      codeLabel: '6-digit code',
+      codePlaceholder: '123 456',
+      submit: 'Verify & turn on',
+      cancel: 'Cancel',
+      starting: 'Preparing enrollment…',
+      startFail: 'Failed to start enrollment',
+      verifyFail: 'Wrong or expired code. Try again.',
+    },
+    challenge: {
+      title: 'Two-step verification',
+      subtitle: 'Enter the 6-digit code from your authenticator app.',
+      submit: 'Verify',
+      fail: 'Wrong or expired code. Try again.',
+      noFactor:
+        'No 2FA factor found on this account. Sign out and sign in again.',
+      backToLogin: 'Sign out and back to Sign in',
+    },
+  },
   lock: {
     section: 'Security',
     title: 'App lock',

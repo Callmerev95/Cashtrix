@@ -88,6 +88,25 @@ sessionStorageSeed.set(
 );
 
 
+// C2 (issue #53): the auth gate resolves a 5th status via
+// `mfa.getAuthenticatorAssuranceLevel()` and `MfaProvider` lists factors on
+// mount — both would hit the network with the inert test key. Stand-ins keep
+// the suite offline-safe and deterministic: no MFA by default; tests that
+// drive the challenge override these per-test and never touch this file.
+const { supabase: testClient } = require('@/supabase');
+testClient.auth.mfa.getAuthenticatorAssuranceLevel = async () => ({
+  data: {
+    currentLevel: 'aal1',
+    nextLevel: 'aal1',
+    currentAuthenticationMethods: [],
+  },
+  error: null,
+});
+testClient.auth.mfa.listFactors = async () => ({
+  data: { all: [], totp: [], phone: [], webauthn: [], recovery_code: [] },
+  error: null,
+});
+
 // supabase-js resolves its stored session on a microtask that lands after the
 // test's synchronous render. React warns about that update; it is timing, not
 // behaviour, and the assertions await the resulting UI. Unmounting is still

@@ -288,6 +288,45 @@ export const id = {
   connectivity: {
     offline: 'Tidak ada koneksi',
   },
+  mfa: {
+    validation: {
+      codeRequired: 'Kode verifikasi wajib diisi',
+      codeInvalid: 'Kode harus 6 digit angka',
+    },
+    title: 'Verifikasi dua langkah',
+    subtitleOn: 'Aktif — kode authenticator tiap masuk.',
+    subtitleOff: 'Masuk cukup dengan password.',
+    toggleA11y: 'Verifikasi dua langkah',
+    unenrollTitle: 'Matikan verifikasi dua langkah?',
+    unenrollBody:
+      'Masuk kembali cukup dengan password. Anda bisa mengaktifkannya lagi kapan saja.',
+    unenrollAction: 'Matikan',
+    unenrollFail: 'Gagal mematikan 2FA',
+    enroll: {
+      title: 'Aktifkan verifikasi dua langkah',
+      intro:
+        'Tambahkan akun ini di aplikasi authenticator (Google Authenticator, 1Password, dsb.), lalu masukkan 6 digit kodenya di bawah.',
+      secretLabel: 'Kode rahasia — salin manual bila perlu',
+      openAuth: 'Buka aplikasi authenticator',
+      codeLabel: 'Kode 6 digit',
+      codePlaceholder: '123 456',
+      submit: 'Verifikasi & aktifkan',
+      cancel: 'Batal',
+      starting: 'Menyiapkan pendaftaran…',
+      startFail: 'Gagal memulai pendaftaran',
+      verifyFail: 'Kode salah atau kedaluwarsa. Coba lagi.',
+    },
+    challenge: {
+      title: 'Verifikasi dua langkah',
+      subtitle:
+        'Masukkan 6 digit kode dari aplikasi authenticator Anda.',
+      submit: 'Verifikasi',
+      fail: 'Kode salah atau kedaluwarsa. Coba lagi.',
+      noFactor:
+        'Faktor 2FA tidak ditemukan di akun ini. Keluar lalu masuk ulang.',
+      backToLogin: 'Keluar dan kembali ke Masuk',
+    },
+  },
   lock: {
     section: 'Keamanan',
     title: 'Kunci aplikasi',

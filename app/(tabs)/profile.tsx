@@ -30,6 +30,7 @@ import { Card, GhostButton, PrimaryButton, Screen, SkeletonList, TextField } fro
 import { signOut, useAuth } from '@/features/auth';
 import { exportAndShareTransactions } from '@/features/data-ownership';
 import { useLock } from '@/features/lock';
+import { useMfa } from '@/features/mfa';
 import {
   SUPPORTED_CURRENCIES,
   formatMoney,
@@ -60,6 +61,7 @@ export default function ProfileScreen() {
   } = useProfile();
   const { rules: recurringRules } = useRecurring();
   const { enabled: lockEnabled, biometricsReady, setEnabled } = useLock();
+  const { enabled: mfaEnabled, loading: mfaLoading, unenroll } = useMfa();
   // C6: copy follows the OS language (ADR-0008).
   const language = useLanguage();
   const t = dictionaryFor(language);
@@ -72,6 +74,7 @@ export default function ProfileScreen() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [exportingCsv, setExportingCsv] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [mfaBusy, setMfaBusy] = useState(false);
   // Same dead-URL degradation as AppHeader: a signed URL that no longer
   // resolves renders the fallback initial instead of a blank box. The
   // "seen" URI is state (never a ref, never an effect — see the lint rules);
@@ -201,6 +204,43 @@ export default function ProfileScreen() {
         { text: ts.signOutAction, style: 'destructive', onPress: confirmSignOut },
       ],
     );
+  }
+
+  // C2 (#53): 2FA opt-in mirrors the B4 lock toggle. On opens the enroll
+  // modal (cancel leaves the switch off — the provider is the truth, not
+  // local state); off confirms, then unenrolls the verified factor.
+  function onMfaToggle(value: boolean) {
+    if (value) {
+      router.push('/mfa-enroll');
+      return;
+    }
+    Alert.alert(
+      t.mfa.unenrollTitle,
+      t.mfa.unenrollBody,
+      [
+        { text: t.common.cancel, style: 'cancel' },
+        {
+          text: t.mfa.unenrollAction,
+          style: 'destructive',
+          onPress: () => void confirmUnenroll(),
+        },
+      ],
+    );
+  }
+
+  async function confirmUnenroll() {
+    if (mfaBusy) return;
+    setMfaBusy(true);
+    try {
+      await unenroll();
+    } catch (cause) {
+      Alert.alert(
+        t.mfa.unenrollFail,
+        cause instanceof Error ? cause.message : t.common.retry,
+      );
+    } finally {
+      setMfaBusy(false);
+    }
   }
 
   return (
@@ -368,6 +408,32 @@ export default function ProfileScreen() {
                 value={lockEnabled}
                 onValueChange={(value) => void setEnabled(value)}
                 disabled={!biometricsReady}
+                trackColor={{ false: colors.surfaceElevated, true: colors.accent }}
+                thumbColor={colors.textPrimary}
+              />
+            </Card>
+            <Card style={styles.row}>
+              <View style={styles.rowIcon}>
+                <MaterialIcons
+                  name="phonelink-lock"
+                  size={20}
+                  color={colors.accent}
+                />
+              </View>
+              <View style={styles.rowBody}>
+                <Text style={[typography.bodyMd, styles.rowTitle]}>
+                  {t.mfa.title}
+                </Text>
+                <Text style={[typography.bodySm, styles.rowSubtitle]}>
+                  {mfaEnabled ? t.mfa.subtitleOn : t.mfa.subtitleOff}
+                </Text>
+              </View>
+              <Switch
+                testID="profile-mfa-toggle"
+                accessibilityLabel={t.mfa.toggleA11y}
+                value={mfaEnabled}
+                onValueChange={onMfaToggle}
+                disabled={mfaLoading || mfaBusy}
                 trackColor={{ false: colors.surfaceElevated, true: colors.accent }}
                 thumbColor={colors.textPrimary}
               />

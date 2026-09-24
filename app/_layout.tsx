@@ -20,6 +20,7 @@ import { AnalyticsProvider } from '@/features/analytics';
 import { BudgetsProvider } from '@/features/budgets';
 import { ConnectivityProvider, ReconnectRefresh } from '@/features/connectivity';
 import { LockOverlay, LockProvider, useLock } from '@/features/lock';
+import { MfaProvider } from '@/features/mfa';
 import {
   initObservability,
   initSentry,
@@ -73,6 +74,16 @@ function AuthGate() {
       const inCheckEmail = segments.join('/') === '(auth)/check-email';
       if (!inCheckEmail) {
         router.replace('/(auth)/check-email');
+      }
+      return;
+    }
+
+    // C2 (#53): aal1 session with a verified TOTP factor — hold at the
+    // challenge screen until the code verifies (same shape as unconfirmed).
+    if (status === 'mfaRequired') {
+      const onChallenge = segments.join('/') === '(auth)/mfa-challenge';
+      if (!onChallenge) {
+        router.replace('/(auth)/mfa-challenge');
       }
       return;
     }
@@ -167,6 +178,7 @@ function RootNavigator() {
             <Stack.Screen name="category-form" options={{ presentation: 'modal' }} />
             <Stack.Screen name="recurring" />
             <Stack.Screen name="recurring-form" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="mfa-enroll" options={{ presentation: 'modal' }} />
             <Stack.Screen name="delete-account" />
           </Stack>
         </View>
@@ -211,8 +223,10 @@ export function DataProviders({ children }: { children: ReactNode }) {
             <AnalyticsProvider>
               <RecurringProvider>
                 <ProfileProvider>
-                  <ReconnectRefresh />
-                  {children}
+                  <MfaProvider>
+                    <ReconnectRefresh />
+                    {children}
+                  </MfaProvider>
                 </ProfileProvider>
               </RecurringProvider>
             </AnalyticsProvider>

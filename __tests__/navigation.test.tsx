@@ -28,6 +28,25 @@ jest.mock('expo-splash-screen', () => ({
   hideAsync: jest.fn(),
 }));
 
+// C2: provider reads hit the network with the inert test key, so the Profile
+// screen would sit in its error branch and the 2FA toggle never renders.
+// Canned profile only — every other export stays real.
+jest.mock('@/features/profile', () => {
+  const actual = jest.requireActual('@/features/profile');
+  return {
+    ...actual,
+    useProfile: () => ({
+      profile: { displayName: 'Evelyn', currencyCode: 'IDR' },
+      avatarSignedUrl: null,
+      loading: false,
+      error: null,
+      refresh: async () => undefined,
+      saveProfile: async () => undefined,
+      saveAvatar: async () => undefined,
+    }),
+  };
+});
+
 async function renderSignedInApp() {
   return renderRouter(
     {
@@ -46,6 +65,8 @@ async function renderSignedInApp() {
       '(auth)/check-email': require('../app/(auth)/check-email').default,
       '(auth)/forgot-password': require('../app/(auth)/forgot-password').default,
       '(auth)/reset-password': require('../app/(auth)/reset-password').default,
+      '(auth)/mfa-challenge': require('../app/(auth)/mfa-challenge').default,
+      'mfa-enroll': require('../app/mfa-enroll').default,
     },
     { initialUrl: '/' },
   );
@@ -214,5 +235,36 @@ describe('app lock gate (B4)', () => {
     expect(await screen.findByTestId('lock-overlay')).toBeTruthy();
     expect(screen.getByTestId('lock-unlock')).toBeTruthy();
     expect(getPathname()).toBe('/');
+  });
+});
+
+describe('MFA challenge gate (C2)', () => {
+  const mfa = require('@/supabase').supabase.auth.mfa;
+  const defaultAal = mfa.getAuthenticatorAssuranceLevel;
+
+  afterEach(() => {
+    mfa.getAuthenticatorAssuranceLevel = defaultAal;
+    seedSession('2026-09-17T00:00:00Z');
+  });
+
+  it('holds an aal1→aal2 session at the challenge screen, not the tabs', async () => {
+    mfa.getAuthenticatorAssuranceLevel = async () => ({
+      data: { currentLevel: 'aal1', nextLevel: 'aal2' },
+      error: null,
+    });
+    const { getPathname } = await renderSignedInApp();
+
+    expect(await screen.findByTestId('mfa-challenge-screen')).toBeTruthy();
+    expect(screen.getByTestId('mfa-challenge-submit')).toBeTruthy();
+    expect(getPathname()).toBe('/mfa-challenge');
+  });
+
+  it('shows the 2FA toggle on Profile (opt-in, B4 pattern)', async () => {
+    const { getPathname } = await renderSignedInApp();
+    expect(getPathname()).toBe('/');
+
+    fireEvent.press(await screen.findByLabelText('Profile'));
+
+    expect(await screen.findByTestId('profile-mfa-toggle')).toBeTruthy();
   });
 });
