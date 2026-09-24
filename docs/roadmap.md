@@ -223,7 +223,7 @@ Memakai pola yang sudah ada (view/RPC + komponen):
 | Preloader + skeleton | Sesudah batch 1 (menyentuh semua permukaan loading → re-gate visual; jangan digabung rilis fitur). Perlu amandemen `DESIGN.md` (motion). |
 | Maestro di CI (D3) | Time-box riset device farm/emulator dulu; bila mahal, tetap manual + perkuat mock test navigasi. |
 | Rate limiting (D5) | Sebelum publikasi luas — bukan sebelumnya. |
-| CSV import (B5) | Nilai rendah vs biaya — paling akhir, atau drop. |
+| CSV import (B5) | Nilai rendah vs biaya — diputuskan **drop** 2026-09-24 (tetap di katalog, tanpa ticket; kembali hanya bila user riil meminta) |
 
 ### 6.4 Prinsip urutan (mengikat)
 

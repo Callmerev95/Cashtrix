@@ -123,3 +123,19 @@ Sumber: `docs/roadmap.md` §6.3. Syarat mulai per item mengikat; urutan tidak se
 | C6 — i18n ID/EN + pass terminologi | #51 | — | Bahasa ikut OS via `expo-localization` + kamus terpusat `src/i18n/{id,en}.ts` (fallback ID, Jest kelengkapan); cakupan UI + notifikasi + legal ID; kategori sistem mapping client-side; format ikut bahasa; `expo-localization` gabung rebuild tertunda B4 — keputusan terkunci R10 + ADR-0008 (grill 2026-09-23) — selesai, closed 2026-09-23 (HEAD `5046d1f`) |
 
 Frontier batch 2: kosong — B4 (#50) + C6 (#51) sudah closed (batch 2 selesai 2026-09-23).
+
+---
+
+## Antre kode roadmap §6.3 — C2 → D5 → D3 (urutan mengikat, edge native)
+
+Sumber: `docs/roadmap.md` §6.3. Scope beku di body issue masing-masing (tanpa spec-doc baru — item kecil, bentuk diketahui). Semua ticket `ready-for-agent`.
+
+| Ticket | Issue | Blocked by | Deliverable |
+|---|---|---|---|
+| C2 — 2FA (TOTP) | #53 | — | Toggle Profile + enroll QR + login challenge + unenroll; recovery = reset email (tanpa backup codes/SMS) — dibuat 2026-09-24 |
+| D5 — Rate limiting Edge Functions | #54 | #53 | Mekanisme guard `seed-user` + fungsi berikut; ambang didokumentasi di issue dulu — dibuat 2026-09-24 |
+| D3 — Maestro di CI (riset time-box) | #52 | #54 | Satu sesi; "tetap manual" hasil sah — dibuat 2026-09-24 |
+
+B5 CSV import **drop** 2026-09-24 (roadmap §6.3) — tanpa ticket.
+
+Frontier: **#53 (C2 — 2FA)**.
