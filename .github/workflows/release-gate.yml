@@ -62,4 +62,5 @@ jobs:
       - run: node scripts/verify-v3-recurring.mjs
       - run: node scripts/verify-v4.mjs
       - run: node scripts/verify-a5.mjs
+      - run: node scripts/verify-d5.mjs
       - run: node scripts/verify-t11.mjs

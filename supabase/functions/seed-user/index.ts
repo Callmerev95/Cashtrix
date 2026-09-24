@@ -18,6 +18,8 @@
  */
 import { createClient } from '@supabase/supabase-js';
 
+import { enforceRateLimit } from '../_shared/rate-limit.ts';
+
 const CASH_WALLET_NAME = 'Cash';
 
 function json(body: unknown, status: number): Response {
@@ -54,6 +56,10 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'invalid_token' }, 401);
   }
   const userId = userData.user.id;
+
+  // D5 (#54): abuse guard — setelah auth valid, sebelum kerja apa pun.
+  const limited = await enforceRateLimit(admin, 'seed-user', userId);
+  if (limited) return limited;
 
   const { data: created, error: seedError } = await admin
     .from('wallets')

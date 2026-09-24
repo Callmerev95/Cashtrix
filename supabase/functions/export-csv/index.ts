@@ -18,6 +18,8 @@
  */
 import { createClient } from '@supabase/supabase-js';
 
+import { enforceRateLimit } from '../_shared/rate-limit.ts';
+
 export const CSV_HEADER = 'date,type,category,wallet,amount,currency,note';
 
 /** Baris transaksi mentah dari join server (kolom persis sesuai AC). */
@@ -96,6 +98,10 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'invalid_token' }, 401);
   }
   const userId = userData.user.id;
+
+  // D5 (#54): abuse guard — setelah auth valid, sebelum query berat apa pun.
+  const limited = await enforceRateLimit(admin, 'export-csv', userId);
+  if (limited) return limited;
 
   // Pagination eksplisit: `max_rows` API membatasi satu request di 1000 baris,
   // jadi loop sampai halaman terakhir agar ekspor lengkap berapa pun datanya.

@@ -16,6 +16,8 @@
  */
 import { createClient } from '@supabase/supabase-js';
 
+import { enforceRateLimit } from '../_shared/rate-limit.ts';
+
 function json(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -50,6 +52,10 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'invalid_token' }, 401);
   }
   const userId = userData.user.id;
+
+  // D5 (#54): abuse guard — setelah auth valid, sebelum hapus apa pun.
+  const limited = await enforceRateLimit(admin, 'delete-account', userId);
+  if (limited) return limited;
 
   // Avatar: best-effort — kegagalan storage tidak boleh menggagalkan hapus
   // akun (flag dilaporkan agar klien tahu), karena baris DB + Auth user yang

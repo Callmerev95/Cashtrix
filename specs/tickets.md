@@ -133,9 +133,9 @@ Sumber: `docs/roadmap.md` §6.3. Scope beku di body issue masing-masing (tanpa s
 | Ticket | Issue | Blocked by | Deliverable |
 |---|---|---|---|
 | C2 — 2FA (TOTP) | #53 | — | Toggle Profile + enroll (secret + otpauth-link, tanpa QR) + login challenge + unenroll; recovery = reset email — **selesai + device lolos, closed 2026-09-24** (`b91d889`, OTA preview `0b850a31`) |
-| D5 — Rate limiting Edge Functions | #54 | #53 | Mekanisme guard `seed-user` + fungsi berikut; ambang didokumentasi di issue dulu — dibuat 2026-09-24 |
+| D5 — Rate limiting Edge Functions | #54 | #53 | Counter tabel in-function + guard `seed-user`/`export-csv`/`delete-account` (10/5/3 per user per 60 dtk, tolak 429 ber-body) — **selesai + live probe 29/29, closed 2026-09-24** |
 | D3 — Maestro di CI (riset time-box) | #52 | #54 | Satu sesi; "tetap manual" hasil sah — dibuat 2026-09-24 |
 
 B5 CSV import **drop** 2026-09-24 (roadmap §6.3) — tanpa ticket.
 
-Frontier: **#54 (D5 — Rate limiting Edge Functions)**.
+Frontier: **#52 (D3 — Maestro di CI, riset time-box)**.
