@@ -134,8 +134,8 @@ Sumber: `docs/roadmap.md` §6.3. Scope beku di body issue masing-masing (tanpa s
 |---|---|---|---|
 | C2 — 2FA (TOTP) | #53 | — | Toggle Profile + enroll (secret + otpauth-link, tanpa QR) + login challenge + unenroll; recovery = reset email — **selesai + device lolos, closed 2026-09-24** (`b91d889`, OTA preview `0b850a31`) |
 | D5 — Rate limiting Edge Functions | #54 | #53 | Counter tabel in-function + guard `seed-user`/`export-csv`/`delete-account` (10/5/3 per user per 60 dtk, tolak 429 ber-body) — **selesai + live probe 29/29, closed 2026-09-24** |
-| D3 — Maestro di CI (riset time-box) | #52 | #54 | Satu sesi; "tetap manual" hasil sah — dibuat 2026-09-24 |
+| D3 — Maestro di CI (riset time-box) | #52 | #54 | **selesai 2026-09-24** — keputusan: **tetap manual** (Cloud: tanpa harga publik + signup di luar time-box; emulator Actions: viable tapi rantai EAS-build + secrets + AVD tidak muat satu sesi). Fallback dikerjakan: mock test navigasi diperkuat — 5 rute sekunder (search/notifications/recurring/categories/delete-account) kini direach dari entry row + marker mount, Jest 426/426 |
 
 B5 CSV import **drop** 2026-09-24 (roadmap §6.3) — tanpa ticket.
 
-Frontier: **#52 (D3 — Maestro di CI, riset time-box)**.
+Frontier: **kosong** — C2/D5/D3 semua selesai. Berikutnya per roadmap: v1.2 selesai penuh; item berikut menunggu keputusan pemilik (v2.0 paket arsitektur, atau rilis store).

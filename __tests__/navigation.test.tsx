@@ -7,6 +7,11 @@
  * from a signed-in session. Rendering the layout chain as an in-memory router
  * is both how expo-router test trees are built and how the async auth state
  * flushes, so it is used for every case rather than mocking the session away.
+ *
+ * D3 note: the same tree now also covers the five secondary routes (search,
+ * notifications, recurring, categories, delete-account) — reachability from
+ * their entry rows plus the deterministic error branches (providers fail with
+ * the inert test key, so the D4 error cards render without network timing).
  */
 import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 
@@ -31,18 +36,24 @@ jest.mock('expo-splash-screen', () => ({
 // C2: provider reads hit the network with the inert test key, so the Profile
 // screen would sit in its error branch and the 2FA toggle never renders.
 // Canned profile only — every other export stays real.
+// D3: extended with the category-management surface so the Categories screen
+// (which filters `categories` on render) can mount without the network.
 jest.mock('@/features/profile', () => {
   const actual = jest.requireActual('@/features/profile');
   return {
     ...actual,
     useProfile: () => ({
       profile: { displayName: 'Evelyn', currencyCode: 'IDR' },
+      categories: [],
       avatarSignedUrl: null,
       loading: false,
       error: null,
       refresh: async () => undefined,
       saveProfile: async () => undefined,
       saveAvatar: async () => undefined,
+      archiveManagedCategory: async () => undefined,
+      unarchiveManagedCategory: async () => undefined,
+      deleteManagedCategory: async () => undefined,
     }),
   };
 });
@@ -67,6 +78,11 @@ async function renderSignedInApp() {
       '(auth)/reset-password': require('../app/(auth)/reset-password').default,
       '(auth)/mfa-challenge': require('../app/(auth)/mfa-challenge').default,
       'mfa-enroll': require('../app/mfa-enroll').default,
+      search: require('../app/search').default,
+      notifications: require('../app/notifications').default,
+      recurring: require('../app/recurring').default,
+      categories: require('../app/categories').default,
+      'delete-account': require('../app/delete-account').default,
     },
     { initialUrl: '/' },
   );
@@ -266,5 +282,64 @@ describe('MFA challenge gate (C2)', () => {
     fireEvent.press(await screen.findByLabelText('Profile'));
 
     expect(await screen.findByTestId('profile-mfa-toggle')).toBeTruthy();
+  });
+});
+
+describe('secondary routes (D3)', () => {
+  it('reaches Search from the Dashboard history action', async () => {
+    const { getPathname } = await renderSignedInApp();
+
+    fireEvent.press(await screen.findByTestId('dashboard-history-action'));
+
+    expect(getPathname()).toBe('/search');
+    expect(await screen.findByTestId('search-input')).toBeTruthy();
+  });
+
+  it('reaches Notifications from the Dashboard bell', async () => {
+    const { getPathname } = await renderSignedInApp();
+
+    fireEvent.press(await screen.findByTestId('dashboard-alerts'));
+
+    expect(getPathname()).toBe('/notifications');
+    // With the inert test key every provider read fails offline-safe, so the
+    // inbox lands on either its error card or its empty state — both prove
+    // the route mounted instead of 404ing.
+    expect(
+      await screen.findByTestId('notifications-error', undefined, {
+        timeout: 2_000,
+      }).catch(() => screen.findByTestId('notifications-empty')),
+    ).toBeTruthy();
+  });
+
+  it('reaches Recurring from the Profile row', async () => {
+    const { getPathname } = await renderSignedInApp();
+
+    fireEvent.press(await screen.findByLabelText('Profile'));
+    fireEvent.press(await screen.findByTestId('profile-recurring-row'));
+
+    expect(getPathname()).toBe('/recurring');
+    expect(await screen.findByTestId('recurring-screen')).toBeTruthy();
+  });
+
+  it('reaches Categories from the Profile row', async () => {
+    const { getPathname } = await renderSignedInApp();
+
+    fireEvent.press(await screen.findByLabelText('Profile'));
+    fireEvent.press(await screen.findByTestId('profile-categories-row'));
+
+    expect(getPathname()).toBe('/categories');
+    expect(await screen.findByTestId('categories-screen')).toBeTruthy();
+  });
+
+  it('reaches Delete Account from the Profile row', async () => {
+    const { getPathname } = await renderSignedInApp();
+
+    fireEvent.press(await screen.findByLabelText('Profile'));
+    fireEvent.press(await screen.findByTestId('profile-delete-account-row'));
+
+    expect(getPathname()).toBe('/delete-account');
+    expect(
+      await screen.findByTestId('delete-account-confirmation'),
+    ).toBeTruthy();
   });
 });
