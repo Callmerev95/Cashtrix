@@ -57,6 +57,22 @@ function section(title) {
   console.log(`\n== ${title}`);
 }
 
+/**
+ * Rate-limit memakai fixed window 60 detik yang sejajar epoch — batas
+ * server ada di detik `:00`. Flood yang melewati batas itu counter-nya
+ * reset di tengah jalan, jadi limit tak pernah tercapai (CI 2026-09-25:
+ * section mulai `:56`, boundary di `:00`, hasil 12×200 + 0×429 padahal
+ * harusnya 10 lolos + 2 ditolak). Parkir sampai awal window supaya seluruh
+ * section (provisioning + ±12 call ≈ 25 detik) muat dalam satu window.
+ */
+async function awaitFreshRateWindow(roomSeconds = 45) {
+  const targetMod = 60 - roomSeconds;
+  const mod = Math.floor(Date.now() / 1000) % 60;
+  if (mod > targetMod) {
+    await new Promise((resolve) => setTimeout(resolve, (60 - mod + 1) * 1000));
+  }
+}
+
 const supabase = createClient(SUPABASE_URL, anonKey, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
@@ -100,6 +116,7 @@ function isRateLimited(result, name, limit) {
 async function main() {
   // -------------------------------------------------------------------------
   section('auth + seed-user normal (client path)');
+  await awaitFreshRateWindow();
   const userId = await provisionTestUser(admin, supabase, {
     email,
     password,
@@ -135,6 +152,10 @@ async function main() {
 
   // -------------------------------------------------------------------------
   section('export-csv normal + flood: 5 lolos + 2 ditolak 429');
+  // Juga park di awal window: 7 call flood export-csv milik A (dan 6 call
+  // milik B pada isolasi sesudahnya) masing-masing harus muat dalam satu
+  // window agar asersi 429-nya deterministik.
+  await awaitFreshRateWindow();
   const exported = await supabase.functions.invoke('export-csv', { method: 'POST' });
   check('export-csv via client lolos', !exported.error, exported.error?.message);
 
