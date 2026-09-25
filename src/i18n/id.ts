@@ -475,6 +475,10 @@ export const id = {
       action: 'Urungkan',
       actionA11y: 'Urungkan penghapusan',
     },
+    saved: {
+      label: '{name} · Rp {amount} tersimpan',
+      fallback: 'Transaksi',
+    },
     form: {
       loadFail: 'Gagal memuat transaksi',
       walletRequired: 'Pilih dompet terlebih dahulu',

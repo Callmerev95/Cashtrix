@@ -282,19 +282,32 @@ export default function AddTransactionScreen() {
       // threshold, and the alert must fire within seconds of the commit
       // (PRD §2.3 Epic E). Analytics re-reads as well: the Insight screen
       // would otherwise show the pre-save overview until the range changes.
-      // Everything after the save is best-effort — a failure here must not
-      // lose the saved transaction.
-      await refreshWallets();
-      try {
-        await refreshBudgets();
-        await refreshAnalytics();
-        // Fresh server read inside (V6) — the cached list is still pre-save
-        // truth here, so evaluating it would miss this commit's crossing.
-        await evaluateAndAlert({ userId: session?.user.id ?? '' });
-      } catch {
-        // Non-fatal; the next save re-evaluates (dedup-safe).
-      }
-      router.back();
+      //
+      // Opsi B (S1 follow-up): these re-reads are fire-and-forget — each
+      // context applies its result when it lands, but none of them may trap
+      // the form. A stalled network settles neither resolve nor reject, and
+      // awaiting it left the submit spinner spinning forever on a committed
+      // save (device finding: shortcut save, cold start AND background).
+      // The success snackbar on the Dashboard is the save's proof, not this
+      // screen staying open.
+      void refreshWallets();
+      void (async () => {
+        try {
+          await refreshBudgets();
+          await refreshAnalytics();
+          // Fresh server read inside (V6) — the cached list is still pre-save
+          // truth here, so evaluating it would miss this commit's crossing.
+          await evaluateAndAlert({ userId: session?.user.id ?? '' });
+        } catch {
+          // Non-fatal; the next save re-evaluates (dedup-safe).
+        }
+      })();
+      // A shortcut deep link can land here with an empty history (cold start
+      // or a router state reset): a bare `back()` is then a no-op and the
+      // form never unmounts, so fall back to replacing at the Dashboard.
+      setBusy(false);
+      if (router.canGoBack()) router.back();
+      else router.replace('/');
     } catch (cause) {
       setBusy(false);
       Alert.alert(
@@ -309,17 +322,21 @@ export default function AddTransactionScreen() {
     setBusy(true);
     try {
       await remove(params.id);
-      await refreshWallets();
-      // Spent dropped — re-read budgets so rings fall back immediately.
-      // Analytics drops with it, or Insight keeps the deleted row's amounts.
-      // No alert evaluation: a lower percent can never cross a threshold
-      // upward, and fired alerts are never cleared by edits/deletes.
-      try {
-        await refreshBudgets();
-        await refreshAnalytics();
-      } catch {
-        // Non-fatal; the Budgets tab refreshes on its own.
-      }
+      // Fire-and-forget like the save path (see `submit`): a stalled re-read
+      // must never trap this sheet on a committed delete.
+      void refreshWallets();
+      void (async () => {
+        // Spent dropped — re-read budgets so rings fall back immediately.
+        // Analytics drops with it, or Insight keeps the deleted row's amounts.
+        // No alert evaluation: a lower percent can never cross a threshold
+        // upward, and fired alerts are never cleared by edits/deletes.
+        try {
+          await refreshBudgets();
+          await refreshAnalytics();
+        } catch {
+          // Non-fatal; the Budgets tab refreshes on its own.
+        }
+      })();
       setConfirmingDelete(false);
       // V6: biarkan jendela undo tetap terbuka. `remove()` sudah membuka
       // `lastDeleted` setelah commit — sheet konfirmasi mencegah salah tekan,
@@ -328,7 +345,12 @@ export default function AddTransactionScreen() {
       // membuat snackbar V4 tidak pernah tampil dari satu-satunya jalur hapus
       // di app, sehingga langkah "undo hapus" di gerbang Maestro (V6) tak
       // terjangkau.
-      router.back();
+      //
+      // Same empty-history fallback as `submit`: an edit opened straight from
+      // a deep link has nothing to go back to.
+      setBusy(false);
+      if (router.canGoBack()) router.back();
+      else router.replace('/');
     } catch (cause) {
       setBusy(false);
       setConfirmingDelete(false);

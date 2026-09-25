@@ -474,6 +474,10 @@ export const en: Dictionary = {
       action: 'Undo',
       actionA11y: 'Undo delete',
     },
+    saved: {
+      label: '{name} · Rp {amount} saved',
+      fallback: 'Transaction',
+    },
     form: {
       loadFail: 'Failed to load transaction',
       walletRequired: 'Select a wallet first',

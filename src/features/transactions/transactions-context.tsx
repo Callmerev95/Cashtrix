@@ -45,6 +45,7 @@ import {
   deletedTransactionLabel,
   hasMoreAfter,
   isTransactionType,
+  savedTransactionLabel,
   type Category,
   type Transaction,
   type TransactionType,
@@ -67,6 +68,12 @@ type TransactionsContextValue = {
   lastWalletId: string | null;
   /** Soft-deleted just now — non-null renders the undo snackbar (V4). */
   lastDeleted: LatestTransaction | null;
+  /**
+   * Saved just now — non-null renders the success snackbar (S1 follow-up).
+   * Unlike `lastDeleted` there is nothing to act on, only proof the commit
+   * landed before the form closed.
+   */
+  lastSaved: SavedNotice | null;
   refresh: () => Promise<void>;
   loadMore: () => Promise<void>;
   loadTransaction: (id: string) => Promise<Transaction | null>;
@@ -74,6 +81,7 @@ type TransactionsContextValue = {
   remove: (id: string) => Promise<void>;
   undoDelete: () => Promise<void>;
   dismissUndo: () => void;
+  dismissSaved: () => void;
   rememberType: (type: TransactionType) => Promise<void>;
   rememberWallet: (walletId: string) => Promise<void>;
 };
@@ -84,6 +92,13 @@ export type LatestTransaction = {
   /** The snackbar's copy, built from the row that left the list. */
   label: string;
   /** When the delete landed; the snackbar hides itself after 5 s. */
+  createdAt: number;
+};
+
+export type SavedNotice = {
+  /** The snackbar's copy, built from the committed input. */
+  label: string;
+  /** When the save landed; the snackbar hides itself after 6 s. */
   createdAt: number;
 };
 
@@ -123,6 +138,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
   const [lastDeleted, setLastDeleted] = useState<LatestTransaction | null>(
     null,
   );
+  const [lastSaved, setLastSaved] = useState<SavedNotice | null>(null);
 
   const mounted = useRef(true);
   const inflight = useRef<Promise<void> | null>(null);
@@ -302,13 +318,41 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
         throw cause;
       }
 
-      await Promise.all([
+      // The success window opens only once the save is committed, so the
+      // snackbar never claims an uncommitted write (S1 follow-up — the form
+      // closes on this same resolution, and the snackbar is its proof).
+      const savedCategory = input.categoryId
+        ? (categories.find((item) => item.id === input.categoryId)?.name ??
+          null)
+        : null;
+      const savedCounterparty = input.counterpartyWalletId
+        ? (wallets.find((item) => item.id === input.counterpartyWalletId)
+            ?.name ?? null)
+        : null;
+      setLastSaved({
+        label: savedTransactionLabel(
+          {
+            type: input.type,
+            amount: input.amount,
+            categoryName: savedCategory,
+            counterpartyWalletName: savedCounterparty,
+          },
+          language,
+        ),
+        createdAt: Date.now(),
+      });
+
+      // Fire-and-forget (S1 follow-up): the form awaits `save()` as its
+      // commit proof, so blocking here on a stalled refresh would trap the
+      // submit spinner on saved data. The optimistic row is already painted;
+      // `refresh()` replaces the page with server truth when it lands.
+      void Promise.all([
         refresh(),
         rememberType(input.type),
         rememberWallet(input.walletId),
       ]);
     },
-    [categories, refresh, rememberType, rememberWallet, wallets],
+    [categories, language, refresh, rememberType, rememberWallet, wallets],
   );
 
   const remove = useCallback(
@@ -359,6 +403,8 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
 
   const dismissUndo = useCallback(() => setLastDeleted(null), []);
 
+  const dismissSaved = useCallback(() => setLastSaved(null), []);
+
   const value = useMemo(
     () => ({
       transactions,
@@ -371,6 +417,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       lastType,
       lastWalletId,
       lastDeleted,
+      lastSaved,
       refresh,
       loadMore,
       loadTransaction,
@@ -378,6 +425,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       remove,
       undoDelete,
       dismissUndo,
+      dismissSaved,
       rememberType,
       rememberWallet,
     }),
@@ -392,6 +440,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       lastType,
       lastWalletId,
       lastDeleted,
+      lastSaved,
       refresh,
       loadMore,
       loadTransaction,
@@ -399,6 +448,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       remove,
       undoDelete,
       dismissUndo,
+      dismissSaved,
       rememberType,
       rememberWallet,
     ],

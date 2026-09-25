@@ -21,6 +21,7 @@ import { useAuth } from '@/features/auth';
 import { useBudgets } from '@/features/budgets';
 import { displayNameOrEmail, useProfile } from '@/features/profile';
 import {
+  SavedSnackbar,
   TransactionHistoryList,
   UndoSnackbar,
   useTransactions,
@@ -63,8 +64,10 @@ export default function DashboardScreen() {
     hasMore,
     loadMore,
     lastDeleted,
+    lastSaved,
     undoDelete,
     dismissUndo,
+    dismissSaved,
     error: transactionsError,
     refresh: refreshTransactions,
   } = useTransactions();
@@ -262,6 +265,12 @@ export default function DashboardScreen() {
         }
         onDismiss={dismissUndo}
       />
+      {/* Success proof for the save the form just closed on (S1 follow-up).
+          Yields to an open undo window: both bars float at the same offset,
+          and a delete's 10 s `Urungkan` must never be stolen. */}
+      {!lastDeleted ? (
+        <SavedSnackbar snack={lastSaved} onDismiss={dismissSaved} />
+      ) : null}
     </Screen>
   );
 }

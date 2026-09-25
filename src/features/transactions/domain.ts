@@ -437,6 +437,38 @@ export function deletedTransactionLabel(
   });
 }
 
+/**
+ * The one-line proof a save committed (S1 follow-up) — mirrors
+ * `deletedTransactionLabel` without the delete. The form closes the moment
+ * `save()` resolves, so this label on the Dashboard's `SavedSnackbar` is
+ * what tells the user the money really landed.
+ *
+ * Takes a narrow summary (not a `Transaction`): at commit time a create has
+ * no row id yet, only the validated input plus the resolved display names.
+ * Pass the active language (C6); the default keeps id-ID.
+ */
+export type SavedSummary = {
+  type: TransactionType;
+  amount: number;
+  categoryName: string | null;
+  counterpartyWalletName: string | null;
+};
+
+export function savedTransactionLabel(
+  summary: SavedSummary,
+  lang: Language = 'id',
+): string {
+  const copy = dictionaryFor(lang).transactions.saved;
+  const name =
+    summary.type === 'transfer'
+      ? transferFeedLabel(summary.counterpartyWalletName, lang)
+      : (summary.categoryName ?? '');
+  return fill(copy.label, {
+    name: name || copy.fallback,
+    amount: formatGrouped(summary.amount, lang),
+  });
+}
+
 // ---------------------------------------------------------------------------
 // History grouping & pagination
 // ---------------------------------------------------------------------------

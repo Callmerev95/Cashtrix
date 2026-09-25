@@ -33,6 +33,21 @@ jest.mock('expo-splash-screen', () => ({
   hideAsync: jest.fn(),
 }));
 
+// S1 follow-up: the save-proof tests drive `save()` to a commit without the
+// network. The API mock resolves empty option lists by default (the same
+// offline-safe shape the D3 tests rely on); individual tests reconfigure it.
+jest.mock('@/features/transactions/api', () => {
+  const actual = jest.requireActual('@/features/transactions/api');
+  return {
+    ...actual,
+    createTransaction: jest.fn(async () => ({ id: 'tx-1' })),
+    updateTransaction: jest.fn(async () => undefined),
+    listTransactions: jest.fn(async () => []),
+    listCategories: jest.fn(async () => []),
+    listWalletOptions: jest.fn(async () => []),
+    lastUsedWalletId: jest.fn(async () => null),
+  };
+});
 // C2: provider reads hit the network with the inert test key, so the Profile
 // screen would sit in its error branch and the 2FA toggle never renders.
 // Canned profile only — every other export stays real.
@@ -440,5 +455,50 @@ describe('shortcuts (S1)', () => {
       mfa.getAuthenticatorAssuranceLevel = defaultAal;
       seedSession('2026-09-17T00:00:00Z');
     }
+  });
+});
+
+describe('save proof (S1 follow-up)', () => {
+  const CASH = { id: 'w-1', name: 'Cash' };
+  const FOOD = { id: 'c-1', name: 'Makanan', icon: 'restaurant', kind: 'expense' };
+
+  it('closes a cold-start save to the Dashboard with a saved proof', async () => {
+    seedSession('2026-09-17T00:00:00Z');
+    const api = require('@/features/transactions/api');
+    api.listWalletOptions.mockResolvedValue([CASH]);
+    api.listCategories.mockResolvedValue([FOOD]);
+    const { getPathname } = await renderSignedInApp('/add-transaction?type=expense');
+
+    fireEvent.changeText(await screen.findByTestId('amount-input'), '30000');
+    fireEvent.press(await screen.findByTestId('category-c-1'));
+    fireEvent.press(screen.getByTestId('transaction-save'));
+
+    expect(await screen.findByTestId('saved-snackbar')).toBeTruthy();
+    expect(
+      screen.getByText('Makanan · Rp 30.000 tersimpan'),
+    ).toBeTruthy();
+    expect(getPathname()).toBe('/');
+  });
+
+  it('still closes when the post-save refresh never settles', async () => {
+    // The device finding: a refresh that settles neither resolve nor reject
+    // trapped the spinner on committed data. The form must close on the
+    // commit proof alone.
+    seedSession('2026-09-17T00:00:00Z');
+    const api = require('@/features/transactions/api');
+    api.listWalletOptions.mockResolvedValue([CASH]);
+    api.listCategories.mockResolvedValue([FOOD]);
+    const { getPathname } = await renderSignedInApp('/add-transaction?type=expense');
+
+    // Option lists are in — now stall every later read.
+    await screen.findByTestId('category-c-1');
+    api.listTransactions.mockImplementation(() => new Promise(() => {}));
+
+    fireEvent.changeText(screen.getByTestId('amount-input'), '30000');
+    fireEvent.press(screen.getByTestId('category-c-1'));
+    fireEvent.press(screen.getByTestId('transaction-save'));
+
+    expect(await screen.findByTestId('saved-snackbar')).toBeTruthy();
+    expect(getPathname()).toBe('/');
   });
 });
