@@ -44,6 +44,11 @@ import { useAnalytics } from '@/features/analytics';
 import { useAuth } from '@/features/auth';
 import { useBudgets } from '@/features/budgets';
 import { trackEvent, txCreatedEvent } from '@/features/observability';
+import {
+  listReceiptsForTransaction,
+  ReceiptAttachmentSection,
+  type ReceiptAttachment,
+} from '@/features/receipts';
 import { useWallets } from '@/features/wallets';
 import {
   AmountField,
@@ -132,11 +137,15 @@ export default function AddTransactionScreen() {
   const isTransfer = type === 'transfer';
 
   // S1 contract for S2: `scan=1` (only emitted by the `/scan` alias) marks
-  // this session as scan-first. The photo UI lands in S2 and reads this flag;
-  // until then the form behaves exactly like a plain create.
+  // this session as scan-first — the receipt section below starts with its
+  // source sheet open.
   const scanMode = !isEdit && parseScanFlag(params.scan);
-  // Consumed by S2 (photo UI) — the `void` keeps the S1 contract compiled.
-  void scanMode;
+
+  // Attachments are user-created rows (uploaded at capture, Opsi A), so they
+  // live in plain state: the save reads the ids to link them, edit mode
+  // seeds them from the server row list on load (same load pattern as the
+  // edited row itself, never a render-sync).
+  const [receipts, setReceipts] = useState<ReceiptAttachment[]>([]);
 
   // Wallet: explicit choice > the row being edited > the remembered last-used
   // wallet > the first available (so an empty picker can never block Save).
@@ -169,6 +178,7 @@ export default function AddTransactionScreen() {
   // Edit mode: fetch the row once; the effect only writes state in a promise
   // callback (an external system), never synchronously in the effect body.
   const [loadingExisting, setLoadingExisting] = useState(isEdit);
+  const sessionUserId = session?.user.id ?? null;
   useEffect(() => {
     if (!params.id) return;
     let cancelled = false;
@@ -181,6 +191,16 @@ export default function AddTransactionScreen() {
           setAmountRaw(formatAmountInput(String(transaction.amount)));
           setOccurredAt(new Date(transaction.occurredAt));
           setNote(transaction.note ?? '');
+          if (sessionUserId) {
+            listReceiptsForTransaction({
+              userId: sessionUserId,
+              transactionId: transaction.id,
+            })
+              .then((rows) => {
+                if (!cancelled) setReceipts(rows);
+              })
+              .catch(() => undefined);
+          }
         }
       })
       .catch((cause: unknown) => {
@@ -196,7 +216,7 @@ export default function AddTransactionScreen() {
     return () => {
       cancelled = true;
     };
-  }, [loadTransaction, params.id, tf.loadFail]);
+  }, [loadTransaction, params.id, sessionUserId, tf.loadFail]);
 
   function onToggleType(next: TransactionType) {
     setTypeOverride(next);
@@ -260,6 +280,7 @@ export default function AddTransactionScreen() {
         occurredAt,
         note: normalizeNote(note),
         idempotencyKey,
+        receiptIds: receipts.map((attachment) => attachment.id),
       });
 
       // T10 (issue #11): `tx_created` carries only the kind + whether a note
@@ -558,6 +579,19 @@ export default function AddTransactionScreen() {
               testID="date-calendar"
               value={occurredAt}
               onChange={onPickDate}
+            />
+          </View>
+
+          <View style={styles.gap}>
+            <SectionHeader
+              testID="receipt-header"
+              title={t.transactions.receipt.attach}
+            />
+            <ReceiptAttachmentSection
+              attachments={receipts}
+              onAttachmentsChange={setReceipts}
+              userId={session?.user.id ?? ''}
+              autoOpen={scanMode}
             />
           </View>
 

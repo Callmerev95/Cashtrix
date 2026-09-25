@@ -63,4 +63,5 @@ jobs:
       - run: node scripts/verify-v4.mjs
       - run: node scripts/verify-a5.mjs
       - run: node scripts/verify-d5.mjs
+      - run: node scripts/verify-s2.mjs
       - run: node scripts/verify-t11.mjs

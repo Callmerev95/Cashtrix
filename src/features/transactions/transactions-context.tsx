@@ -26,6 +26,7 @@ import {
 
 import { onLocalDataPurge } from '@/supabase';
 import { dictionaryFor, useLanguage } from '@/i18n';
+import { linkReceiptsToTransaction } from '@/features/receipts';
 
 import {
   createTransaction,
@@ -117,6 +118,8 @@ export type SaveInput = {
   note: string | null;
   /** Minted when the form opened (AC #22). Ignored when editing. */
   idempotencyKey: string;
+  /** Pre-save receipt rows to link once the save commits (S2, Opsi A). */
+  receiptIds: string[];
 };
 
 const TransactionsContext = createContext<TransactionsContextValue | null>(
@@ -282,6 +285,9 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
         setTransactions((current) => [optimistic, ...current]);
       }
 
+      // The committed row id (created or edited) — the receipt link below
+      // needs it, and it only exists past this point.
+      let committedId: string;
       try {
         if (input.id) {
           await updateTransaction({
@@ -294,6 +300,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
             occurredAt: input.occurredAt.toISOString(),
             note: input.note,
           });
+          committedId = input.id;
         } else {
           const draft: TransactionDraft = {
             userId: input.userId,
@@ -306,7 +313,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
             note: input.note,
             idempotencyKey: input.idempotencyKey,
           };
-          await createTransaction(draft);
+          committedId = await createTransaction(draft);
         }
       } catch (cause) {
         // Roll the optimistic row back so the UI never lies about what saved.
@@ -346,10 +353,19 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       // commit proof, so blocking here on a stalled refresh would trap the
       // submit spinner on saved data. The optimistic row is already painted;
       // `refresh()` replaces the page with server truth when it lands.
+      // The receipt link rides along (S2, Opsi A): the photos are already
+      // uploaded, this is one UPDATE. It can never reject the group — a
+      // failed link leaves repairable orphan rows for the 30-day sweep,
+      // never a lost save.
       void Promise.all([
         refresh(),
         rememberType(input.type),
         rememberWallet(input.walletId),
+        linkReceiptsToTransaction({
+          userId: input.userId,
+          receiptIds: input.receiptIds,
+          transactionId: committedId,
+        }).catch(() => 0),
       ]);
     },
     [categories, language, refresh, rememberType, rememberWallet, wallets],

@@ -26,15 +26,19 @@ import {
   groupByDay,
   hasMoreAfter,
   isFutureDate,
+  isReceiptExpired,
   isTransactionType,
   newIdempotencyKey,
   normalizeNote,
+  receiptExpiryCutoff,
+  receiptStoragePath,
   startOfDay,
   toDateKey,
   transactionTypeLabel,
   transferFeedLabel,
   transferMessages,
   validateAmount,
+  validateReceiptFile,
   validateTransfer,
   weekdayLabels,
   type Category,
@@ -579,5 +583,55 @@ describe('pass istilah Dompet (V5)', () => {
       expect(copy.toLowerCase()).toContain('dompet');
       expect(copy.toLowerCase()).not.toContain('wallet');
     }
+  });
+});
+
+describe('lampiran struk (S2)', () => {
+  const now = new Date('2026-09-25T12:00:00+07:00');
+
+  it('path storage = {userId}/{receiptId}.jpg di bucket receipts', () => {
+    expect(receiptStoragePath('user-1', 'abc')).toBe('user-1/abc.jpg');
+  });
+
+  it('cutoff tepat 30 hari ke belakang (boundary-exact)', () => {
+    const cutoff = receiptExpiryCutoff(now);
+    expect(cutoff.getTime()).toBe(now.getTime() - 30 * 24 * 3600 * 1000);
+  });
+
+  it('tepat 30 hari belum kedaluwarsa; 30 hari + 1 detik sudah', () => {
+    const exact = new Date(now.getTime() - 30 * 24 * 3600 * 1000);
+    const over = new Date(exact.getTime() - 1000);
+    expect(isReceiptExpired(exact, now)).toBe(false);
+    expect(isReceiptExpired(over, now)).toBe(true);
+    expect(isReceiptExpired(now.toISOString(), now)).toBe(false);
+  });
+
+  it('menerima ISO string maupun Date', () => {
+    const old = new Date(now.getTime() - 31 * 24 * 3600 * 1000);
+    expect(isReceiptExpired(old.toISOString(), now)).toBe(true);
+    expect(isReceiptExpired(old, now)).toBe(true);
+  });
+
+  it('menolak >2MB, mime asing, dan berkas kosong', () => {
+    expect(
+      validateReceiptFile({ bytes: 2 * 1024 * 1024 + 1, mime: 'image/jpeg' }),
+    ).toEqual({ ok: false, error: expect.stringContaining('2MB') });
+    expect(validateReceiptFile({ bytes: 100, mime: 'image/gif' }).ok).toBe(
+      false,
+    );
+    expect(validateReceiptFile({ bytes: 0, mime: 'image/jpeg' }).ok).toBe(
+      false,
+    );
+  });
+
+  it('meloloskan PNG/JPG dalam batas, dan copy EN tersedia', () => {
+    expect(validateReceiptFile({ bytes: 500_000, mime: 'image/png' })).toEqual({
+      ok: true,
+    });
+    const en = validateReceiptFile(
+      { bytes: 3 * 1024 * 1024, mime: 'image/jpeg' },
+      'en',
+    );
+    expect(en).toEqual({ ok: false, error: 'Receipt photo max 2MB' });
   });
 });
