@@ -752,3 +752,92 @@ export function toggleBulkRow(
   }
   return { ids: [...ids, row.id], rejected: null };
 }
+
+// ---------------------------------------------------------------------------
+// Receipts (S2, ADR-0009)
+//
+// Opsi A: a photo is uploaded the moment it is taken (a row with
+// `transaction_id NULL` — a legal pre-save state), then linked to the
+// transaction when the save commits. Everything here is pure so the Jest
+// seam stays offline: expiry math mirroring `purge_expired_receipts()`
+// (`created_at < now() - 30 days`) and file validation mirroring the
+// `receipts` bucket (2MB PNG/JPG).
+// ---------------------------------------------------------------------------
+
+/** Storage cap mirrors the `receipts` bucket (2MB PNG/JPG). */
+export const RECEIPT_MAX_BYTES = 2 * 1024 * 1024;
+
+/** Retention window mirrors soft-delete (T5): 30 days from `created_at`. */
+export const RECEIPT_TTL_DAYS = 30;
+
+/** Millisecond form of the TTL, for the cutoff math below. */
+export const RECEIPT_TTL_MS = RECEIPT_TTL_DAYS * 24 * 3600 * 1000;
+
+export const RECEIPT_MIME_TYPES = ['image/png', 'image/jpeg'] as const;
+
+/**
+ * Storage path for one receipt: `{userId}/{receiptId}.jpg`
+ * (bucket `receipts`, pola avatar T8 `{userId}/avatar.jpg`).
+ */
+export function receiptStoragePath(
+  userId: string,
+  receiptId: string,
+): string {
+  return `${userId}/${receiptId}.jpg`;
+}
+
+/**
+ * Cutoff for the expiry sweep: rows older than this are purgeable.
+ * Boundary-exact — a row exactly 30 days old is NOT yet expired, mirroring
+ * the SQL `< now() - interval '30 days'` (strict, not `<=`).
+ */
+export function receiptExpiryCutoff(now: Date = new Date()): Date {
+  return new Date(now.getTime() - RECEIPT_TTL_MS);
+}
+
+/**
+ * Whether a receipt row is past retention. Accepts the ISO `created_at` the
+ * API returns (or a `Date` in tests).
+ */
+export function isReceiptExpired(
+  createdAt: string | Date,
+  now: Date = new Date(),
+): boolean {
+  const created = typeof createdAt === 'string' ? new Date(createdAt) : createdAt;
+  return created.getTime() < receiptExpiryCutoff(now).getTime();
+}
+
+export type ReceiptValidation =
+  | { ok: true }
+  | { ok: false; error: string };
+
+/**
+ * Validates a picked photo before upload (bucket contract, checked early so
+ * a 10MB burst shot fails fast instead of after the resize+read).
+ * Pass the active language (C6); the default keeps id-ID.
+ */
+export function validateReceiptFile(
+  input: {
+    /** Resized byte size, or `null` when unknown (then only mime is gated). */
+    bytes: number | null;
+    mime: string | null;
+  },
+  lang: Language = 'id',
+): ReceiptValidation {
+  const messages = dictionaryFor(lang).transactions.receipt;
+  if (input.bytes !== null) {
+    if (!(input.bytes > 0)) {
+      return { ok: false, error: messages.empty };
+    }
+    if (input.bytes > RECEIPT_MAX_BYTES) {
+      return { ok: false, error: messages.tooLarge };
+    }
+  }
+  if (
+    input.mime !== null &&
+    !(RECEIPT_MIME_TYPES as readonly string[]).includes(input.mime)
+  ) {
+    return { ok: false, error: messages.badType };
+  }
+  return { ok: true };
+}

@@ -31,6 +31,7 @@ import { dictionaryFor, useLanguage } from '@/i18n';
 import { useAuth } from '@/features/auth';
 import { useAnalytics } from '@/features/analytics';
 import { useBudgets } from '@/features/budgets';
+import { sweepExpiredReceipts } from '@/features/receipts';
 import { useTransactions } from '@/features/transactions';
 import { useWallets } from '@/features/wallets';
 
@@ -167,26 +168,33 @@ export function RecurringProvider({ children }: { children: ReactNode }) {
 
   // App open + foreground (ADR-0005). Authenticated only — the RPC rejects
   // anonymous callers (42501) and there is nothing to catch up signed out.
+  // The receipt expiry sweep (S2) rides the same pump: app open is the only
+  // foreground moment the app owns (no cron client-side), and the sweep is
+  // equally best-effort — it must never break app open either.
   // State updates land in promise callbacks, never synchronously in the
   // effect body (`react-hooks/set-state-in-effect`, cf. T5/T6).
   useEffect(() => {
     if (status !== 'authenticated') return;
+    const userId = session?.user.id;
+    if (!userId) return;
 
     let cancelled = false;
     void refresh();
     void runCatchUp();
+    void sweepExpiredReceipts({ userId }).catch(() => undefined);
 
     const subscription = AppState.addEventListener('change', (state) => {
       if (cancelled || state !== 'active') return;
       void refresh();
       void runCatchUp();
+      void sweepExpiredReceipts({ userId }).catch(() => undefined);
     });
 
     return () => {
       cancelled = true;
       subscription.remove();
     };
-  }, [status, refresh, runCatchUp]);
+  }, [status, session?.user.id, refresh, runCatchUp]);
 
   // Sign out drops the cached rules.
   useEffect(
