@@ -28,6 +28,7 @@
     },
     "plugins": [
       "expo-router",
+      "./plugins/with-app-shortcuts",
       "@sentry/react-native/expo",
       [
         "expo-splash-screen",

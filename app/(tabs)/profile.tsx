@@ -501,6 +501,32 @@ export default function ProfileScreen() {
               </Card>
             </Pressable>
             <Pressable
+              testID="profile-shortcuts-row"
+              accessibilityRole="button"
+              accessibilityLabel={ts.shortcutsA11y}
+              onPress={() => router.push('/shortcuts')}
+              style={styles.rowPress}
+            >
+              <Card style={styles.row}>
+              <View style={styles.rowIcon}>
+                <MaterialIcons name="bolt" size={20} color={colors.accent} />
+              </View>
+              <View style={styles.rowBody}>
+                <Text style={[typography.bodyMd, styles.rowTitle]}>
+                  {ts.shortcutsTitle}
+                </Text>
+                <Text style={[typography.bodySm, styles.rowSubtitle]}>
+                  {ts.shortcutsSubtitle}
+                </Text>
+              </View>
+              <MaterialIcons
+                name="chevron-right"
+                size={20}
+                color={colors.textSecondary}
+              />
+              </Card>
+            </Pressable>
+            <Pressable
               testID="profile-categories-row"
               accessibilityRole="button"
               accessibilityLabel={ts.categoriesA11y}

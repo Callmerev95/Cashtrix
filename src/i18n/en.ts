@@ -178,6 +178,9 @@ export const en: Dictionary = {
       recurringA11y: 'Manage recurring transactions',
       recurringTitle: 'Recurring transactions',
       recurringSubtitle: 'Salary & bills every month automatically',
+      shortcutsA11y: 'Manage quick shortcuts',
+      shortcutsTitle: 'Quick shortcuts',
+      shortcutsSubtitle: 'Log without opening the app first',
       categoriesA11y: 'Manage categories',
       categoriesTitle: 'My categories',
       categoriesSubtitle: 'Create, archive, and manage spending categories',
@@ -242,6 +245,30 @@ export const en: Dictionary = {
       noSession: 'Session not found',
     },
     loadError: 'Failed to load profile',
+  },
+  shortcuts: {
+    kicker: 'Shortcuts',
+    title: 'Log even faster',
+    subtitle:
+      'Pin one of these doors to your phone gesture — the OS catches the tap, the app just opens the right form.',
+    expenseTitle: 'Add Expense',
+    expenseSubtitle: 'Open the form with the Expense segment selected',
+    incomeTitle: 'Add Income',
+    incomeSubtitle: 'Open the form with the Income segment selected',
+    scanTitle: 'Scan receipt',
+    scanSubtitle: 'Open the form ready to photograph a receipt',
+    guideKicker: 'Set up on your phone',
+    iphoneTitle: 'iPhone — Back Tap',
+    iphoneBody:
+      'Settings → Accessibility → Touch → Back Tap → Triple Tap → attach the Cashtrix Shortcut.',
+    pixelTitle: 'Pixel — Quick Tap',
+    pixelBody:
+      'Settings → System → Gestures → Quick Tap → attach the Cashtrix Shortcut.',
+    samsungTitle: 'Samsung — RegiStar',
+    samsungBody:
+      'Good Lock → RegiStar → Back-Tap → attach the Cashtrix Shortcut.',
+    gateNote:
+      'Without a session, shortcuts stop at the biometric lock or Login — they never bypass security.',
   },
   categories: {
     expense: {

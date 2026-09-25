@@ -37,6 +37,35 @@ export function isTransactionType(value: unknown): value is TransactionType {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Shortcut deep-link params (S1, ADR-0009)
+// ---------------------------------------------------------------------------
+
+/**
+ * Types a shortcut may preselect. `transfer` is excluded on purpose (spec
+ * story 1): shortcuts cover expense/income/scan only.
+ */
+export const SHORTCUT_TYPES = ['expense', 'income'] as const;
+export type ShortcutType = (typeof SHORTCUT_TYPES)[number];
+
+/**
+ * Parses `?type=` from a shortcut deep link (`cashtrix://add-transaction`).
+ * Anything else — `transfer`, unknown, missing — is `null` so the form falls
+ * back to the remembered preference instead of a smuggled segment.
+ */
+export function parseShortcutType(value: unknown): ShortcutType | null {
+  return value === 'expense' || value === 'income' ? value : null;
+}
+
+/**
+ * Parses `?scan=` from the scan alias (`cashtrix://scan` → `scan=1`).
+ * Only the exact `scan=1` the alias emits arms scan mode; the photo UI
+ * itself lands in S2, which reads this same flag.
+ */
+export function parseScanFlag(value: unknown): boolean {
+  return value === '1';
+}
+
 /** A history row as returned by `v_transactions_feed`. */
 export type Transaction = {
   id: string;

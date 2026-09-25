@@ -56,6 +56,8 @@ import {
   isFutureDate,
   newIdempotencyKey,
   normalizeNote,
+  parseScanFlag,
+  parseShortcutType,
   useTransactions,
   validateAmount,
   validateTransfer,
@@ -66,7 +68,11 @@ import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 
 export default function AddTransactionScreen() {
-  const params = useLocalSearchParams<{ id?: string }>();
+  // S1 (ADR-0009): shortcut deep links arrive as
+  // `cashtrix://add-transaction?type=expense|income` and `cashtrix://scan`
+  // (via the `/scan` alias as `scan=1`). `type` only preselects the segment —
+  // `transfer` and unknown values fall through to the remembered preference.
+  const params = useLocalSearchParams<{ id?: string; type?: string; scan?: string }>();
   const isEdit = Boolean(params.id);
   const insets = useSafeAreaInsets();
   // C6: copy + validation follow the OS language (ADR-0008).
@@ -117,9 +123,20 @@ export default function AddTransactionScreen() {
   // user starts typing (each override wins over `loaded`).
   const [loaded, setLoaded] = useState<Transaction | null>(null);
 
+  // S1: a shortcut `?type=` seeds the segment below an explicit toggle but
+  // above the remembered preference; edit mode (`?id=`) ignores it so a
+  // shared link can never retarget a row being edited.
+  const shortcutType = isEdit ? null : parseShortcutType(params.type);
   const type: TransactionType =
-    typeOverride ?? loaded?.type ?? lastType;
+    typeOverride ?? shortcutType ?? loaded?.type ?? lastType;
   const isTransfer = type === 'transfer';
+
+  // S1 contract for S2: `scan=1` (only emitted by the `/scan` alias) marks
+  // this session as scan-first. The photo UI lands in S2 and reads this flag;
+  // until then the form behaves exactly like a plain create.
+  const scanMode = !isEdit && parseScanFlag(params.scan);
+  // Consumed by S2 (photo UI) — the `void` keeps the S1 contract compiled.
+  void scanMode;
 
   // Wallet: explicit choice > the row being edited > the remembered last-used
   // wallet > the first available (so an empty picker can never block Save).

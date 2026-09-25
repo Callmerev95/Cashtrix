@@ -58,7 +58,7 @@ jest.mock('@/features/profile', () => {
   };
 });
 
-async function renderSignedInApp() {
+async function renderSignedInApp(initialUrl = '/') {
   return renderRouter(
     {
       _layout: require('../app/_layout').default,
@@ -82,9 +82,11 @@ async function renderSignedInApp() {
       notifications: require('../app/notifications').default,
       recurring: require('../app/recurring').default,
       categories: require('../app/categories').default,
+      scan: require('../app/scan').default,
+      shortcuts: require('../app/shortcuts').default,
       'delete-account': require('../app/delete-account').default,
     },
-    { initialUrl: '/' },
+    { initialUrl },
   );
 }
 
@@ -341,5 +343,102 @@ describe('secondary routes (D3)', () => {
     expect(
       await screen.findByTestId('delete-account-confirmation'),
     ).toBeTruthy();
+  });
+});
+
+describe('shortcuts (S1)', () => {
+  it('reaches the Shortcuts guide from the Profile row', async () => {
+    const { getPathname } = await renderSignedInApp();
+
+    fireEvent.press(await screen.findByLabelText('Profile'));
+    fireEvent.press(await screen.findByTestId('profile-shortcuts-row'));
+
+    expect(getPathname()).toBe('/shortcuts');
+    expect(await screen.findByTestId('shortcuts-screen')).toBeTruthy();
+    expect(screen.getByTestId('shortcut-expense')).toBeTruthy();
+    expect(screen.getByTestId('shortcut-income')).toBeTruthy();
+    expect(screen.getByTestId('shortcut-scan')).toBeTruthy();
+  });
+
+  it('opens the form from the shortcut-expense door', async () => {
+    const { getPathname } = await renderSignedInApp();
+
+    fireEvent.press(await screen.findByLabelText('Profile'));
+    fireEvent.press(await screen.findByTestId('profile-shortcuts-row'));
+    fireEvent.press(await screen.findByTestId('shortcut-expense'));
+
+    expect(getPathname()).toBe('/add-transaction');
+    expect(await screen.findByTestId('type-toggle')).toBeTruthy();
+  });
+
+  it('redirects the /scan alias to the Add form', async () => {
+    const { getPathname } = await renderSignedInApp('/scan');
+
+    expect(await screen.findByTestId('type-toggle')).toBeTruthy();
+    expect(getPathname()).toBe('/add-transaction');
+  });
+
+  it('preselects the Income segment for ?type=income', async () => {
+    await renderSignedInApp('/add-transaction?type=income');
+
+    const income = await screen.findByTestId('type-option-income');
+    const expense = screen.getByTestId('type-option-expense');
+    expect(income.props.accessibilityState).toMatchObject({
+      selected: true,
+    });
+    expect(expense.props.accessibilityState).toMatchObject({
+      selected: false,
+    });
+  });
+
+  it('ignores ?type=transfer and falls back to the remembered default', async () => {
+    // Spec story 1: shortcuts cover expense/income only — a smuggled
+    // transfer must not retarget the segment.
+    await renderSignedInApp('/add-transaction?type=transfer');
+
+    const expense = await screen.findByTestId('type-option-expense');
+    expect(expense.props.accessibilityState).toMatchObject({
+      selected: true,
+    });
+  });
+
+  it('parks an unconfirmed shortcut at Check Email, not the guide (S1 story 5)', async () => {
+    seedSession(null);
+    const { getPathname } = await renderSignedInApp('/shortcuts');
+
+    expect(await screen.findByTestId('check-email-resend')).toBeTruthy();
+    expect(getPathname()).toBe('/check-email');
+    seedSession('2026-09-17T00:00:00Z');
+  });
+
+  it('holds a locked shortcut behind the overlay (S1 story 5)', async () => {
+    const LOCK_KEY = 'cashtrix:app-lock-enabled';
+    seedSession('2026-09-17T00:00:00Z');
+    require('./mocks/async-storage').sessionStorageSeed.set(LOCK_KEY, '1');
+    try {
+      await renderSignedInApp('/shortcuts');
+
+      expect(await screen.findByTestId('lock-overlay')).toBeTruthy();
+    } finally {
+      require('./mocks/async-storage').sessionStorageSeed.delete(LOCK_KEY);
+    }
+  });
+
+  it('holds an aal1→aal2 shortcut at the challenge screen (S1 story 5)', async () => {
+    const mfa = require('@/supabase').supabase.auth.mfa;
+    const defaultAal = mfa.getAuthenticatorAssuranceLevel;
+    mfa.getAuthenticatorAssuranceLevel = async () => ({
+      data: { currentLevel: 'aal1', nextLevel: 'aal2' },
+      error: null,
+    });
+    try {
+      const { getPathname } = await renderSignedInApp('/scan');
+
+      expect(await screen.findByTestId('mfa-challenge-screen')).toBeTruthy();
+      expect(getPathname()).toBe('/mfa-challenge');
+    } finally {
+      mfa.getAuthenticatorAssuranceLevel = defaultAal;
+      seedSession('2026-09-17T00:00:00Z');
+    }
   });
 });

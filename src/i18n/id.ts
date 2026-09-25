@@ -177,6 +177,9 @@ export const id = {
       recurringA11y: 'Kelola transaksi berulang',
       recurringTitle: 'Transaksi berulang',
       recurringSubtitle: 'Gaji & tagihan otomatis tiap bulan',
+      shortcutsA11y: 'Kelola pintasan cepat',
+      shortcutsTitle: 'Pintasan cepat',
+      shortcutsSubtitle: 'Catat tanpa membuka aplikasi dulu',
       categoriesA11y: 'Kelola kategori',
       categoriesTitle: 'Kategori saya',
       categoriesSubtitle: 'Buat, arsipkan, dan atur kategori belanja',
@@ -241,6 +244,30 @@ export const id = {
       noSession: 'Sesi tidak ditemukan',
     },
     loadError: 'Gagal memuat profil',
+  },
+  shortcuts: {
+    kicker: 'Pintasan',
+    title: 'Catat lebih cepat',
+    subtitle:
+      'Tempel salah satu pintu ini ke gesture HP — ketukan ditangkap sistem operasi, aplikasi hanya membuka form yang tepat.',
+    expenseTitle: 'Tambah Expense',
+    expenseSubtitle: 'Buka form dengan segmen Expense terpilih',
+    incomeTitle: 'Tambah Income',
+    incomeSubtitle: 'Buka form dengan segmen Income terpilih',
+    scanTitle: 'Scan struk',
+    scanSubtitle: 'Buka form langsung siap memotret struk',
+    guideKicker: 'Pasang di HP',
+    iphoneTitle: 'iPhone — Back Tap',
+    iphoneBody:
+      'Pengaturan → Aksesibilitas → Sentuh → Ketuk Bagian Belakang → Ketuk Tiga Kali → tempel Shortcut Cashtrix.',
+    pixelTitle: 'Pixel — Quick Tap',
+    pixelBody:
+      'Pengaturan → Sistem → Gestur → Quick Tap → tempel Shortcut Cashtrix.',
+    samsungTitle: 'Samsung — RegiStar',
+    samsungBody:
+      'Good Lock → RegiStar → Back-Tap → tempel Shortcut Cashtrix.',
+    gateNote:
+      'Tanpa sesi, pintasan berhenti di kunci biometrik atau Login — tidak pernah melewati keamanan.',
   },
   categories: {
     expense: {

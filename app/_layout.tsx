@@ -171,6 +171,9 @@ function RootNavigator() {
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="add-transaction" options={{ presentation: 'modal' }} />
+            {/* S1 (ADR-0009): `cashtrix://scan` alias + the shortcuts guide.
+                Both are ordinary protected routes — the AuthGate above parks
+                shortcut deep links at Login / Check Email / MFA / lock. */}
             <Stack.Screen name="budget-form" options={{ presentation: 'modal' }} />
             <Stack.Screen name="wallets" />
             <Stack.Screen name="wallet-form" options={{ presentation: 'modal' }} />
@@ -179,6 +182,8 @@ function RootNavigator() {
             <Stack.Screen name="recurring" />
             <Stack.Screen name="recurring-form" options={{ presentation: 'modal' }} />
             <Stack.Screen name="mfa-enroll" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="scan" />
+            <Stack.Screen name="shortcuts" />
             <Stack.Screen name="delete-account" />
           </Stack>
         </View>
