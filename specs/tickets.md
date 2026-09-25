@@ -84,9 +84,9 @@ Hasil review preview build Android + Expo Go oleh owner, diverifikasi di HP:
 - PR #44 — virtualisasi riwayat (`SectionList` + sticky header; uji 200 txn via `scripts/seed-bulk.mjs`, user uji dibersihkan).
 - Chore: sinkron lockfile v1.1.0 + `.npmrc`, link proyek EAS, `SENTRY_DISABLE_AUTO_UPLOAD` di profil preview, timeout suite navigasi 15 detik (flake CI).
 
-### Setelah V6 (rencana tercatat, belum jadi ticket)
+### Setelah V6 (catatan pasca-V6)
 
-1. **Preloader + skeleton** — selesai 2026-09-23 (working tree, belum commit): `DESIGN.md` §8 Motion + `src/components/skeleton.tsx` (`Skeleton`/`SkeletonBlock`/`SkeletonRow`/`SkeletonList`, pulse opacity View-only, reduce-motion) + skeleton per permukaan (hero, riwayat, dompet, KPI/donut/bar, ring budget, search, notifikasi, recurring, kategori). Gate: lint/typecheck/Jest 393/393/`verify-t11 --static-only` 3/3/bundle Android hijau.
+1. **Preloader + skeleton** — **SELESAI + ter-commit 2026-09-24 di `main`, tanpa ticket**: `c87a34a` (`DESIGN.md` §8 Motion + `src/components/skeleton.tsx` (`Skeleton`/`SkeletonBlock`/`SkeletonRow`/`SkeletonList`, pulse opacity View-only, reduce-motion) + skeleton per permukaan (hero, riwayat, dompet, KPI/donut/bar, ring budget, search, notifikasi, recurring, kategori)) + `e00ef76` (cold-open fade §8). Gate: lint/typecheck/Jest 393/393/`verify-t11 --static-only` 3/3/bundle Android hijau; device gate smoke + happy-path hijau 2026-09-25 di atas kode ini.
 2. Mock network Supabase di test navigasi (ganti ketergantungan kecepatan runner; paket dengan assert state error/empty) — prasyarat sinyal gate yang kredibel, bagian dari V6 bila sempat.
 
 ### Aturan
