@@ -227,6 +227,15 @@
 - Glosarium baru di `CONTEXT.md`: Pintasan, Pindai, Lampiran struk, Saran kategori. Kontrak statis tambah `shortcut-expense/income/scan` (tanpa hapus).
 - v2.0 tetap trek terpisah; titik temu tunggal: spec sync v2.0 mencakup `transaction_receipts` sebagai tipe antrean outbox.
 
+### Graphify + Obsidian (handoff antar-sesi, 2026-09-25)
+
+- `graphify-out/` = knowledge graph lokal (AST, tanpa API): `graph.json` (penuh), `graph.html` (visual), `GRAPH_REPORT.md` (ringkasan). **Di-ignore git** (generated ~4MB, artefak lokal seperti `coverage/`). Jangan di-commit.
+- `.opencode/` (plugin pengingat graphify, 8KB) dibiarkan untracked — tidak di-ignore eksplisit, tidak di-commit.
+- **Cek basi sebelum pakai:** bandingkan `git rev-parse HEAD` dengan `Built from commit` di `GRAPH_REPORT.md`. Beda → jalankan `graphify update .` dulu (inkremental, gratis), baru `graphify query`. Wajib cek saat tugas butuh eksplorasi multi-file / refactor / spec >3 file; boleh skip untuk edit 1 file yang lokasinya jelas atau tugas docs-only.
+- **Wajib update setelah** tiap PR squash ke `main`, agar sesi berikutnya tidak mewarisi graf basi.
+- **Batas peran (jangan dilanggar):** graf menjawab *struktur* (siapa memanggil siapa); *alasan* tetap dari AGENTS/CONTEXT/ADR + verifikasi kode. Edge INFERRED bukan fakta sampai dicek kodenya. Buta SQL: `supabase/migrations/*.sql` tidak masuk graf (`tree_sitter_sql` tidak terinstal); RLS/pgTAP tetap dibaca langsung. Barrel `src/theme/index.ts` tidak ter-parse grammar (`type` di posisi export) — edge via `@/theme` undercount, tidak berbahaya karena `theme.ts` sendiri ter-parse.
+- **Obsidian = lensa baca atas graf keputusan** (bukan sumber kebenaran): buka `docs/` + file Markdown akar (`CONTEXT.md`, `specs/`, `PRD.md`, `DESIGN.md`, `README.md`) sebagai vault. `src/` tidak ikut (mengotori graph view). `.obsidian/` di-ignore git (konfig personal). Jangan menulis keputusan di Obsidian lalu sync manual — sumber tetap file repo.
+
 ### Database
 
 - Project Supabase: `Cashtrix` — ref `bklriyyuglwiqczgbqgq`, region `ap-southeast-2`. `supabase/config.toml` `project_id` sudah diisi ref tersebut.- `auth.email.enable_confirmations` **false** di hosted (auto-confirm, PRD §6.1 R2 — kembalikan ke konfirmasi manual sebelum rilis publik). **Jangan `supabase config push` dari repo root**: `config.toml` di repo masih berisi nilai template lokal, jadi push akan menimpa `site_url`, `otp_length`, MFA, Twilio milik project. Untuk mengubah satu properti saja, jalankan `supabase config push --workdir <dir>` dengan `config.toml` minimal yang hanya mendeklarasikan properti itu (butuh `supabase/.temp` disalin agar ref terbaca).

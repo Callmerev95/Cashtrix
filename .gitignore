@@ -37,3 +37,9 @@ __tests__/.session-seed.json
 
 # stitch html / png dumps
 stitch_cashtrix/
+
+# graphify knowledge graph (generated, local-only)
+graphify-out/
+
+# Obsidian vault config (personal, local-only)
+.obsidian/
