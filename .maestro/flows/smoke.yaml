@@ -6,6 +6,21 @@ appId: com.callmerev95.cashtrix
 - launchApp:
     clearState: true
 
+# Dev build only: `clearState: true` also wipes the dev launcher's saved
+# server, so the app lands on the launcher home instead of the login screen.
+# Reconnect to Metro explicitly (`adb reverse tcp:8081 tcp:8081` must be
+# active). Skipped on preview/release builds — the launcher screen never
+# renders there, so the condition stays false.
+- runFlow:
+    when:
+      visible: "DEVELOPMENT SERVERS"
+    commands:
+      - openLink: "cashtrix://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"
+
+- extendedWaitUntil:
+    visible:
+      id: "login-submit"
+    timeout: 30000
 - assertVisible:
     id: "login-submit"
 - tapOn:
@@ -18,28 +33,40 @@ appId: com.callmerev95.cashtrix
 - tapOn:
     id: "login-submit"
 
+- extendedWaitUntil:
+    visible:
+      id: "dashboard-wallets"
+    timeout: 20000
 - assertVisible:
     id: "dashboard-wallets"
-    timeout: 20000
 - takeScreenshot: "t11-smoke-dashboard"
 
 - tapOn:
     id: "tab-analytics"
+- extendedWaitUntil:
+    visible:
+      id: "analytics-screen"
+    timeout: 15000
 - assertVisible:
     id: "analytics-screen"
-    timeout: 15000
 - takeScreenshot: "t11-smoke-analytics"
 
 - tapOn:
     id: "tab-budgets"
+- extendedWaitUntil:
+    visible:
+      id: "budgets-screen"
+    timeout: 15000
 - assertVisible:
     id: "budgets-screen"
-    timeout: 15000
 - takeScreenshot: "t11-smoke-budgets"
 
 - tapOn:
     id: "tab-profile"
+- extendedWaitUntil:
+    visible:
+      id: "profile-screen"
+    timeout: 15000
 - assertVisible:
     id: "profile-screen"
-    timeout: 15000
 - takeScreenshot: "t11-smoke-profile"

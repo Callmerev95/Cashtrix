@@ -30,7 +30,31 @@ appId: com.callmerev95.cashtrix
 - launchApp:
     clearState: true
 
+# Dev build only: `clearState: true` also wipes the dev launcher's saved
+# server, so the app lands on the launcher home instead of the login screen.
+# Reconnect to Metro explicitly (`adb reverse tcp:8081 tcp:8081` must be
+# active). Skipped on preview/release builds — the launcher screen never
+# renders there, so the condition stays false.
+- runFlow:
+    when:
+      visible: "DEVELOPMENT SERVERS"
+    commands:
+      - openLink: "cashtrix://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"
+# The dev launcher's in-app menu (Reload / Go home) can overlay the freshly
+# connected app (seen in hp9 after a driver reinstall) — dismiss it when it
+# is there; no-op otherwise. Point = the menu's ✕ button on the gate device.
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - tapOn:
+          point: "634,747"
+
 # --- Auth: login with the pre-provisioned, pre-confirmed E2E account -----
+- extendedWaitUntil:
+    visible:
+      id: "login-submit"
+    timeout: 30000
 - assertVisible:
     id: "login-submit"
 - tapOn:
@@ -44,9 +68,12 @@ appId: com.callmerev95.cashtrix
     id: "login-submit"
 
 # Auth gate drops us into the tabs; seed-user has created the Cash wallet.
+- extendedWaitUntil:
+    visible:
+      id: "dashboard-wallets"
+    timeout: 20000
 - assertVisible:
     id: "dashboard-wallets"
-    timeout: 20000
 
 # --- Tx 1: expense Makanan 50.000 ------------------------------------------
 - tapOn:
@@ -60,13 +87,21 @@ appId: com.callmerev95.cashtrix
 - tapOn:
     id: "amount-input"
 - inputText: "50000"
-- tapOn: "Makanan"
+# Close the IME BEFORE tapping a category: the chip sits low in the grid
+# (y≈1100) and would be covered by the numeric keyboard — the ADB tap would
+# land on the IME and the save would reject with "Pilih kategori…".
 - hideKeyboard
+- tapOn: "Makanan"
 - tapOn:
     id: "transaction-save"
+- scrollUntilVisible:
+    element:
+      id: "dashboard-history"
+    direction: DOWN
+    centerElement: true
+    timeout: 15000
 - assertVisible:
     id: "dashboard-history"
-    timeout: 15000
 
 # --- Tx 2: expense Transportasi 25.000 --------------------------------------
 - tapOn:
@@ -76,13 +111,18 @@ appId: com.callmerev95.cashtrix
 - tapOn:
     id: "amount-input"
 - inputText: "25000"
-- tapOn: "Transportasi"
 - hideKeyboard
+- tapOn: "Transportasi"
 - tapOn:
     id: "transaction-save"
+- scrollUntilVisible:
+    element:
+      id: "dashboard-history"
+    direction: DOWN
+    centerElement: true
+    timeout: 15000
 - assertVisible:
     id: "dashboard-history"
-    timeout: 15000
 
 # --- Tx 3: income Gaji 5.000.000 --------------------------------------------
 - tapOn:
@@ -94,20 +134,28 @@ appId: com.callmerev95.cashtrix
 - tapOn:
     id: "amount-input"
 - inputText: "5000000"
-- tapOn: "Gaji"
 - hideKeyboard
+- tapOn: "Gaji"
 - tapOn:
     id: "transaction-save"
+- scrollUntilVisible:
+    element:
+      id: "dashboard-history"
+    direction: DOWN
+    centerElement: true
+    timeout: 15000
 - assertVisible:
     id: "dashboard-history"
-    timeout: 15000
 
 # --- Analytics: KPI + donut render from server aggregation ------------------
 - tapOn:
     id: "tab-analytics"
+- extendedWaitUntil:
+    visible:
+      id: "analytics-kpi"
+    timeout: 15000
 - assertVisible:
     id: "analytics-kpi"
-    timeout: 15000
 - assertVisible:
     id: "analytics-donut"
 - tapOn:
@@ -116,9 +164,12 @@ appId: com.callmerev95.cashtrix
 # --- Budget: cap Makanan at 200.000 ------------------------------------------
 - tapOn:
     id: "tab-budgets"
+- extendedWaitUntil:
+    visible:
+      id: "budgets-screen"
+    timeout: 15000
 - assertVisible:
     id: "budgets-screen"
-    timeout: 15000
 
 # First run shows the empty state, later runs the allocations header —
 # both lead to /budget-form.
@@ -145,32 +196,50 @@ appId: com.callmerev95.cashtrix
 - hideKeyboard
 - tapOn:
     id: "budget-save"
+- extendedWaitUntil:
+    visible:
+      id: "budgets-screen"
+    timeout: 15000
 - assertVisible:
     id: "budgets-screen"
-    timeout: 15000
 
 # --- Trigger: Makanan expense 150.000 → spent 200.000 = 100% = exceeded -----
 - tapOn:
     id: "fab-add-transaction"
 - assertVisible:
     id: "transaction-save"
+# Tx 3 left the remembered type as Income — re-tap Expense so the grid
+# shows expense categories (Makanan is absent from the income grid).
+- tapOn:
+    id: "type-option-expense"
 - tapOn:
     id: "amount-input"
 - inputText: "150000"
-- tapOn: "Makanan"
 - hideKeyboard
+- tapOn: "Makanan"
 - tapOn:
     id: "transaction-save"
+# Save does router.back() to the ORIGIN tab — the FAB was pressed on Budgets,
+# so land on the Vault before asserting the dashboard history.
+- tapOn:
+    id: "tab-index"
+- scrollUntilVisible:
+    element:
+      id: "dashboard-history"
+    direction: DOWN
+    centerElement: true
+    timeout: 15000
 - assertVisible:
     id: "dashboard-history"
-    timeout: 15000
 
 # The in-app alert banner is the push-independent proof (PRD D8): it renders
 # even when notification permission was denied.
 - tapOn:
     id: "tab-budgets"
+- extendedWaitUntil:
+    visible: "Budget Makanan terlampaui"
+    timeout: 15000
 - assertVisible: "Budget Makanan terlampaui"
-  timeout: 15000
 
 - takeScreenshot: "t11-happy-path-alert"
 
@@ -191,9 +260,17 @@ appId: com.callmerev95.cashtrix
 - hideKeyboard
 - tapOn:
     id: "transaction-save"
+# Same origin-tab correction as the trigger save above (FAB pressed on Budgets).
+- tapOn:
+    id: "tab-index"
+- scrollUntilVisible:
+    element:
+      id: "dashboard-history"
+    direction: DOWN
+    centerElement: true
+    timeout: 15000
 - assertVisible:
     id: "dashboard-history"
-    timeout: 15000
 - assertVisible: "Transfer ke Bank"
 
 # --- V6 / Recurring: Tagihan 75rb, due tgl 1 --------------------------------
@@ -203,14 +280,39 @@ appId: com.callmerev95.cashtrix
 # wallet picker, unlike the transfer form's double list).
 - tapOn:
     id: "tab-profile"
+- extendedWaitUntil:
+    visible:
+      id: "profile-screen"
+    timeout: 15000
 - assertVisible:
     id: "profile-screen"
+# ProfileProvider fetches once at mount — a transient blip leaves the error
+# card up (seen on device; "Coba lagi" recovers it). Retry only when showing.
+- runFlow:
+    when:
+      visible: "Coba lagi"
+    commands:
+      - tapOn: "Coba lagi"
+- extendedWaitUntil:
+    visible:
+      id: "profile-name-well"
+    timeout: 15000
+# The recurring row sits below the fold (Security section is the last thing
+# on screen) — scroll it into view before tapping, like dashboard-history.
+- scrollUntilVisible:
+    element:
+      id: "profile-recurring-row"
+    direction: DOWN
+    centerElement: true
     timeout: 15000
 - tapOn:
     id: "profile-recurring-row"
+- extendedWaitUntil:
+    visible:
+      id: "recurring-screen"
+    timeout: 15000
 - assertVisible:
     id: "recurring-screen"
-    timeout: 15000
 - tapOn:
     id: "recurring-add"
 - assertVisible:
@@ -218,17 +320,31 @@ appId: com.callmerev95.cashtrix
 - tapOn:
     id: "recurring-amount"
 - inputText: "75000"
-- tapOn: "Tagihan"
 - hideKeyboard
+- tapOn: "Tagihan"
+# Wallet picker sits near the top (visible now); tap Bank BEFORE scrolling
+# down to the due-day chips, or it would scroll off-screen for this text tap.
+- tapOn: "Bank"
+# The due-day row lives below the category grid — below the fold at open.
+- scrollUntilVisible:
+    element:
+      id: "recurring-due-1"
+    direction: DOWN
+    centerElement: true
+    timeout: 15000
 - tapOn:
     id: "recurring-due-1"
-- tapOn: "Bank"
 - tapOn:
     id: "recurring-save"
+- extendedWaitUntil:
+    visible:
+      id: "recurring-screen"
+    timeout: 15000
 - assertVisible:
     id: "recurring-screen"
-    timeout: 15000
-- assertVisible: "Tagihan"
+# Maestro text match is full-string regex — the card title is the whole
+# "kategori · Rp nominal" line, so a bare "Tagihan" never matches.
+- assertVisible: "Tagihan · Rp 75.000"
 
 # --- V6 / Catch-up: cold start materialises the Tagihan occurrence -----------
 # Session persists (clearState stays false); app-open catch-up runs the
@@ -237,29 +353,88 @@ appId: com.callmerev95.cashtrix
 # that the cold start lands back on the tabs without crashing.
 - launchApp:
     clearState: false
+# Dev build: a cold start may re-show the launcher (session survives, but the
+# saved URL only auto-connects when it was kept) — same conditional bootstrap
+# as the top of this flow; no-op when the app reconnects straight to the tabs.
+- runFlow:
+    when:
+      visible: "DEVELOPMENT SERVERS"
+    commands:
+      - openLink: "cashtrix://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"
+# Same defensive menu dismiss as the cold start (overlay would hide the tabs).
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - tapOn:
+          point: "634,747"
+- extendedWaitUntil:
+    visible:
+      id: "dashboard-wallets"
+    timeout: 20000
 - assertVisible:
     id: "dashboard-wallets"
-    timeout: 20000
 
 # --- V6 / Undo: hapus Makanan → snackbar ~10 detik → Urungkan ------------------
 # Delete opens the edit form for the most recent Makanan row; the confirm
 # sheet commits, and (since V6) the edit form no longer dismisses the undo
 # window, so the Dashboard snackbar appears on return.
+# Fresh relaunch parked the Dashboard at the top; the row is below the fold.
+- scrollUntilVisible:
+    element:
+      id: "dashboard-history"
+    direction: DOWN
+    centerElement: true
+    timeout: 15000
 - tapOn: "Makanan"
+- extendedWaitUntil:
+    visible:
+      id: "transaction-save"
+    timeout: 15000
 - assertVisible:
     id: "transaction-save"
-    timeout: 15000
+# `retryTapIfNoChange` alone is not enough: it compares the hierarchy ONCE and
+# a status-bar tick counts as "changed", so a swallowed trash tap (hp8/hp10 —
+# sheet never opened, Maestro "proceeded" anyway) was declared success. New
+# shape: tap → grace period (screenshot ≈ hierarchy settle + sheet render) →
+# ONLY if the sheet is still absent, tap the trash a second time → then wait
+# for the sheet and commit. On a successful open the when-check skips the
+# retap branch, so the backdrop can never be double-tapped shut.
 - tapOn:
     id: "transaction-delete"
+    retryTapIfNoChange: true
+- takeScreenshot: "delete-tap-grace"
+- runFlow:
+    when:
+      notVisible:
+        id: "delete-confirm-confirm"
+    commands:
+      - tapOn:
+          id: "transaction-delete"
+          retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible:
+      id: "delete-confirm-confirm"
+    timeout: 8000
 - tapOn:
     id: "delete-confirm-confirm"
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible:
+      id: "undo-snackbar"
+    timeout: 15000
 - assertVisible:
     id: "undo-snackbar"
-    timeout: 15000
 - tapOn:
     id: "undo-button"
+    retryTapIfNoChange: true
+- scrollUntilVisible:
+    element:
+      id: "dashboard-history"
+    direction: DOWN
+    centerElement: true
+    timeout: 15000
 - assertVisible:
     id: "dashboard-history"
-    timeout: 15000
 
 - takeScreenshot: "v6-happy-path-undo"
