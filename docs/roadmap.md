@@ -237,3 +237,23 @@ Memakai pola yang sudah ada (view/RPC + komponen):
 Offline outbox + read cache = satu pekerjaan konsistensi (satu model sync +
 resolusi konflik), didahului spec + grill seperti v1.1. Widget, bank sync,
 multi-currency, AI insight antre di belakangnya per PRD.
+
+### 6.6 v1.2.0 — pintasan + scan struk (disetujui pemilik 2026-09-25)
+
+Keputusan grill: tap-belakang ditangkap OS (bukan app); lampiran via
+`expo-image-picker` yang sudah ada (nol rebuild); foto 30 hari lalu purge;
+OCR server eksperimen, prefill-saja, satu total, saran kategori opsional.
+Detail beku di `specs/cashtrix-v1.2.md` + ADR-0009. Ticket: S1 → S2 → S3 → RLS
+(`specs/tickets.md`).
+
+| Urutan | Item | Kenapa sekarang |
+|---|---|---|
+| S1 | Pintasan deep-link + panduan OS | Tanpa native; membuka jalan tap-belakang di semua vendor |
+| S2 | Foto lampiran 30 hari | Nilai langsung tanpa tebakan OCR; fondasi Storage + tabel untuk S3 |
+| S3 | OCR server eksperimen | Prefill Starbucks "AMERICANO 30.000" → 30.000; gagal = lanjut manual |
+| RLS | Gerbang `1.2.0` | Bump minor sekali (akumulasi pasca-1.1.0 + S1–S3) + polish final UI/UX + screenshot store |
+
+Aturan versi (mengikat): `1.2.0` = minor ini; `2.0.0` = hanya arsitektur besar;
+`1.2.x` = lubang tanpa ubah perilaku. v2.0 tetap trek terpisah — satu-satunya
+titik temu: spec sync v2.0 mencakup `transaction_receipts` sebagai tipe antrean
+outbox (upload tertunda + retry OCR).

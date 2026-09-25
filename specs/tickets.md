@@ -139,3 +139,36 @@ Sumber: `docs/roadmap.md` §6.3. Scope beku di body issue masing-masing (tanpa s
 B5 CSV import **drop** 2026-09-24 (roadmap §6.3) — tanpa ticket.
 
 Frontier: **kosong** — C2/D5/D3 semua selesai. Berikutnya per roadmap: v1.2 selesai penuh; item berikut menunggu keputusan pemilik (v2.0 paket arsitektur, atau rilis store).
+
+---
+
+## v1.2 — Pintasan + scan struk (rilis `1.2.0`)
+
+Spec: `specs/cashtrix-v1.2.md` · Sumber: grill 2026-09-25 + ADR-0009 + `docs/roadmap.md` §6.6.
+Keputusan terkunci: tap ditangkap OS (bukan app); lampiran via `expo-image-picker` (nol
+rebuild); retensi foto 30 hari; OCR server prefill-saja, satu total, saran kategori opsional.
+Semua ticket `ready-for-agent`. Urutan mengikat: S1 → S2 → S3 (tiap fase bisa rilis sendiri).
+
+| Ticket | Issue | Blocked by | Deliverable |
+|---|---|---|---|
+| S1 — Pintasan deep-link + panduan OS | #55 | — | `cashtrix://add-transaction?type=` + `cashtrix://scan`, App Shortcuts long-press, panduan Back Tap/Quick Tap ID/EN, `testID` `shortcut-expense/income/scan` |
+| S2 — Foto lampiran 30 hari | #56 | #55 | Bucket privat `receipts`, tabel `transaction_receipts` + RLS + `purge_expired_receipts()` via `pg_cron`, thumbnail di form Add (pra-save legal) |
+| S3 — OCR server eksperimen | #57 | #56 | Edge Function `scan-receipt` (JWT → rate-limit 5/mnt → OCR → hapus temp → prefill), consent eksplisit, parser total+tanggal+merchant ID, saran kategori opsional |
+| RLS — Gerbang rilis `1.2.0` | #58 | #55, #56, #57 | Jest + pgTAP + `verify-s*` + kontrak statis Maestro + checklist visual + polish final UI/UX + screenshot store + bump `app.json`/`package.json` → `1.2.0` |
+
+```
+#55 (S1) ── #56 (S2) ── #57 (S3) ── #58 (RLS 1.2.0)
+```
+
+### Aturan versi (disetujui pemilik 2026-09-25)
+
+- `1.2.0` = akumulasi pasca-1.1.0 (A3–A6, B4, C2, C6, D3–D5, skeleton) + S1–S3.
+  Satu bump minor di akhir, bukan per fase.
+- `2.0.0` = hanya untuk perubahan besar arsitektur (offline outbox + read cache,
+  satu model sync). Bank sync / multi-currency / AI menyusul di payung 2.x.
+- `1.2.x` = lubang tanpa ubah perilaku (pola `v1.1.x`).
+
+### Frontier
+
+#55 (S1, tanpa blocker, belum di-assign). #56 blocked by #55. #57 blocked by #56.
+#58 blocked by #55+#56+#57.

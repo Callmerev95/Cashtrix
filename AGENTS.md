@@ -218,6 +218,15 @@
 - Dev-launcher menu overlay (`Reload`/`Go home`) bisa menutupi login pasca deep-link → dismiss kondisional (`when visible "Reload"` → `tapOn point 634,747`, koordinat HP gate) setelah bootstrap cold-start DAN relaunch.
 - Fold/urutan: save form = sticky footer (selalu terlihat); chip due-day di bawah → `scrollUntilVisible recurring-due-1` dan tap `Bank` **sebelum** scroll; Dashboard `scrollUntilVisible dashboard-history` sebelum tap baris. `hideKeyboard` sebelum grid kategori; re-tap `type-option-expense` setelah Tx3; retry `Coba lagi` profile. Artefak gagal = `screenshots/step-*.png` + `screen-hierarchy/*.json`, `takeScreenshot` eksplisit = `takeScreenshot/*.png` — tool Read bisa salah sematkan gambar saat baca multi-file, percayai md5/mtime/log.
 
+### Pintasan + scan struk (v1.2 S1–S3, spec beku 2026-09-25)
+
+- Spec: `specs/cashtrix-v1.2.md` + ADR-0009 + `docs/roadmap.md` §6.6. Ticket: S1 → S2 → S3 → RLS (`specs/tickets.md`). Rilis sebagai **`1.2.0`** (akumulasi pasca-1.1.0 + S1–S3, satu bump di akhir); `2.0.0` hanya arsitektur besar (outbox + read cache).
+- S1 pintasan = pintu deep-link OS-level, bukan detektor di app: `cashtrix://add-transaction?type=` + `cashtrix://scan` + App Shortcuts long-press; Back Tap iPhone / Quick Tap Pixel / RegiStar Samsung ditempel via panduan 1 halaman (ID/EN). Tanpa Accessibility Service, tanpa modul native baru. Gate parkir tetap auth gate + `LockOverlay`.
+- S2 lampiran = `expo-image-picker` yang sudah ada (nol rebuild, OTA aman — `expo-camera` ditunda); bucket privat `receipts/{userId}/` ≤2MB + tabel `transaction_receipts` (`transaction_id` nullable agar foto pra-save legal, FK komposit pola V2, RLS 4 policy + revoke anon); retensi 30 hari via `purge_expired_receipts()` + hapus objek (pola `purge_deleted_transactions`).
+- S3 OCR = Edge Function `scan-receipt` eksperimen server (JWT → rate-limit ~5/mnt pola D5 → OCR → hapus temp → `{amount, occurred_on, merchant, category_suggestion, confidence}`); **prefill saja** (satu total, saran kategori opsional, save manual; gagal = lanjut manual). Consent eksplisit + scrub log + Data Safety update. Engine (Tesseract vs Vision) diputuskan saat eksekusi.
+- Glosarium baru di `CONTEXT.md`: Pintasan, Pindai, Lampiran struk, Saran kategori. Kontrak statis tambah `shortcut-expense/income/scan` (tanpa hapus).
+- v2.0 tetap trek terpisah; titik temu tunggal: spec sync v2.0 mencakup `transaction_receipts` sebagai tipe antrean outbox.
+
 ### Database
 
 - Project Supabase: `Cashtrix` — ref `bklriyyuglwiqczgbqgq`, region `ap-southeast-2`. `supabase/config.toml` `project_id` sudah diisi ref tersebut.- `auth.email.enable_confirmations` **false** di hosted (auto-confirm, PRD §6.1 R2 — kembalikan ke konfirmasi manual sebelum rilis publik). **Jangan `supabase config push` dari repo root**: `config.toml` di repo masih berisi nilai template lokal, jadi push akan menimpa `site_url`, `otp_length`, MFA, Twilio milik project. Untuk mengubah satu properti saja, jalankan `supabase config push --workdir <dir>` dengan `config.toml` minimal yang hanya mendeklarasikan properti itu (butuh `supabase/.temp` disalin agar ref terbaca).

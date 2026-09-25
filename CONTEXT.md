@@ -145,3 +145,27 @@ _Avoid_: request id, nonce
 **Seed**:
 Tindakan idempotent saat login pertama: satu Wallet "Cash". Bukan menyalin Category.
 _Avoid_: onboard, bootstrap, provision
+
+### Pintasan & pindai (v1.2)
+
+**Pintasan**:
+Pintu deep-link milik app (`cashtrix://add-transaction?type=`, `cashtrix://scan`) plus
+App Shortcuts long-press icon, yang ditempel pengguna ke gesture OS (Back Tap iPhone,
+Quick Tap Pixel, Back-Tap Samsung). App tidak mendeteksi ketukan punggung HP.
+_Avoid_: back-tap detector, accessibility service, gesture in-app
+
+**Pindai**:
+Alur memotret struk belanja dari form Add via `expo-image-picker`. Fase 1 hanya
+lampiran; Fase 2 OCR server mengusulkan isian (prefill).
+_Avoid_: scan otomatis tersimpan, OCR on-device (itu fase lain)
+
+**Lampiran struk**:
+Foto struk milik User di bucket privat `receipts`, ditautkan ke Transaction
+(`transaction_receipts`, `transaction_id` boleh kosong sebelum save). Retensi 30 hari
+lalu purge (baris + objek); riwayat transaksi tetap.
+_Avoid_: receipt permanen, avatar bucket, attachment tanpa retensi
+
+**Saran kategori**:
+Usulan Category dari hasil OCR (misal struk Starbucks → "Makanan"). Selalu opsional:
+bisa diterima atau diganti manual.
+_Avoid_: auto-kategori, kategori terkunci hasil scan

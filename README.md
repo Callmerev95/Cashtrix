@@ -7,10 +7,10 @@ analitik server-side, budget per kategori dengan alert anti-spam, pencarian
 riwayat, dan inbox notifikasi. Satu pengguna, satu perangkat; semua agregasi
 uang dihitung di Postgres, tidak pernah di klien.
 
-> **Status: v1.1.0 rilis (tag `v1.1.0`).** v1.2 batch 1 selesai penuh
-> (ringkasan bulanan, cari & filter, bulk edit, inbox, error terlihat).
-> v1.2 batch 2 sedang berjalan: biometric lock (#50) dan i18n ID/EN (#51)
-> sudah dikunci via grill + ticket `ready-for-agent`.
+> **Status: v1.1.0 rilis (tag `v1.1.0`).** Pasca-1.1.0 selesai penuh
+> (A3–A6, B4, C2, C6, D3–D5, skeleton + Maestro device GREEN 2026-09-25).
+> Berikutnya: **v1.2.0 — Pintasan + scan struk** (S1 deep-link → S2 lampiran
+> 30 hari → S3 OCR prefill, spec beku).
 > Peta ticket: [specs/tickets.md](specs/tickets.md).
 
 **Dokumen perencanaan (mengikat):**
@@ -21,9 +21,10 @@ uang dihitung di Postgres, tidak pernah di klien.
 | [DESIGN.md](DESIGN.md) | Design system kanonik "Minimalist Obsidian" (sumber kebenaran visual) |
 | [specs/cashtrix-mvp.md](specs/cashtrix-mvp.md) | Spec MVP v1.0 |
 | [specs/cashtrix-v1.1.md](specs/cashtrix-v1.1.md) | Spec v1.1 (V0–V6) |
-| [specs/tickets.md](specs/tickets.md) | Peta ticket: T1–T11, V0–V6, A3–A6, D4, B4, C6 |
+| [specs/cashtrix-v1.2.md](specs/cashtrix-v1.2.md) | Spec v1.2 (S1–S3 pintasan + scan, gerbang `1.2.0`) |
+| [specs/tickets.md](specs/tickets.md) | Peta ticket: T1–T11, V0–V6, A3–A6, D4, B4, C6, C2/D5/D3, S1–S3 + RLS |
 | [docs/roadmap.md](docs/roadmap.md) | Katalog ide + urutan rilis + keputusan OPEN |
-| [docs/adr/](docs/adr/) | ADR-0001..0008 (scope, dev-client, transfer, recurring, legal, lock, i18n) |
+| [docs/adr/](docs/adr/) | ADR-0001..0009 (scope, dev-client, transfer, recurring, legal, lock, i18n, shortcut/scan) |
 | [docs/release-gate.md](docs/release-gate.md) | Gerbang rilis: bukti E2E, KPI, checklist visual, pra-store |
 | [docs/store-submit.md](docs/store-submit.md) | Mekanik submit TestFlight / Play Store |
 | [CONTEXT.md](CONTEXT.md) | Glosarium + konteks domain |
@@ -456,14 +457,15 @@ Katalog lengkap hidup di **[docs/roadmap.md](docs/roadmap.md)**.
   kalender + undo + arsip (tag di HEAD gerbang).
 - **v1.1.x** ✅ sebagian — transfer di CSV (Opsi B); tunda: email dukungan +
   screenshot HP + run Maestro device.
-- **v1.2 batch 1** ✅ — A6 ringkasan bulanan (#45) → A3 cari & filter (#46)
-  → A4 bulk edit (#47) → A5 inbox (#48) → D4 error terlihat (#49).
-- **v1.2 batch 2** 🚧 — B4 biometric lock (#50) → C6 i18n + terminologi
-  (#51) → 2FA (C2) → preloader + skeleton (butuh amandemen motion
-  `DESIGN.md`) → Maestro di CI (time-box riset device farm) → rate limiting
-  (sebelum publikasi luas) → CSV import (terakhir/drop).
+- **Pasca-1.1.0** ✅ selesai penuh — A6 (#45) → A3 (#46) → A4 (#47) → A5 (#48) →
+  D4 (#49) → B4 (#50) → C6 (#51) → C2 (#53) → D5 (#54) → D3 (#52, tetap manual) +
+  skeleton/preloader + Maestro device GREEN 2026-09-25.
+- **v1.2.0** 🚧 direncanakan — S1 pintasan deep-link → S2 lampiran 30 hari →
+  S3 OCR prefill → RLS gerbang + bump minor + polish final UI/UX + screenshot
+  store (`specs/cashtrix-v1.2.md`, ADR-0009).
 - **v2.0** 🧊 — offline outbox + read cache (satu paket konsistensi, jangan
-  dicicil), lalu bank sync, multi-currency + kurs, AI insight.
+  dicicil; spec sync mencakup `transaction_receipts` sebagai tipe antrean),
+  lalu bank sync, multi-currency + kurs, AI insight.
 
 Prinsip urutan (§6.4): menutup lubang > menambah permukaan; fondasi ada >
 butuh keputusan (grill dulu, pola ADR); satu pass lintas-layar dikerjakan
