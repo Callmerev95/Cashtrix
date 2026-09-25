@@ -71,8 +71,8 @@ Verifikasi device pemilik 2026-09-22: snackbar Urungkan lolos (setelah fix
 posisi atas-nav + durasi 10 detik), warna nominal lolos, **notifikasi budget
 lolos** (setelah fix evaluasi baca-server — warning 80% + exceeded 100%
 banner + push benar).
-Run Maestro device ditunda jadi follow-up pasca-v1.1 (opsi B — flow +
-kontrak statis + cermin API siap). v1.1.0 di-tag di HEAD; tidak ada lagi
+Run Maestro device **SELESAI 2026-09-25** (smoke + happy-path hijau di HP
+asli, KPI `[analytics]` terbukti, kontrak statis 78/8/3 — opsi B). v1.1.0 di-tag di HEAD; tidak ada lagi
 perubahan untuk versi ini (konfirmasi pemilik 2026-09-22).
 
 ### Review follow-up (di luar ticket map, sudah merged ke `main`)
@@ -108,7 +108,7 @@ Semua ticket `ready-for-agent`. Tanpa DDL baru sejauh view/RPC yang ada mencukup
 | A6 — Ringkasan bulan lalu di Dashboard | #45 | — | Kartu Dashboard dari `v_monthly_summary` (bulan berjalan vs bulan lalu, delta %, tap → Analytics) — implementasi di working tree, lolos review device 2026-09-22 |
 | A3 — Cari & filter riwayat | #46 | #45 | Layar `/search`: teks (note+kategori+dompet) + segmen jenis, pola query untuk A4 |
 | A4 — Bulk edit kategori | #47 | #46 | Mode pilih di `/search` + ubah kategori bulk (sejenis terkunci, transfer nonaktif) |
-| A5 — Inbox notifikasi | #48 | #47 | `read_at` di `budget_alerts` + layar `/notifications` (bel → inbox, tap baca + ke Budgets) — kode selesai, migrasi siap apply, menunggu apply sebelum review device |
+| A5 — Inbox notifikasi | #48 | #47 | `read_at` di `budget_alerts` + layar `/notifications` (bel → inbox, tap baca + ke Budgets) — selesai; migrasi applied + `verify-a5` hijau di CI (review device inbox tidak terpisah: Jest + rute sekunder D3) |
 | D4 — Error handling terlihat | #49 | #48 | Banner offline + auto-refresh + `ErrorStateCard` retry seragam |
 
 ---

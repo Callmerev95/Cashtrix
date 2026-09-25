@@ -195,11 +195,11 @@ seperti v1.1 sebelum dikerjakan.
 
 ### 6.1 v1.1.x — penutup lubang (kecil, tanpa ubah perilaku)
 
-| Urutan | Item | Kenapa sekarang | Status 2026-09-22 |
+| Urutan | Item | Kenapa sekarang | Status 2026-09-25 |
 |---|---|---|---|
 | 1 | Semantik transfer di CSV export | Lubang dari V6 (transfer ter-drop diam-diam); makin lama makin banyak export yang kehilangan baris. Grill singkat + satu format baris + test. | ✅ selesai (`452fdab`, verify-t9 49/49) |
-| 2 | Aset store listing + mekanik `release-gate.md` §7.5 | Prasyarat submit TestFlight/Play — tanpa ini v1.1.0 tidak naik store. | ⏸️ sebagian: `docs/store-submit.md` selesai; **tunda: email dukungan + screenshot HP** |
-| 3 | Run Maestro device | Menutup janji opsi B selagi flow + akun e2e masih segar. | ⏸️ **tunda** (flow + akun e2e siap) |
+| 2 | Aset store listing + mekanik `release-gate.md` §7.5 | Prasyarat submit TestFlight/Play — tanpa ini v1.1.0 tidak naik store. | ⏸️ sebagian: `docs/store-submit.md` selesai + email dukungan diisi (`83b8536`); **tunda: screenshot HP** (ikut blok store) |
+| 3 | Run Maestro device | Menutup janji opsi B selagi flow + akun e2e masih segar. | ✅ selesai 2026-09-25 (smoke + happy-path hijau di HP asli, KPI `[analytics]` terbukti) |
 
 ### 6.2 v1.2 batch 1 — nilai user langsung, risiko kecil
 

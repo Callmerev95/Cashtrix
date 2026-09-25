@@ -161,7 +161,7 @@ tetap boleh Expo Go — tanpa DSN (lihat §7.2) app memakai buffer lokal T10.
 
 ### 7.5 Checklist submit (diisi saat V6)
 
-- [ ] `eas init` — `extra.eas.projectId` terisi (belum ada: repo belum ditautkan ke proyek EAS)
+- [x] `eas init` — `extra.eas.projectId` terisi (`5f8b79b8-2bb3-4fe4-bad8-a970ee18283e`, repo sudah ditautkan)
 - [ ] Secret `EXPO_PUBLIC_SENTRY_DSN` (scope project) + `EXPO_PUBLIC_SUPABASE_ANON_KEY` untuk remote build
 - [ ] Crash-free rate terpantau di dashboard Sentry pasca-preview
 - [ ] §7.3 + §7.4 disalin ke listing Play / App Store Connect apa adanya
