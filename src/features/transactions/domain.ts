@@ -66,6 +66,17 @@ export function parseScanFlag(value: unknown): boolean {
   return value === '1';
 }
 
+/**
+ * Scan mode (`?scan=1`) is expense-only (S3 UX, disetujui pemilik:
+ * struk = belanja). Returns the forced segment, or null when scan mode is
+ * off. The form seeds it BELOW an explicit toggle and shortcut `?type=`
+ * (both are deliberate user choices) but above the remembered preference —
+ * a stale `lastType=transfer` must never greet a scan session.
+ */
+export function scanForcedType(scanMode: boolean): TransactionType | null {
+  return scanMode ? 'expense' : null;
+}
+
 /** A history row as returned by `v_transactions_feed`. */
 export type Transaction = {
   id: string;

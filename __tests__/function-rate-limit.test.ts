@@ -42,11 +42,12 @@ describe('rate-limit config — ambang issue #54', () => {
     expect(RATE_LIMIT_WINDOW_SECONDS).toBe(60);
   });
 
-  it('seed-user 10, export-csv 5, delete-account 3', () => {
+  it('seed-user 10, export-csv 5, delete-account 3, scan-receipt 5 (S3)', () => {
     expect(FUNCTION_RATE_LIMITS).toEqual({
       'seed-user': 10,
       'export-csv': 5,
       'delete-account': 3,
+      'scan-receipt': 5,
     });
   });
 });

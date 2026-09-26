@@ -495,6 +495,22 @@ export const en: Dictionary = {
       permissionTitle: 'Camera/gallery permission needed',
       permissionBody:
         'Enable it in device Settings to attach receipt photos.',
+      scan: 'Auto-scan',
+      scanA11y: 'Scan the receipt and fill the form automatically',
+      scanning: 'Reading receipt…',
+      scanApplied: 'Auto-filled — check the amount before saving.',
+      scanFail: 'Receipt could not be read. Please scan the receipt again.',
+      scanRetake: 'Retake photo',
+      scanRetakeA11y: 'Retake the receipt photo to scan again',
+      scanManual: 'Fill manually',
+      scanManualA11y: 'Dismiss and fill the form manually',
+      scanRateLimited: 'Scanning too often. Try again in a moment.',
+      scanQuota: 'Scan quota used up. Manual entry still works.',
+      consentTitle: 'Send the photo for automatic reading?',
+      consentBody:
+        'The receipt photo is sent to be read and only fills this form — nothing is saved. You still press Save manually.',
+      consentPersistNote: 'Applies on this device.',
+      consentSend: 'Send',
     },
     form: {
       loadFail: 'Failed to load transaction',

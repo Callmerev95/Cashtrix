@@ -45,8 +45,13 @@ import { useAuth } from '@/features/auth';
 import { useBudgets } from '@/features/budgets';
 import { trackEvent, txCreatedEvent } from '@/features/observability';
 import {
+  hasScanConsent,
   listReceiptsForTransaction,
   ReceiptAttachmentSection,
+  resolveCategorySuggestion,
+  scanDisplayDelay,
+  scanReceipt,
+  setScanConsent,
   type ReceiptAttachment,
 } from '@/features/receipts';
 import { useWallets } from '@/features/wallets';
@@ -63,6 +68,7 @@ import {
   normalizeNote,
   parseScanFlag,
   parseShortcutType,
+  scanForcedType,
   useTransactions,
   validateAmount,
   validateTransfer,
@@ -128,24 +134,41 @@ export default function AddTransactionScreen() {
   // user starts typing (each override wins over `loaded`).
   const [loaded, setLoaded] = useState<Transaction | null>(null);
 
+  // S1 contract for S2: `scan=1` (only emitted by the `/scan` alias) marks
+  // this session as scan-first — the receipt section below starts with the
+  // camera open (S3 UX, QRIS-style). Declared before the type derivation so
+  // scan mode can force the expense segment.
+  const scanMode = !isEdit && parseScanFlag(params.scan);
+
   // S1: a shortcut `?type=` seeds the segment below an explicit toggle but
   // above the remembered preference; edit mode (`?id=`) ignores it so a
-  // shared link can never retarget a row being edited.
+  // shared link can never retarget a row being edited. S3: scan mode forces
+  // expense (struk = belanja) at the same level — a stale lastType=transfer
+  // must never greet a scan session, but an explicit toggle still wins.
   const shortcutType = isEdit ? null : parseShortcutType(params.type);
   const type: TransactionType =
-    typeOverride ?? shortcutType ?? loaded?.type ?? lastType;
+    typeOverride ??
+    shortcutType ??
+    scanForcedType(scanMode) ??
+    loaded?.type ??
+    lastType;
   const isTransfer = type === 'transfer';
-
-  // S1 contract for S2: `scan=1` (only emitted by the `/scan` alias) marks
-  // this session as scan-first — the receipt section below starts with its
-  // source sheet open.
-  const scanMode = !isEdit && parseScanFlag(params.scan);
 
   // Attachments are user-created rows (uploaded at capture, Opsi A), so they
   // live in plain state: the save reads the ids to link them, edit mode
   // seeds them from the server row list on load (same load pattern as the
   // edited row itself, never a render-sync).
   const [receipts, setReceipts] = useState<ReceiptAttachment[]>([]);
+
+  // S3 (issue #57): scan state. Prefill writes form fields from event
+  // handlers (user taps, upload callbacks), never from an effect — the lint
+  // rule and the no-stomp discipline above both stay intact.
+  const [scanning, setScanning] = useState(false);
+  const [scanNote, setScanNote] = useState<string | null>(null);
+  const [scanOk, setScanOk] = useState(false);
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [captureRequest, setCaptureRequest] = useState(0);
+  const tr = t.transactions.receipt;
 
   // Wallet: explicit choice > the row being edited > the remembered last-used
   // wallet > the first available (so an empty picker can never block Save).
@@ -230,6 +253,120 @@ export default function AddTransactionScreen() {
     // stays so a programmatic value can never slip through either.
     if (isFutureDate(next)) return; // AC #19: never a future date
     setOccurredAt(next);
+  }
+
+  // S3: consent-once (disetujui pemilik) then prefill. Every field stays
+  // editable and Save is always manual — a wrong OCR can never write dirty
+  // data (story 11), and a failed scan never blocks Save (story 16).
+  // The consent flag persists on-device (not purged on sign-out): agreeing
+  // once means never asked again.
+  async function scanWithConsent(attachment: ReceiptAttachment) {
+    if (await hasScanConsent()) {
+      await runScanFor(attachment);
+      return;
+    }
+    Alert.alert(
+      tr.consentTitle,
+      `${tr.consentBody} ${tr.consentPersistNote}`,
+      [
+        { text: t.common.cancel, style: 'cancel' },
+        {
+          text: tr.consentSend,
+          onPress: () => {
+            void (async () => {
+              await setScanConsent();
+              await runScanFor(attachment);
+            })();
+          },
+        },
+      ],
+    );
+  }
+
+  // Manual retry (the "Pindai" button): no photo yet → open the sheet so a
+  // tap is never dead; otherwise the consent-once path above.
+  function confirmAndScan() {
+    if (scanning) return;
+    const first = receipts[0];
+    if (!first) {
+      setSheetVisible(true);
+      return;
+    }
+    void scanWithConsent(first);
+  }
+
+  // Auto-scan (S3 UX, QRIS-style): every new photo in an expense form is
+  // read without a tap — create and edit alike (keputusan pemilik: satu
+  // aturan). Pre-linked rows loaded when opening edit never fire this
+  // (they arrive via `setReceipts`, not the upload callback), so opening a
+  // record can never stomp its fields. Income/transfer stay manual. Fired
+  // from the upload callback — event-driven, never an effect.
+  function handlePhotoUploaded(attachment: ReceiptAttachment) {
+    if (type !== 'expense') return;
+    void scanWithConsent(attachment);
+  }
+
+  // Upload/delete failures (section callback): same failure package as a
+  // failed read — the raw error is swallowed here (it carries a userId
+  // storage path, so it must reach neither UI nor logs), the user gets the
+  // friendly copy plus Foto ulang / Isi manual.
+  function handleUploadError() {
+    if (scanning) return;
+    setScanOk(false);
+    setScanNote(tr.uploadFail);
+  }
+
+  async function runScanFor(attachment: ReceiptAttachment) {
+    if (scanning) return;
+    setScanning(true);
+    setScanNote(null);
+    setScanOk(false);
+    try {
+      // The display floor resolves alongside the request (honesty floor —
+      // the note still gates on completion, never on the timer).
+      const [outcome] = await Promise.all([
+        scanReceipt({ storagePath: attachment.storagePath }),
+        scanDisplayDelay(),
+      ]);
+      if (outcome.status === 'ok') {
+        const { prefill } = outcome;
+        // Prefill is nominal + category (+ merchant→note) only (keputusan
+        // pemilik): datetime is NEVER touched, in create or edit — the form
+        // default (scan moment) owns the history order.
+        setAmountRaw(formatAmountInput(String(prefill.amount)));
+        // Never clobber what the user already typed — prefill fills gaps.
+        setNote((prev) => (prev === '' && prefill.merchant ? prefill.merchant : prev));
+        if (!categoryId && prefill.categorySuggestion) {
+          const suggested = resolveCategorySuggestion(
+            prefill.categorySuggestion,
+            categories,
+          );
+          if (suggested) setCategoryChoice(suggested);
+        }
+        setScanNote(tr.scanApplied);
+        setScanOk(true);
+      } else if (outcome.status === 'rate_limited') {
+        setScanNote(tr.scanRateLimited);
+      } else if (outcome.status === 'quota_exceeded') {
+        setScanNote(tr.scanQuota);
+      } else {
+        setScanNote(tr.scanFail);
+      }
+    } finally {
+      setScanning(false);
+    }
+  }
+
+  // Failure package (keputusan pemilik): retake shoots straight to the
+  // camera (one tap, no sheet); manual dismisses the note and continues
+  // typing. Re-reading the same photo stays on the retry button above.
+  function retakePhoto() {
+    if (scanning) return;
+    setCaptureRequest((count) => count + 1);
+  }
+
+  function dismissScanNote() {
+    setScanNote(null);
   }
 
   async function submit() {
@@ -587,12 +724,83 @@ export default function AddTransactionScreen() {
               testID="receipt-header"
               title={t.transactions.receipt.attach}
             />
+            {type === 'expense' &&
+            receipts.length > 0 &&
+            !scanOk &&
+            !scanning ? (
+              <Pressable
+                testID="receipt-scan"
+                accessibilityRole="button"
+                accessibilityLabel={tr.scanA11y}
+                onPress={confirmAndScan}
+                style={styles.scanButton}
+              >
+                <MaterialIcons
+                  name="document-scanner"
+                  size={20}
+                  color={colors.accent}
+                />
+                <Text style={[typography.bodyMd, styles.scanLabel]}>
+                  {tr.scan}
+                </Text>
+              </Pressable>
+            ) : null}
             <ReceiptAttachmentSection
               attachments={receipts}
               onAttachmentsChange={setReceipts}
               userId={session?.user.id ?? ''}
-              autoOpen={scanMode}
+              sheetVisible={sheetVisible}
+              onSheetVisibleChange={setSheetVisible}
+              autoCamera={scanMode}
+              captureRequest={captureRequest}
+              scanning={scanning}
+              onPhotoUploaded={handlePhotoUploaded}
+              onUploadError={handleUploadError}
             />
+            {scanNote ? (
+              <Text
+                testID="receipt-scan-note"
+                style={[typography.bodySm, styles.hint]}
+              >
+                {scanNote}
+              </Text>
+            ) : null}
+            {scanNote && !scanOk && !scanning ? (
+              <View style={styles.scanActions}>
+                <Pressable
+                  testID="receipt-retake"
+                  accessibilityRole="button"
+                  accessibilityLabel={tr.scanRetakeA11y}
+                  onPress={retakePhoto}
+                  style={styles.scanAction}
+                >
+                  <MaterialIcons
+                    name="photo-camera"
+                    size={18}
+                    color={colors.accent}
+                  />
+                  <Text style={[typography.bodyMd, styles.scanLabel]}>
+                    {tr.scanRetake}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  testID="receipt-manual"
+                  accessibilityRole="button"
+                  accessibilityLabel={tr.scanManualA11y}
+                  onPress={dismissScanNote}
+                  style={styles.scanAction}
+                >
+                  <MaterialIcons
+                    name="edit"
+                    size={18}
+                    color={colors.textSecondary}
+                  />
+                  <Text style={[typography.bodyMd, styles.hint]}>
+                    {tr.scanManual}
+                  </Text>
+                </Pressable>
+              </View>
+            ) : null}
           </View>
 
           {formError ? (
@@ -697,6 +905,41 @@ const styles = StyleSheet.create({
   },
   chipLabelActive: {
     color: colors.accent,
+  },
+  scanButton: {
+    marginTop: spacing.sm,
+    minHeight: layout.minTapTarget,
+    paddingHorizontal: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    borderRadius: radius.full,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
+    borderStyle: 'dashed',
+  },
+  scanLabel: {
+    color: colors.accent,
+  },
+  scanActions: {
+    marginTop: spacing.sm,
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  scanAction: {
+    flex: 1,
+    minHeight: layout.minTapTarget,
+    paddingHorizontal: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    borderRadius: radius.full,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
   },
   note: {
     minHeight: layout.minTapTarget,
