@@ -86,9 +86,9 @@ export default function BudgetsScreen() {
         }}
       />
       <Card style={styles.hero}>
-        <Text style={[typography.labelUppercase, styles.kicker]}>Active Cycle</Text>
+        <Text style={[typography.labelUppercase, styles.kicker]}>{tb.screen.kicker}</Text>
         <Text style={[typography.headlineLg, styles.title]}>
-          Budget Architecture
+          {tb.screen.title}
         </Text>
         {month ? (
           <Text testID="budgets-month" style={[typography.bodySm, styles.month]}>

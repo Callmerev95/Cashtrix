@@ -118,6 +118,8 @@ export const id = {
       amountTooLarge: 'Nominal maksimal {max}',
     },
     screen: {
+      kicker: 'Siklus Aktif',
+      title: 'Budget',
       countActive: '{count} alokasi aktif',
       allocations: 'Alokasi Kategori',
       add: 'Tambah',
@@ -606,6 +608,10 @@ export const id = {
       distribution: 'Distribusi Pengeluaran',
       trendDaily: 'Tren Harian',
       trendMonthly: 'Tren Bulanan',
+    },
+    screen: {
+      kicker: 'Wawasan',
+      title: 'Analisis Keuangan',
     },
     empty: {
       title: 'Belum ada data',
