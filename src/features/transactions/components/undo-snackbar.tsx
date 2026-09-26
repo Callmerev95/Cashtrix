@@ -12,6 +12,7 @@ import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { pressedFeedback } from '@/components/pressed';
 import { dictionaryFor, useLanguage } from '@/i18n';
 
 export const UNDO_SNACKBAR_MS = 10_000;
@@ -57,7 +58,7 @@ export function UndoSnackbar({
         accessibilityLabel={t.transactions.undo.actionA11y}
         onPress={onUndo}
         hitSlop={spacing.sm}
-        style={({ pressed }) => [styles.undo, pressed && styles.pressed]}
+        style={({ pressed }) => [styles.undo, pressed && pressedFeedback]}
       >
         <Text style={[typography.labelUppercase, styles.undoLabel]}>
           {t.transactions.undo.action}
@@ -99,8 +100,5 @@ const styles = StyleSheet.create({
   },
   undoLabel: {
     color: colors.accent,
-  },
-  pressed: {
-    opacity: 0.7,
   },
 });

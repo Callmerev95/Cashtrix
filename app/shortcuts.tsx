@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card, Screen, SectionHeader } from '@/components';
 import { dictionaryFor, useLanguage } from '@/i18n';
 import { colors, radius, spacing, typography } from '@/theme';
+import { PRESS_FEEDBACK_DELAY_MS, pressedFeedback } from '@/components/pressed';
 
 const DOORS = [
   {
@@ -79,7 +80,11 @@ export default function ShortcutsScreen() {
             accessibilityRole="button"
             accessibilityLabel={ts[door.titleKey]}
             onPress={() => router.push(door.href)}
-            style={styles.rowPress}
+            unstable_pressDelay={PRESS_FEEDBACK_DELAY_MS}
+            style={({ pressed }) => [
+              styles.rowPress,
+              pressed && pressedFeedback,
+            ]}
           >
             <Card style={styles.row}>
               <View style={styles.rowIcon}>

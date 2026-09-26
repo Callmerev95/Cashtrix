@@ -77,6 +77,7 @@ import {
 } from '@/features/transactions';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { pressedFeedback } from '@/components/pressed';
 
 export default function AddTransactionScreen() {
   // S1 (ADR-0009): shortcut deep links arrive as
@@ -519,7 +520,10 @@ export default function AddTransactionScreen() {
             accessibilityRole="button"
             accessibilityLabel={tf.back}
             onPress={() => router.back()}
-            style={styles.close}
+            style={({ pressed }) => [
+              styles.close,
+              pressed && pressedFeedback,
+            ]}
           >
             <MaterialIcons name="chevron-left" size={28} color={colors.textPrimary} />
           </Pressable>
@@ -533,7 +537,10 @@ export default function AddTransactionScreen() {
               accessibilityRole="button"
               accessibilityLabel={tf.deleteA11y}
               onPress={() => setConfirmingDelete(true)}
-              style={styles.close}
+              style={({ pressed }) => [
+                styles.close,
+                pressed && pressedFeedback,
+              ]}
             >
               <MaterialIcons
                 name="delete-outline"
@@ -626,7 +633,11 @@ export default function AddTransactionScreen() {
                       setWalletChoice(wallet.id);
                       void rememberWallet(wallet.id);
                     }}
-                    style={[styles.chip, active && styles.chipActive]}
+                    style={({ pressed }) => [
+                      styles.chip,
+                      active && styles.chipActive,
+                      pressed && pressedFeedback,
+                    ]}
                   >
                     <MaterialIcons
                       name="account-balance-wallet"
@@ -669,7 +680,11 @@ export default function AddTransactionScreen() {
                         accessibilityState={{ selected: active }}
                         accessibilityLabel={wallet.name}
                         onPress={() => setDestinationChoice(wallet.id)}
-                        style={[styles.chip, active && styles.chipActive]}
+                        style={({ pressed }) => [
+                          styles.chip,
+                          active && styles.chipActive,
+                          pressed && pressedFeedback,
+                        ]}
                       >
                         <MaterialIcons
                           name="call-received"
@@ -739,7 +754,10 @@ export default function AddTransactionScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={tr.scanRetakeA11y}
                   onPress={retakePhoto}
-                  style={styles.scanAction}
+                  style={({ pressed }) => [
+                    styles.scanAction,
+                    pressed && pressedFeedback,
+                  ]}
                 >
                   <MaterialIcons
                     name="photo-camera"
@@ -755,7 +773,10 @@ export default function AddTransactionScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={tr.scanManualA11y}
                   onPress={dismissScanNote}
-                  style={styles.scanAction}
+                  style={({ pressed }) => [
+                    styles.scanAction,
+                    pressed && pressedFeedback,
+                  ]}
                 >
                   <MaterialIcons
                     name="edit"

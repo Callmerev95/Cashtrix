@@ -8,6 +8,7 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { colors, layout, radius, shadows, spacing, typography } from '@/theme';
+import { pressedFeedback } from '@/components/pressed';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 
 import { RANGE_PRESETS, rangeLabel, type RangePreset } from '../domain';
@@ -37,7 +38,11 @@ export function RangeSegmentedControl({
             accessibilityState={{ selected: active }}
             accessibilityLabel={fill(t.analytics.rangeA11y, { label })}
             onPress={() => onChange(preset)}
-            style={[styles.segment, active && styles.segmentActive]}
+            style={({ pressed }) => [
+              styles.segment,
+              active && styles.segmentActive,
+              pressed && pressedFeedback,
+            ]}
           >
             <Text
               style={[
@@ -120,7 +125,11 @@ function FilterChip({
       accessibilityState={{ selected: active }}
       accessibilityLabel={label}
       onPress={onPress}
-      style={[styles.chip, active && styles.chipActive]}
+      style={({ pressed }) => [
+        styles.chip,
+        active && styles.chipActive,
+        pressed && pressedFeedback,
+      ]}
     >
       <Text
         style={[typography.bodySm, styles.chipLabel, active && styles.chipLabelActive]}

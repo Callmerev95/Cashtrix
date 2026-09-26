@@ -41,6 +41,7 @@ import {
 import { WalletTypePicker } from '@/features/wallets/components/wallet-type-picker';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, fontFamily, layout, radius, spacing, typography } from '@/theme';
+import { pressedFeedback } from '@/components/pressed';
 
 export default function WalletFormScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
@@ -120,7 +121,10 @@ export default function WalletFormScreen() {
             accessibilityRole="button"
             accessibilityLabel={tf.close}
             onPress={() => router.back()}
-            style={styles.close}
+            style={({ pressed }) => [
+              styles.close,
+              pressed && pressedFeedback,
+            ]}
           >
             <MaterialIcons name="close" size={24} color={colors.textSecondary} />
           </Pressable>

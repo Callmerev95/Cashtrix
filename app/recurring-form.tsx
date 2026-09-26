@@ -47,6 +47,7 @@ import {
 } from '@/features/transactions';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { pressedFeedback } from '@/components/pressed';
 
 const KINDS: RecurringKind[] = ['expense', 'income'];
 
@@ -213,7 +214,10 @@ export default function RecurringFormScreen() {
             accessibilityRole="button"
             accessibilityLabel={tr.form.close}
             onPress={() => router.back()}
-            style={styles.close}
+            style={({ pressed }) => [
+              styles.close,
+              pressed && pressedFeedback,
+            ]}
           >
             <MaterialIcons name="close" size={24} color={colors.textSecondary} />
           </Pressable>
@@ -247,7 +251,11 @@ export default function RecurringFormScreen() {
                       setKind(value);
                       setCategoryChoice(null);
                     }}
-                    style={[styles.chip, active && styles.chipActive]}
+                    style={({ pressed }) => [
+                      styles.chip,
+                      active && styles.chipActive,
+                      pressed && pressedFeedback,
+                    ]}
                   >
                     <Text
                       style={[
@@ -293,7 +301,11 @@ export default function RecurringFormScreen() {
                     accessibilityState={{ selected: active }}
                     accessibilityLabel={wallet.name}
                     onPress={() => setWalletChoice(wallet.id)}
-                    style={[styles.chip, active && styles.chipActive]}
+                    style={({ pressed }) => [
+                      styles.chip,
+                      active && styles.chipActive,
+                      pressed && pressedFeedback,
+                    ]}
                   >
                     <Text
                       style={[
@@ -348,7 +360,11 @@ export default function RecurringFormScreen() {
                       setDueDay(day);
                       setDueLast(false);
                     }}
-                    style={[styles.dueChip, active && styles.chipActive]}
+                    style={({ pressed }) => [
+                      styles.dueChip,
+                      active && styles.chipActive,
+                      pressed && pressedFeedback,
+                    ]}
                   >
                     <Text
                       style={[
@@ -371,7 +387,11 @@ export default function RecurringFormScreen() {
                   setDueLast(true);
                   setDueDay(null);
                 }}
-                style={[styles.chip, dueLast && styles.chipActive]}
+                style={({ pressed }) => [
+                  styles.chip,
+                  dueLast && styles.chipActive,
+                  pressed && pressedFeedback,
+                ]}
               >
                 <Text
                   style={[
@@ -415,7 +435,10 @@ export default function RecurringFormScreen() {
                 }
                 setEndsEnabled(!endsEnabled);
               }}
-              style={styles.endsToggle}
+              style={({ pressed }) => [
+                styles.endsToggle,
+                pressed && pressedFeedback,
+              ]}
             >
               <MaterialIcons
                 name={endsEnabled ? 'check-box' : 'check-box-outline-blank'}
@@ -442,7 +465,10 @@ export default function RecurringFormScreen() {
                       current ? shiftMonth(current, -1) : current,
                     )
                   }
-                  style={styles.endsButton}
+                  style={({ pressed }) => [
+                    styles.endsButton,
+                    pressed && pressedFeedback,
+                  ]}
                 >
                   <MaterialIcons
                     name="chevron-left"
@@ -464,7 +490,10 @@ export default function RecurringFormScreen() {
                         : (startsOn ?? current),
                     )
                   }
-                  style={styles.endsButton}
+                  style={({ pressed }) => [
+                    styles.endsButton,
+                    pressed && pressedFeedback,
+                  ]}
                 >
                   <MaterialIcons
                     name="chevron-right"

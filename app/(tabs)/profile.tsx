@@ -42,6 +42,7 @@ import {
 import { useRecurring } from '@/features/recurring';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, gradients, layout, radius, spacing, typography } from '@/theme';
+import { PRESS_FEEDBACK_DELAY_MS, pressedFeedback } from '@/components/pressed';
 
 // Legal URLs (GitHub Pages) — same for in-app and store listing (ADR-0006)
 const LEGAL = {
@@ -268,7 +269,10 @@ export default function ProfileScreen() {
               accessibilityLabel={ts.changeAvatarA11y}
               onPress={onChangeAvatar}
               disabled={uploadingAvatar}
-              style={styles.avatarPress}
+              style={({ pressed }) => [
+                styles.avatarPress,
+                pressed && pressedFeedback,
+              ]}
             >
               {avatarSignedUrl && !avatarBroken ? (
                 <Image
@@ -372,7 +376,11 @@ export default function ProfileScreen() {
                     accessibilityState={{ selected: active }}
                     accessibilityLabel={fill(ts.currencyA11y, { code })}
                     onPress={() => void onSelectCurrency(code)}
-                    style={[styles.chip, active && styles.chipActive]}
+                    style={({ pressed }) => [
+                      styles.chip,
+                      active && styles.chipActive,
+                      pressed && pressedFeedback,
+                    ]}
                   >
                     <Text
                       style={[
@@ -453,7 +461,11 @@ export default function ProfileScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={ts.pausedA11y}
                 onPress={() => router.push('/recurring')}
-                style={styles.rowPress}
+                unstable_pressDelay={PRESS_FEEDBACK_DELAY_MS}
+              style={({ pressed }) => [
+                styles.rowPress,
+                pressed && pressedFeedback,
+              ]}
               >
                 <Card style={styles.row}>
                   <View style={styles.rowIcon}>
@@ -484,7 +496,11 @@ export default function ProfileScreen() {
               accessibilityRole="button"
               accessibilityLabel={ts.recurringA11y}
               onPress={() => router.push('/recurring')}
-              style={styles.rowPress}
+              unstable_pressDelay={PRESS_FEEDBACK_DELAY_MS}
+              style={({ pressed }) => [
+                styles.rowPress,
+                pressed && pressedFeedback,
+              ]}
             >
               <Card style={styles.row}>
               <View style={styles.rowIcon}>
@@ -510,7 +526,11 @@ export default function ProfileScreen() {
               accessibilityRole="button"
               accessibilityLabel={ts.shortcutsA11y}
               onPress={() => router.push('/shortcuts')}
-              style={styles.rowPress}
+              unstable_pressDelay={PRESS_FEEDBACK_DELAY_MS}
+              style={({ pressed }) => [
+                styles.rowPress,
+                pressed && pressedFeedback,
+              ]}
             >
               <Card style={styles.row}>
               <View style={styles.rowIcon}>
@@ -536,7 +556,11 @@ export default function ProfileScreen() {
               accessibilityRole="button"
               accessibilityLabel={ts.categoriesA11y}
               onPress={() => router.push('/categories')}
-              style={styles.rowPress}
+              unstable_pressDelay={PRESS_FEEDBACK_DELAY_MS}
+              style={({ pressed }) => [
+                styles.rowPress,
+                pressed && pressedFeedback,
+              ]}
             >
               <Card style={styles.row}>
               <View style={styles.rowIcon}>
@@ -563,7 +587,11 @@ export default function ProfileScreen() {
               accessibilityLabel={ts.exportA11y}
               onPress={() => void onExportCsv()}
               disabled={exportingCsv}
-              style={styles.rowPress}
+              unstable_pressDelay={PRESS_FEEDBACK_DELAY_MS}
+              style={({ pressed }) => [
+                styles.rowPress,
+                pressed && pressedFeedback,
+              ]}
             >
               <Card style={styles.row}>
               <View style={styles.rowIcon}>
@@ -597,7 +625,11 @@ export default function ProfileScreen() {
               accessibilityRole="button"
               accessibilityLabel={ts.deleteA11y}
               onPress={() => router.push('/delete-account')}
-              style={styles.rowPress}
+              unstable_pressDelay={PRESS_FEEDBACK_DELAY_MS}
+              style={({ pressed }) => [
+                styles.rowPress,
+                pressed && pressedFeedback,
+              ]}
             >
               <Card style={styles.row} borderColor={colors.error}>
               <View style={styles.rowIcon}>
@@ -628,7 +660,11 @@ export default function ProfileScreen() {
               accessibilityRole="link"
               accessibilityLabel={ts.privacyTitle}
               onPress={() => Linking.openURL(LEGAL.privacy).catch(() => undefined)}
-              style={styles.rowPress}
+              unstable_pressDelay={PRESS_FEEDBACK_DELAY_MS}
+              style={({ pressed }) => [
+                styles.rowPress,
+                pressed && pressedFeedback,
+              ]}
             >
               <Card style={styles.row}>
               <View style={styles.rowIcon}>
@@ -655,7 +691,11 @@ export default function ProfileScreen() {
               accessibilityRole="link"
               accessibilityLabel={ts.termsTitle}
               onPress={() => Linking.openURL(LEGAL.terms).catch(() => undefined)}
-              style={styles.rowPress}
+              unstable_pressDelay={PRESS_FEEDBACK_DELAY_MS}
+              style={({ pressed }) => [
+                styles.rowPress,
+                pressed && pressedFeedback,
+              ]}
             >
               <Card style={styles.row}>
               <View style={styles.rowIcon}>

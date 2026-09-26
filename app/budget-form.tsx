@@ -43,6 +43,7 @@ import {
 } from '@/features/transactions';
 import { dictionaryFor, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { pressedFeedback } from '@/components/pressed';
 
 export default function BudgetFormScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
@@ -142,7 +143,10 @@ export default function BudgetFormScreen() {
             accessibilityLabel={tb.form.close}
             testID="budget-form-close"
             onPress={() => router.back()}
-            style={styles.close}
+            style={({ pressed }) => [
+              styles.close,
+              pressed && pressedFeedback,
+            ]}
           >
             <MaterialIcons name="close" size={24} color={colors.textSecondary} />
           </Pressable>

@@ -13,6 +13,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Card } from '@/components/card';
+import { PRESS_FEEDBACK_DELAY_MS, pressedFeedback } from '@/components/pressed';
 import { Skeleton, SkeletonBlock } from '@/components/skeleton';
 import { colors, spacing, typography } from '@/theme';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
@@ -70,6 +71,8 @@ export function MonthlySummaryCard({
       accessibilityRole="button"
       accessibilityLabel={fill(t.analytics.monthly.openA11y, { month: title })}
       onPress={onPress}
+      unstable_pressDelay={PRESS_FEEDBACK_DELAY_MS}
+      style={({ pressed }) => [pressed && pressedFeedback]}
     >
       <View style={styles.header}>
         <View style={styles.titles}>

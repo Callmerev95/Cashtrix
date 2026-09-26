@@ -11,6 +11,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { PRESS_FEEDBACK_DELAY_MS, pressedFeedback } from '@/components/pressed';
 import { useLanguage } from '@/i18n';
 
 import { formatSignedAmount, formatTime, transferFeedLabel, type Transaction } from '../domain';
@@ -111,10 +112,11 @@ export function TransactionRow({
       accessibilityRole="button"
       accessibilityLabel={`${accessibilityName}, ${amountText}, ${transaction.walletName}`}
       onPress={onPress}
+      unstable_pressDelay={PRESS_FEEDBACK_DELAY_MS}
       style={({ pressed }) => [
         styles.row,
         dimmed && styles.dimmed,
-        pressed && styles.pressed,
+        pressed && pressedFeedback,
       ]}
     >
       {content}
@@ -129,9 +131,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     paddingVertical: spacing.sm + spacing.xs,
-  },
-  pressed: {
-    opacity: 0.7,
   },
   iconWell: {
     width: 40,

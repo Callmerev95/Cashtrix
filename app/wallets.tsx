@@ -36,6 +36,7 @@ import {
 import { WalletRow } from '@/features/wallets/components/wallet-row';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { pressedFeedback } from '@/components/pressed';
 
 export default function WalletsScreen() {
   const { wallets, archivedWallets, summary, loading, error, refresh } =
@@ -148,7 +149,10 @@ export default function WalletsScreen() {
             accessibilityRole="button"
             accessibilityLabel={tw.list.back}
             onPress={() => router.back()}
-            style={styles.back}
+            style={({ pressed }) => [
+              styles.back,
+              pressed && pressedFeedback,
+            ]}
           >
             <MaterialIcons name="arrow-back" size={24} color={colors.textSecondary} />
           </Pressable>
@@ -232,7 +236,10 @@ export default function WalletsScreen() {
                           ],
                         )
                       }
-                      style={styles.deleteButton}
+                      style={({ pressed }) => [
+                        styles.deleteButton,
+                        pressed && pressedFeedback,
+                      ]}
                     >
                       <MaterialIcons
                         name="archive"
@@ -249,7 +256,10 @@ export default function WalletsScreen() {
                       disabled={busy}
                       hitSlop={spacing.sm}
                       onPress={() => onDeletePress(wallet)}
-                      style={styles.deleteButton}
+                      style={({ pressed }) => [
+                        styles.deleteButton,
+                        pressed && pressedFeedback,
+                      ]}
                     >
                       <MaterialIcons
                         name="delete-outline"
@@ -284,7 +294,10 @@ export default function WalletsScreen() {
                     disabled={busy}
                     hitSlop={spacing.sm}
                     onPress={() => void archiveWallet(wallet, false)}
-                    style={styles.deleteButton}
+                    style={({ pressed }) => [
+                      styles.deleteButton,
+                      pressed && pressedFeedback,
+                    ]}
                   >
                     <MaterialIcons
                       name="unarchive"
@@ -342,7 +355,7 @@ export default function WalletsScreen() {
                     onPress={() => void reassignTo(wallet)}
                     style={({ pressed }) => [
                       styles.targetRow,
-                      pressed && styles.pressed,
+                      pressed && pressedFeedback,
                     ]}
                   >
                     <View style={styles.targetIcon}>
@@ -497,9 +510,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
-  },
-  pressed: {
-    opacity: 0.7,
   },
   targetIcon: {
     width: 36,

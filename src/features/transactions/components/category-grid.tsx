@@ -11,6 +11,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing, typography } from '@/theme';
+import { pressedFeedback } from '@/components/pressed';
 
 import { categoriesForKind, type Category, type TransactionType } from '../domain';
 
@@ -51,7 +52,11 @@ export function CategoryGrid({
             accessibilityState={{ selected: active }}
             accessibilityLabel={category.name}
             onPress={() => onSelect(category)}
-            style={[styles.cell, active && styles.cellActive]}
+            style={({ pressed }) => [
+              styles.cell,
+              active && styles.cellActive,
+              pressed && pressedFeedback,
+            ]}
           >
             <View style={[styles.well, active && styles.wellActive]}>
               <MaterialIcons

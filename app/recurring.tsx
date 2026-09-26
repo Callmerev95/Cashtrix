@@ -32,6 +32,7 @@ import {
 import { formatGrouped } from '@/features/transactions';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { pressedFeedback } from '@/components/pressed';
 
 export default function RecurringScreen() {
   const { rules, loading, error, refresh, setPaused, remove } = useRecurring();
@@ -233,6 +234,7 @@ function RuleRow({
             })}
             onPress={onEdit}
             hitSlop={12}
+          style={({ pressed }) => [pressed && pressedFeedback]}
           >
             <MaterialIcons name="edit" size={20} color={colors.textSecondary} />
           </Pressable>
@@ -245,6 +247,7 @@ function RuleRow({
             )}
             onPress={onToggle}
             hitSlop={12}
+          style={({ pressed }) => [pressed && pressedFeedback]}
           >
             <MaterialIcons
               name={paused ? 'play-arrow' : 'pause'}
@@ -260,6 +263,7 @@ function RuleRow({
             })}
             onPress={onDelete}
             hitSlop={12}
+          style={({ pressed }) => [pressed && pressedFeedback]}
           >
             <MaterialIcons name="delete-outline" size={20} color={colors.error} />
           </Pressable>

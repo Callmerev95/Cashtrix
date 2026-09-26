@@ -10,6 +10,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { pressedFeedback } from '@/components/pressed';
 
 export function DeleteConfirmSheet({
   visible,
@@ -65,7 +66,7 @@ export function DeleteConfirmSheet({
               accessibilityRole="button"
               accessibilityLabel={cancelLabel}
               onPress={onCancel}
-              style={({ pressed }) => [styles.ghost, pressed && styles.pressed]}
+              style={({ pressed }) => [styles.ghost, pressed && pressedFeedback]}
             >
               <Text style={[typography.bodyLg, styles.ghostLabel]}>{cancelLabel}</Text>
             </Pressable>
@@ -79,7 +80,7 @@ export function DeleteConfirmSheet({
               onPress={onConfirm}
               style={({ pressed }) => [
                 styles.destructive,
-                pressed && styles.pressed,
+                pressed && pressedFeedback,
                 loading && styles.disabled,
               ]}
             >
@@ -152,9 +153,6 @@ const styles = StyleSheet.create({
   },
   destructiveLabel: {
     color: colors.error,
-  },
-  pressed: {
-    transform: [{ scale: 0.99 }],
   },
   disabled: {
     opacity: 0.6,

@@ -17,6 +17,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { pressedFeedback } from '@/components/pressed';
 import { dictionaryFor, useLanguage } from '@/i18n';
 
 import {
@@ -71,7 +72,7 @@ export function CalendarGrid({
           accessibilityRole="button"
           accessibilityLabel={t.transactions.calendar.prev}
           onPress={() => shiftMonth(-1)}
-          style={styles.nav}
+          style={({ pressed }) => [styles.nav, pressed && pressedFeedback]}
         >
           <MaterialIcons
             name="chevron-left"
@@ -90,7 +91,7 @@ export function CalendarGrid({
           accessibilityRole="button"
           accessibilityLabel={t.transactions.calendar.next}
           onPress={() => shiftMonth(1)}
-          style={styles.nav}
+          style={({ pressed }) => [styles.nav, pressed && pressedFeedback]}
         >
           <MaterialIcons
             name="chevron-right"
@@ -132,10 +133,11 @@ export function CalendarGrid({
                     setVisibleKey(monthKey(day.date));
                   }
                 }}
-                style={[
+                style={({ pressed }) => [
                   styles.cell,
                   day.isSelected && styles.cellSelected,
                   day.isToday && !day.isSelected && styles.cellToday,
+                  pressed && pressedFeedback,
                 ]}
               >
                 <Text

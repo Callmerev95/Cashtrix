@@ -18,6 +18,7 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, gradients, layout, radius, shadows, spacing, typography } from '@/theme';
+import { pressedFeedback } from '@/components/pressed';
 
 type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
 
@@ -77,7 +78,7 @@ function AddTransactionFab({ onPress }: { onPress: () => void }) {
       accessibilityLabel="Add Transaction"
       testID="fab-add-transaction"
       onPress={onPress}
-      style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
+      style={({ pressed }) => [styles.fab, pressed && pressedFeedback]}
     >
       <LinearGradient
         colors={[...gradients.primary]}
@@ -143,7 +144,10 @@ export function FloatingTabBar({
                 }
                 onPress={onPress}
                 onLongPress={onLongPress}
-                style={styles.tabItem}
+                style={({ pressed }) => [
+                  styles.tabItem,
+                  pressed && pressedFeedback,
+                ]}
               >
                 <TabIcon
                   icon={TAB_ICONS[route.name] ?? 'circle'}
@@ -210,9 +214,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     overflow: 'hidden',
     boxShadow: shadows.fab,
-  },
-  fabPressed: {
-    transform: [{ scale: 0.99 }],
   },
   fabGradient: {
     flex: 1,

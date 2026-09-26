@@ -8,6 +8,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { pressedFeedback } from '@/components/pressed';
 import { useLanguage } from '@/i18n';
 
 import {
@@ -40,7 +41,11 @@ export function TypeSegmentedControl({
             accessibilityState={{ selected: active }}
             accessibilityLabel={label}
             onPress={() => onChange(option)}
-            style={[styles.segment, active && styles.segmentActive]}
+            style={({ pressed }) => [
+              styles.segment,
+              active && styles.segmentActive,
+              pressed && pressedFeedback,
+            ]}
           >
             <Text
               style={[

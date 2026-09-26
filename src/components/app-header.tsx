@@ -15,6 +15,7 @@ import { useState } from 'react';
 import { colors, gradients, layout, radius, spacing, typography } from '@/theme';
 
 import { LogoMark } from './logo-mark';
+import { pressedFeedback } from '@/components/pressed';
 
 export type AppHeaderBell = {
   unread: boolean;
@@ -55,7 +56,10 @@ export function AppHeader({
             accessibilityRole="button"
             accessibilityLabel={bell.accessibilityLabel}
             onPress={bell.onPress}
-            style={styles.bellFrame}
+            style={({ pressed }) => [
+              styles.bellFrame,
+              pressed && pressedFeedback,
+            ]}
           >
             <MaterialIcons
               name={bell.unread ? 'notifications-active' : 'notifications-none'}
@@ -70,7 +74,10 @@ export function AppHeader({
           accessibilityRole="button"
           accessibilityLabel="Buka profil"
           onPress={() => router.push('/(tabs)/profile')}
-          style={styles.avatarFrame}
+          style={({ pressed }) => [
+            styles.avatarFrame,
+            pressed && pressedFeedback,
+          ]}
         >
           <LinearGradient
             colors={[...gradients.cardBorder]}

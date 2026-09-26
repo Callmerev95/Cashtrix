@@ -29,6 +29,7 @@ import {
 } from '@/features/profile';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { pressedFeedback } from '@/components/pressed';
 
 export default function CategoriesScreen() {
   const { session } = useAuth();
@@ -240,6 +241,7 @@ function CategoryRow({
               accessibilityLabel={fill(tc.editA11y, { name: item.name })}
               onPress={onEdit}
               hitSlop={12}
+              style={({ pressed }) => [pressed && pressedFeedback]}
             >
               <MaterialIcons name="edit" size={20} color={colors.textSecondary} />
             </Pressable>
@@ -254,6 +256,7 @@ function CategoryRow({
             }
             onPress={onToggle}
             hitSlop={12}
+          style={({ pressed }) => [pressed && pressedFeedback]}
           >
             <MaterialIcons
               name={hidden ? 'unarchive' : 'archive'}
@@ -268,6 +271,7 @@ function CategoryRow({
               accessibilityLabel={fill(tc.deleteA11y, { name: item.name })}
               onPress={onDelete}
               hitSlop={12}
+              style={({ pressed }) => [pressed && pressedFeedback]}
             >
               <MaterialIcons name="delete-outline" size={20} color={colors.error} />
             </Pressable>

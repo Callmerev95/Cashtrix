@@ -23,6 +23,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { pressedFeedback } from '@/components/pressed';
 
 export type TextFieldProps = TextInputProps & {
   /** Renders the error state (error border) — message copy is the caller's. */
@@ -81,6 +82,7 @@ export function TextField({
             accessibilityLabel={hidden ? 'Tampilkan password' : 'Sembunyikan password'}
             hitSlop={spacing.sm}
             onPress={() => setHidden((value) => !value)}
+            style={({ pressed }) => [pressed && pressedFeedback]}
           >
             <MaterialIcons
               name={hidden ? 'visibility' : 'visibility-off'}

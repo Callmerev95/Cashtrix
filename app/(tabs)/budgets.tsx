@@ -37,6 +37,7 @@ import { formatGrouped } from '@/features/transactions/domain';
 import { dictionaryFor, fill, localeTagFor, useLanguage } from '@/i18n';
 import type { Language } from '@/i18n/locale';
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { PRESS_FEEDBACK_DELAY_MS, pressedFeedback } from '@/components/pressed';
 
 /** `2026-09-01` → `September 2026`. Falls back to the raw string. */
 export function formatMonthLabel(month: string | null, lang: Language = 'id'): string {
@@ -185,7 +186,11 @@ function BudgetCard({ budget }: { budget: BudgetStatus }) {
         onPress={() =>
           router.push({ pathname: '/budget-form', params: { id: budget.budgetId } })
         }
-        style={styles.cardPress}
+        unstable_pressDelay={PRESS_FEEDBACK_DELAY_MS}
+        style={({ pressed }) => [
+          styles.cardPress,
+          pressed && pressedFeedback,
+        ]}
       >
         <BudgetRing percent={budget.percent} state={budget.state} size={104} />
       <View style={styles.cardBody}>
@@ -256,7 +261,10 @@ function AlertBanner({
         accessibilityRole="button"
         accessibilityLabel={t.budgets.screen.dismissAlert}
         onPress={onDismiss}
-        style={styles.alertCloseButton}
+        style={({ pressed }) => [
+          styles.alertCloseButton,
+          pressed && pressedFeedback,
+        ]}
       >
         <MaterialIcons name="close" size={18} color={colors.textSecondary} />
       </Pressable>

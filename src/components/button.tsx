@@ -1,11 +1,12 @@
 /**
  * Buttons per DESIGN.md §5: primary = gradient gold, obsidian label, 52px,
- * radius 16, tap scale(0.99); ghost = transparent with gold text.
+ * radius 16, tap opacity; ghost = transparent with gold text.
  */
 import { ActivityIndicator, Pressable, StyleSheet, Text, type ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { colors, gradients, layout, radius, spacing, typography } from '@/theme';
+import { pressedFeedback } from '@/components/pressed';
 
 type CommonProps = {
   label: string;
@@ -47,7 +48,7 @@ export function PrimaryButton({
         styles.primaryFrame,
         style,
         inactive && styles.primaryInactive,
-        pressed && styles.pressed,
+        pressed && pressedFeedback,
       ]}
     >
       <LinearGradient
@@ -85,7 +86,7 @@ export function GhostButton({
       style={({ pressed }: { pressed: boolean }) => [
         styles.ghost,
         style,
-        pressed && styles.pressed,
+        pressed && pressedFeedback,
       ]}
     >
       <Text style={[styles.ghostLabel, danger && styles.ghostLabelDanger]}>
@@ -129,8 +130,5 @@ const styles = StyleSheet.create({
   },
   ghostLabelDanger: {
     color: colors.error,
-  },
-  pressed: {
-    transform: [{ scale: 0.99 }],
   },
 });

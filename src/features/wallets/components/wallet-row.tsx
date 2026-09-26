@@ -8,6 +8,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { PRESS_FEEDBACK_DELAY_MS, pressedFeedback } from '@/components/pressed';
 import {
   formatCurrency,
   walletTypeLabel,
@@ -84,7 +85,8 @@ export function WalletRow({
         balance: balanceText,
       })}
       onPress={onPress}
-      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+      unstable_pressDelay={PRESS_FEEDBACK_DELAY_MS}
+      style={({ pressed }) => [styles.row, pressed && pressedFeedback]}
     >
       {content}
     </Pressable>
@@ -100,9 +102,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
-  },
-  pressed: {
-    opacity: 0.7,
   },
   iconWell: {
     width: 40,

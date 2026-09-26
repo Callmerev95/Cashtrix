@@ -10,6 +10,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, layout, spacing, typography } from '@/theme';
+import { pressedFeedback } from '@/components/pressed';
 
 export function SectionHeader({
   title,
@@ -37,7 +38,10 @@ export function SectionHeader({
           accessibilityLabel={actionLabel}
           onPress={onAction}
           hitSlop={spacing.sm}
-          style={styles.press}
+          style={({ pressed }) => [
+            styles.press,
+            pressed && pressedFeedback,
+          ]}
         >
           <Text style={[typography.labelUppercase, styles.action]}>
             {actionLabel}

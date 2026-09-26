@@ -28,6 +28,7 @@ import {
 import { formatMonthLabel, formatTime } from '@/features/transactions';
 import { dictionaryFor, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { PRESS_FEEDBACK_DELAY_MS, pressedFeedback } from '@/components/pressed';
 
 type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
 
@@ -89,7 +90,10 @@ export default function NotificationsScreen() {
             accessibilityRole="button"
             accessibilityLabel={tn.back}
             onPress={() => router.back()}
-            style={styles.back}
+            style={({ pressed }) => [
+              styles.back,
+              pressed && pressedFeedback,
+            ]}
           >
             <MaterialIcons
               name="arrow-back"
@@ -112,7 +116,10 @@ export default function NotificationsScreen() {
               accessibilityLabel={tn.markAllA11y}
               onPress={() => void readAll()}
               hitSlop={spacing.sm}
-              style={styles.tap}
+              style={({ pressed }) => [
+                styles.tap,
+                pressed && pressedFeedback,
+              ]}
             >
               <Text style={[typography.labelUppercase, styles.action]}>
                 {busy ? '…' : tn.markAll}
@@ -167,7 +174,11 @@ export default function NotificationsScreen() {
                   language,
                 )}
                 onPress={() => void openAlert(item)}
-                style={styles.row}
+                unstable_pressDelay={PRESS_FEEDBACK_DELAY_MS}
+                style={({ pressed }) => [
+                  styles.row,
+                  pressed && pressedFeedback,
+                ]}
               >
                 <View style={styles.dotSlot}>
                   {item.readAt === null ? (

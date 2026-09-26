@@ -33,6 +33,7 @@ import {
 } from '@/features/profile';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { pressedFeedback } from '@/components/pressed';
 
 const KINDS: { value: CategoryKind; label: string }[] = [
   { value: 'expense', label: 'Pengeluaran' },
@@ -109,7 +110,10 @@ export default function CategoryFormScreen() {
             accessibilityRole="button"
             accessibilityLabel={tcf.close}
             onPress={() => router.back()}
-            style={styles.close}
+            style={({ pressed }) => [
+              styles.close,
+              pressed && pressedFeedback,
+            ]}
           >
             <MaterialIcons name="close" size={24} color={colors.textSecondary} />
           </Pressable>
@@ -163,7 +167,11 @@ export default function CategoryFormScreen() {
                       accessibilityState={{ selected: active }}
                       accessibilityLabel={label}
                       onPress={() => setKind(option.value)}
-                      style={[styles.segment, active && styles.segmentActive]}
+                      style={({ pressed }) => [
+                        styles.segment,
+                        active && styles.segmentActive,
+                        pressed && pressedFeedback,
+                      ]}
                     >
                       <Text
                         style={[
@@ -198,7 +206,11 @@ export default function CategoryFormScreen() {
                     setIcon(entry);
                     if (iconError) setIconError(null);
                   }}
-                  style={[styles.iconWell, active && styles.iconWellActive]}
+                  style={({ pressed }) => [
+                    styles.iconWell,
+                    active && styles.iconWellActive,
+                    pressed && pressedFeedback,
+                  ]}
                 >
                   <MaterialIcons
                     name={entry as never}

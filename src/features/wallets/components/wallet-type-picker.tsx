@@ -8,6 +8,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { pressedFeedback } from '@/components/pressed';
 import {
   WALLET_TYPES,
   walletTypeLabel,
@@ -42,7 +43,11 @@ export function WalletTypePicker({
             accessibilityState={{ selected: active }}
             accessibilityLabel={label}
             onPress={() => onChange(type)}
-            style={[styles.segment, active && styles.segmentActive]}
+            style={({ pressed }) => [
+              styles.segment,
+              active && styles.segmentActive,
+              pressed && pressedFeedback,
+            ]}
           >
             <MaterialIcons
               name={meta.icon as MaterialIconName}

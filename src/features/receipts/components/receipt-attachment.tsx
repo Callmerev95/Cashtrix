@@ -30,6 +30,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { Skeleton, SkeletonBlock } from '@/components';
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { pressedFeedback } from '@/components/pressed';
 
 import {
   deleteReceiptAttachment,
@@ -196,7 +197,10 @@ export function ReceiptAttachmentSection({
               accessibilityLabel={t.removeA11y}
               onPress={() => void removePhoto(attachment)}
               hitSlop={spacing.sm}
-              style={styles.remove}
+              style={({ pressed }) => [
+                styles.remove,
+                pressed && pressedFeedback,
+              ]}
             >
               <MaterialIcons name="close" size={16} color={colors.textOnAccent} />
             </Pressable>
@@ -207,7 +211,10 @@ export function ReceiptAttachmentSection({
           accessibilityRole="button"
           accessibilityLabel={t.attachA11y}
           onPress={() => onSheetVisibleChange(true)}
-          style={styles.attach}
+          style={({ pressed }) => [
+            styles.attach,
+            pressed && pressedFeedback,
+          ]}
         >
           {uploading ? (
             <ActivityIndicator color={colors.accent} />
@@ -261,7 +268,10 @@ export function ReceiptAttachmentSection({
               accessibilityRole="button"
               accessibilityLabel={t.camera}
               onPress={() => void addPhoto('camera')}
-              style={styles.option}
+              style={({ pressed }) => [
+                styles.option,
+                pressed && pressedFeedback,
+              ]}
             >
               <MaterialIcons
                 name="photo-camera"
@@ -277,7 +287,10 @@ export function ReceiptAttachmentSection({
               accessibilityRole="button"
               accessibilityLabel={t.gallery}
               onPress={() => void addPhoto('gallery')}
-              style={styles.option}
+              style={({ pressed }) => [
+                styles.option,
+                pressed && pressedFeedback,
+              ]}
             >
               <MaterialIcons
                 name="photo-library"

@@ -9,6 +9,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { pressedFeedback } from '@/components/pressed';
 import { useLanguage } from '@/i18n';
 
 import {
@@ -41,7 +42,11 @@ export function SearchKindControl({
             accessibilityState={{ selected: active }}
             accessibilityLabel={label}
             onPress={() => onChange(option.value)}
-            style={[styles.chip, active && styles.chipActive]}
+            style={({ pressed }) => [
+              styles.chip,
+              active && styles.chipActive,
+              pressed && pressedFeedback,
+            ]}
           >
             <Text
               style={[

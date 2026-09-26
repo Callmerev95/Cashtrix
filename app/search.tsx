@@ -38,6 +38,7 @@ import {
 } from '@/features/transactions';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { pressedFeedback } from '@/components/pressed';
 
 export default function SearchScreen() {
   const [query, setQuery] = useState('');
@@ -273,7 +274,10 @@ export default function SearchScreen() {
                     accessibilityLabel={ts.cancelSelect}
                     onPress={exitSelect}
                     hitSlop={spacing.sm}
-                    style={styles.tap}
+                    style={({ pressed }) => [
+                      styles.tap,
+                      pressed && pressedFeedback,
+                    ]}
                   >
                     <Text style={[typography.labelUppercase, styles.action]}>
                       {t.common.cancel}
@@ -295,7 +299,10 @@ export default function SearchScreen() {
                       setPickedCategory(null);
                     }}
                     hitSlop={spacing.sm}
-                    style={styles.tap}
+                    style={({ pressed }) => [
+                      styles.tap,
+                      pressed && pressedFeedback,
+                    ]}
                   >
                     <Text
                       style={[
@@ -321,7 +328,10 @@ export default function SearchScreen() {
                       setSelectHint(null);
                     }}
                     hitSlop={spacing.sm}
-                    style={styles.tap}
+                    style={({ pressed }) => [
+                      styles.tap,
+                      pressed && pressedFeedback,
+                    ]}
                   >
                     <Text style={[typography.labelUppercase, styles.action]}>
                       {ts.select}
@@ -365,7 +375,10 @@ export default function SearchScreen() {
                           setPickedCategory(null);
                         }}
                         hitSlop={spacing.sm}
-                        style={styles.tap}
+                        style={({ pressed }) => [
+                      styles.tap,
+                      pressed && pressedFeedback,
+                    ]}
                       >
                         <Text
                           style={[typography.labelUppercase, styles.meta]}
@@ -382,7 +395,10 @@ export default function SearchScreen() {
                         disabled={applying}
                         onPress={() => void applyBulk()}
                         hitSlop={spacing.sm}
-                        style={styles.tap}
+                        style={({ pressed }) => [
+                      styles.tap,
+                      pressed && pressedFeedback,
+                    ]}
                       >
                         <Text
                           style={[typography.labelUppercase, styles.action]}
