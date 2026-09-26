@@ -171,5 +171,5 @@ Semua ticket `ready-for-agent`. Urutan mengikat: S1 → S2 → S3 (tiap fase bis
 ### Frontier
 
 #55 (S1) closed: di `main` (HEAD `05fc2aa`). #56 (S2) closed via PR #59
-(HEAD `8108b53`). #57 (S3) implementasi + device-gate hijau di working tree,
-siap PR. #58 blocked by #57 (menunggu #57 closed).
+(HEAD `8108b53`). #57 (S3) closed via PR #60 (HEAD `4995b78`).
+Frontier: #58 (RLS 1.2.0) unblocked.

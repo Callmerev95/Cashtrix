@@ -12,7 +12,7 @@
 </head>
 <body>
   <h1>Kebijakan Privasi | Cashtrix</h1>
-  <p><strong>Tanggal berlaku:</strong> 23 September 2026</p>
+  <p><strong>Tanggal berlaku:</strong> 27 September 2026</p>
 
   <p>Cashtrix ("kami") adalah aplikasi pencatat keuangan pribadi. Kebijakan ini
   menjelaskan data yang dikumpulkan aplikasi Cashtrix, cara data itu digunakan,
@@ -28,6 +28,20 @@
     preferensi zona waktu.</li>
     <li><strong>Gambar avatar:</strong> hanya jika Anda mengunggahnya; disimpan
     di penyimpanan privat milik tiap pengguna.</li>
+    <li><strong>Foto struk:</strong> hanya jika Anda memotret struk di form
+    Tambah; disimpan di penyimpanan privat tiap pengguna dan otomatis dihapus
+    30 hari setelah diambil. Jika Anda meminta aplikasi membaca struk, foto
+    dikirim ke server kami untuk dibaca otomatis hanya setelah persetujuan
+    eksplisit Anda; hasilnya hanya mengisi form, dan tidak ada yang tersimpan
+    sebelum Anda menekan Simpan sendiri. Berkas sementara pemrosesan dihapus
+    setelah respons.</li>
+    <li><strong>Autentikasi dua faktor (opsional):</strong> jika Anda
+    mengaktifkannya, faktor kode sekali pakai didaftarkan ke Supabase Auth;
+    pemulihannya lewat reset kata sandi via email.</li>
+    <li><strong>Kunci aplikasi (opsional):</strong> hanya penanda on/off di
+    perangkat. Pembukaan memakai biometrik atau kode perangkat Anda; tidak ada
+    data biometrik yang keluar dari perangkat dan aplikasi tidak menyimpan
+    secret apa pun.</li>
     <li><strong>Diagnostik:</strong> laporan kerusakan (crash) dan peristiwa
     penggunaan anonim (layar dibuka, transaksi disimpan, ambang budget tercapai).
     Peristiwa ini tidak pernah memuat nominal transaksi atau catatan.</li>
@@ -36,6 +50,8 @@
   <h2>2. Cara kami menggunakan data</h2>
   <ul>
     <li>Menyediakan aplikasi: masuk, saldo, riwayat, budget, analitik.</li>
+    <li>Membaca struk yang Anda pilih untuk dipindai, hanya untuk mengisi
+    form.</li>
     <li>Menjaga keamanan akun Anda dan mengirim email terkait akun (verifikasi,
     reset kata sandi).</li>
     <li>Memperbaiki crash dan meningkatkan kestabilan melalui diagnostik
@@ -51,14 +67,18 @@
     <li>Kata sandi disimpan sebagai hash oleh Supabase Auth; kami tidak pernah
     melihatnya.</li>
     <li>Token sesi Anda hanya tersimpan di perangkat Anda dan dihapus saat keluar.</li>
-    <li>Berkas avatar berada di bucket privat, hanya dapat dibaca oleh pemiliknya.</li>
+    <li>Berkas avatar berada di bucket privat, hanya dapat dibaca oleh
+    pemiliknya. Foto struk berada di bucket privat terpisah dengan akses
+    khusus pemilik yang sama, dan otomatis dihapus 30 hari setelah
+    diambil.</li>
   </ul>
 
   <h2>4. Hak Anda: ekspor dan penghapusan</h2>
   <p>Di dalam aplikasi (Profile) Anda dapat <strong>mengekspor</strong> seluruh
   transaksi sebagai CSV, dan dapat <strong>menghapus akun Anda</strong>.
   Menghapus akun secara permanen menghapus profil, dompet, transaksi, budget,
-  avatar, dan login Anda | tindakan ini tidak dapat dibatalkan.</p>
+  foto struk, avatar, dan login Anda | tindakan ini tidak dapat
+  dibatalkan.</p>
 
   <h2>5. Anak-anak</h2>
   <p>Cashtrix tidak ditujukan untuk anak di bawah 13 tahun. Kami tidak dengan
@@ -75,6 +95,6 @@
   <p>Pertanyaan tentang kebijakan ini:
   <a href="https://github.com/Callmerev95/Cashtrix">github.com/Callmerev95/Cashtrix</a>.</p>
 
-  <footer>Cashtrix · Kebijakan Privasi v1.1 (Indonesia). Versi bahasa Inggris tersedia di <a href="privacy.html">privacy.html</a>.</footer>
+  <footer>Cashtrix · Kebijakan Privasi v1.2 (Indonesia). Versi bahasa Inggris tersedia di <a href="privacy.html">privacy.html</a>.</footer>
 </body>
 </html>

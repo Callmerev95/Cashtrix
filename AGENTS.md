@@ -247,6 +247,15 @@
 - `scripts/verify-s3.mjs` 39/39 + matriks CI (setelah `verify-s2`); pola D5 (`awaitFreshRateWindow`, flood 5+2 → 429, anon/JWT-mati 401, isolasi B, sapu objek dulu) + prefill happy + prefix-asing 404 + objek-hilang `{ok:false}` + tanpa-temp. Cleanup `delete from auth.users where email like 's3-verify-%' or email like 's3-other-%'`.
 - Orphan-row tolerance (temuan device): `listReceiptsForTransaction` per-baris toleran — satu objek mati tak lagi mengosongkan thumbnail; baris yatim bertahan agar retry/retake jalan (scan-nya `{ok:false}` bersih).
 
+### Gerbang rilis 1.2.0 (RLS, #58 — gate berjalan 2026-09-27, bump 1.2.0 di working tree)
+
+- Regresi di HEAD pasca-polish: lint + typecheck + Jest 526/526 (525 + 1 kunci hero i18n) + kontrak statis 78/8/3 + export Android hijau. Live terfokus: verify-s2 34/34, verify-t11 live 25/25, verify-s3 39/39 di run kedua (run pertama 37+2fail — flake tepi-window fixed 60s keluarga D5; rerun + cek residu 0 = bukti gate).
+- Device Redmi: wipe via klien service-role (4 tabel e2e → 0, tanpa psql) + `provision-e2e`; OTA `9249b2fa` lalu `eaadd894` (pola S3: launch-unduh → force-stop → launch-teraplikasi; urutan salah = update tak teraplikasi). Smoke + happy-path hijau (happy-path lolos attempt 3 — driver Maestro flake `did not start up`; obat: uninstall `dev.mobile.maestro` lalu retry).
+- Scan E2E di HP: galeri sistem → pilih foto → consent-once sudah granted → auto-scan → prefill 55.000 (TOTAL mock menang atas item, benar) + STARBUCKS + Makanan → Simpan → snackbar + budget 255rb. Failure offline (airplane): note `uploadFail` tanpa error mentah + Foto ulang/Isi manual, tap Isi manual jalan, back-out bersih. Picker sistem tak ekspos teks ke hierarki — tap teks "Selesai" gagal, pakai koordinat.
+- Temuan antislop (DURING): hero Analytics/Budgets hardcoded EN ("Financial Intelligence", "Budget Architecture") di layar ID → pindah ke kamus (`analytics.screen` + `budgets.screen` kicker/title, ID: "Wawasan/Analisis Keuangan", "Siklus Aktif/Budget"; EN dipertahankan) + kunci Jest. Kunci `scan: 'Pindai otomatis'` mati di kamus (tombol sudah dihapus) — dibiarkan, bukan regresi. Label tab VAULT/INSIGHTS/BUDGETS/ACCOUNT (keputusan desain Stitch pra-i18n) DITANYAKAN ke pemilik, tidak diubah sepihak (protokol konflik R-37).
+- Bump `app.json` + `package.json` → `1.2.0` sekali di akhir (runtimeVersion appVersion — OTA 1.1.0 tak lagi berlaku pasca-bump; gate device selesai sebelum bump). Tag `v1.2.0` hanya seizin pemilik.
+- Override R-37 disetujui pemilik 2026-09-27: label tab VAULT/INSIGHTS/BUDGETS/ACCOUNT tetap EN (identitas desain Stitch) — jangan diangkat lagi di audit berikut. Legal v1.2 ikut gerbang (Opsi A): privacy/terms × EN/ID tambah foto struk (bucket privat + retensi 30 hari) + OCR consent/prefill-only + lock device-local + 2FA; footer v1.1 → v1.2 + tanggal 27 Sep 2026.
+
 ### Graphify + Obsidian (handoff antar-sesi, 2026-09-25)
 
 - `graphify-out/` = knowledge graph lokal (AST, tanpa API): `graph.json` (penuh), `graph.html` (visual), `GRAPH_REPORT.md` (ringkasan). **Di-ignore git** (generated ~4MB, artefak lokal seperti `coverage/`). Jangan di-commit.

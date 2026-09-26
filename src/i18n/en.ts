@@ -119,6 +119,8 @@ export const en: Dictionary = {
       amountTooLarge: 'Maximum amount {max}',
     },
     screen: {
+      kicker: 'Active Cycle',
+      title: 'Budget Architecture',
       countActive: '{count} active allocations',
       allocations: 'Category Allocations',
       add: 'Add',
@@ -605,6 +607,10 @@ export const en: Dictionary = {
       distribution: 'Expense Breakdown',
       trendDaily: 'Daily Trend',
       trendMonthly: 'Monthly Trend',
+    },
+    screen: {
+      kicker: 'Insights',
+      title: 'Financial Intelligence',
     },
     empty: {
       title: 'No data yet',

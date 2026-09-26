@@ -77,9 +77,9 @@ export default function AnalyticsScreen() {
         }}
       />
       <View style={styles.header}>
-        <Text style={[typography.labelUppercase, styles.kicker]}>Insights</Text>
+        <Text style={[typography.labelUppercase, styles.kicker]}>{t.analytics.screen.kicker}</Text>
         <Text style={[typography.headlineLg, styles.title]}>
-          Financial Intelligence
+          {t.analytics.screen.title}
         </Text>
       </View>
 

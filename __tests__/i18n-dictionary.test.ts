@@ -116,3 +116,12 @@ describe('device locale stand-in (C6)', () => {
     expect(detectLanguage()).toBe('id');
   });
 });
+
+describe('screen heroes go through the dictionary (#58)', () => {
+  it('analytics + budgets heroes are localized, never hardcoded', () => {
+    expect(id.analytics.screen.kicker).toBe('Wawasan');
+    expect(id.analytics.screen.title).toBe('Analisis Keuangan');
+    expect(id.budgets.screen.kicker).toBe('Siklus Aktif');
+    expect(id.budgets.screen.title).toBe('Budget');
+  });
+});
