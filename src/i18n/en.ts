@@ -1,6 +1,6 @@
 /**
  * English dictionary (C6, ADR-0008). Must satisfy `Dictionary` (the shape of
- * `id.ts`) — a missing or mistyped key is a compile error, and the parity
+ * `id.ts`): a missing or mistyped key is a compile error, and the parity
  * test (`__tests__/i18n-dictionary.test.ts`) rejects drift in both
  * directions. `{param}` placeholders mirror the Indonesian templates exactly.
  */
@@ -53,7 +53,7 @@ export const en: Dictionary = {
     checkEmail: {
       title: 'Check your email',
       bodyWithEmail:
-        'We sent a verification link to {email}. Open it to sign in — no need to log in again on this device.',
+        'We sent a verification link to {email}. Open it to sign in, no need to log in again on this device.',
       bodyWithoutEmail:
         "We've sent a verification link to your email. Open it, then sign in with your account.",
       invalidLink:
@@ -78,7 +78,7 @@ export const en: Dictionary = {
       verifying: 'Checking reset link…',
       doneTitle: 'Password changed',
       doneBody:
-        "Your new password is saved. You're signed in — continue to the app.",
+        "Your new password is saved. You're signed in. Continue to the app.",
       openApp: 'Open app',
       formTitle: 'Set a New Password',
       formSubtitle:
@@ -141,7 +141,7 @@ export const en: Dictionary = {
       delete: 'Delete budget',
       deleteTitle: 'Delete this budget?',
       deleteBody:
-        'The running month’s cap is deleted too. Transactions are kept — already-fired alerts stay recorded.',
+        'The running month’s cap is deleted too. Transactions are kept. Already-fired alerts stay recorded.',
       deleting: 'Deleting…',
       saveFailEdit: 'Failed to save changes',
       saveFailCreate: 'Failed to create budget',
@@ -174,7 +174,7 @@ export const en: Dictionary = {
       settings: 'Settings',
       pausedA11y: 'Recurring rules paused',
       pausedTitle: '{count} rules paused',
-      pausedSubtitle: 'Wallet archived — tap to review',
+      pausedSubtitle: 'Wallet archived. Tap to review',
       recurringA11y: 'Manage recurring transactions',
       recurringTitle: 'Recurring transactions',
       recurringSubtitle: 'Salary & bills every month automatically',
@@ -225,7 +225,7 @@ export const en: Dictionary = {
       deleteA11y: 'Delete {name}',
       deleteTitle: 'Delete "{name}"?',
       deleteBody:
-        'Categories with transaction history cannot be deleted — archive them instead.',
+        'Categories with transaction history cannot be deleted. Archive them instead.',
       archiveFail: 'Failed to update archive',
       deleteFail: 'Failed to delete',
     },
@@ -250,7 +250,7 @@ export const en: Dictionary = {
     kicker: 'Shortcuts',
     title: 'Log even faster',
     subtitle:
-      'Pin one of these doors to your phone gesture — the OS catches the tap, the app just opens the right form.',
+      'Pin one of these doors to your phone gesture: the OS catches the tap, the app just opens the right form.',
     expenseTitle: 'Add Expense',
     expenseSubtitle: 'Open the form with the Expense segment selected',
     incomeTitle: 'Add Income',
@@ -258,17 +258,17 @@ export const en: Dictionary = {
     scanTitle: 'Scan receipt',
     scanSubtitle: 'Open the form ready to photograph a receipt',
     guideKicker: 'Set up on your phone',
-    iphoneTitle: 'iPhone — Back Tap',
+    iphoneTitle: 'iPhone: Back Tap',
     iphoneBody:
       'Settings → Accessibility → Touch → Back Tap → Triple Tap → attach the Cashtrix Shortcut.',
-    pixelTitle: 'Pixel — Quick Tap',
+    pixelTitle: 'Pixel: Quick Tap',
     pixelBody:
       'Settings → System → Gestures → Quick Tap → attach the Cashtrix Shortcut.',
-    samsungTitle: 'Samsung — RegiStar',
+    samsungTitle: 'Samsung: RegiStar',
     samsungBody:
       'Good Lock → RegiStar → Back-Tap → attach the Cashtrix Shortcut.',
     gateNote:
-      'Without a session, shortcuts stop at the biometric lock or Login — they never bypass security.',
+      'Without a session, shortcuts stop at the biometric lock or Login and never bypass security.',
   },
   categories: {
     expense: {
@@ -321,7 +321,7 @@ export const en: Dictionary = {
       codeInvalid: 'Code must be 6 digits',
     },
     title: 'Two-step verification',
-    subtitleOn: 'On — authenticator code on every sign-in.',
+    subtitleOn: 'On: authenticator code on every sign-in.',
     subtitleOff: 'Password-only sign-in.',
     toggleA11y: 'Two-step verification',
     unenrollTitle: 'Turn off two-step verification?',
@@ -333,7 +333,7 @@ export const en: Dictionary = {
       title: 'Turn on two-step verification',
       intro:
         'Add this account in your authenticator app (Google Authenticator, 1Password, etc.), then enter its 6-digit code below.',
-      secretLabel: 'Secret key — copy manually if needed',
+      secretLabel: 'Secret key: copy manually if needed',
       openAuth: 'Open authenticator app',
       codeLabel: '6-digit code',
       codePlaceholder: '123 456',
@@ -498,7 +498,7 @@ export const en: Dictionary = {
       scan: 'Auto-scan',
       scanA11y: 'Scan the receipt and fill the form automatically',
       scanning: 'Reading receipt…',
-      scanApplied: 'Auto-filled — check the amount before saving.',
+      scanApplied: 'Auto-filled. Check the amount before saving.',
       scanFail: 'Receipt could not be read. Please scan the receipt again.',
       scanRetake: 'Retake photo',
       scanRetakeA11y: 'Retake the receipt photo to scan again',
@@ -508,7 +508,7 @@ export const en: Dictionary = {
       scanQuota: 'Scan quota used up. Manual entry still works.',
       consentTitle: 'Send the photo for automatic reading?',
       consentBody:
-        'The receipt photo is sent to be read and only fills this form — nothing is saved. You still press Save manually.',
+        'The receipt photo is sent to be read and only fills this form. Nothing is saved. You still press Save manually.',
       consentPersistNote: 'Applies on this device.',
       consentSend: 'Send',
     },
@@ -566,7 +566,7 @@ export const en: Dictionary = {
     },
     placeholder: 'Search notes, categories, wallets…',
     idleHint:
-      'Type to search notes, category names, and wallet names — or pick a type above.',
+      'Type to search notes, category names, and wallet names, or pick a type above.',
     error: 'Search failed',
     noResult: 'No results for "{query}".',
     noKindResults: 'No transactions of this type.',
@@ -579,7 +579,7 @@ export const en: Dictionary = {
     selectToggleA11y: 'Select multiple transactions',
     select: 'Select',
     transferHint: 'Transfers have no category.',
-    kindLocked: 'Selection is locked to {kind} — finish or cancel first.',
+    kindLocked: 'Selection is locked to {kind}. Finish or cancel first.',
     bulkCancelA11y: 'Cancel category change',
     bulkConfirmA11y: 'Change {count} transactions',
     bulkConfirm: 'Change {count} transactions to {name}?',
@@ -615,7 +615,7 @@ export const en: Dictionary = {
       unavailable: 'Summary unavailable.',
       openA11y: '{month} summary, open Analytics',
       title: 'Monthly summary',
-      invite: 'No transactions this month yet — record the first with the + button.',
+      invite: 'No transactions this month yet. Record the first with the + button.',
     },
     loadError: 'Failed to load analytics',
   },
@@ -648,9 +648,9 @@ export const en: Dictionary = {
       retry: 'Try again',
       bannerTitle: '{count} rules paused',
       bannerBody:
-        'Its wallet was archived — unarchive the wallet or pick another one so bills can run again.',
+        'Its wallet was archived. Unarchive the wallet or pick another one so bills can run again.',
       empty:
-        'No rules yet. Create one for a salary or a bill that comes every month — occurrences are born automatically when the app opens.',
+        'No rules yet. Create one for a salary or a bill that comes every month. Occurrences are born automatically when the app opens.',
       add: 'Create rule',
       statusFail: 'Failed to update status',
       deleteFail: 'Failed to delete',
@@ -667,7 +667,7 @@ export const en: Dictionary = {
       editTitle: 'Edit Rule',
       createTitle: 'New Rule',
       kindLocked:
-        'Type is locked — what is already recorded keeps its meaning. Changes only apply to occurrences not yet born.',
+        'Type is locked. What is already recorded keeps its meaning. Changes only apply to occurrences not yet born.',
       amount: 'Amount',
       walletSection: 'Wallet',
       walletEmpty: 'No active wallets. Create one first in the Wallets menu.',
@@ -679,7 +679,7 @@ export const en: Dictionary = {
       startsSection: 'Start',
       startsLoading: 'Loading the current month…',
       startsBumped:
-        'This month’s due already passed — the first occurrence is born next month so no past payment is invented.',
+        'This month’s due already passed. The first occurrence is born next month so no past payment is invented.',
       endsToggle: 'Has an end month',
       endsPrevA11y: 'Previous end month',
       endsNextA11y: 'Next end month',

@@ -2,7 +2,7 @@
 
 How the engineering skills should consume this repo's domain documentation when exploring the codebase.
 
-Layout: **single-context** — one `CONTEXT.md` plus `docs/adr/` at the repo root.
+Layout: **single-context**, one `CONTEXT.md` plus `docs/adr/` at the repo root.
 
 ## Before exploring, read these
 
@@ -14,12 +14,12 @@ If any of these files don't exist, **proceed silently**. Don't flag their absenc
 
 ## Binding documents in this repo
 
-- **`CONTEXT.md`** — glossary. Use these terms; do not drift to the `_Avoid_` list.
-- **`docs/adr/`** — hard-to-reverse decisions (0001 v1.1 scope, 0002 dev-client, 0003 outbox deferred, 0004 transfer single-row, 0005 recurring catch-up, 0006 legal on GitHub Pages).
-- **`PRD.md`** — product decisions, locked decisions §0 (D1–D11), user stories, data model, risks, revisi R1–R6.
-- **`DESIGN.md`** — canonical design system ("Minimalist Obsidian"): tokens, type scale, spacing, components.
-- **`docs/roadmap.md`** — full idea catalogue and release slices (v1.1 / v1.2 / v2.0).
-- **`specs/cashtrix-mvp.md`** — the MVP technical spec published as issue #1.
+- **`CONTEXT.md`**, glossary. Use these terms; do not drift to the `_Avoid_` list.
+- **`docs/adr/`**, hard-to-reverse decisions (0001 v1.1 scope, 0002 dev-client, 0003 outbox deferred, 0004 transfer single-row, 0005 recurring catch-up, 0006 legal on GitHub Pages).
+- **`PRD.md`**, product decisions, locked decisions §0 (D1–D11), user stories, data model, risks, revisi R1–R6.
+- **`DESIGN.md`**, canonical design system ("Minimalist Obsidian"): tokens, type scale, spacing, components.
+- **`docs/roadmap.md`**, full idea catalogue and release slices (v1.1 / v1.2 / v2.0).
+- **`specs/cashtrix-mvp.md`**, the MVP technical spec published as issue #1.
 
 ## File structure
 

@@ -1,4 +1,4 @@
-# Gerbang Rilis — Cashtrix MVP (T11, issue #12)
+# Gerbang Rilis: Cashtrix MVP (T11, issue #12)
 
 Satu perjalanan end-to-end terbukti otomatis berjalan di perangkat, plus
 checklist bahwa yang dikirim sesuai `DESIGN.md` dan siap masuk TestFlight +
@@ -18,7 +18,7 @@ Play Store. Ticket ini adalah frontier terakhir: semua blocker (#7, #8, #9,
 ## 2. Menjalankan Maestro
 
 Prasyarat: [Maestro CLI](https://maestro.mobile.dev) + dev build di
-simulator/emulator (`npx expo run:android` / `npx expo run:ios` — E2E butuh
+simulator/emulator (`npx expo run:android` / `npx expo run:ios`, E2E butuh
 build yang bisa diinstal, bukan Expo Go).
 
 ```sh
@@ -37,12 +37,12 @@ Konvensi selektor (jangan dilanggar saat menambah layar):
   `tab-<route>`) disapa lewat teks / `accessibilityLabel`
   (`tapOn: "Makanan"`, `assertVisible: "Budget Makanan terlampaui"`).
 - `node scripts/verify-t11.mjs --static-only` memverifikasi kontrak ini
-  tanpa device dan tanpa DB — dijalankan CI pada setiap push (lihat §5).
+  tanpa device dan tanpa DB, dijalankan CI pada setiap push (lihat §5).
   Ceknya ketat: prefix kosong dibuang agar tidak lolos vakum, dan ada
   kontrol negatif (id palsu harus gagal).
 
 Akun E2E: `e2e@cashtrix.test` / `Cashtrix123`. V0: akun harus sudah ada dan
-terkonfirmasi (Maestro tidak bisa mengetuk email) — provisi sekali jalan:
+terkonfirmasi (Maestro tidak bisa mengetuk email), provisi sekali jalan:
 `SUPABASE_SERVICE_ROLE_KEY=<key> node scripts/provision-e2e.mjs`
 (ulangi setiap habis cleanup `'%cashtrix.test'`). Flow selalu jalur login;
 register baru mendarat di Check Email by design (diliput Jest gate +
@@ -65,7 +65,7 @@ Wajib muncul ketiganya, sesuai langkah flow:
 | Event | Dipicu oleh |
 |---|---|
 | `screen_view` | tiap tab (auth gate, T10) |
-| `tx_created` `{type, has_note}` | tiap save di add-transaction (tanpa amount/note — PRD §4.4) |
+| `tx_created` `{type, has_note}` | tiap save di add-transaction (tanpa amount/note, PRD §4.4) |
 | `budget_threshold_reached` `{threshold: 100, …}` | transaksi 150rb yang menembus budget Makanan |
 
 ## 4. Checklist visual per layar (AC #3, manual per rilis)
@@ -90,21 +90,21 @@ Stitch hanya referensi **layout**; warna selalu dari token kanonik
 
 `.github/workflows/release-gate.yml` berjalan tiap push/PR ke `main`:
 
-1. `npm run lint` + `npm run typecheck` — 0 error.
-2. `npm run test` — Jest, seluruh suite hijau.
-3. `node scripts/verify-t11.mjs --static-only` — kontrak selektor Maestro.
-4. `expo export --platform android` — bundle check tanpa device.
-5. `verify-t11` penuh — hanya di push ke `main`: membuat satu user uji,
+1. `npm run lint` + `npm run typecheck`, 0 error.
+2. `npm run test`, Jest, seluruh suite hijau.
+3. `node scripts/verify-t11.mjs --static-only`, kontrak selektor Maestro.
+4. `expo export --platform android`, bundle check tanpa device.
+5. `verify-t11` penuh, hanya di push ke `main`: membuat satu user uji,
    me-replay happy path via API, lalu menghapus dirinya via
    `delete-account` (tanpa secret, tanpa residu).
 
 Yang tetap manual (butuh perangkat): run Maestro hijau + checklist §4 +
 sesi crash-free.
 
-## 7. V1.1 — EAS + Sentry + kepatuhan store (issue #30)
+## 7. V1.1: EAS + Sentry + kepatuhan store (issue #30)
 
 Jalur distribusi dan crash yang terukur. `app.json` version `1.1.0`;
-`/ios` dan `/android` tetap gitignored (CNG — verifikasi:
+`/ios` dan `/android` tetap gitignored (CNG, verifikasi:
 `git check-ignore ios android`).
 
 ### 7.1 Profil build (`eas.json`)
@@ -117,41 +117,41 @@ Jalur distribusi dan crash yang terukur. `app.json` version `1.1.0`;
 
 Dev client gratis tanpa kuota EAS: `npx expo run:ios` / `npx expo run:android`
 (prebuild lokal). EAS Free: 15 build iOS + 15 Android/bulan. Kerja JS harian
-tetap boleh Expo Go — tanpa DSN (lihat §7.2) app memakai buffer lokal T10.
+tetap boleh Expo Go, tanpa DSN (lihat §7.2) app memakai buffer lokal T10.
 
 ### 7.2 Sentry via `configureTransport`
 
-- Modul: `src/features/observability/sentry.ts` — `createSentryTransport(client)`
+- Modul: `src/features/observability/sentry.ts`, `createSentryTransport(client)`
   di belakang seam `configureTransport` yang sudah ada; `app/_layout.tsx`
   memanggil `initSentry()` sebelum `initObservability()`.
 - Analytics (`screen_view`, `tx_created`, `budget_threshold_reached`) dikirim
   sebagai Sentry **breadcrumbs** (menempel di laporan crash berikutnya), bukan
-  event tersendiri — tanpa biaya kuota.
+  event tersendiri, tanpa biaya kuota.
 - Jaminan scrub (PRD §4.4) tiga lapis: builder domain hanya membawa fakta
   kasar → `trackEvent`/`captureError` scrub defensif → transport scrub ulang
   + `beforeSend`/`beforeBreadcrumb` untuk crash native yang mem-bypass keduanya.
-- Test: `__tests__/observability-sentry-transport.test.ts` — event berisi
+- Test: `__tests__/observability-sentry-transport.test.ts`, event berisi
   `amount`/`note` yang diselundupkan tiba di Sentry sebagai `[redacted]`;
   `initSentry` tanpa DSN = no-op (buffer lokal tetap).
 - DSN (`EXPO_PUBLIC_SENTRY_DSN`): kosong di `.env` untuk Expo Go harian; diisi
   via `.env` untuk dev-client lokal, via EAS secret untuk remote build:
   `eas env:create --name EXPO_PUBLIC_SENTRY_DSN --value <dsn> --visibility secret --scope project`.
 
-### 7.3 Data Safety (Play) — draf jawaban, konfirmasi saat submit
+### 7.3 Data Safety (Play): draf jawaban, konfirmasi saat submit
 
 | Pertanyaan | Jawaban draf |
 |---|---|
 | Data dikumpulkan | Email (login), info keuangan yang diketik user (transaksi, budget), log crash |
-| Dibagikan ke pihak ketiga | Tidak (Supabase = prosesor penyimpanan, Sentry = prosesor crash — bukan bagi-data) |
+| Dibagikan ke pihak ketiga | Tidak (Supabase = prosesor penyimpanan, Sentry = prosesor crash, bukan bagi-data) |
 | Iklan / penjualan data | Tidak ada iklan, tidak ada penjualan |
 | Enkripsi transit | Ya (HTTPS/TLS ke Supabase + Sentry) |
 | Penghapusan akun | Ya, in-app (`delete-account` → cascade) |
 | Target anak | Tidak |
 
-### 7.4 Privacy Manifest (Apple) — draf, konfirmasi saat submit
+### 7.4 Privacy Manifest (Apple): draf, konfirmasi saat submit
 
 - `NSPrivacyTracking` = **false**; tidak ada domain tracking. Endpoint yang
-  dihubungi hanya Supabase (fungsionalitas app) dan Sentry (crash) —
+  dihubungi hanya Supabase (fungsionalitas app) dan Sentry (crash),
   keduanya untuk tujuan app, bukan pelacakan lintas-app.
 - Required-reason API: yang dipakai tidak langsung oleh kode app melainkan
   lewat Expo SDK/AsyncStorage (`UserDefaults`, file timestamps). Manifest
@@ -161,7 +161,7 @@ tetap boleh Expo Go — tanpa DSN (lihat §7.2) app memakai buffer lokal T10.
 
 ### 7.5 Checklist submit (diisi saat V6)
 
-- [x] `eas init` — `extra.eas.projectId` terisi (`5f8b79b8-2bb3-4fe4-bad8-a970ee18283e`, repo sudah ditautkan)
+- [x] `eas init`, `extra.eas.projectId` terisi (`5f8b79b8-2bb3-4fe4-bad8-a970ee18283e`, repo sudah ditautkan)
 - [ ] Secret `EXPO_PUBLIC_SENTRY_DSN` (scope project) + `EXPO_PUBLIC_SUPABASE_ANON_KEY` untuk remote build
 - [ ] Crash-free rate terpantau di dashboard Sentry pasca-preview
 - [ ] §7.3 + §7.4 disalin ke listing Play / App Store Connect apa adanya
@@ -169,8 +169,8 @@ tetap boleh Expo Go — tanpa DSN (lihat §7.2) app memakai buffer lokal T10.
 ## 6. Sebelum naik ke TestFlight / Play Store
 
 - [ ] `auth.email.enable_confirmations` dikembalikan ke konfirmasi manual
-  (PRD §6.1 R2 — hosted masih auto-confirm untuk dev).
-- [ ] Jangan `supabase config push` dari repo root (AGENTS.md — timpa
+  (PRD §6.1 R2, hosted masih auto-confirm untuk dev).
+- [ ] Jangan `supabase config push` dari repo root (AGENTS.md, timpa
   `site_url`/OTP/MFA/Twilio); pakai workdir minimal per properti.
 - [ ] Akun uji `e2e@` / `t11-verify-` dibersihkan:
   `delete from auth.users where email like '%cashtrix.test';`
@@ -199,7 +199,7 @@ semua bukti di bawah terlampir; #1 tidak disentuh.
 - **Happy path +3 babak** (`happy-path.yaml`): Tx1 men-tap kind eksplisit
   (`type-option-expense`) agar re-run tahan terhadap `lastType` yang
   tertinggal; Transfer memakai default deterministik (sumber = Cash
-  last-used, tujuan = satu-satunya dompet lain) tanpa tap nama dompet —
+  last-used, tujuan = satu-satunya dompet lain) tanpa tap nama dompet,
   nama dompet dinamis per akun dan muncul dua kali di layar Transfer
   (daftar sumber + tujuan); Recurring memakai due `recurring-due-1`
   (tidak pernah future) + tap teks `Bank` (muncul tepat sekali di layar
@@ -207,21 +207,21 @@ semua bukti di bawah terlampir; #1 tidak disentuh.
   menghapus baris Makanan teratas lalu `Urungkan` via snackbar.
   Bukti API per langkah: `verify-v2/v3/v4` (CI `live`).
 - **Undo bisa dijangkau dari UI** (`app/add-transaction.tsx`): hapus dari
-  form edit tidak lagi `dismissUndo()` — itu membuat snackbar V4 tidak
+  form edit tidak lagi `dismissUndo()`, itu membuat snackbar V4 tidak
   pernah tampil dari satu-satunya jalur hapus di app. Sheet konfirmasi
   tetap mencegah salah tekan; snackbar menampung sesal sesudahnya.
-  Posisi: di atas floating nav (`layout.navClearance + spacing.xl` —
+  Posisi: di atas floating nav (`layout.navClearance + spacing.xl`,
   `bottom: spacing.xl` menaruhnya di zona yang ditimpa tab bar:
   state benar, 0 piksel terlihat). Durasi 10 detik (permintaan pemilik).
 - **pgTAP tahan data riil** (`09_transactions.sql`): count pra-purge dan
   nilai balik `purge_deleted_transactions()` di-scope ke fixture alice /
-  dilonggarkan ke `>= 1` — DB hosted kini menampung soft-delete user riil
+  dilonggarkan ke `>= 1`, DB hosted kini menampung soft-delete user riil
   dan count global goyah karenanya. Konvensi baru: assertion agregat
   sebagai `postgres` wajib ter-scope ke UUID fixture (lih. pelajaran
   T4/T5 di AGENTS.md).
 - **Kontrak statis +2 suffix** (`verify-t11.mjs`): `-confirm`/`-cancel`
   komposisi runtime `DeleteConfirmSheet`, sejajar aturan `-action` yang
-  sudah ada — base (`delete-confirm`) tetap statis.
+  sudah ada, base (`delete-confirm`) tetap statis.
 - **CI `live` = matriks penuh** (`.github/workflows/release-gate.yml`):
   `verify-t5/t6/t7/t8/t9/v2-transfer/v3-recurring/v4/t11` berurutan,
   tiap skrip self-cleanup (tanpa residu, tanpa secret tambahan selain dua
@@ -250,7 +250,7 @@ semua bukti di bawah terlampir; #1 tidak disentuh.
 
 ### 8.4 Tag
 
-- `v1.0.0` mundur di commit rilis MVP (`492a117` — README MVP v1.0):
+- `v1.0.0` mundur di commit rilis MVP (`492a117`, README MVP v1.0):
   `git tag -a v1.0.0 492a117 -m "Cashtrix v1.0.0 (MVP internal)"`.
 - `v1.1.0` di commit gerbang ini (HEAD setelah merge PR V6):
   `git tag -a v1.1.0 <sha> -m "Cashtrix v1.1.0 (rilis store)"`.

@@ -1,13 +1,13 @@
-# Cashtrix — Design System
+# Cashtrix: Design System
 
 **Name:** Obsidian Luxury (Minimalist Obsidian)
 **Source:** Stitch project `Cashtrix` (`projects/16569655893689994`), design system asset `assets/4b61549b44c64e5f9f2b2ef2437c18dd` v1
 **Mode:** Dark only · Mobile-first (390px canvas)
-**Style:** Minimalism with Luminous Glass Accents — discreet, private-wealth aesthetic. Deep obsidian depths, tactile card surfaces, subtle champagne-gold glows, disciplined alignment. No consumer fintech gimmicks; red is reserved for expense amounts only (never destructive actions).
+**Style:** Minimalism with Luminous Glass Accents, discreet, private-wealth aesthetic. Deep obsidian depths, tactile card surfaces, subtle champagne-gold glows, disciplined alignment. No consumer fintech gimmicks; red is reserved for expense amounts only (never destructive actions).
 
 ---
 
-## 1. Color Palette — Minimalist Obsidian (Canonical)
+## 1. Color Palette: Minimalist Obsidian (Canonical)
 
 These are the source-of-truth tokens. All UI must reference them.
 
@@ -16,29 +16,29 @@ These are the source-of-truth tokens. All UI must reference them.
 | Token | Value | Usage |
 |---|---|---|
 | `background` | `#0A0A0A` | Pure black canvas. Full app background. Zero light bleed on OLED. |
-| `surface-card` | `#1C1C1E` | Layer 1 — primary cards, summary modules, bottom sheets, nav bar (75% alpha + blur). |
-| `surface-elevated` | `#2C2C2E` | Layer 2 — interactive sub-cards, inputs, segmented wells, icon avatars, active chips. |
+| `surface-card` | `#1C1C1E` | Layer 1, primary cards, summary modules, bottom sheets, nav bar (75% alpha + blur). |
+| `surface-elevated` | `#2C2C2E` | Layer 2, interactive sub-cards, inputs, segmented wells, icon avatars, active chips. |
 | `border` | `#2C2C2E` | Hairline 1px dividers and card outlines (Layer 1 border = this color). |
 | `border-strong` | `#3A3A3C` | Hairline borders on Layer 2 elements (modals, inputs, active segments). |
 | `accent` | `#D4AF37` | Champagne gold. **Reserved:** primary CTAs, net values, active nav/segment states, key data highlights, progress fills, soft glows. |
 | `accent-soft` | `#F3E5AB` | Secondary stop in gold gradients (progress fill end, hover sheen). |
 | `gain` | `#30D158` | Income green. Income amounts only. |
-| `loss` | `#FF6B62` | Expense red. Expense amounts only — never for destructive actions (those stay `error`). |
+| `loss` | `#FF6B62` | Expense red. Expense amounts only, never for destructive actions (those stay `error`). |
 | `text-primary` | `#E5E5E5` | Muted warm white. Headings, body copy, transaction names, combined total. |
 | `text-secondary` | `#8E8E93` | Cool grey. Timestamps, metadata, inactive labels, disabled states. |
 | `text-on-accent` | `#0A0A0A` | Obsidian text on gold fills (primary buttons). |
 
 ### Semantic rules
 
-- **Income** = `#30D158` (green, `currency-md`, no prefix — the colour alone distinguishes it).
-- **Expense** = `#FF6B62` (red) with a leading `-` marking the direction (amended post-V5: previously muted white, never red — overturned per owner review of the preview build).
+- **Income** = `#30D158` (green, `currency-md`, no prefix, the colour alone distinguishes it).
+- **Expense** = `#FF6B62` (red) with a leading `-` marking the direction (amended post-V5: previously muted white, never red, overturned per owner review of the preview build).
 - **Net** (income − expense) = `#D4AF37` (gold, `currency-md`).
 - **Combined total** (Dashboard hero) stays `#E5E5E5` muted white.
-- **Error** = `#FFB4AB` on `#93000A` container (reserved for destructive actions only — never for expense amounts).
+- **Error** = `#FFB4AB` on `#93000A` container (reserved for destructive actions only, never for expense amounts).
 - Gold is never used for: page backgrounds, body text, expense amounts, or large flat fills >1 card per viewport.
 - Highlighted card borders: gradient `#D4AF37` (top-left) → `#2C2C2E` (bottom-right), or `#D4AF37` at 15% opacity.
 
-### Stitch / Material-3 mapping — drift, not the source of truth
+### Stitch / Material-3 mapping: drift, not the source of truth
 
 > **DECISION (locked):** The canonical `#0A0A0A` canvas and `#1C1C1E` card are the approved palette. Stitch **cannot** store them, because Stitch derives all Material-3 tonal tokens server-side from a seed color and only accepts seed overrides (`overridePrimaryColor` / `Secondary` / `Tertiary` / `Neutral`). Writing `namedColors` directly is rejected by the API. As a result every Stitch-rendered screen contains derived greys, not the canonical hexes.
 >
@@ -48,10 +48,10 @@ These are the source-of-truth tokens. All UI must reference them.
 |---|---|---|
 | `background` | `background` / `surface` / `surface-dim` | `#131313` |
 | `surface-card` | `surface-container-low` | `#1C1B1B` |
-| — (intermediate) | `surface-container` | `#201F1F` |
+|, (intermediate) | `surface-container` | `#201F1F` |
 | `surface-elevated` | `surface-container-high` | `#2A2A2A` |
-| — (strongest) | `surface-container-highest` / `surface-variant` | `#353534` |
-| — (deepest, insets) | `surface-container-lowest` | `#0E0E0E` |
+|, (strongest) | `surface-container-highest` / `surface-variant` | `#353534` |
+|, (deepest, insets) | `surface-container-lowest` | `#0E0E0E` |
 | `accent` | `primary-container` | `#D4AF37` ✓ exact |
 | `accent-soft` | `primary` / `primary-fixed` / `primary-fixed-dim` | `#F2CA50` / `#FFE088` / `#E9C349` |
 | `text-primary` | `on-surface` / `on-background` | `#E5E2E1` |
@@ -62,14 +62,14 @@ Frequency in generated screens confirms the hierarchy (canvas `#131313` 28×, bo
 
 **Known font drift:** the Stitch design system (`assets/4b61549b44c64e5f9f2b2ef2437c18dd` v2) currently declares `currency-display` / `currency-md` / `currency-sm` in **Public Sans**, because the API rejected `JETBRAINS_MONO` for the label slot during the canonical-color update. This is accepted drift: **JetBrains Mono remains the approved currency typeface here**, and must be restored during implementation. Do not follow Stitch on this point.
 
-**What was applied to Stitch:** seed overrides only — `overrideNeutralColor: #0a0a0a`, `overrideSecondaryColor: #1c1c1e`, `overridePrimaryColor: #d4af37`, `overrideTertiaryColor: #2c2c2e`, plus `colorMode: DARK`, `roundness: ROUND_FULL`, `colorVariant: FIDELITY`. Existing screens were intentionally left untouched.
+**What was applied to Stitch:** seed overrides only, `overrideNeutralColor: #0a0a0a`, `overrideSecondaryColor: #1c1c1e`, `overridePrimaryColor: #d4af37`, `overrideTertiaryColor: #2c2c2e`, plus `colorMode: DARK`, `roundness: ROUND_FULL`, `colorVariant: FIDELITY`. Existing screens were intentionally left untouched.
 
 ---
 
 ## 2. Typography
 
-- **Inter** — all structural text (headings, body, labels, inputs).
-- **JetBrains Mono** — monetary values only (fixed-width prevents jitter during live updates; institutional precision).
+- **Inter**, all structural text (headings, body, labels, inputs).
+- **JetBrains Mono**, monetary values only (fixed-width prevents jitter during live updates; institutional precision).
 
 ### Type scale
 
@@ -90,7 +90,7 @@ Frequency in generated screens confirms the hierarchy (canvas `#131313` 28×, bo
 
 ### Observed usage (generated screens)
 
-`body-sm` (56×) and `body-md` (42×) dominate list-heavy screens; `label-uppercase` (40×) is the primary structural separator — sections are divided by tracked uppercase kickers, not heavy divider lines. `currency-md` (22×) for all row amounts. `display-lg-mobile` for hero balances only.
+`body-sm` (56×) and `body-md` (42×) dominate list-heavy screens; `label-uppercase` (40×) is the primary structural separator, sections are divided by tracked uppercase kickers, not heavy divider lines. `currency-md` (22×) for all row amounts. `display-lg-mobile` for hero balances only.
 
 ---
 
@@ -152,7 +152,7 @@ Depth = tonal layering + hairline edges + diffuse gold glow (never heavy drop sh
 | `rounded-2xl` | 20px | Standard cards (30× in screens) |
 | `rounded-lg` | 24px | Large cards, sheets (27×) |
 | `rounded-3xl` | 32px | Hero cards (6×) |
-| `rounded-full` | 9999px | Badges, chips, pills, progress, avatars (142× — dominant) |
+| `rounded-full` | 9999px | Badges, chips, pills, progress, avatars (142×, dominant) |
 
 ---
 
@@ -176,7 +176,7 @@ Depth = tonal layering + hairline edges + diffuse gold glow (never heavy drop sh
 - 16px vertical padding, 1px `#2C2C2E` divider.
 - Left: circular `#2C2C2E` icon well (Material Symbols Outlined, 20px, monochrome or gold).
 - Center: name `body-md` `#E5E5E5` + timestamp `body-sm` `#8E8E93`.
-- Right: `currency-md` — income `#30D158`, expense `#FF6B62`.
+- Right: `currency-md`, income `#30D158`, expense `#FF6B62`.
 
 ### Chips / segmented control
 - Well: `#1C1C1E`, 4px inner padding, `rounded-full`.
@@ -210,7 +210,7 @@ Depth = tonal layering + hairline edges + diffuse gold glow (never heavy drop sh
 
 ## 7. Golden Rules
 
-1. Gold is a scalpel, not a paintbrush — CTA, income, active state, one highlight per viewport.
+1. Gold is a scalpel, not a paintbrush, CTA, income, active state, one highlight per viewport.
 2. Expenses stay in `#E5E5E5`; red only for destructive confirmation.
 3. Depth = tone + hairline + glow; no drop-shadow stacking.
 4. Numbers in JetBrains Mono, everything else Inter.
@@ -221,20 +221,20 @@ Depth = tonal layering + hairline edges + diffuse gold glow (never heavy drop sh
 
 ## 8. Motion (Preloader + skeleton)
 
-Motion is reserved for loading feedback — no decorative animation elsewhere.
+Motion is reserved for loading feedback, no decorative animation elsewhere.
 
 ### Skeleton pulse (shimmer)
 
-- **Fill:** `surface-elevated` `#2C2C2E` blocks — the existing L2 token, never gold
+- **Fill:** `surface-elevated` `#2C2C2E` blocks, the existing L2 token, never gold
   (gold is a scalpel, golden-rule 1) and never a new hex.
 - **Shape:** mirrors the element it stands in for (card → `rounded-2xl` block,
   row → 40px circle + two text lines + amount block, hero → `currency-display`
-  bar). No trailing sweep — a single shared opacity pulse keeps the View-only
+  bar). No trailing sweep, a single shared opacity pulse keeps the View-only
   rule (T6 donut, T7 ring, V5 calendar).
 - **Pulse:** opacity `0.5 ↔ 1.0`, 700ms per leg, ease-in-out, infinite while
   the surface is loading. One animation per group, so every block in a list
   pulses in unison.
-- **Swap:** content replaces the skeleton the moment data lands — no cross-fade,
+- **Swap:** content replaces the skeleton the moment data lands, no cross-fade,
   no minimum display time (it exists only to cover real latency, never to add
   perceived latency).
 - **Reduce-motion (OS setting):** the pulse never starts; blocks render static
@@ -247,7 +247,7 @@ Motion is reserved for loading feedback — no decorative animation elsewhere.
   visible transition is splash → skeleton → content, never splash → blank
   canvas → content.
 - **Cold-open fade:** the native splash hides with a hard cut (the OS draws
-  it — it cannot be animated), so the first JS frame eases the root viewport
+  it, it cannot be animated), so the first JS frame eases the root viewport
   in once per process launch: opacity 0 → 1 plus a slight settle-up scale
   0.97 → 1, 400ms. Content is already mounted, so this masks the cut with
   zero added latency. Skipped when the OS reduce-motion setting is on.

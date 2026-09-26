@@ -1,4 +1,4 @@
-# Spec — Cashtrix v1.1
+# Spec: Cashtrix v1.1
 
 Sumber: grill 2026-09-19, `PRD.md` R6–R8, `CONTEXT.md`, `docs/roadmap.md`, ADR-0001..0006, `DESIGN.md`.
 Istilah mengikuti `CONTEXT.md`. Jangan drift ke daftar `_Avoid_`.
@@ -7,15 +7,15 @@ v1.0 adalah pre-release internal. v1.1 adalah irisan yang bisa naik store, bukan
 
 ## Problem Statement
 
-Evelyn sudah bisa mencatat income/expense, melihat Saldo gabungan, dan memasang Budget — tapi ia tidak bisa memindahkan uang antar Wallet tanpa mengarang sepasang income+expense yang merusak donut dan Spent. Tagihan dan gaji bulanan harus diketik ulang setiap tanggal. Salah hapus tidak bisa diurungkan dari UI meskipun RPC pulih sudah ada. Wallet lama tidak bisa disembunyikan tanpa menghapus riwayat. Dan build ini tidak bisa masuk store: tidak ada reset password, tidak ada URL privasi, email masih auto-confirm, crash-free rate tidak terukur, tidak ada jalur distribusi.
+Evelyn sudah bisa mencatat income/expense, melihat Saldo gabungan, dan memasang Budget, tapi ia tidak bisa memindahkan uang antar Wallet tanpa mengarang sepasang income+expense yang merusak donut dan Spent. Tagihan dan gaji bulanan harus diketik ulang setiap tanggal. Salah hapus tidak bisa diurungkan dari UI meskipun RPC pulih sudah ada. Wallet lama tidak bisa disembunyikan tanpa menghapus riwayat. Dan build ini tidak bisa masuk store: tidak ada reset password, tidak ada URL privasi, email masih auto-confirm, crash-free rate tidak terukur, tidak ada jalur distribusi.
 
 ## Solution
 
-Rilis v1.1: gerbang auth yang jujur (konfirmasi email + reset password + privasi EN publik), jalur build (EAS + Sentry), Transfer satu baris, Recurring rule bulanan yang materialisasi lewat Catch-up, arsip Wallet, undo hapus lewat snackbar, kalender penuh di form Add. Offline outbox, biometric, cari, CSV import, i18n, 2FA — bukan rilis ini.
+Rilis v1.1: gerbang auth yang jujur (konfirmasi email + reset password + privasi EN publik), jalur build (EAS + Sentry), Transfer satu baris, Recurring rule bulanan yang materialisasi lewat Catch-up, arsip Wallet, undo hapus lewat snackbar, kalender penuh di form Add. Offline outbox, biometric, cari, CSV import, i18n, 2FA, bukan rilis ini.
 
 ## User Stories
 
-### V0 — Pra-rilis auth & legal
+### V0: Pra-rilis auth & legal
 
 1. Sebagai pengguna baru, saya ingin email saya dikonfirmasi sebelum masuk tabs, agar akun benar-benar milik saya.
 2. Sebagai pengguna yang baru daftar, saya ingin layar "Cek email" dengan tombol kirim ulang, agar tidak terjebak jika email pertama hilang.
@@ -25,7 +25,7 @@ Rilis v1.1: gerbang auth yang jujur (konfirmasi email + reset password + privasi
 6. Sebagai reviewer store, saya ingin URL Publik Kebijakan Privasi dan Ketentuan (EN) yang sama dengan yang dibuka in-app, agar review tidak ditolak.
 7. Sebagai pengguna di Login/Register/Profile, saya ingin tautan Privasi dan Ketentuan, agar syarat terlihat sebelum data diisi.
 
-### V1 — Distribusi & crash
+### V1: Distribusi & crash
 
 8. Sebagai pengembang, saya ingin development client terpasang di simulator/perangkat, agar modul native (Sentry) bisa diuji tanpa Expo Go.
 9. Sebagai pemilik aplikasi, saya ingin crash terkirim ke Sentry dengan field `amount`/`note` tetap di-scrub, agar KPI crash-free terukur tanpa bocor data finansial.
@@ -113,9 +113,9 @@ Rilis v1.1: gerbang auth yang jujur (konfirmasi email + reset password + privasi
 - Idempotency key tetap satu per sesi form.
 
 **Recurring (ADR-0005):**
-- Tabel `recurring_rules` (nama mengikuti glosarium): User, kind income|expense, amount, Wallet, Category, Due day (1–28 atau last), `starts_on` date hari-1, `ends_on` date hari-1 nullable, status aktif|jeda. Unique masuk akal per User (bukan wajib unik per Category — dua tagihan Category sama boleh).
+- Tabel `recurring_rules` (nama mengikuti glosarium): User, kind income|expense, amount, Wallet, Category, Due day (1–28 atau last), `starts_on` date hari-1, `ends_on` date hari-1 nullable, status aktif|jeda. Unique masuk akal per User (bukan wajib unik per Category, dua tagihan Category sama boleh).
 - Maks 20 Recurring rule **aktif** per User (Jeda tidak dihitung). Constraint + validasi client.
-- `transactions.recurring_rule_id` nullable, FK `ON DELETE SET NULL`. Unique `(recurring_rule_id, occurred_on)` termasuk baris Soft-delete (`occurred_on` = tanggal jatuh tempo di tz Profile, bukan timestamp penuh — simpan sebagai `date` generated/kolom agar unik tidak pecah karena jam).
+- `transactions.recurring_rule_id` nullable, FK `ON DELETE SET NULL`. Unique `(recurring_rule_id, occurred_on)` termasuk baris Soft-delete (`occurred_on` = tanggal jatuh tempo di tz Profile, bukan timestamp penuh, simpan sebagai `date` generated/kolom agar unik tidak pecah karena jam).
 - Catch-up = satu RPC `security invoker`, dipanggil saat app buka/foreground. Menulis Occurrence due ≤ hari ini, ≥ `starts_on`, ≤ `ends_on` jika ada, rule aktif (bukan Jeda), belum ada baris (termasuk Soft-delete), plafon 12 per rule per panggilan. `occurred_at` = due date di tz Profile (bukan now()).
 - Bulan `starts_on` + Due day sudah lewat → skip bulan itu.
 - Edit Recurring rule (amount/Wallet/Category/Due day/`ends_on`) tidak menulis ulang Occurrence yang sudah lahir.
@@ -139,7 +139,7 @@ Rilis v1.1: gerbang auth yang jujur (konfirmasi email + reset password + privasi
 
 **Tiga seam (jangan tambah):**
 
-1. **Supabase data API (views/RPC/RLS)** — seam utama, pgTAP + skrip `verify-*`:
+1. **Supabase data API (views/RPC/RLS)**, seam utama, pgTAP + skrip `verify-*`:
    - Transfer: Saldo sumber/tujuan/gabungan; analytics/Spent tidak bergerak; `category_id` null enforced; sumber ≠ tujuan; reassign yang collapse ditolak; RLS User A tidak melihat Transfer User B; `counterparty_wallet_id` Wallet orang lain ditolak.
    - Catch-up: lahir di due date; skip bulan pertama jika Due day lewat; plafon 12; unique termasuk Soft-delete; Jeda tidak lahir; hapus rule SET NULL; Archive Wallet → rule Jeda; Occurrences masuk Spent dan bisa tembus Alert.
    - Recurring rule: maks 20 aktif; income/expense saja; `starts_on`/`ends_on` hari-1.
@@ -152,9 +152,9 @@ Rilis v1.1: gerbang auth yang jujur (konfirmasi email + reset password + privasi
 
 ## Out of Scope
 
-- Offline outbox + read cache (`expo-sqlite`) — v2.0 (ADR-0003).
-- Biometric app lock — v1.2 (OPEN-3).
-- Cari/filter riwayat, bulk edit kategori, inbox notifikasi, CSV import, i18n ID/EN, 2FA, E2E Maestro di CI — v1.2.
+- Offline outbox + read cache (`expo-sqlite`), v2.0 (ADR-0003).
+- Biometric app lock, v1.2 (OPEN-3).
+- Cari/filter riwayat, bulk edit kategori, inbox notifikasi, CSV import, i18n ID/EN, 2FA, E2E Maestro di CI, v1.2.
 - Recurring Transfer, frekuensi harian/mingguan/tahunan, clamp tanggal 29–31.
 - Server-push, Recurring sebagai pengingat-saja.
 - Bank sync, multi-currency + kurs, smart insight, household budget, widget.

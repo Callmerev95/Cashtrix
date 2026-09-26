@@ -1,5 +1,5 @@
 /**
- * System-category display names (C6, ADR-0008) — the Jest seam.
+ * System-category display names (C6, ADR-0008): the Jest seam.
  *
  * The 12 system categories live as Indonesian rows in Postgres (shared
  * across users, never per-user copies). They are *data*, so they are not

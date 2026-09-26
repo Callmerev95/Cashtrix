@@ -1,15 +1,15 @@
 /**
  * Receipt data access (S2, ADR-0009).
  *
- * Opsi A: a photo is uploaded the moment it is taken — a row with
- * `transaction_id NULL` (a legal pre-save state) — then linked to the
+ * Opsi A: a photo is uploaded the moment it is taken (a row with
+ * `transaction_id NULL`, a legal pre-save state), then linked to the
  * transaction when the save commits. Reads/writes go through
  * `transaction_receipts` with RLS as the guard; objects live in the private
  * `receipts` bucket under `{userId}/{receiptId}.jpg`.
  *
  * Deletion discipline (verified against hosted `storage.protect_delete`,
  * 2026-09-25): a direct SQL DELETE on `storage.objects` is rejected AND
- * would orphan the backend file — objects are only ever removed through the
+ * would orphan the backend file: objects are only ever removed through the
  * Storage API. So every removal is object-first, row-second: a failed object
  * removal keeps a repairable row (the 30-day sweep retries it), never a
  * permanently orphaned object.
@@ -101,7 +101,7 @@ export async function uploadReceiptPhoto(input: {
     { compress: 0.8, format: SaveFormat.JPEG },
   );
 
-  // Native file read — never `fetch(file://)` (pelajaran avatar T8: React
+  // Native file read, never `fetch(file://)` (pelajaran avatar T8: React
   // Native fetch only speaks http(s), producing a silent empty body).
   const buffer = await new File(rendered.uri).arrayBuffer();
   const checked = validateReceiptFile(
@@ -138,7 +138,7 @@ export async function uploadReceiptPhoto(input: {
 
 /**
  * Links pre-save attachments to the committed transaction (the save path
- * calls this fire-and-forget, Opsi B). Returns the linked count — rows
+ * calls this fire-and-forget, Opsi B). Returns the linked count: rows
  * owned by someone else are invisible to RLS and simply not counted.
  */
 export async function linkReceiptsToTransaction(input: {
@@ -170,10 +170,10 @@ export async function listReceiptsForTransaction(input: {
     .order('created_at', { ascending: false });
   if (error) throw error;
   const rows = (data ?? []) as ReceiptRow[];
-  // Per-row tolerant (temuan device S3): one dead object (orphan row — the
+  // Per-row tolerant (temuan device S3): one dead object (orphan row, as the
   // sweep removes object-then-row, so a crash between the two leaves one)
   // must not blank the whole thumbnail list, and the row must survive so
-  // retry/retake still work — scanning it yields a clean `{ ok: false }`.
+  // retry/retake still work, as scanning it yields a clean `{ ok: false }`.
   // `Promise.all` without this would drop every thumbnail on one failure.
   const settled = await Promise.all(
     rows.map(async (row) => {
@@ -190,7 +190,7 @@ export async function listReceiptsForTransaction(input: {
 /**
  * Removes one attachment (pre-save cancel): object first, row second (see
  * module header). The row-delete error is thrown so the form can surface it;
- * an object-removal failure is swallowed — the row survives and the sweep
+ * an object-removal failure is swallowed: the row survives and the sweep
  * retries it at expiry.
  */
 export async function deleteReceiptAttachment(input: {
@@ -210,7 +210,7 @@ export async function deleteReceiptAttachment(input: {
 /**
  * Foreground expiry sweep (called on app open + foreground, next to
  * `runCatchUp`): lists the caller's rows past retention, removes their
- * objects via the Storage API, then deletes the rows. Per-row tolerant —
+ * objects via the Storage API, then deletes the rows. Per-row tolerant:
  * a dead path never blocks its row's deletion.
  *
  * Best-effort by contract: the caller swallows all failures (a sweep must

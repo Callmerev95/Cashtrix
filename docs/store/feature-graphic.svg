@@ -14,6 +14,6 @@
   <image xlink:href="../../assets/icon.png" x="96" y="130" width="240" height="240"/>
   <text x="392" y="222" font-family="-apple-system, Inter, Helvetica, Arial, sans-serif" font-size="72" font-weight="600" letter-spacing="-1.5" fill="#E5E5E5">Cashtrix</text>
   <rect x="394" y="248" width="72" height="4" rx="2" fill="url(#gold)"/>
-  <text x="392" y="296" font-family="-apple-system, Inter, Helvetica, Arial, sans-serif" font-size="30" font-weight="400" fill="#8E8E93">Catat Keuangan — cepat dan jujur.</text>
+  <text x="392" y="296" font-family="-apple-system, Inter, Helvetica, Arial, sans-serif" font-size="30" font-weight="400" fill="#8E8E93">Catat Keuangan: cepat dan privat.</text>
   <text x="392" y="340" font-family="-apple-system, Inter, Helvetica, Arial, sans-serif" font-size="30" font-weight="400" fill="#D4AF37">Tanpa iklan, tanpa penjualan data.</text>
 </svg>

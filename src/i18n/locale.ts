@@ -1,5 +1,5 @@
 /**
- * Locale resolution (C6, ADR-0008) — pure, the Jest seam.
+ * Locale resolution (C6, ADR-0008): pure, the Jest seam.
  *
  * The UI language follows the OS locale with Indonesian fallback: anything
  * that is not recognisably English resolves to `'id'`, so a missing or

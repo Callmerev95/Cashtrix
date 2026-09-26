@@ -1,5 +1,5 @@
 /**
- * Offline banner (D4) — a thin in-flow strip above the tab content, never an
+ * Offline banner (D4): a thin in-flow strip above the tab content, never an
  * overlay (it pushes content down so headers are never covered). Rendered
  * once in the tab layout; `null` while online.
  */

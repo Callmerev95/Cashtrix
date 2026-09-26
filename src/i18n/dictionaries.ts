@@ -1,6 +1,6 @@
 /**
- * Language-keyed dictionary access (C6). Leaf module — no React, no native
- * bridge — so pure domain modules (`validation.ts`, `domain.ts`) can render
+ * Language-keyed dictionary access (C6). Leaf module: no React, no native
+ * bridge, so pure domain modules (`validation.ts`, `domain.ts`) can render
  * the central dictionary without pulling the hook layer.
  */
 import { en } from './en';

@@ -1,4 +1,4 @@
-# Roadmap Cashtrix — katalog ide lengkap
+# Roadmap Cashtrix: katalog ide lengkap
 
 Dokumen ini menampung **semua** kandidat pengembangan beserta alasan, bukti kondisi
 kode saat ini (`v1.0`, commit `492a117`), dan urutan usul. `PRD.md` tetap sumber
@@ -103,10 +103,10 @@ Prinsip yang dipakai:
 
 ## 3. Rencana rilis
 
-### V0 — Pra-rilis (dikerjakan paling depan)
+### V0: Pra-rilis (dikerjakan paling depan)
 
 Menjalankan `docs/release-gate.md` §6 + gerbang keras C1/C3/C4/C5/C7.
-Dikerjakan lebih dulu karena **mengubah perilaku auth** — semua skrip
+Dikerjakan lebih dulu karena **mengubah perilaku auth**, semua skrip
 `scripts/verify-*.mjs` dan `.maestro/flows/*.yaml` ikut berubah, jadi lebih murah
 sekali jalan.
 
@@ -119,21 +119,21 @@ sekali jalan.
 - Bersihkan akun uji (`delete from auth.users where email like '%cashtrix.test';`).
 - Catat versi + tanggal di catatan rilis.
 
-### V1 — Instrumentasi & jalur distribusi
+### V1: Instrumentasi & jalur distribusi
 
 - `eas.json` (profil `development` / `preview` / `production`) + `expo-dev-client`.
 - Sentry dengan `configureTransport` lewat seam yang sudah ada.
 - Isi Data Safety (Play) + Privacy Manifest (Apple).
 - `app.json` → `1.1.0`.
 
-### V2 — Transfer antar-wallet
+### V2: Transfer antar-wallet
 
 Satu baris `type=transfer` + `counterparty_wallet_id`, `category_id` null
 (ADR-0004, R8). Form Add: segmen ketiga. Menyentuh `v_wallet_balances`
 (sumber −amount, tujuan +amount) dan `v_transactions_feed` (satu baris
 "Transfer ke …"). Analytics / Spent / Alert tetap mengabaikan `type=transfer`.
 
-### V3 — Recurring transactions
+### V3: Recurring transactions
 
 Catch-up RPC saat app buka/foreground (ADR-0005, R8). Bulanan, Due day 1–28
 atau hari terakhir bulan; plafon 12 Occurrence per Recurring rule per sesi.
@@ -141,7 +141,7 @@ Edit rule hanya mengubah yang belum lahir. Anti-ganda termasuk Soft-delete.
 Occurrence identik dengan Transaction manual untuk Spent/Alert. Tidak ada
 server-push di v1.1.
 
-### V4 — Nilai user langsung: undo hapus + arsip wallet
+### V4: Nilai user langsung: undo hapus + arsip wallet
 
 - Snackbar ~5 detik "Urungkan" setelah hapus, memanggil RPC
   `restore_transaction` yang sudah ada (termasuk Transfer). Lewat = Soft-delete
@@ -149,13 +149,13 @@ server-push di v1.1.
 - Arsip/buka-arsip wallet (kolom `archived_at` sudah ada; perlu jalur tulis di
   `wallets/api.ts` + penyaring di Dashboard).
 
-### V5 — Kalender penuh + pass terminologi
+### V5: Kalender penuh + pass terminologi
 
 - Grid kalender dari `View` (tanpa modul native, pola yang sama dengan donut T6
   dan ring T7).
 - Satu pass terminologi Indonesia (katalog C8).
 
-### V6 — Gerbang v1.1
+### V6: Gerbang v1.1
 
 Spec + ticket ditulis saat rilis dibekukan; pola mengikuti T11
 (`docs/release-gate.md`): E2E Maestro hijau, pgTAP + Jest tanpa regresi,
@@ -177,11 +177,11 @@ Transfer, Recurring, Undo, Archive, V0 auth/legal: **tertutup** (R7–R8, ADR-00
 
 ## 5. Yang sengaja tidak dikerjakan
 
-- Offline outbox & read cache di v1.1 — menyentuh semua screen dan melawan
+- Offline outbox & read cache di v1.1, menyentuh semua screen dan melawan
   keputusan MVP "tulis ditolak, bukan antrian buta"; digabung jadi satu pekerjaan
   konsistensi di v2.0.
-- CSV import di v1.1 — nilai rendah dibanding biaya pemetaan kategori.
-- Multi-bahasa di v1.1 — dikerjakan bersama pass terminologi v1.2 supaya string
+- CSV import di v1.1, nilai rendah dibanding biaya pemetaan kategori.
+- Multi-bahasa di v1.1, dikerjakan bersama pass terminologi v1.2 supaya string
   tidak diaudit dua kali.
 
 ---
@@ -189,41 +189,41 @@ Transfer, Recurring, Undo, Archive, V0 auth/legal: **tertutup** (R7–R8, ADR-00
 ## 6. Rencana pasca-v1.1 (disetujui pemilik 2026-09-22)
 
 v1.1.0 sudah di-tag dan di-push. Fase di bawah ini mengikat **urutan**, bukan
-jadwal mati — hal-hal kecil boleh ditambahkan di tengah jalan selama tidak
+jadwal mati, hal-hal kecil boleh ditambahkan di tengah jalan selama tidak
 melanggar prinsip §6.4. Tiap batch dibekukan jadi spec + ticket (`specs/`)
 seperti v1.1 sebelum dikerjakan.
 
-### 6.1 v1.1.x — penutup lubang (kecil, tanpa ubah perilaku)
+### 6.1 v1.1.x: penutup lubang (kecil, tanpa ubah perilaku)
 
 | Urutan | Item | Kenapa sekarang | Status 2026-09-25 |
 |---|---|---|---|
 | 1 | Semantik transfer di CSV export | Lubang dari V6 (transfer ter-drop diam-diam); makin lama makin banyak export yang kehilangan baris. Grill singkat + satu format baris + test. | ✅ selesai (`452fdab`, verify-t9 49/49) |
-| 2 | Aset store listing + mekanik `release-gate.md` §7.5 | Prasyarat submit TestFlight/Play — tanpa ini v1.1.0 tidak naik store. | ⏸️ sebagian: `docs/store-submit.md` selesai + email dukungan diisi (`83b8536`); **tunda: screenshot HP** (ikut blok store) |
+| 2 | Aset store listing + mekanik `release-gate.md` §7.5 | Prasyarat submit TestFlight/Play, tanpa ini v1.1.0 tidak naik store. | ⏸️ sebagian: `docs/store-submit.md` selesai + email dukungan diisi (`83b8536`); **tunda: screenshot HP** (ikut blok store) |
 | 3 | Run Maestro device | Menutup janji opsi B selagi flow + akun e2e masih segar. | ✅ selesai 2026-09-25 (smoke + happy-path hijau di HP asli, KPI `[analytics]` terbukti) |
 
-### 6.2 v1.2 batch 1 — nilai user langsung, risiko kecil
+### 6.2 v1.2 batch 1: nilai user langsung, risiko kecil
 
 Memakai pola yang sudah ada (view/RPC + komponen):
 
 | Urutan | Item | Alasan urutan |
 |---|---|---|
-| 1 | Ringkasan bulan lalu (A6) | Paling kecil — `v_monthly_summary` sudah ada, tinggal permukaan Dashboard. |
+| 1 | Ringkasan bulan lalu (A6) | Paling kecil, `v_monthly_summary` sudah ada, tinggal permukaan Dashboard. |
 | 2 | Cari & filter riwayat (A3) | Nilai naik seiring data user bertambah; fondasi query untuk A4. |
 | 3 | Bulk edit kategori (A4) | Bergantung pola filter A3; tanpa A3 dulu implementasinya duplikasi logika. |
 | 4 | Inbox notifikasi (A5) | Fondasi baru diperbaiki (alert pipeline V6 + `fired_at`); tinggal flag read + layar. |
 | 5 | Error handling terlihat (D4) | Robustness yang makin penting saat user riil bertambah. |
 
-### 6.3 v1.2 batch 2 — butuh keputusan / setup native
+### 6.3 v1.2 batch 2: butuh keputusan / setup native
 
 | Item | Syarat mulai |
 |---|---|
-| Biometric lock (B4) | Tutup dulu OPEN-3 (kunci perangkat vs state server) via grill — jangan sentuh kode sebelumnya. |
+| Biometric lock (B4) | Tutup dulu OPEN-3 (kunci perangkat vs state server) via grill, jangan sentuh kode sebelumnya. |
 | i18n ID/EN (C6) | Paket dengan satu pass terminologi (audit string sekali saja). |
-| 2FA (C2) | Supabase siap; UI sedang — antre setelah B4/C6. |
+| 2FA (C2) | Supabase siap; UI sedang, antre setelah B4/C6. |
 | Preloader + skeleton | Sesudah batch 1 (menyentuh semua permukaan loading → re-gate visual; jangan digabung rilis fitur). Perlu amandemen `DESIGN.md` (motion). |
 | Maestro di CI (D3) | Time-box riset device farm/emulator dulu; bila mahal, tetap manual + perkuat mock test navigasi. |
-| Rate limiting (D5) | Sebelum publikasi luas — bukan sebelumnya. |
-| CSV import (B5) | Nilai rendah vs biaya — diputuskan **drop** 2026-09-24 (tetap di katalog, tanpa ticket; kembali hanya bila user riil meminta) |
+| Rate limiting (D5) | Sebelum publikasi luas, bukan sebelumnya. |
+| CSV import (B5) | Nilai rendah vs biaya, diputuskan **drop** 2026-09-24 (tetap di katalog, tanpa ticket; kembali hanya bila user riil meminta) |
 
 ### 6.4 Prinsip urutan (mengikat)
 
@@ -232,13 +232,13 @@ Memakai pola yang sudah ada (view/RPC + komponen):
 3. Satu pass lintas-layar (terminologi, skeleton, i18n) dikerjakan sekaligus, tidak dicicil.
 4. Item kecil tambahan di tengah jalan boleh masuk batch berjalan bila memenuhi 1–3; bila tidak, antre di batch berikutnya.
 
-### 6.5 v2.0 — paket arsitektur, jangan dicicil
+### 6.5 v2.0: paket arsitektur, jangan dicicil
 
 Offline outbox + read cache = satu pekerjaan konsistensi (satu model sync +
 resolusi konflik), didahului spec + grill seperti v1.1. Widget, bank sync,
 multi-currency, AI insight antre di belakangnya per PRD.
 
-### 6.6 v1.2.0 — pintasan + scan struk (disetujui pemilik 2026-09-25)
+### 6.6 v1.2.0: pintasan + scan struk (disetujui pemilik 2026-09-25)
 
 Keputusan grill: tap-belakang ditangkap OS (bukan app); lampiran via
 `expo-image-picker` yang sudah ada (nol rebuild); foto 30 hari lalu purge;
@@ -250,15 +250,15 @@ Detail beku di `specs/cashtrix-v1.2.md` + ADR-0009. Ticket: S1 → S2 → S3 →
 |---|---|---|
 | S1 | Pintasan deep-link + panduan OS | Tanpa native; membuka jalan tap-belakang di semua vendor |
 | S2 | Foto lampiran 30 hari | Nilai langsung tanpa tebakan OCR; fondasi Storage + tabel untuk S3 |
-| S3 | OCR server eksperimen | Prefill Starbucks "AMERICANO 30.000" → 30.000; gagal = lanjut manual — mock-first + device-gate lolos 2026-09-26 (siap PR, #57) |
+| S3 | OCR server eksperimen | Prefill Starbucks "AMERICANO 30.000" → 30.000; gagal = lanjut manual, mock-first + device-gate lolos 2026-09-26 (siap PR, #57) |
 | RLS | Gerbang `1.2.0` | Bump minor sekali (akumulasi pasca-1.1.0 + S1–S3) + polish final UI/UX + screenshot store |
 
 Aturan versi (mengikat): `1.2.0` = minor ini; `2.0.0` = hanya arsitektur besar;
-`1.2.x` = lubang tanpa ubah perilaku. v2.0 tetap trek terpisah — satu-satunya
+`1.2.x` = lubang tanpa ubah perilaku. v2.0 tetap trek terpisah, satu-satunya
 titik temu: spec sync v2.0 mencakup `transaction_receipts` sebagai tipe antrean
 outbox (upload tertunda + retry OCR).
 
-### 6.7 Pasca-1.2 — monetisasi scan (arah disetujui pemilik 2026-09-25, belum ticket)
+### 6.7 Pasca-1.2: monetisasi scan (arah disetujui pemilik 2026-09-25, belum ticket)
 
 S3 dikirim sebagai **plumbing + mock + seam kuota** (engine OCR riil menyusul);
 skema monetisasi di bawah ini **bukan scope S3 maupun RLS**, dicatat agar
@@ -271,7 +271,7 @@ keputusan tidak hilang:
   satu unit; terverifikasi dari halaman pricing resmi Google, Juli 2026).
   Unit economics aman pada pemakaian personal-finance normal (~20 scan/bulan ≈
   Rp500 biaya vs Rp15.000 harga, sebelum potongan store 15%).
-- Pool 1.000 gratis bersifat **per project GCP, dipakai bersama** — sejak swap
+- Pool 1.000 gratis bersifat **per project GCP, dipakai bersama**, sejak swap
   Vision, pengukuran **scan free vs scan subscriber dipisah** agar jebolnya
   pool terpantau.
 - Seam yang ditanam S3: titik cek kuota di `scan-receipt` setelah

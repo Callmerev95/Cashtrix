@@ -4,11 +4,11 @@
  * Thumbnails + an attach button for the Add form. The picker and upload live
  * here; the attachment list itself is owned by the form (it needs the ids at
  * save time to link them). Uploads happen the moment a photo is taken (Opsi
- * A) — the form never waits for them at save.
+ * A): the form never waits for them at save.
  *
  * `expo-image-picker` only (no `expo-camera`, no rebuild). The source sheet
  * is parent-controlled (`sheetVisible`); `autoCamera` (the `?scan=1` contract
- * from S1) fires the camera once on mount instead of opening the sheet —
+ * from S1) fires the camera once on mount instead of opening the sheet:
  * scan sessions go straight to capture, QRIS-style. `onPhotoUploaded` lets
  * the parent auto-scan each new photo (event-driven, never an effect).
  */
@@ -65,7 +65,7 @@ export function ReceiptAttachmentSection({
   onPhotoUploaded?: (attachment: ReceiptAttachment) => void;
   /**
    * Upload/delete failures: reported to the parent (failure package) instead
-   * of an Alert. The raw error is swallowed — it carries a userId storage
+   * of an Alert. The raw error is swallowed (it carries a userId storage
    * path, so it must reach neither UI nor logs. The OS-permission denial
    * keeps its own Alert (it directs to Settings).
    */
@@ -143,7 +143,7 @@ export function ReceiptAttachmentSection({
   // Scan sessions open the camera once on mount (not the sheet). Deferred
   // past the effect body so no setState runs synchronously in an effect;
   // the ref guard keeps StrictMode/remounts from double-firing. Mount-only
-  // by contract (the session exists before the form paints — auth gate).
+  // by contract (the session exists before the form paints: auth gate).
   // Placed after `addPhoto` so the static TDZ check sees the declaration.
   useEffect(() => {
     if (!autoCamera || autoCameraFired.current) return;
@@ -160,7 +160,7 @@ export function ReceiptAttachmentSection({
   }, []);
 
   // "Foto ulang" (S3 failure package): each increment re-shoots the camera.
-  // Same deferred pattern as autoCamera above — no sync setState in effect.
+  // Same deferred pattern as autoCamera above: no sync setState in effect.
   const lastCaptureRequest = useRef(0);
   useEffect(() => {
     if (captureRequest === 0 || captureRequest === lastCaptureRequest.current) {

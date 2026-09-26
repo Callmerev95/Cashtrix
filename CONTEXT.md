@@ -75,7 +75,7 @@ _Avoid_: instance, run, firing
 
 **Catch-up**:
 RPC yang, saat app dibuka atau masuk foreground, menulis Occurrence yang tanggal
-jatuh temponya sudah lewat atau hari ini dan belum ada Transaction-nya — termasuk
+jatuh temponya sudah lewat atau hari ini dan belum ada Transaction-nya, termasuk
 yang Soft-delete. Maksimum 12 Occurrence per Recurring rule per sesi buka; sisa
 menunggu sesi berikutnya. Tidak menulis Occurrence masa depan.
 _Avoid_: backfill, sync, cron, generate

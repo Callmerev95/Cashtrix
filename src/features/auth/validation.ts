@@ -88,9 +88,9 @@ export function hasErrors(errors: FieldErrors): boolean {
 /**
  * Maps a Supabase auth error to locked UI copy.
  *
- * Every credential failure collapses into the generic message — Supabase
- * deliberately does not say which half was wrong, and neither do we. Anything
- * else (offline, rate limit, server fault) must not masquerade as a wrong
+ * Every credential failure collapses into the generic message (Supabase
+ * deliberately does not say which half was wrong, and neither do we).
+ * Anything else (offline, rate limit, server fault) must not masquerade as a wrong
  * password, or the user retypes a password that was correct all along.
  */
 export function loginErrorMessage(

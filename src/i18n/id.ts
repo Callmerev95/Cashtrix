@@ -1,5 +1,5 @@
 /**
- * Kamus Indonesia (C6, ADR-0008). Bahasa fallback global — key yang hilang di
+ * Kamus Indonesia (C6, ADR-0008). Bahasa fallback global: key yang hilang di
  * `en` tidak pernah merender blank.
  *
  * Aturan: string yang terkunci PRD/spec dipindah VERBATIM ke sini (jangan
@@ -52,7 +52,7 @@ export const id = {
     checkEmail: {
       title: 'Cek email Anda',
       bodyWithEmail:
-        'Kami mengirim tautan verifikasi ke {email}. Buka tautan itu untuk masuk — tidak perlu login ulang di perangkat ini.',
+        'Kami mengirim tautan verifikasi ke {email}. Buka tautan itu untuk masuk, tidak perlu login ulang di perangkat ini.',
       bodyWithoutEmail:
         'Kami telah mengirim tautan verifikasi ke email Anda. Buka tautan itu, lalu masuk dengan akun Anda.',
       invalidLink:
@@ -77,7 +77,7 @@ export const id = {
       verifying: 'Memeriksa tautan reset…',
       doneTitle: 'Password diubah',
       doneBody:
-        'Password baru Anda sudah tersimpan. Anda sudah masuk — lanjutkan ke aplikasi.',
+        'Password baru Anda sudah tersimpan. Anda sudah masuk, lanjutkan ke aplikasi.',
       openApp: 'Buka aplikasi',
       formTitle: 'Atur Password Baru',
       formSubtitle:
@@ -140,7 +140,7 @@ export const id = {
       delete: 'Hapus budget',
       deleteTitle: 'Hapus budget ini?',
       deleteBody:
-        'Batas bulan berjalan ikut terhapus. Transaksi tidak ikut terhapus — alert yang sudah terkirim tetap tercatat.',
+        'Batas bulan berjalan ikut terhapus. Transaksi tidak ikut terhapus. Alert yang sudah terkirim tetap tercatat.',
       deleting: 'Menghapus…',
       saveFailEdit: 'Gagal menyimpan perubahan',
       saveFailCreate: 'Gagal membuat budget',
@@ -173,7 +173,7 @@ export const id = {
       settings: 'Pengaturan',
       pausedA11y: 'Aturan berulang yang dijeda',
       pausedTitle: '{count} aturan dijeda',
-      pausedSubtitle: 'Dompetnya diarsipkan — ketuk untuk meninjau',
+      pausedSubtitle: 'Dompetnya diarsipkan, ketuk untuk meninjau',
       recurringA11y: 'Kelola transaksi berulang',
       recurringTitle: 'Transaksi berulang',
       recurringSubtitle: 'Gaji & tagihan otomatis tiap bulan',
@@ -224,7 +224,7 @@ export const id = {
       deleteA11y: 'Hapus {name}',
       deleteTitle: 'Hapus "{name}"?',
       deleteBody:
-        'Kategori yang punya riwayat transaksi tidak bisa dihapus — arsipkan saja.',
+        'Kategori yang punya riwayat transaksi tidak bisa dihapus. Arsipkan saja.',
       archiveFail: 'Gagal mengubah arsip',
       deleteFail: 'Gagal menghapus',
     },
@@ -249,7 +249,7 @@ export const id = {
     kicker: 'Pintasan',
     title: 'Catat lebih cepat',
     subtitle:
-      'Tempel salah satu pintu ini ke gesture HP — ketukan ditangkap sistem operasi, aplikasi hanya membuka form yang tepat.',
+      'Tempel salah satu pintu ini ke gesture HP: ketukan ditangkap sistem operasi, aplikasi hanya membuka form yang tepat.',
     expenseTitle: 'Tambah Expense',
     expenseSubtitle: 'Buka form dengan segmen Expense terpilih',
     incomeTitle: 'Tambah Income',
@@ -257,17 +257,17 @@ export const id = {
     scanTitle: 'Scan struk',
     scanSubtitle: 'Buka form langsung siap memotret struk',
     guideKicker: 'Pasang di HP',
-    iphoneTitle: 'iPhone — Back Tap',
+    iphoneTitle: 'iPhone: Back Tap',
     iphoneBody:
       'Pengaturan → Aksesibilitas → Sentuh → Ketuk Bagian Belakang → Ketuk Tiga Kali → tempel Shortcut Cashtrix.',
-    pixelTitle: 'Pixel — Quick Tap',
+    pixelTitle: 'Pixel: Quick Tap',
     pixelBody:
       'Pengaturan → Sistem → Gestur → Quick Tap → tempel Shortcut Cashtrix.',
-    samsungTitle: 'Samsung — RegiStar',
+    samsungTitle: 'Samsung: RegiStar',
     samsungBody:
       'Good Lock → RegiStar → Back-Tap → tempel Shortcut Cashtrix.',
     gateNote:
-      'Tanpa sesi, pintasan berhenti di kunci biometrik atau Login — tidak pernah melewati keamanan.',
+      'Tanpa sesi, pintasan berhenti di kunci biometrik atau Login, tanpa pernah melewati keamanan.',
   },
   categories: {
     expense: {
@@ -321,7 +321,7 @@ export const id = {
       codeInvalid: 'Kode harus 6 digit angka',
     },
     title: 'Verifikasi dua langkah',
-    subtitleOn: 'Aktif — kode authenticator tiap masuk.',
+    subtitleOn: 'Aktif: kode authenticator tiap masuk.',
     subtitleOff: 'Masuk cukup dengan password.',
     toggleA11y: 'Verifikasi dua langkah',
     unenrollTitle: 'Matikan verifikasi dua langkah?',
@@ -333,7 +333,7 @@ export const id = {
       title: 'Aktifkan verifikasi dua langkah',
       intro:
         'Tambahkan akun ini di aplikasi authenticator (Google Authenticator, 1Password, dsb.), lalu masukkan 6 digit kodenya di bawah.',
-      secretLabel: 'Kode rahasia — salin manual bila perlu',
+      secretLabel: 'Kode rahasia: salin manual bila perlu',
       openAuth: 'Buka aplikasi authenticator',
       codeLabel: 'Kode 6 digit',
       codePlaceholder: '123 456',
@@ -499,7 +499,7 @@ export const id = {
       scan: 'Pindai otomatis',
       scanA11y: 'Pindai struk dan isi form otomatis',
       scanning: 'Membaca struk…',
-      scanApplied: 'Terisi otomatis — periksa nominalnya sebelum Simpan.',
+      scanApplied: 'Terisi otomatis. Periksa nominalnya sebelum Simpan.',
       scanFail: 'Struk tidak berhasil terbaca. Silahkan scan struk ulang.',
       scanRetake: 'Foto ulang',
       scanRetakeA11y: 'Foto ulang struk untuk dipindai lagi',
@@ -509,7 +509,7 @@ export const id = {
       scanQuota: 'Kuota pindaian habis. Catat manual tetap bisa.',
       consentTitle: 'Kirim foto untuk dibaca otomatis?',
       consentBody:
-        'Foto struk dikirim untuk dibaca dan hanya mengisi form ini — tidak menyimpan apa pun. Anda tetap menekan Simpan manual.',
+        'Foto struk dikirim untuk dibaca dan hanya mengisi form ini. Tidak menyimpan apa pun. Anda tetap menekan Simpan manual.',
       consentPersistNote: 'Berlaku di perangkat ini.',
       consentSend: 'Kirim',
     },
@@ -567,7 +567,7 @@ export const id = {
     },
     placeholder: 'Cari catatan, kategori, dompet…',
     idleHint:
-      'Ketik untuk mencari di catatan, nama kategori, dan nama dompet — atau pilih jenis di atas.',
+      'Ketik untuk mencari di catatan, nama kategori, dan nama dompet, atau pilih jenis di atas.',
     error: 'Gagal mencari',
     noResult: 'Tidak ada hasil untuk "{query}".',
     noKindResults: 'Tidak ada transaksi jenis ini.',
@@ -580,7 +580,7 @@ export const id = {
     selectToggleA11y: 'Pilih beberapa transaksi',
     select: 'Pilih',
     transferHint: 'Transfer tidak punya kategori.',
-    kindLocked: 'Pilihan dikunci ke {kind} — selesaikan atau batalkan dulu.',
+    kindLocked: 'Pilihan dikunci ke {kind}. Selesaikan atau batalkan dulu.',
     bulkCancelA11y: 'Batalkan ubah kategori',
     bulkConfirmA11y: 'Ubah {count} transaksi',
     bulkConfirm: 'Ubah {count} transaksi ke {name}?',
@@ -617,7 +617,7 @@ export const id = {
       openA11y: 'Ringkasan {month}, buka Analytics',
       title: 'Ringkasan bulan',
       invite:
-        'Belum ada transaksi bulan ini — catat yang pertama lewat tombol +.',
+        'Belum ada transaksi bulan ini. Catat yang pertama lewat tombol +.',
     },
     loadError: 'Gagal memuat analytics',
   },
@@ -650,9 +650,9 @@ export const id = {
       retry: 'Coba lagi',
       bannerTitle: '{count} aturan dijeda',
       bannerBody:
-        'Dompetnya diarsipkan — buka arsip dompet atau pilih dompet lain agar tagihan jalan lagi.',
+        'Dompetnya diarsipkan. Buka arsip dompet atau pilih dompet lain agar tagihan jalan lagi.',
       empty:
-        'Belum ada aturan. Buat satu untuk gaji atau tagihan yang datang tiap bulan — occurrence-nya lahir otomatis saat app dibuka.',
+        'Belum ada aturan. Buat satu untuk gaji atau tagihan yang datang tiap bulan. Occurrence-nya lahir otomatis saat app dibuka.',
       add: 'Buat aturan',
       statusFail: 'Gagal mengubah status',
       deleteFail: 'Gagal menghapus',
@@ -670,7 +670,7 @@ export const id = {
       editTitle: 'Ubah Aturan',
       createTitle: 'Aturan Baru',
       kindLocked:
-        'Jenis terkunci — yang sudah tercatat tidak berubah artinya. Perubahan hanya berlaku untuk occurrence yang belum lahir.',
+        'Jenis terkunci. Yang sudah tercatat tidak berubah artinya. Perubahan hanya berlaku untuk occurrence yang belum lahir.',
       amount: 'Nominal',
       walletSection: 'Dompet',
       walletEmpty: 'Belum ada dompet aktif. Buat satu dulu di menu Dompet.',
@@ -682,7 +682,7 @@ export const id = {
       startsSection: 'Mulai',
       startsLoading: 'Memuat bulan berjalan…',
       startsBumped:
-        'Due bulan ini sudah lewat — occurrence pertama lahir bulan depan agar tidak mengarang pembayaran lalu.',
+        'Due bulan ini sudah lewat. Occurrence pertama lahir bulan depan agar tidak mengarang pembayaran lalu.',
       endsToggle: 'Ada bulan akhir',
       endsPrevA11y: 'Bulan akhir sebelumnya',
       endsNextA11y: 'Bulan akhir berikutnya',

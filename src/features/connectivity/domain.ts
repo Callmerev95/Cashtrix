@@ -1,7 +1,7 @@
 import { id } from '@/i18n/id';
 
 /**
- * Connectivity domain (D4) — pure helpers only.
+ * Connectivity domain (D4): pure helpers only.
  *
  * Online is the default: `isConnected`/`isInternetReachable` start as `null`
  * before NetInfo's first event, and a null reading must never flash the
@@ -19,5 +19,5 @@ export function toOnlineStatus(reading: ConnectivityReading): boolean {
 }
 
 /** Banner copy (C6: source is the dictionary; still id-ID here). Short by
- * owner request — no "stale data" tail. */
+ * owner request, no "stale data" tail. */
 export const OFFLINE_MESSAGE = id.connectivity.offline;

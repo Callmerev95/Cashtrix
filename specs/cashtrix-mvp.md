@@ -1,14 +1,14 @@
-# Spec — Cashtrix MVP (v1.0)
+# Spec: Cashtrix MVP (v1.0)
 
 Sumber: `PRD.md` v1.0 (approved) + `DESIGN.md` (kanonik). Semua keputusan terkunci mengikuti PRD §0 (D1–D11); tidak ada area abu-abu yang dibuka ulang di spec ini.
 
 ## Problem Statement
 
-Aplikasi pencatat keuangan consumer umumnya ramai, penuh iklan, dan memaksa pengguna ke pola kategori bawaan yang tidak mencerminkan gaya hidup mereka. Persona target — Evelyn Vance, profesional urban 28–45 yang mengelola 3–6 dompet — frustrasi karena butuh 4 langkah untuk input 1 transaksi, dan laporan yang tidak bisa di-filter per wallet. Ia tidak punya alat yang tenang, cepat, dan privat untuk melihat posisi keuangannya dalam hitungan detik.
+Aplikasi pencatat keuangan consumer umumnya ramai, penuh iklan, dan memaksa pengguna ke pola kategori bawaan yang tidak mencerminkan gaya hidup mereka. Persona target, Evelyn Vance, profesional urban 28–45 yang mengelola 3–6 dompet, frustrasi karena butuh 4 langkah untuk input 1 transaksi, dan laporan yang tidak bisa di-filter per wallet. Ia tidak punya alat yang tenang, cepat, dan privat untuk melihat posisi keuangannya dalam hitungan detik.
 
 ## Solution
 
-Cashtrix — aplikasi mobile personal finance (iOS & Android) dengan estetika *private wealth* (obsidian + champagne gold), input transaksi <20 detik, multi-wallet, analitik visual yang dihitung server-side, dan budget per kategori dengan alert ambang batas yang anti-spam. Semua data milik pengguna (RLS-scoped per akun), siap diperluas ke agregasi bank di v2. MVP mencakup: Autentikasi, Multi-Wallet, Transaksi, Analytics, Budget & Alert, Profile & Settings.
+Cashtrix, aplikasi mobile personal finance (iOS & Android) dengan estetika *private wealth* (obsidian + champagne gold), input transaksi <20 detik, multi-wallet, analitik visual yang dihitung server-side, dan budget per kategori dengan alert ambang batas yang anti-spam. Semua data milik pengguna (RLS-scoped per akun), siap diperluas ke agregasi bank di v2. MVP mencakup: Autentikasi, Multi-Wallet, Transaksi, Analytics, Budget & Alert, Profile & Settings.
 
 ## User Stories
 
@@ -16,8 +16,8 @@ Cashtrix — aplikasi mobile personal finance (iOS & Android) dengan estetika *p
 
 1. Sebagai pengguna baru, saya ingin mendaftar dengan email + password, agar data saya terikat pada akun yang hanya saya akses.
 2. Sebagai pengguna baru, saya ingin validasi format email dan aturan password (≥8 karakter, ≥1 huruf + ≥1 angka) dijalankan sebelum request dikirim, agar kesalahan terlihat sebagai pesan inline tanpa menunggu server.
-3. Sebagai pengguna baru, saya ingin memverifikasi email via Supabase Auth (auto-confirm saat pengembangan, konfirmasi manual sebelum rilis — PRD §6.1 R2), agar akun benar-benar milik saya.
-4. Sebagai pengguna yang baru login pertama kali, saya ingin otomatis di-seed 1 wallet "Cash" (opening balance 0) — kategori sistem sudah tersedia untuk semua akun, agar bisa langsung mencatat tanpa setup manual.
+3. Sebagai pengguna baru, saya ingin memverifikasi email via Supabase Auth (auto-confirm saat pengembangan, konfirmasi manual sebelum rilis, PRD §6.1 R2), agar akun benar-benar milik saya.
+4. Sebagai pengguna yang baru login pertama kali, saya ingin otomatis di-seed 1 wallet "Cash" (opening balance 0), kategori sistem sudah tersedia untuk semua akun, agar bisa langsung mencatat tanpa setup manual.
 5. Sebagai pengguna kembali, saya ingin sesi persisten via refresh token, agar app re-open langsung ke Dashboard tanpa login ulang.
 6. Sebagai pengguna, saya ingin login gagal menampilkan pesan generik "Email atau password salah", agar tidak terungkap mana yang salah.
 7. Sebagai pengguna, saya ingin sign out menghapus sesi lokal + cache, agar data saya tidak tertinggal di perangkat.
@@ -62,7 +62,7 @@ Cashtrix — aplikasi mobile personal finance (iOS & Android) dengan estetika *p
 34. Sebagai pengguna, saya ingin satu budget per kategori per bulan (unique constraint), agar tidak ambigu.
 35. Sebagai pengguna, saya ingin mengubah amount budget di bulan berjalan, agar bisa menyesuaikan realita tanpa menunggu bulan baru.
 36. Sebagai pengguna, saya ingin progress ring berubah state `ok` → `warning` (≥80%) → `exceeded` (≥100%), agar status terbaca sekilas.
-37. Sebagai pengguna, saya ingin local push notification (expo-notifications) terkirim tepat setelah commit transaksi yang melewati threshold — sekali per budget per bulan per threshold (80% dan 100%), agar diberi tahu tanpa spam.
+37. Sebagai pengguna, saya ingin local push notification (expo-notifications) terkirim tepat setelah commit transaksi yang melewati threshold, sekali per budget per bulan per threshold (80% dan 100%), agar diberi tahu tanpa spam.
 38. Sebagai pengguna yang mengedit/menghapus transaksi hingga persentase turun lalu naik lagi, saya ingin alert yang sudah fired tidak di-double di bulan yang sama, agar tidak menerima notifikasi duplikat.
 39. Sebagai pengguna, saya ingin bulan budget dihitung dari timezone profil saya (default `Asia/Jakarta`) via satu fungsi SQL, agar batas bulan sesuai kehidupan saya, bukan UTC server.
 40. Sebagai pengguna, saya ingin budget bulan baru otomatis "kosong" (0 spent) tanpa cron, karena `month` adalah dimensi data, agar reset terasa instan.
@@ -93,13 +93,13 @@ Cashtrix — aplikasi mobile personal finance (iOS & Android) dengan estetika *p
 **Arsitektur:**
 
 - Expo Router (4 tab + FAB tengah: Dashboard, Analytics, [+ Add Transaction], Budgets, Profile); Auth di luar tab sebagai gate.
-- TanStack Query sebagai single source data remote; `expo-sqlite` hanya read-through cache untuk list & dashboard. Tidak ada state saldo yang persisten di client — saldo selalu dari SQL view saat fetch.
+- TanStack Query sebagai single source data remote; `expo-sqlite` hanya read-through cache untuk list & dashboard. Tidak ada state saldo yang persisten di client, saldo selalu dari SQL view saat fetch.
 - Semua agregasi finansial (saldo, analytics, budget spent) di Postgres via view/RPC. Client tidak pernah menghitung agregat.
-- Edge Functions (service role, dipanggil dengan JWT user): `seed-user` (idempotent: wallet "Cash" saat login pertama — kategori default adalah kategori sistem, tidak dikopi per-user, PRD §6.1 R2), `export-csv`, `delete-account` (hapus semua baris user + storage avatar + auth user).
+- Edge Functions (service role, dipanggil dengan JWT user): `seed-user` (idempotent: wallet "Cash" saat login pertama, kategori default adalah kategori sistem, tidak dikopi per-user, PRD §6.1 R2), `export-csv`, `delete-account` (hapus semua baris user + storage avatar + auth user).
 
 **Skema (Postgres):**
 
-- Tabel: `profiles` (id = auth.uid, timezone default `Asia/Jakarta`, currency default `IDR`), `wallets` (type enum `bank/ewallet/cash/card`, `unique(user_id, name)`), `categories` (user_id nullable = kategori sistem; `kind` income/expense; `unique(user_id, name, kind)`), `transactions` (`type` enum `income/expense/transfer` — `transfer` reserved v1.1; `amount > 0` numeric(18,2); `char_length(note) <= 200`; `unique(user_id, idempotency_key)`; soft-delete `deleted_at`; index `(user_id, occurred_at desc)` dan `(user_id, category_id, occurred_at)`), `budgets` (`month` date = hari-1 UTC dari bulan tz user; `unique(user_id, category_id, month)`), `budget_alerts` (threshold `warning_80`/`exceeded_100`; `unique(user_id, category_id, month, threshold)` — dedup per-user, PRD §6.1 R1).
+- Tabel: `profiles` (id = auth.uid, timezone default `Asia/Jakarta`, currency default `IDR`), `wallets` (type enum `bank/ewallet/cash/card`, `unique(user_id, name)`), `categories` (user_id nullable = kategori sistem; `kind` income/expense; `unique(user_id, name, kind)`), `transactions` (`type` enum `income/expense/transfer`, `transfer` reserved v1.1; `amount > 0` numeric(18,2); `char_length(note) <= 200`; `unique(user_id, idempotency_key)`; soft-delete `deleted_at`; index `(user_id, occurred_at desc)` dan `(user_id, category_id, occurred_at)`), `budgets` (`month` date = hari-1 UTC dari bulan tz user; `unique(user_id, category_id, month)`), `budget_alerts` (threshold `warning_80`/`exceeded_100`; `unique(user_id, category_id, month, threshold)`, dedup per-user, PRD §6.1 R1).
 - View wajib: `v_wallet_balances`, `v_monthly_summary(user_id, month, tz)`, `v_category_breakdown(user_id, range_start, range_end)`, `v_budget_status(user_id, month, tz)` (state `ok/warning/exceeded`).
 - Bulan budget dihitung dari `profiles.timezone` oleh satu fungsi SQL (`current_month(tz)`); tidak ada perhitungan bulan di client.
 - Dedup alert: insert ke `budget_alerts` pakai `ON CONFLICT DO NOTHING` dengan kunci per-user `(user_id, category_id, month, threshold)`; edit/hapus transaksi yang menurunkan % tidak menghapus alert yang sudah fired.
@@ -122,9 +122,9 @@ Cashtrix — aplikasi mobile personal finance (iOS & Android) dengan estetika *p
 
 **Dua seam (sesedikit mungkin):**
 
-1. **Supabase data API (views/RPC/RLS policies)** — seam utama kebenaran domain. Dites via pgTAP / Supabase local:
+1. **Supabase data API (views/RPC/RLS policies)**, seam utama kebenaran domain. Dites via pgTAP / Supabase local:
    - Matriks RLS antar-user di 100% tabel: user A tidak bisa SELECT/UPDATE/DELETE baris user B.
-   - Boundary bulan timezone: transaksi 31 Des 23:59 WIB vs 1 Jan UTC — bulan budget harus mengikuti `profiles.timezone`.
+   - Boundary bulan timezone: transaksi 31 Des 23:59 WIB vs 1 Jan UTC, bulan budget harus mengikuti `profiles.timezone`.
    - Boundary threshold: 79.9/80/99.9/100% → state `ok/warning/exceeded`.
    - Dedup alert: transaksi kedua yang melewati threshold sama di bulan sama TIDAK membuat baris alert baru (`ON CONFLICT DO NOTHING`).
    - Saldo: `v_wallet_balances` = opening + Σ income − Σ expense, exclude soft-delete.
@@ -132,20 +132,20 @@ Cashtrix — aplikasi mobile personal finance (iOS & Android) dengan estetika *p
 
 **Pelengkap (bukan seam pengembangan):**
 
-- Integration flow auth → seed → tx → budget → alert (dedup fired). Verifikasi state DB lewat MCP/psql (mesin pengembangan tanpa Docker; pgTAP tetap seam utama untuk logika SQL) — PRD §6.1 R2.
+- Integration flow auth → seed → tx → budget → alert (dedup fired). Verifikasi state DB lewat MCP/psql (mesin pengembangan tanpa Docker; pgTAP tetap seam utama untuk logika SQL), PRD §6.1 R2.
 - E2E happy path (Maestro): register → input 3 tx → dashboard & analytics → set budget → trigger alert. Gerbang rilis, bukan driver desain.
 - Visual smoke manual per rilis: layout dibandingkan render Stitch (referensi), warna selalu dari token kanonik.
 
-**Prior art:** belum ada — repo pre-code; test suite pertama akan mendirikan pola (pgTAP untuk RLS/SQL, Jest untuk domain, Maestro untuk E2E).
+**Prior art:** belum ada, repo pre-code; test suite pertama akan mendirikan pola (pgTAP untuk RLS/SQL, Jest untuk domain, Maestro untuk E2E).
 
 ## Out of Scope
 
-- Sinkronisasi/agregasi bank (open banking) — v2; hanya skema yang disiapkan.
-- Multi-currency dengan konversi kurs — hanya field `currency_code`.
-- Transfer antar-wallet — v1.1 (enum `transfer` reserved).
-- Recurring/subscription transactions — v1.1.
-- Offline write queue (outbox) — v1.1; MVP tulis butuh koneksi, baca dari cache lokal terakhir.
-- App lock biometrik (Face ID/PIN) — v1.1.
+- Sinkronisasi/agregasi bank (open banking), v2; hanya skema yang disiapkan.
+- Multi-currency dengan konversi kurs, hanya field `currency_code`.
+- Transfer antar-wallet, v1.1 (enum `transfer` reserved).
+- Recurring/subscription transactions, v1.1.
+- Offline write queue (outbox), v1.1; MVP tulis butuh koneksi, baca dari cache lokal terakhir.
+- App lock biometrik (Face ID/PIN), v1.1.
 - Shared/household budget, web version, widget, email digest, AI insights, import CSV, custom color picker.
 - Server push notification (hanya local notification di MVP).
 

@@ -1,5 +1,5 @@
 /**
- * Reconnect refresh (D4) — refires the reads an offline stretch may have
+ * Reconnect refresh (D4): refires the reads an offline stretch may have
  * failed, plus the recurring catch-up (occurrences due while offline only
  * materialize on app open/foreground otherwise).
  *

@@ -1,4 +1,4 @@
-# Spec — Cashtrix v1.2 (Pintasan + Scan Struk)
+# Spec: Cashtrix v1.2 (Pintasan + Scan Struk)
 
 Sumber: grill 2026-09-25, `PRD.md` D1–D11 + R1–R10, `CONTEXT.md`, `docs/roadmap.md` §6.6, ADR-0009, `DESIGN.md`.
 Istilah mengikuti `CONTEXT.md`. Jangan drift ke daftar `_Avoid_`.
@@ -19,13 +19,13 @@ native yang sensitif izin dan ketat review store.
 ## Solution
 
 Rilis v1.2: **pintasan OS-level** (tap-belakang ditangkap OS, app hanya sediakan pintu
-deep-link + App Shortcuts) dan **scan struk bertahap** — Fase 1 foto lampiran 30 hari via
+deep-link + App Shortcuts) dan **scan struk bertahap**, Fase 1 foto lampiran 30 hari via
 `expo-image-picker` yang sudah ada (nol rebuild), Fase 2 OCR server eksperimen yang hanya
 prefill (tanpa auto-save), satu total, saran kategori opsional.
 
 ## User Stories
 
-### S1 — Pintasan deep-link (tanpa modul native baru)
+### S1: Pintasan deep-link (tanpa modul native baru)
 
 1. Sebagai pengguna, saya ingin deep link `cashtrix://add-transaction?type=expense|income`
    membuka form Add dengan segmen terpilih, agar Back Tap / Quick Tap bisa menargetkannya.
@@ -39,7 +39,7 @@ prefill (tanpa auto-save), satu total, saran kategori opsional.
    tetap parkir di gate yang benar (biometrik → Login → Cek email → challenge), agar
    pintasan tidak pernah bypass keamanan.
 
-### S2 — Foto lampiran struk 30 hari (tanpa OCR)
+### S2: Foto lampiran struk 30 hari (tanpa OCR)
 
 6. Sebagai pengguna di form Add, saya ingin tombol "Foto struk" memakai kamera/galeri
    via `expo-image-picker`, agar tanpa modul native baru dan tanpa rebuild.
@@ -53,12 +53,12 @@ prefill (tanpa auto-save), satu total, saran kategori opsional.
 10. Sebagai pengguna, saya ingin thumbnail struk terlihat di form + bisa dihapus sebelum
     save, agar salah foto bisa diulang tanpa menyimpan transaksi sampah.
 
-### S3 — OCR server eksperimen (prefill saja)
+### S3: OCR server eksperimen (prefill saja)
 
 11. Sebagai pengguna, saya ingin hasil scan hanya **prefill** (amount + merchant + tanggal
     + saran kategori) yang semuanya bisa dikoreksi, lalu saya tekan Simpan manual, agar
     OCR yang salah tidak menulis data kotor (contoh: "AMERICANO 30.000" → 30.000).
-12. Sebagai pengguna, saya ingin saran kategori (misal "Makanan") bersifat opsional —
+12. Sebagai pengguna, saya ingin saran kategori (misal "Makanan") bersifat opsional,
     bisa diterima atau diganti manual ke kategori lain, agar 1 ketuk lebih cepat tapi
     tidak memaksa.
 13. Sebagai pengguna, saya ingin satu struk = satu total dulu (diskon/PPN/multi-item
@@ -87,7 +87,7 @@ store), bukan per fase.
 
 **Pintasan (S1, ADR-0009):**
 - Skema `cashtrix` sudah ada (`app.json`). Tambah rute deep-link di `expo-router` mengikuti
-  pola `reset-password` (V0): `add-transaction?type=` (expense|income|transfer tidak ikut —
+  pola `reset-password` (V0): `add-transaction?type=` (expense|income|transfer tidak ikut,
   pintasan hanya expense/income/scan) dan `scan` (alias form Add mode lampiran).
 - Tidak ada detektor tap di dalam app. Tidak ada Accessibility Service. Panduan OS:
   iPhone Back Tap Triple, Pixel Quick Tap (double), Samsung Good Lock + RegiStar.
@@ -97,7 +97,7 @@ store), bukan per fase.
   (ikut `verify-t11.mjs --static-only`, pola kontrak 78 id / 8 teks / 3 KPI).
 
 **Lampiran (S2):**
-- Kamera via `expo-image-picker` (`launchCameraAsync` + galeri) — modul sudah di
+- Kamera via `expo-image-picker` (`launchCameraAsync` + galeri), modul sudah di
   `package.json`, **nol rebuild, OTA aman**. `expo-camera` viewfinder kustom ditunda.
 - Bucket privat baru `receipts` (pisah dari `avatars`): path `receipts/{userId}/{uuid}.jpg`,
   batas 2MB PNG/JPG, resize sebelum upload (pola avatar T8).
@@ -107,7 +107,7 @@ store), bukan per fase.
   deny-by-default + revoke anon.
 - Retensi: `purge_expired_receipts()` + hapus objek Storage (pola
   `purge_deleted_transactions` T5, job `pg_cron` harian). 30 hari dari `created_at`.
-- Idempotency key tetap sekali per sesi form (AC #22) — retry upload tidak double-post.
+- Idempotency key tetap sekali per sesi form (AC #22), retry upload tidak double-post.
 - i18n: semua copy scan lewat kamus `src/i18n/{id,en}.ts` (ADR-0008); leaf tidak impor i18n.
 
 **OCR (S3, eksperimen server):**
@@ -116,7 +116,7 @@ store), bukan per fase.
   category_suggestion, confidence }`. Tanpa menyimpan transaksi. Gagal OCR =
   `{ ok: false }`, form lanjut manual (fail-open untuk UX, bukan untuk auth).
 - Engine OCR diputuskan saat eksekusi (Tesseract gratis/lemah vs Cloud Vision
-  akurat/bayar) — keduanya di server, tanpa modul OCR native.
+  akurat/bayar), keduanya di server, tanpa modul OCR native.
 - Parser MVP: hanya `total + tanggal + merchant`. Format ID didukung (`30.000`,
   `30,000`, `Rp30rb`, tanggal `12/09/26`). Multi-item/diskon/PPN = satu total.
 - Privasi: consent eksplisit; scrub `amount`/`note`/base64 dari log + Sentry (PRD §4.4);
@@ -129,12 +129,12 @@ Token `theme.ts` saja; hex di komponen = lint error. Tidak ada tab baru.
 ## Testing Decisions
 
 **Kriteria test yang baik:** perilaku eksternal. Kebenaran dilihat dari deep link mendarat
-di form benar, lampiran muncul/hilang tepat waktu, prefill benar/tetap bisa dikoreksi —
+di form benar, lampiran muncul/hilang tepat waktu, prefill benar/tetap bisa dikoreksi,
 bukan dari struktur internal.
 
 **Tiga seam (jangan tambah):**
 
-1. **Supabase data API (RLS/RPC/purge)** — pgTAP + `scripts/verify-s*.mjs`:
+1. **Supabase data API (RLS/RPC/purge)**, pgTAP + `scripts/verify-s*.mjs`:
    - `transaction_receipts`: pemilik CRUD, cross-user no-op sunyi, anon 42501;
      FK ke transaksi orang lain ditolak; purge 30 hari menghapus baris + objek.
    - `scan-receipt`: tanpa JWT 401 sebelum rate check; flood 5+2 → 429 ber-body;
@@ -159,7 +159,7 @@ OCR prefill → koreksi → save); `expo export`; Sentry tanpa `amount`/`note`/b
   Quick Settings Tile.
 - Pecah struk per-item / per-kategori otomatis; multi-mata-uang + kurs.
 - Layar recycle bin lampiran; retensi selain 30 hari.
-- Offline outbox + read cache (`expo-sqlite`) — trek v2.0 terpisah (ADR-0003).
+- Offline outbox + read cache (`expo-sqlite`), trek v2.0 terpisah (ADR-0003).
 - Bank sync, AI insight, shared budget, server push.
 
 ## Further Notes

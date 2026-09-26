@@ -1,7 +1,7 @@
 /**
- * Receipt scan client (S3) — prefill-only OCR. Fail-open: only rate-limit and
+ * Receipt scan client (S3): prefill-only OCR. Fail-open: only rate-limit and
  * quota surface distinctly, the rest resolve to manual. Requests carry the
- * storage path only (PRD §4.4) — never bytes, never into analytics.
+ * storage path only (PRD §4.4): never bytes, never into analytics.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -17,9 +17,9 @@ export type ScanPrefill = {
 
 export type ScanOutcome =
   | { status: 'ok'; prefill: ScanPrefill }
-  /** `{ ok: false }` or a foreign shape — the form continues manually. */
+  /** `{ ok: false }` or a foreign shape: the form continues manually. */
   | { status: 'empty' }
-  /** Transport/5xx failure — the form continues manually. */
+  /** Transport/5xx failure: the form continues manually. */
   | { status: 'offline' }
   | { status: 'rate_limited' }
   | { status: 'quota_exceeded' };
@@ -128,7 +128,7 @@ export type SuggestableCategory = {
 /**
  * Consent-once flag (S3 UX, disetujui pemilik): written the first time the
  * user agrees to auto-reading, read before every auto-scan. Deliberately
- * NOT registered in `LOCAL_STORAGE_KEYS` — the consent sticks to the device,
+ * NOT registered in `LOCAL_STORAGE_KEYS`: the consent sticks to the device,
  * not the session, so re-login never re-asks. Only `'1'` counts as granted
  * (same strictness as the lock flag: corrupt values degrade to asking).
  */
@@ -152,7 +152,7 @@ export async function setScanConsent(): Promise<void> {
 
 /**
  * Minimum time the scanning indicator stays visible (S3 UX, disetujui
- * pemilik). Not a fake progress bar — an honesty floor so the "working"
+ * pemilik). Not a fake progress bar: an honesty floor so the "working"
  * state is perceivable even when the network answers instantly, and so the
  * timing matches the future real-OCR latency. The note still gates
  * deterministically on completion (Maestro-safe).

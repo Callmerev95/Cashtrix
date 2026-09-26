@@ -1,7 +1,7 @@
-# Cashtrix — Personal Finance, Tenang & Privat
+# Cashtrix: Personal Finance, Tenang & Privat
 
 **Cashtrix** adalah aplikasi mobile personal finance (iOS & Android) dengan
-estetika *private wealth* — obsidian + champagne gold. Input transaksi di bawah
+estetika *private wealth*, obsidian + champagne gold. Input transaksi di bawah
 20 detik, multi-dompet, transfer antar-dompet, transaksi berulang otomatis,
 analitik server-side, budget per kategori dengan alert anti-spam, pencarian
 riwayat, dan inbox notifikasi. Satu pengguna, satu perangkat; semua agregasi
@@ -9,7 +9,7 @@ uang dihitung di Postgres, tidak pernah di klien.
 
 > **Status: v1.1.0 rilis (tag `v1.1.0`).** Pasca-1.1.0 selesai penuh
 > (A3–A6, B4, C2, C6, D3–D5, skeleton + Maestro device GREEN 2026-09-25).
-> Berikutnya: **v1.2.0 — Pintasan + scan struk** (S1 deep-link → S2 lampiran
+> Berikutnya: **v1.2.0: Pintasan + scan struk** (S1 deep-link → S2 lampiran
 > 30 hari → S3 OCR prefill, spec beku).
 > Peta ticket: [specs/tickets.md](specs/tickets.md).
 
@@ -61,16 +61,16 @@ uang dihitung di Postgres, tidak pernah di klien.
   `cashtrix://reset-password`.
 - Login pertama pasca-konfirmasi otomatis di-seed 1 dompet **Cash** via Edge
   Function `seed-user` (idempotent); 12 kategori sistem langsung tersedia.
-- Sesi persisten — buka ulang app langsung ke Dashboard. Sign out menghapus
+- Sesi persisten, buka ulang app langsung ke Dashboard. Sign out menghapus
   sesi + seluruh storage lokal aplikasi.
 
 ### Dompet (Epic B, V4)
 
 - CRUD dompet: nama, tipe (`bank` / `ewallet` / `cash` / `card`), opening
   balance. Maksimal **10 dompet per akun** (trigger).
-- Saldo gabungan di Dashboard — selalu dari SQL view, tidak pernah disimpan di
+- Saldo gabungan di Dashboard, selalu dari SQL view, tidak pernah disimpan di
   kolom mutable.
-- Hapus dompet berisi transaksi ditolak FK — UI menawarkan **reassign massal**
+- Hapus dompet berisi transaksi ditolak FK, UI menawarkan **reassign massal**
   ke dompet lain (satu transaksi DB via RPC, termasuk transaksi soft-deleted).
 - **Arsip dompet**: `archived_at` menyembunyikan dari Dashboard + semua picker
   tanpa menghapus riwayat; transfer lama ke dompet terarsip tetap bernama.
@@ -80,13 +80,13 @@ uang dihitung di Postgres, tidak pernah di klien.
 
 - Form <20 detik: segmen Expense / Income / **Transfer**, keyboard numerik
   kustom + live-format `id-ID`, grid kategori sesuai tipe (transfer tanpa
-  kategori — `category_id` nullable khusus transfer), **grid kalender `View`**
+  kategori, `category_id` nullable khusus transfer), **grid kalender `View`**
   (tanpa date picker native), catatan ≤200 karakter, future date ditolak
   (trigger DB, toleransi 1 menit).
 - Transfer = satu baris (`wallet_id` sumber + `counterparty_wallet_id`
   tujuan, amount positif); saldo sumber − / tujuan + / gabungan diam;
   analytics & budget mengabaikan transfer.
-- Idempotency key (UUID v4 per sesi form) — retry jaringan tidak menduplikasi
+- Idempotency key (UUID v4 per sesi form), retry jaringan tidak menduplikasi
   (konflik `23505` dianggap sudah tersimpan).
 - Hapus = **soft-delete** (retensi 30 hari via `pg_cron`, lalu hard-delete)
   dengan **snackbar "Urungkan" ~10 detik** (`restore_transaction`).
@@ -106,7 +106,7 @@ uang dihitung di Postgres, tidak pernah di klien.
   periode lalu nol). Donut top-8 expense + "Other", bar chart harian/bulanan,
   empty state eksplisit.
 - **Ringkasan bulan lalu** di Dashboard (dari `v_monthly_summary`, zero-fill
-  bukan lubang) — tap menuju Analytics.
+  bukan lubang), tap menuju Analytics.
 
 ### Budget & alert (Epic E, A5)
 
@@ -135,10 +135,10 @@ uang dihitung di Postgres, tidak pernah di klien.
   bucket privat, tampil via signed URL), currency display (default `IDR`,
   tanpa konversi).
 - Kategori kustom (nama + ikon katalog, ≤40 char); kategori sistem hanya bisa
-  diarsipkan per-user via `category_mutes` — histori tetap valid.
+  diarsipkan per-user via `category_mutes`, histori tetap valid.
 - **Ekspor CSV** via share sheet (transfer = satu baris `type=transfer`,
   kategori `Transfer ke {tujuan}`). **Hapus akun** dua langkah (ketik `HAPUS`)
-  via Edge Function — menghapus seluruh data + avatar + auth user.
+  via Edge Function, menghapus seluruh data + avatar + auth user.
 
 ### Ketahanan & status (D4)
 
@@ -150,7 +150,7 @@ uang dihitung di Postgres, tidak pernah di klien.
 ### Observabilitas (T10)
 
 - Event minimal `screen_view`, `tx_created`, `budget_threshold_reached`
-  (fakta kasar saja — tanpa amount/note, PRD §4.4).
+  (fakta kasar saja, tanpa amount/note, PRD §4.4).
 - **Sentry nyata** via `configureTransport` yang di-inject (crash-free ≥99,5%),
   scrubbing rekursif field finansial sebelum keluar perangkat.
 
@@ -164,21 +164,21 @@ uang dihitung di Postgres, tidak pernah di klien.
 | Bahasa | TypeScript strict (`tsc --noEmit`), React 19 |
 | Backend | Supabase (project `Cashtrix`, `ap-southeast-2`): Postgres + Auth + RLS + Storage + Edge Functions |
 | State server | Context per fitur di atas satu Supabase client (`src/supabase/`) + refresh eksplisit (tanpa Realtime, tanpa TanStack/RTK) |
-| Chart | `View` polos (donut = ring tick terotasi, bar = kolom gradient, ring budget = 48 tick) — tanpa `react-native-svg` |
+| Chart | `View` polos (donut = ring tick terotasi, bar = kolom gradient, ring budget = 48 tick), tanpa `react-native-svg` |
 | Notifikasi | `expo-notifications` (local push), izin on-demand |
-| Konektivitas | `@react-native-community/netinfo` (modul native — berimplikasi rebuild, lihat [Rilis](#rilis--distribusi)) |
+| Konektivitas | `@react-native-community/netinfo` (modul native, berimplikasi rebuild, lihat [Rilis](#rilis--distribusi)) |
 | Crash reporting | `@sentry/react-native` via transport injeksi |
 | Media | `expo-image-picker` + `expo-image-manipulator` (avatar; modul Expo Go) |
-| Unit test | Jest (preset `jest-expo`) — fungsi domain murni |
+| Unit test | Jest (preset `jest-expo`), fungsi domain murni |
 | DB test | pgTAP (`supabase/tests/database/`, 17 file, 374 assertion) |
 | E2E | Maestro (`happy-path` + `smoke`) + cermin API `verify-t11` |
-| CI | GitHub Actions — `release-gate.yml` (lint → typecheck → Jest → kontrak statis → export; matriks live saat push `main`) |
+| CI | GitHub Actions, `release-gate.yml` (lint → typecheck → Jest → kontrak statis → export; matriks live saat push `main`) |
 | Distribusi | EAS (profil `development` / `preview` / `production`), `expo-dev-client`, OTA `expo-updates` (`runtimeVersion: appVersion`) |
 
 **Keputusan terkunci (PRD §0, D1–D11):** React Native + Expo, Supabase, manual
 entry, single currency display (skema siap multi), personal maks 10 dompet,
 budget per kategori reset tiap tanggal 1, alert in-app + local push, warna &
-font dari `DESIGN.md` — bukan dari layar Stitch.
+font dari `DESIGN.md`, bukan dari layar Stitch.
 
 ---
 
@@ -228,7 +228,7 @@ Cashtrix/
 │   ├── theme/                # theme.ts = satu-satunya tempat hex
 │   └── supabase/             # client tunggal (persist AsyncStorage)
 ├── supabase/
-│   ├── migrations/           # 11 migrasi (kanonis — jangan divergen)
+│   ├── migrations/           # 11 migrasi (kanonis, jangan divergen)
 │   ├── functions/            # seed-user, export-csv, delete-account
 │   └── tests/database/       # pgTAP 00_setup + 01–16
 ├── __tests__/               # 26 suite Jest (hapus .session-seed.json bila stale)
@@ -252,19 +252,19 @@ Cashtrix/
 - Expo Go (loop JS harian) atau dev build (fitur native: NetInfo; segera
   biometric + deteksi locale)
 - Project Supabase hosted `Cashtrix` untuk verifikasi live
-- Docker/Podman — hanya untuk `npm run db:test` (alternatif: `psql` langsung
+- Docker/Podman, hanya untuk `npm run db:test` (alternatif: `psql` langsung
   per AGENTS.md)
 
 ### 1. Install & env
 
 ```sh
-npm install   # biasa saja — JANGAN npx expo install (gagal EALLOWSCRIPTS di repo ini);
+npm install   # biasa saja, JANGAN npx expo install (gagal EALLOWSCRIPTS di repo ini);
               # versi modul native mengikuti node_modules/expo/bundledNativeModules.json
 cp .env.example .env   # isi EXPO_PUBLIC_SUPABASE_ANON_KEY (publishable key,
-                       # aman di bundle — RLS yang menjaga)
+                       # aman di bundle: RLS yang menjaga)
 ```
 
-> Service role key **tidak pernah** masuk bundle atau repo — hanya via env
+> Service role key **tidak pernah** masuk bundle atau repo, hanya via env
 > sekali pakai untuk skrip verifikasi, lalu unset + verifikasi bersih.
 
 ### 2. Database
@@ -290,9 +290,9 @@ npx expo export --platform android --output-dir /tmp/out   # bundle check tanpa 
 |---|---|
 | `npm run lint` | ESLint (termasuk larangan hex di luar `theme.ts`) |
 | `npm run typecheck` | `tsc --noEmit`, 0 error |
-| `npm run test` | Jest — hapus `__tests__/.session-seed.json` dulu bila stale (untracked, jangan commit) |
-| `npm run db:test` | pgTAP — butuh Docker; alternatif `psql` per AGENTS.md |
-| `npm run e2e:check` | Kontrak statis selektor Maestro (tanpa device — jalan di CI) |
+| `npm run test` | Jest, hapus `__tests__/.session-seed.json` dulu bila stale (untracked, jangan commit) |
+| `npm run db:test` | pgTAP, butuh Docker; alternatif `psql` per AGENTS.md |
+| `npm run e2e:check` | Kontrak statis selektor Maestro (tanpa device, jalan di CI) |
 | `npm run e2e:verify` | Mirror API-level happy path (self-cleanup user uji) |
 
 ---
@@ -308,7 +308,7 @@ transfer, `counterparty_wallet_id`, note ≤200 char,
 `unique(user_id, idempotency_key)`, soft-delete `deleted_at`,
 `recurring_rule_id` + `occurred_on`), `budgets`
 (`unique(user_id, category_id, month)`), `budget_alerts`
-(`unique(user_id, category_id, month, threshold)` — dedup **per-user**,
+(`unique(user_id, category_id, month, threshold)`, dedup **per-user**,
 plus `read_at` nullable untuk inbox), `category_mutes` (arsip per-user atas
 kategori sistem), `recurring_rules` (due 1–28 / akhir bulan, `starts_on`
 wajib, `ends_on` opsional, maks 20 aktif via trigger).
@@ -320,7 +320,7 @@ wajib, `ends_on` opsional, maks 20 aktif via trigger).
 **RPC yang dipanggil klien:** `reassign_wallet_transactions` (bulk-move
 atomik, termasuk soft-deleted; collapse sumber=tujuan ditolak),
 `soft_delete_transaction` / `restore_transaction` (mengembalikan jumlah
-baris — 0 = bukan milik/tidak ada), `purge_deleted_transactions` (job
+baris, 0 = bukan milik/tidak ada), `purge_deleted_transactions` (job
 `pg_cron` harian 03:00 UTC; sebagai `postgres` membersihkan semua user,
 sebagai `authenticated` terbatasi RLS), `current_month(tz)`,
 `v_category_breakdown`, `v_analytics_series`, `analytics_overview`
@@ -353,7 +353,7 @@ Empat lapis; setiap ticket menjalankan ulang seluruh suite (tanpa regresi):
 
 Konvensi: skrip live butuh `SUPABASE_SERVICE_ROLE_KEY` via env sekali pakai
 (konfirmasi email aktif di hosted membuat signup anon domain `.test`
-ditolak — provisioning hanya via Admin API); user uji dibersihkan
+ditolak, provisioning hanya via Admin API); user uji dibersihkan
 (`delete from auth.users where email like …`), residu diverifikasi 0.
 Uji scroll massal via `scripts/seed-bulk.mjs` (200 txn, cleanup `--cleanup`).
 Akun E2E persisten via `scripts/provision-e2e.mjs` (selalu jalur login).
@@ -370,7 +370,7 @@ tercatat → tag (`v1.0.0` di `492a117`, `v1.1.0` di HEAD gerbang).
 - **EAS**: 3 profil (`development` / `preview` / `production`); kerja JS
   harian tetap di Expo Go, dev-client untuk fitur native.
 - **OTA** (`expo-updates`, `runtimeVersion: appVersion`): update JS mengalir
-  tanpa rebuild — **kecuali tiap modul native baru** (fingerprint mismatch →
+  tanpa rebuild, **kecuali tiap modul native baru** (fingerprint mismatch →
   update ditolak diam-diam, tanpa crash). Pelajaran D4 (`netinfo`): satu
   modul baru = satu rebuild preview (~10 mnt). Rebuild gabungan berikutnya
   mencakup `expo-local-authentication` (B4) + `expo-localization` (C6).
@@ -388,7 +388,7 @@ tercatat → tag (`v1.0.0` di `492a117`, `v1.1.0` di HEAD gerbang).
 ## Desain
 
 Sumber kebenaran visual adalah [DESIGN.md](DESIGN.md) ("Minimalist
-Obsidian") — Stitch hanya referensi **layout**.
+Obsidian"), Stitch hanya referensi **layout**.
 
 - Kanvas `#0A0A0A`, card `#1C1C1E`, elevated/border `#2C2C2E` /
   `#3A3A3C`, aksen gold `#D4AF37` (+ soft `#F3E5AB`), teks `#E5E5E5` /
@@ -396,12 +396,12 @@ Obsidian") — Stitch hanya referensi **layout**.
 - Inter untuk struktural, **JetBrains Mono untuk semua nilai moneter**
   (diimpor per-weight, bukan root paket).
 - Semantik nominal: income `#30D158`, expense `#FF6B62`, net gold, Total
-  Saldo putih; persen ring budget bukan nominal — tetap putih.
+  Saldo putih; persen ring budget bukan nominal, tetap putih.
 - Spacing skala 4px, margin 20px, clearance nav ≥96px; radius 16/20/24/32/9999;
   button 52px, tap target min 44px; floating nav frosted + FAB 56px gradient gold.
 - Divider hairline `colors.border`: Dashboard (ringkasan–Riwayat) + tiap grup
   hari kecuali pertama.
-- **Hex literal hanya di `src/theme/theme.ts`** — ditegakkan lint;
+- **Hex literal hanya di `src/theme/theme.ts`**, ditegakkan lint;
   komponen mengonsumsi via alias `@/theme`.
 - Drift Stitch yang diketahui (diabaikan): abu M3 `#131313`/`#1C1B1B`
   (API Stitch menurunkan token dari seed) dan Public Sans pada token currency.
@@ -412,13 +412,13 @@ Obsidian") — Stitch hanya referensi **layout**.
 
 - RLS deny-by-default di 100% tabel + bucket avatar privat; `anon` dicabut;
   view agregasi `security_invoker` + grant minimal (tanpanya saldo user lain
-  bocor — ditangkap pgTAP).
+  bocor, ditangkap pgTAP).
 - Service role key hanya di Edge Functions / env sekali pakai. HTTPS wajib.
-- **Tanpa data finansial di log** — client maupun server; scrubbing
+- **Tanpa data finansial di log**, client maupun server; scrubbing
   `amount`/`note` di sink observability + transport Sentry.
 - Idempotency key per transaksi mencegah duplikasi saat retry.
 - Hak pengguna: ekspor CSV (portabilitas) + hapus akun total (penghapusan).
-- App lock biometric device-local (B4, #50): flag lokal, tanpa state server —
+- App lock biometric device-local (B4, #50): flag lokal, tanpa state server,
   ganti perangkat = opt-in ulang.
 - Halaman privasi/ToS (EN) di GitHub Pages, URL sama untuk in-app dan store
   listing; versi Indonesia menyusul bersama i18n (C6, #51).
@@ -429,21 +429,21 @@ Obsidian") — Stitch hanya referensi **layout**.
 
 Penuhnya di PRD §6.1 dan [docs/adr/](docs/adr/); yang paling memengaruhi kode:
 
-- **R1** — Dedup `budget_alerts` per-user (kunci lama menabrak antar-user
+- **R1**, Dedup `budget_alerts` per-user (kunci lama menabrak antar-user
   pada kategori sistem bersama).
-- **R2** — `seed-user` hanya membuat dompet Cash; kategori default tidak
+- **R2**, `seed-user` hanya membuat dompet Cash; kategori default tidak
   dikopi per-user. Email auto-confirm selama dev.
-- **R3/R4** — View saldo `security_invoker` + revoke anon; reassign via RPC
+- **R3/R4**, View saldo `security_invoker` + revoke anon; reassign via RPC
   atomik; `amount` selalu positif, arah dari `type`.
-- **R5** — Riwayat hanya dari `v_transactions_feed`; hapus/pulih via RPC
+- **R5**, Riwayat hanya dari `v_transactions_feed`; hapus/pulih via RPC
   berperilaku hitung-baris; retensi 30 hari via `pg_cron`.
-- **R6** — Scope v1.1 dibekukan (distribusi + transfer + recurring +
+- **R6**, Scope v1.1 dibekukan (distribusi + transfer + recurring +
   kalender + undo + arsip); outbox offline & read cache ditunda ke v2.0.
-- **R7/R8** — Transfer = satu baris tanpa kategori; recurring = catch-up RPC
+- **R7/R8**, Transfer = satu baris tanpa kategori; recurring = catch-up RPC
   bulanan (bukan cron/pengingat); privasi di Pages; reset via deep link.
-- **R9** — App lock device-local, grace 60 dtk, cold start selalu kunci
+- **R9**, App lock device-local, grace 60 dtk, cold start selalu kunci
   (ADR-0007, menutup OPEN-3).
-- **R10** — i18n ikut locale OS + kamus terpusat, satu pass termasuk legal
+- **R10**, i18n ikut locale OS + kamus terpusat, satu pass termasuk legal
   ID (ADR-0008).
 - Pola yang hanya boleh dilanggar dengan revisi PRD dulu: D1–D11.
 
@@ -453,17 +453,17 @@ Penuhnya di PRD §6.1 dan [docs/adr/](docs/adr/); yang paling memengaruhi kode:
 
 Katalog lengkap hidup di **[docs/roadmap.md](docs/roadmap.md)**.
 
-- **v1.1.0** ✅ — V0 auth/legal + EAS/Sentry + transfer + recurring +
+- **v1.1.0** ✅, V0 auth/legal + EAS/Sentry + transfer + recurring +
   kalender + undo + arsip (tag di HEAD gerbang).
-- **v1.1.x** ✅ sebagian — transfer di CSV (Opsi B); tunda: email dukungan +
+- **v1.1.x** ✅ sebagian, transfer di CSV (Opsi B); tunda: email dukungan +
   screenshot HP + run Maestro device.
-- **Pasca-1.1.0** ✅ selesai penuh — A6 (#45) → A3 (#46) → A4 (#47) → A5 (#48) →
+- **Pasca-1.1.0** ✅ selesai penuh, A6 (#45) → A3 (#46) → A4 (#47) → A5 (#48) →
   D4 (#49) → B4 (#50) → C6 (#51) → C2 (#53) → D5 (#54) → D3 (#52, tetap manual) +
   skeleton/preloader + Maestro device GREEN 2026-09-25.
-- **v1.2.0** 🚧 direncanakan — S1 pintasan deep-link → S2 lampiran 30 hari →
+- **v1.2.0** 🚧 direncanakan, S1 pintasan deep-link → S2 lampiran 30 hari →
   S3 OCR prefill → RLS gerbang + bump minor + polish final UI/UX + screenshot
   store (`specs/cashtrix-v1.2.md`, ADR-0009).
-- **v2.0** 🧊 — offline outbox + read cache (satu paket konsistensi, jangan
+- **v2.0** 🧊, offline outbox + read cache (satu paket konsistensi, jangan
   dicicil; spec sync mencakup `transaction_receipts` sebagai tipe antrean),
   lalu bank sync, multi-currency + kurs, AI insight.
 
@@ -473,4 +473,4 @@ sekaligus.
 
 ---
 
-*Cashtrix — Tenang, cepat, privat. Melihat posisi keuangan dalam hitungan detik.*
+*Cashtrix, Tenang, cepat, privat. Melihat posisi keuangan dalam hitungan detik.*
