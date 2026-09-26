@@ -5,7 +5,11 @@
  * and anything unknown fall through to the remembered preference), and
  * only the exact `scan=1` the `/scan` alias emits arms scan mode.
  */
-import { parseScanFlag, parseShortcutType } from '@/features/transactions';
+import {
+  parseScanFlag,
+  parseShortcutType,
+  scanForcedType,
+} from '@/features/transactions';
 
 describe('parseShortcutType (S1)', () => {
   it.each([['expense'], ['income']])('accepts %p', (value) => {
@@ -31,4 +35,14 @@ describe('parseScanFlag (S1)', () => {
       expect(parseScanFlag(value)).toBe(false);
     },
   );
+});
+
+describe('scanForcedType (S3: scan = expense-only)', () => {
+  it('scan mode forces expense (struk = belanja)', () => {
+    expect(scanForcedType(true)).toBe('expense');
+  });
+
+  it('off → null (the usual override chain applies)', () => {
+    expect(scanForcedType(false)).toBeNull();
+  });
 });

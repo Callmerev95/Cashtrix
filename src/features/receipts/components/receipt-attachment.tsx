@@ -1,17 +1,19 @@
 /**
- * Receipt photo attachment (S2, ADR-0009).
+ * Receipt photo attachment (S2, ADR-0009; scan UX S3).
  *
  * Thumbnails + an attach button for the Add form. The picker and upload live
  * here; the attachment list itself is owned by the form (it needs the ids at
  * save time to link them). Uploads happen the moment a photo is taken (Opsi
  * A) — the form never waits for them at save.
  *
- * `expo-image-picker` only (no `expo-camera`, no rebuild). When `autoOpen`
- * (the `?scan=1` contract from S1), the source sheet starts open — derived
- * as initial state, never synced by an effect.
+ * `expo-image-picker` only (no `expo-camera`, no rebuild). The source sheet
+ * is parent-controlled (`sheetVisible`); `autoCamera` (the `?scan=1` contract
+ * from S1) fires the camera once on mount instead of opening the sheet —
+ * scan sessions go straight to capture, QRIS-style. `onPhotoUploaded` lets
+ * the parent auto-scan each new photo (event-driven, never an effect).
  */
 import * as ImagePicker from 'expo-image-picker';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -25,6 +27,7 @@ import {
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
+import { Skeleton, SkeletonBlock } from '@/components';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 
 import {
@@ -39,24 +42,44 @@ export function ReceiptAttachmentSection({
   attachments,
   onAttachmentsChange,
   userId,
-  autoOpen = false,
+  sheetVisible,
+  onSheetVisibleChange,
+  autoCamera = false,
+  captureRequest = 0,
+  scanning = false,
+  onPhotoUploaded,
+  onUploadError,
   testID = 'receipt-section',
 }: {
   attachments: ReceiptAttachment[];
   onAttachmentsChange: (next: ReceiptAttachment[]) => void;
   userId: string;
-  autoOpen?: boolean;
+  sheetVisible: boolean;
+  onSheetVisibleChange: (visible: boolean) => void;
+  autoCamera?: boolean;
+  /** Increment to shoot straight to the camera (failure "Foto ulang"). */
+  captureRequest?: number;
+  /** Parent-owned OCR run: the tile shows the working state. */
+  scanning?: boolean;
+  onPhotoUploaded?: (attachment: ReceiptAttachment) => void;
+  /**
+   * Upload/delete failures: reported to the parent (failure package) instead
+   * of an Alert. The raw error is swallowed — it carries a userId storage
+   * path, so it must reach neither UI nor logs. The OS-permission denial
+   * keeps its own Alert (it directs to Settings).
+   */
+  onUploadError?: () => void;
   testID?: string;
 }) {
   const language = useLanguage();
   const t = dictionaryFor(language).transactions.receipt;
   const commonCancel = dictionaryFor(language).common.cancel;
 
-  const [sheetVisible, setSheetVisible] = useState(autoOpen);
   const [uploading, setUploading] = useState(false);
+  const autoCameraFired = useRef(false);
 
   async function addPhoto(source: 'camera' | 'gallery') {
-    setSheetVisible(false);
+    onSheetVisibleChange(false);
     if (!userId || uploading) return;
 
     const permission =
@@ -88,13 +111,11 @@ export function ReceiptAttachmentSection({
         lang: language,
       });
       onAttachmentsChange([...attachments, attachment]);
-    } catch (cause) {
-      Alert.alert(
-        t.uploadFail,
-        cause instanceof Error
-          ? cause.message
-          : dictionaryFor(language).common.retry,
-      );
+      onPhotoUploaded?.(attachment);
+    } catch {
+      // Friendly copy + Foto ulang / Isi manual live in the parent (failure
+      // package); the raw error stays here (see `onUploadError` contract).
+      onUploadError?.();
     } finally {
       setUploading(false);
     }
@@ -105,23 +126,50 @@ export function ReceiptAttachmentSection({
     // server delete restores it so the save can still link it.
     onAttachmentsChange(
       attachments.filter((item) => item.id !== attachment.id),
-    );
-    try {
+    );    try {
       await deleteReceiptAttachment({
         userId,
         id: attachment.id,
         storagePath: attachment.storagePath,
       });
-    } catch (cause) {
+    } catch {
       onAttachmentsChange([...attachments]);
-      Alert.alert(
-        t.uploadFail,
-        cause instanceof Error
-          ? cause.message
-          : dictionaryFor(language).common.retry,
-      );
+      onUploadError?.();
     }
   }
+
+  // Scan sessions open the camera once on mount (not the sheet). Deferred
+  // past the effect body so no setState runs synchronously in an effect;
+  // the ref guard keeps StrictMode/remounts from double-firing. Mount-only
+  // by contract (the session exists before the form paints — auth gate).
+  // Placed after `addPhoto` so the static TDZ check sees the declaration.
+  useEffect(() => {
+    if (!autoCamera || autoCameraFired.current) return;
+    autoCameraFired.current = true;
+    const timer = setTimeout(() => {
+      if (!userId) {
+        onSheetVisibleChange(true);
+        return;
+      }
+      void addPhoto('camera');
+    }, 0);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // "Foto ulang" (S3 failure package): each increment re-shoots the camera.
+  // Same deferred pattern as autoCamera above — no sync setState in effect.
+  const lastCaptureRequest = useRef(0);
+  useEffect(() => {
+    if (captureRequest === 0 || captureRequest === lastCaptureRequest.current) {
+      return;
+    }
+    lastCaptureRequest.current = captureRequest;
+    const timer = setTimeout(() => {
+      void addPhoto('camera');
+    }, 0);
+    return () => clearTimeout(timer);
+  });
 
   return (
     <View testID={testID}>
@@ -155,7 +203,7 @@ export function ReceiptAttachmentSection({
           testID="receipt-attach"
           accessibilityRole="button"
           accessibilityLabel={t.attachA11y}
-          onPress={() => setSheetVisible(true)}
+          onPress={() => onSheetVisibleChange(true)}
           style={styles.attach}
         >
           {uploading ? (
@@ -172,6 +220,20 @@ export function ReceiptAttachmentSection({
           </Text>
         </Pressable>
       </View>
+      {scanning ? (
+        <View testID="receipt-scanning" style={styles.scanning}>
+          <Skeleton>
+            <SkeletonBlock
+              width={THUMB}
+              height={THUMB}
+              borderRadius={radius.md}
+            />
+          </Skeleton>
+          <Text style={[typography.bodySm, styles.scanningLabel]}>
+            {t.scanning}
+          </Text>
+        </View>
+      ) : null}
       <Text style={[typography.bodySm, styles.note]}>{t.retentionNote}</Text>
 
       <Modal
@@ -179,13 +241,13 @@ export function ReceiptAttachmentSection({
         visible={sheetVisible}
         transparent
         animationType="fade"
-        onRequestClose={() => setSheetVisible(false)}
+        onRequestClose={() => onSheetVisibleChange(false)}
       >
         <Pressable
           testID="receipt-sheet-backdrop"
           accessibilityRole="button"
           accessibilityLabel={commonCancel}
-          onPress={() => setSheetVisible(false)}
+          onPress={() => onSheetVisibleChange(false)}
           style={styles.backdrop}
         >
           <View style={styles.sheet}>
@@ -275,6 +337,15 @@ const styles = StyleSheet.create({
   },
   attachLabel: {
     color: colors.accent,
+  },
+  scanning: {
+    marginTop: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  scanningLabel: {
+    color: colors.textSecondary,
   },
   note: {
     marginTop: spacing.sm,

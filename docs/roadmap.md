@@ -250,10 +250,38 @@ Detail beku di `specs/cashtrix-v1.2.md` + ADR-0009. Ticket: S1 → S2 → S3 →
 |---|---|---|
 | S1 | Pintasan deep-link + panduan OS | Tanpa native; membuka jalan tap-belakang di semua vendor |
 | S2 | Foto lampiran 30 hari | Nilai langsung tanpa tebakan OCR; fondasi Storage + tabel untuk S3 |
-| S3 | OCR server eksperimen | Prefill Starbucks "AMERICANO 30.000" → 30.000; gagal = lanjut manual |
+| S3 | OCR server eksperimen | Prefill Starbucks "AMERICANO 30.000" → 30.000; gagal = lanjut manual — mock-first + device-gate lolos 2026-09-26 (siap PR, #57) |
 | RLS | Gerbang `1.2.0` | Bump minor sekali (akumulasi pasca-1.1.0 + S1–S3) + polish final UI/UX + screenshot store |
 
 Aturan versi (mengikat): `1.2.0` = minor ini; `2.0.0` = hanya arsitektur besar;
 `1.2.x` = lubang tanpa ubah perilaku. v2.0 tetap trek terpisah — satu-satunya
 titik temu: spec sync v2.0 mencakup `transaction_receipts` sebagai tipe antrean
 outbox (upload tertunda + retry OCR).
+
+### 6.7 Pasca-1.2 — monetisasi scan (arah disetujui pemilik 2026-09-25, belum ticket)
+
+S3 dikirim sebagai **plumbing + mock + seam kuota** (engine OCR riil menyusul);
+skema monetisasi di bawah ini **bukan scope S3 maupun RLS**, dicatat agar
+keputusan tidak hilang:
+
+- Free: **5 scan/bulan**; kuota habis → catat manual tetap bisa (scan tidak
+  pernah memblokir pencatatan).
+- Langganan ±**Rp15.000/bulan** mendanai Vision pay-as-you-go: `TEXT_DETECTION`
+  = 1.000 unit pertama/bulan gratis, selebihnya **$1,50/1.000** (satu scan =
+  satu unit; terverifikasi dari halaman pricing resmi Google, Juli 2026).
+  Unit economics aman pada pemakaian personal-finance normal (~20 scan/bulan ≈
+  Rp500 biaya vs Rp15.000 harga, sebelum potongan store 15%).
+- Pool 1.000 gratis bersifat **per project GCP, dipakai bersama** — sejak swap
+  Vision, pengukuran **scan free vs scan subscriber dipisah** agar jebolnya
+  pool terpantau.
+- Seam yang ditanam S3: titik cek kuota di `scan-receipt` setelah
+  `enforceRateLimit` (kini pass-through) + kontrak error beku
+  `{ error: 'quota_exceeded' }` (beda dari `{ ok: false }` gagal OCR) agar
+  klien kelak menampilkan prompt paywall, bukan fallback diam-diam.
+- Trek penagihan terpisah (Play Billing / App Store IAP atau gateway lokal +
+  entitlement **server-side**: tabel pemakaian bulanan per user dengan bulan
+  ikut `profiles.timezone` + status langganan dari webhook store; klien tidak
+  pernah memutuskan kuota). Angka "5 gratis" divalidasi dari data pemakaian
+  riil sebelum dikunci ke store listing.
+- RLS `1.2.0` **tidak mengklaim akurasi OCR** ke store; Data Safety ditulis
+  apa adanya ("foto diproses sementara").

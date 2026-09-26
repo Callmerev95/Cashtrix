@@ -152,8 +152,8 @@ Semua ticket `ready-for-agent`. Urutan mengikat: S1 → S2 → S3 (tiap fase bis
 | Ticket | Issue | Blocked by | Deliverable |
 |---|---|---|---|
 | S1 — Pintasan deep-link + panduan OS | #55 | — | `cashtrix://add-transaction?type=` + `cashtrix://scan`, App Shortcuts long-press, panduan Back Tap/Quick Tap ID/EN, `testID` `shortcut-expense/income/scan` — selesai, di `main` (HEAD `05fc2aa`) |
-| S2 — Foto lampiran 30 hari | #56 | #55 | Bucket privat `receipts`, tabel `transaction_receipts` + RLS + `purge_expired_receipts()` via `pg_cron`, thumbnail di form Add (pra-save legal) — implementasi di working tree, belum PR (lint/typecheck/Jest 464/`verify-s2` 34/pgTAP 18 setara live/`--static-only`/export hijau) |
-| S3 — OCR server eksperimen | #57 | #56 | Edge Function `scan-receipt` (JWT → rate-limit 5/mnt → OCR → hapus temp → prefill), consent eksplisit, parser total+tanggal+merchant ID, saran kategori opsional |
+| S2 — Foto lampiran 30 hari | #56 | #55 | Bucket privat `receipts`, tabel `transaction_receipts` + RLS + `purge_expired_receipts()` via `pg_cron`, thumbnail di form Add (pra-save legal) — selesai, di `main` (PR #59, closed) |
+| S3 — OCR server eksperimen | #57 | #56 | Edge Function `scan-receipt` (JWT → rate-limit 5/mnt → OCR → hapus temp → prefill), consent eksplisit, parser total+tanggal+merchant ID, saran kategori opsional — implementasi + device-gate hijau di working tree, siap PR (Jest 525/`verify-s3` 39/kontrak 78/8/3) |
 | RLS — Gerbang rilis `1.2.0` | #58 | #55, #56, #57 | Jest + pgTAP + `verify-s*` + kontrak statis Maestro + checklist visual + polish final UI/UX + screenshot store + bump `app.json`/`package.json` → `1.2.0` |
 
 ```
@@ -170,7 +170,6 @@ Semua ticket `ready-for-agent`. Urutan mengikat: S1 → S2 → S3 (tiap fase bis
 
 ### Frontier
 
-#55 (S1) closed — di `main` (HEAD `05fc2aa`). #56 (S2) implementasi selesai di
-working tree, belum PR (migrasi sudah applied hosted + terverifikasi live;
-butuh review + squash + tutup issue). #57 (S3) unblocked berikutnya (menunggu
-#56 closed). #58 blocked by #55+#56+#57.
+#55 (S1) closed — di `main` (HEAD `05fc2aa`). #56 (S2) closed via PR #59
+(HEAD `8108b53`). #57 (S3) implementasi + device-gate hijau di working tree,
+siap PR. #58 blocked by #57 (menunggu #57 closed).

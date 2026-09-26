@@ -67,6 +67,7 @@ export {
   receiptExpiryCutoff,
   receiptStoragePath,
   savedTransactionLabel,
+  scanForcedType,
   startOfDay,
   toDateKey,
   toggleBulkRow,

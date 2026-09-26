@@ -496,6 +496,22 @@ export const id = {
       permissionTitle: 'Izin kamera/galeri dibutuhkan',
       permissionBody:
         'Aktifkan di Pengaturan perangkat untuk melampirkan foto struk.',
+      scan: 'Pindai otomatis',
+      scanA11y: 'Pindai struk dan isi form otomatis',
+      scanning: 'Membaca struk…',
+      scanApplied: 'Terisi otomatis — periksa nominalnya sebelum Simpan.',
+      scanFail: 'Struk tidak berhasil terbaca. Silahkan scan struk ulang.',
+      scanRetake: 'Foto ulang',
+      scanRetakeA11y: 'Foto ulang struk untuk dipindai lagi',
+      scanManual: 'Isi manual',
+      scanManualA11y: 'Tutup pesan dan isi form manual',
+      scanRateLimited: 'Terlalu sering memindai. Coba lagi sebentar lagi.',
+      scanQuota: 'Kuota pindaian habis. Catat manual tetap bisa.',
+      consentTitle: 'Kirim foto untuk dibaca otomatis?',
+      consentBody:
+        'Foto struk dikirim untuk dibaca dan hanya mengisi form ini — tidak menyimpan apa pun. Anda tetap menekan Simpan manual.',
+      consentPersistNote: 'Berlaku di perangkat ini.',
+      consentSend: 'Kirim',
     },
     form: {
       loadFail: 'Gagal memuat transaksi',

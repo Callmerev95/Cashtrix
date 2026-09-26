@@ -170,11 +170,21 @@ export async function listReceiptsForTransaction(input: {
     .order('created_at', { ascending: false });
   if (error) throw error;
   const rows = (data ?? []) as ReceiptRow[];
-  return Promise.all(
-    rows.map(async (row) =>
-      toAttachment(row, await getReceiptSignedUrl(row.storage_path)),
-    ),
+  // Per-row tolerant (temuan device S3): one dead object (orphan row — the
+  // sweep removes object-then-row, so a crash between the two leaves one)
+  // must not blank the whole thumbnail list, and the row must survive so
+  // retry/retake still work — scanning it yields a clean `{ ok: false }`.
+  // `Promise.all` without this would drop every thumbnail on one failure.
+  const settled = await Promise.all(
+    rows.map(async (row) => {
+      try {
+        return toAttachment(row, await getReceiptSignedUrl(row.storage_path));
+      } catch {
+        return toAttachment(row, '');
+      }
+    }),
   );
+  return settled;
 }
 
 /**
