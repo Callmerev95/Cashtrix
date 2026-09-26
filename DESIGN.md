@@ -159,9 +159,10 @@ Depth = tonal layering + hairline edges + diffuse gold glow (never heavy drop sh
 ## 5. Components
 
 ### Buttons
-- **Primary:** solid/gradient gold (`from #D4AF37` → `#F2CA50`), obsidian text `#0A0A0A`, 52px height, radius 16px, `shadow-md`, hover `brightness-105`, tap `scale(0.99)`.
+- **Primary:** solid/gradient gold (`from #D4AF37` → `#F2CA50`), obsidian text `#0A0A0A`, 52px height, radius 16px, `shadow-md`, hover `brightness-105`, tap `opacity 0.7`.
 - **Secondary:** `#2C2C2E` fill, `#E5E5E5` text, 1px `#3A3A3C` border.
 - **Ghost:** transparent, gold text, no border.
+- **Press feedback (all controls):** `opacity 0.7` on press via the shared `pressedFeedback` const (`src/components/pressed.ts`) — one value everywhere, state-driven (no animation loop). Full-width rows/cards inside a scroller add `unstable_pressDelay` of `PRESS_FEEDBACK_DELAY_MS` (150ms) so scroll touches never flash; `onPress` timing is unaffected.
 
 ### Inputs
 - `#1C1C1E` fill, 1px `#2C2C2E` outline, radius 16px, 16px padding.
