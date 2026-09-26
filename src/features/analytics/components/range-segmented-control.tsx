@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
   },
   segment: {
     flex: 1,
-    minHeight: layout.minTapTarget - spacing.xs * 2,
+    minHeight: layout.minTapTarget,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.full,
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     flexGrow: 0,
   },
   chip: {
-    height: layout.minTapTarget - spacing.sm,
+    height: layout.minTapTarget,
     paddingHorizontal: spacing.md,
     alignItems: 'center',
     justifyContent: 'center',

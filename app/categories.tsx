@@ -19,6 +19,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card, PrimaryButton, Screen, SkeletonList } from '@/components';
 import { useAuth } from '@/features/auth';
@@ -31,6 +32,7 @@ import { colors, layout, radius, spacing, typography } from '@/theme';
 
 export default function CategoriesScreen() {
   const { session } = useAuth();
+  const insets = useSafeAreaInsets();
   const {
     categories,
     loading,
@@ -114,7 +116,10 @@ export default function CategoriesScreen() {
   }
 
   return (
-    <Screen style={styles.frame} testID="categories-screen">
+    <Screen
+      style={[styles.frame, { paddingTop: insets.top + spacing.xl }]}
+      testID="categories-screen"
+    >
       <View style={styles.header}>
         <Text style={[typography.labelUppercase, styles.kicker]}>
           Personalize
@@ -336,6 +341,6 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.lg,
   },
 });

@@ -312,10 +312,10 @@ describe('secondary routes (D3)', () => {
     expect(await screen.findByTestId('search-input')).toBeTruthy();
   });
 
-  it('reaches Notifications from the Dashboard bell', async () => {
+  it('reaches Notifications from the header bell', async () => {
     const { getPathname } = await renderSignedInApp();
 
-    fireEvent.press(await screen.findByTestId('dashboard-alerts'));
+    fireEvent.press(await screen.findByTestId('app-header-bell'));
 
     expect(getPathname()).toBe('/notifications');
     // With the inert test key every provider read fails offline-safe, so the

@@ -25,6 +25,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card, GhostButton, PrimaryButton, Screen, SkeletonList, TextField } from '@/components';
 import { signOut, useAuth } from '@/features/auth';
@@ -50,6 +51,7 @@ const LEGAL = {
 
 export default function ProfileScreen() {
   const { session } = useAuth();
+  const insets = useSafeAreaInsets();
   const {
     profile,
     avatarSignedUrl,
@@ -244,7 +246,10 @@ export default function ProfileScreen() {
   }
 
   return (
-    <Screen style={styles.frame} testID="profile-screen">
+    <Screen
+      style={[styles.frame, { paddingTop: insets.top + spacing.xl }]}
+      testID="profile-screen"
+    >
       <ScrollView
         testID="profile-scroll"
         showsVerticalScrollIndicator={false}

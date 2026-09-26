@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
   },
   segment: {
     flex: 1,
-    minHeight: layout.minTapTarget - spacing.xs * 2,
+    minHeight: layout.minTapTarget,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.full,

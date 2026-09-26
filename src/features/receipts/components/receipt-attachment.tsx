@@ -25,6 +25,7 @@ import {
   View,
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { Skeleton, SkeletonBlock } from '@/components';
@@ -72,6 +73,7 @@ export function ReceiptAttachmentSection({
   testID?: string;
 }) {
   const language = useLanguage();
+  const insets = useSafeAreaInsets();
   const t = dictionaryFor(language).transactions.receipt;
   const commonCancel = dictionaryFor(language).common.cancel;
 
@@ -193,6 +195,7 @@ export function ReceiptAttachmentSection({
               accessibilityRole="button"
               accessibilityLabel={t.removeA11y}
               onPress={() => void removePhoto(attachment)}
+              hitSlop={spacing.sm}
               style={styles.remove}
             >
               <MaterialIcons name="close" size={16} color={colors.textOnAccent} />
@@ -250,7 +253,9 @@ export function ReceiptAttachmentSection({
           onPress={() => onSheetVisibleChange(false)}
           style={styles.backdrop}
         >
-          <View style={styles.sheet}>
+          <View
+            style={[styles.sheet, { paddingBottom: insets.bottom + spacing.lg }]}
+          >
             <Pressable
               testID="receipt-option-camera"
               accessibilityRole="button"

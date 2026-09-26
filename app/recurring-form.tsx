@@ -206,7 +206,7 @@ export default function RecurringFormScreen() {
     <Screen hasFloatingNav={false}>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
           <Pressable

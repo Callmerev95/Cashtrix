@@ -172,7 +172,12 @@ export default function WalletsScreen() {
               />
             </Skeleton>
           ) : (
-            <Text style={[typography.currencyDisplay, styles.total]} numberOfLines={1}>
+            <Text
+              style={[typography.currencyDisplay, styles.total]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
+            >
               {totalLabel}
             </Text>
           )}
@@ -310,7 +315,9 @@ export default function WalletsScreen() {
 
       {pendingDelete ? (
         <View style={styles.sheet} testID="reassign-sheet">
-          <View style={styles.sheetCard}>
+          <View
+            style={[styles.sheetCard, { paddingBottom: insets.bottom + spacing.lg }]}
+          >
             <Text style={[typography.headlineSm, styles.sheetTitle]}>
               {fill(t.wallets.sheet.title, { name: pendingDelete.name })}
             </Text>

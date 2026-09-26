@@ -9,7 +9,7 @@
  */
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, spacing, typography } from '@/theme';
+import { colors, layout, spacing, typography } from '@/theme';
 
 export function SectionHeader({
   title,
@@ -24,7 +24,12 @@ export function SectionHeader({
 }) {
   return (
     <View testID={testID} style={styles.row}>
-      <Text style={[typography.labelUppercase, styles.title]}>{title}</Text>
+      <Text
+        style={[typography.labelUppercase, styles.title]}
+        numberOfLines={1}
+      >
+        {title}
+      </Text>
       {actionLabel && onAction ? (
         <Pressable
           testID={testID ? `${testID}-action` : undefined}
@@ -32,6 +37,7 @@ export function SectionHeader({
           accessibilityLabel={actionLabel}
           onPress={onAction}
           hitSlop={spacing.sm}
+          style={styles.press}
         >
           <Text style={[typography.labelUppercase, styles.action]}>
             {actionLabel}
@@ -54,9 +60,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   title: {
+    flex: 1,
     color: colors.textSecondary,
   },
-  action: {
+  press: {
+    minHeight: layout.minTapTarget,
+    justifyContent: 'center',
+  },  action: {
     color: colors.accent,
   },
   meta: {

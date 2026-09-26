@@ -15,6 +15,7 @@
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Linking, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card, GhostButton, PrimaryButton, Screen, TextField } from '@/components';
 import {
@@ -30,6 +31,7 @@ import { colors, fontFamily, radius, spacing, typography } from '@/theme';
 
 export default function MfaEnrollScreen() {
   const language = useLanguage();
+  const insets = useSafeAreaInsets();
   const t = dictionaryFor(language).mfa;
   const { refresh } = useMfa();
 
@@ -103,7 +105,10 @@ export default function MfaEnrollScreen() {
   }
 
   return (
-    <Screen style={styles.frame} testID="mfa-enroll-screen">
+    <Screen
+      style={[styles.frame, { paddingTop: insets.top + spacing.xl }]}
+      testID="mfa-enroll-screen"
+    >
       <View style={styles.header}>
         <Text style={[typography.headlineMd, styles.title]}>{t.enroll.title}</Text>
         <GhostButton

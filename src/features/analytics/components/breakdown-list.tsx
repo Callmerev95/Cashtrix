@@ -50,7 +50,12 @@ export function BreakdownList({
             {(slice.share * 100).toFixed(0)}%
           </Text>
 
-          <Text style={[typography.currencySm, styles.amount]} numberOfLines={1}>
+          <Text
+            style={[typography.currencySm, styles.amount]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.75}
+          >
             Rp {formatGrouped(slice.value, language)}
           </Text>
         </View>

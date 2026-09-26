@@ -7,7 +7,7 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing, typography } from '@/theme';
+import { colors, layout, radius, spacing, typography } from '@/theme';
 import {
   WALLET_TYPES,
   walletTypeLabel,
@@ -77,6 +77,7 @@ const styles = StyleSheet.create({
   },
   segment: {
     flex: 1,
+    minHeight: layout.minTapTarget,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,

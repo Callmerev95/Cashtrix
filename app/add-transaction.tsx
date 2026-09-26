@@ -283,18 +283,6 @@ export default function AddTransactionScreen() {
     );
   }
 
-  // Manual retry (the "Pindai" button): no photo yet → open the sheet so a
-  // tap is never dead; otherwise the consent-once path above.
-  function confirmAndScan() {
-    if (scanning) return;
-    const first = receipts[0];
-    if (!first) {
-      setSheetVisible(true);
-      return;
-    }
-    void scanWithConsent(first);
-  }
-
   // Auto-scan (S3 UX, QRIS-style): every new photo in an expense form is
   // read without a tap — create and edit alike (keputusan pemilik: satu
   // aturan). Pre-linked rows loaded when opening edit never fire this
@@ -523,7 +511,7 @@ export default function AddTransactionScreen() {
     <Screen hasFloatingNav={false}>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
           <Pressable
@@ -724,27 +712,6 @@ export default function AddTransactionScreen() {
               testID="receipt-header"
               title={t.transactions.receipt.attach}
             />
-            {type === 'expense' &&
-            receipts.length > 0 &&
-            !scanOk &&
-            !scanning ? (
-              <Pressable
-                testID="receipt-scan"
-                accessibilityRole="button"
-                accessibilityLabel={tr.scanA11y}
-                onPress={confirmAndScan}
-                style={styles.scanButton}
-              >
-                <MaterialIcons
-                  name="document-scanner"
-                  size={20}
-                  color={colors.accent}
-                />
-                <Text style={[typography.bodyMd, styles.scanLabel]}>
-                  {tr.scan}
-                </Text>
-              </Pressable>
-            ) : null}
             <ReceiptAttachmentSection
               attachments={receipts}
               onAttachmentsChange={setReceipts}
@@ -905,20 +872,6 @@ const styles = StyleSheet.create({
   },
   chipLabelActive: {
     color: colors.accent,
-  },
-  scanButton: {
-    marginTop: spacing.sm,
-    minHeight: layout.minTapTarget,
-    paddingHorizontal: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceElevated,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.borderStrong,
-    borderStyle: 'dashed',
   },
   scanLabel: {
     color: colors.accent,

@@ -78,7 +78,7 @@ export default function DeleteAccountScreen() {
     <Screen>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
           <Text style={[typography.labelUppercase, styles.kicker]}>

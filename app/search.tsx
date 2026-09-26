@@ -51,7 +51,7 @@ import {
   type TransactionKindFilter,
 } from '@/features/transactions';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
-import { colors, radius, spacing, typography } from '@/theme';
+import { colors, layout, radius, spacing, typography } from '@/theme';
 
 export default function SearchScreen() {
   const [query, setQuery] = useState('');
@@ -287,6 +287,7 @@ export default function SearchScreen() {
                     accessibilityLabel={ts.cancelSelect}
                     onPress={exitSelect}
                     hitSlop={spacing.sm}
+                    style={styles.tap}
                   >
                     <Text style={[typography.labelUppercase, styles.action]}>
                       {t.common.cancel}
@@ -308,6 +309,7 @@ export default function SearchScreen() {
                       setPickedCategory(null);
                     }}
                     hitSlop={spacing.sm}
+                    style={styles.tap}
                   >
                     <Text
                       style={[
@@ -333,6 +335,7 @@ export default function SearchScreen() {
                       setSelectHint(null);
                     }}
                     hitSlop={spacing.sm}
+                    style={styles.tap}
                   >
                     <Text style={[typography.labelUppercase, styles.action]}>
                       {ts.select}
@@ -376,6 +379,7 @@ export default function SearchScreen() {
                           setPickedCategory(null);
                         }}
                         hitSlop={spacing.sm}
+                        style={styles.tap}
                       >
                         <Text
                           style={[typography.labelUppercase, styles.meta]}
@@ -392,6 +396,7 @@ export default function SearchScreen() {
                         disabled={applying}
                         onPress={() => void applyBulk()}
                         hitSlop={spacing.sm}
+                        style={styles.tap}
                       >
                         <Text
                           style={[typography.labelUppercase, styles.action]}
@@ -439,6 +444,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  tap: {
+    minHeight: layout.minTapTarget,
+    justifyContent: 'center',
   },
   meta: {
     color: colors.textSecondary,

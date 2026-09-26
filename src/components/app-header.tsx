@@ -8,18 +8,27 @@
  */
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
 
-import { colors, layout, radius, spacing, typography } from '@/theme';
+import { colors, gradients, layout, radius, spacing, typography } from '@/theme';
 
 import { LogoMark } from './logo-mark';
 
+export type AppHeaderBell = {
+  unread: boolean;
+  accessibilityLabel: string;
+  onPress: () => void;
+};
+
 export function AppHeader({
   avatarUri,
+  bell = null,
   testID = 'app-header',
 }: {
   avatarUri?: string | null;
+  bell?: AppHeaderBell | null;
   testID?: string;
 }) {
   // A dead signed URL (expired, revoked, corrupt upload) renders as a blank
@@ -39,29 +48,54 @@ export function AppHeader({
         <LogoMark size={32} />
         <Text style={[typography.headlineSm, styles.wordmark]}>CASHTRIX</Text>
       </View>
-      <Pressable
-        testID={`${testID}-avatar`}
-        accessibilityRole="button"
-        accessibilityLabel="Buka profil"
-        onPress={() => router.push('/(tabs)/profile')}
-        style={styles.avatarFrame}
-      >
-        {avatarUri && !broken ? (
-          <Image
-            source={{ uri: avatarUri }}
-            style={styles.avatar}
-            onError={() => setBroken(true)}
-          />
-        ) : (
-          <View style={[styles.avatar, styles.avatarFallback]}>
+      <View style={styles.actions}>
+        {bell ? (
+          <Pressable
+            testID={`${testID}-bell`}
+            accessibilityRole="button"
+            accessibilityLabel={bell.accessibilityLabel}
+            onPress={bell.onPress}
+            style={styles.bellFrame}
+          >
             <MaterialIcons
-              name="person"
-              size={20}
-              color={colors.textSecondary}
+              name={bell.unread ? 'notifications-active' : 'notifications-none'}
+              size={22}
+              color={bell.unread ? colors.accent : colors.textSecondary}
             />
-          </View>
-        )}
-      </Pressable>
+            {bell.unread ? <View style={styles.bellDot} /> : null}
+          </Pressable>
+        ) : null}
+        <Pressable
+          testID={`${testID}-avatar`}
+          accessibilityRole="button"
+          accessibilityLabel="Buka profil"
+          onPress={() => router.push('/(tabs)/profile')}
+          style={styles.avatarFrame}
+        >
+          <LinearGradient
+            colors={[...gradients.cardBorder]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.ring}
+          >
+            {avatarUri && !broken ? (
+              <Image
+                source={{ uri: avatarUri }}
+                style={styles.avatar}
+                onError={() => setBroken(true)}
+              />
+            ) : (
+              <View style={[styles.avatar, styles.avatarFallback]}>
+                <MaterialIcons
+                  name="person"
+                  size={20}
+                  color={colors.textSecondary}
+                />
+              </View>
+            )}
+          </LinearGradient>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -78,6 +112,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  bellFrame: {
+    width: layout.minTapTarget,
+    height: layout.minTapTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bellDot: {
+    position: 'absolute',
+    top: 10,
+    right: 11,
+    width: 8,
+    height: 8,
+    borderRadius: radius.full,
+    backgroundColor: colors.accent,
+  },
   wordmark: {
     color: colors.textPrimary,
     letterSpacing: 2,
@@ -85,6 +139,14 @@ const styles = StyleSheet.create({
   avatarFrame: {
     width: layout.minTapTarget,
     height: layout.minTapTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ring: {
+    width: layout.minTapTarget,
+    height: layout.minTapTarget,
+    borderRadius: radius.full,
+    padding: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },

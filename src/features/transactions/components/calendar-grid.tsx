@@ -192,6 +192,7 @@ const styles = StyleSheet.create({
   cell: {
     flex: 1,
     aspectRatio: 1,
+    minHeight: layout.minTapTarget,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.full,

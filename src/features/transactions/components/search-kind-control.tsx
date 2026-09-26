@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
   },
   chip: {
     flex: 1,
-    height: layout.minTapTarget - spacing.sm,
+    height: layout.minTapTarget,
     paddingHorizontal: spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',

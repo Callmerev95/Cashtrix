@@ -134,7 +134,7 @@ export default function BudgetFormScreen() {
     <Screen hasFloatingNav={false}>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
           <Pressable
@@ -206,7 +206,9 @@ export default function BudgetFormScreen() {
 
         {confirmingDelete ? (
           <View style={styles.sheet}>
-            <View style={styles.sheetCard}>
+            <View
+              style={[styles.sheetCard, { paddingBottom: insets.bottom + spacing.lg }]}
+            >
               <Text style={[typography.headlineSm, styles.sheetTitle]}>
                 {tb.form.deleteTitle}
               </Text>

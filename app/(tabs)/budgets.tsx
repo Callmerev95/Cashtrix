@@ -21,6 +21,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyStateCard, AppHeader, Card, ErrorStateCard, Screen, SectionHeader, Skeleton, SkeletonBlock } from '@/components';
 import {
@@ -58,16 +59,31 @@ export default function BudgetsScreen() {
     recentAlerts,
     dismissAlert,
     refresh,
+    unreadCount,
   } = useBudgets();
   const { avatarSignedUrl } = useProfile();
+  const insets = useSafeAreaInsets();
   // C6: copy + month format follow the OS language (ADR-0008, R10).
   const language = useLanguage();
   const t = dictionaryFor(language);
   const tb = t.budgets;
 
   return (
-    <Screen style={styles.frame} testID="budgets-screen">
-      <AppHeader avatarUri={avatarSignedUrl} />
+    <Screen
+      style={[styles.frame, { paddingTop: insets.top + spacing.xl }]}
+      testID="budgets-screen"
+    >
+      <AppHeader
+        avatarUri={avatarSignedUrl}
+        bell={{
+          unread: unreadCount > 0,
+          accessibilityLabel:
+            unreadCount > 0
+              ? fill(t.dashboard.notif.unread, { count: unreadCount })
+              : t.dashboard.notif.open,
+          onPress: () => router.push('/notifications'),
+        }}
+      />
       <Card style={styles.hero}>
         <Text style={[typography.labelUppercase, styles.kicker]}>Active Cycle</Text>
         <Text style={[typography.headlineLg, styles.title]}>
@@ -183,7 +199,12 @@ function BudgetCard({ budget }: { budget: BudgetStatus }) {
             {budget.categoryName}
           </Text>
         </View>
-        <Text style={[typography.currencySm, styles.spent]} numberOfLines={1}>
+        <Text
+          style={[typography.currencySm, styles.spent]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.75}
+        >
           Rp {formatGrouped(budget.spent, language)}
           <Text style={styles.limit}> / Rp {formatGrouped(budget.amountLimit, language)}</Text>
         </Text>

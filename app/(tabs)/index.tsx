@@ -10,9 +10,8 @@
  * `useTransactions()` (`v_transactions_feed`) — two server-side reads, no
  * client aggregation of money.
  */
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyStateCard, AppHeader, ErrorStateCard, Screen, SectionHeader, SkeletonList } from '@/components';
@@ -31,7 +30,7 @@ import { TotalBalanceCard } from '@/features/wallets/components/total-balance-ca
 import { WalletRow } from '@/features/wallets/components/wallet-row';
 import { dictionaryFor, fill, localeTagFor, useLanguage } from '@/i18n';
 import type { Language } from '@/i18n/locale';
-import { colors, layout, radius, spacing, typography } from '@/theme';
+import { colors, spacing, typography } from '@/theme';
 
 function greeting(hour: number, lang: Language = 'id'): string {
   const copy = dictionaryFor(lang).dashboard.greeting;
@@ -85,11 +84,11 @@ export default function DashboardScreen() {
 
   // The history list is the screen's outer scroller (a SectionList — nesting
   // it in a ScrollView would mount every row and defeat virtualization), so
-  // the hero + wallets ride along as its header.
+  // the hero + wallets ride along as its header. The AppHeader stays out of
+  // the scroller as a fixed opaque bar: the status bar is translucent, so a
+  // scrolling header would collide with the OS icons (device review).
   const header = (
     <View>
-      <AppHeader avatarUri={avatarSignedUrl} />
-
       <View style={styles.titleBlock}>
         <Text style={[typography.labelUppercase, styles.dateKicker]}>
           {new Date().toLocaleDateString(localeTagFor(language), DATE_FORMAT)}
@@ -102,34 +101,6 @@ export default function DashboardScreen() {
           >
             {greeting(new Date().getHours(), language)}, {name}
           </Text>
-          <Pressable
-            testID="dashboard-alerts"
-            accessibilityRole="button"
-            accessibilityLabel={
-              unreadCount > 0
-                ? fill(t.dashboard.notif.unread, { count: unreadCount })
-                : t.dashboard.notif.open
-            }
-            onPress={() => router.push('/notifications')}
-            style={styles.iconButton}
-          >
-            <MaterialIcons
-              name={
-                unreadCount > 0
-                  ? 'notifications-active'
-                  : 'notifications-none'
-              }
-              size={22}
-              color={
-                unreadCount > 0
-                  ? colors.accent
-                  : colors.textSecondary
-              }
-            />
-            {unreadCount > 0 ? (
-              <View style={styles.alertDot} />
-            ) : null}
-          </Pressable>
         </View>
       </View>
 
@@ -214,34 +185,48 @@ export default function DashboardScreen() {
 
   return (
     <Screen>
-      <TransactionHistoryList
-        transactions={transactions}
-        loading={loadingTransactions}
-        loadingMore={loadingMore}
-        hasMore={hasMore}
-        onEndReached={() => {
-          if (hasMore && !loadingMore) void loadMore();
-        }}
-        listError={
-          transactionsError && !loadingTransactions
-            ? {
-                message: transactionsError,
-                onRetry: () => void refreshTransactions(),
-              }
-            : null
-        }
-        contentContainerStyle={[
-          styles.body,
-          { paddingTop: insets.top + spacing.xl },
-        ]}
-        ListHeaderComponent={header}
-        onPressTransaction={(transaction) =>
-          router.push({
-            pathname: '/add-transaction',
-            params: { id: transaction.id },
-          })
-        }
-      />
+      <View
+        style={[styles.topBar, { paddingTop: insets.top + spacing.xl }]}
+      >
+        <AppHeader
+          avatarUri={avatarSignedUrl}
+          bell={{
+            unread: unreadCount > 0,
+            accessibilityLabel:
+              unreadCount > 0
+                ? fill(t.dashboard.notif.unread, { count: unreadCount })
+                : t.dashboard.notif.open,
+            onPress: () => router.push('/notifications'),
+          }}
+        />
+      </View>
+      <View style={styles.listWrap}>
+        <TransactionHistoryList
+          transactions={transactions}
+          loading={loadingTransactions}
+          loadingMore={loadingMore}
+          hasMore={hasMore}
+          onEndReached={() => {
+            if (hasMore && !loadingMore) void loadMore();
+          }}
+          listError={
+            transactionsError && !loadingTransactions
+              ? {
+                  message: transactionsError,
+                  onRetry: () => void refreshTransactions(),
+                }
+              : null
+          }
+          contentContainerStyle={styles.body}
+          ListHeaderComponent={header}
+          onPressTransaction={(transaction) =>
+            router.push({
+              pathname: '/add-transaction',
+              params: { id: transaction.id },
+            })
+          }
+        />
+      </View>
 
       <UndoSnackbar
         snack={lastDeleted}
@@ -279,6 +264,14 @@ const styles = StyleSheet.create({
   body: {
     // paddingBottom delegated to Screen
   },
+  // Fixed opaque bar above the history scroller: rows slide underneath it,
+  // never into the translucent status-bar zone (device review).
+  topBar: {
+    backgroundColor: colors.background,
+  },
+  listWrap: {
+    flex: 1,
+  },
   titleBlock: {
     marginBottom: spacing.lg,
     gap: spacing.sm,
@@ -295,25 +288,6 @@ const styles = StyleSheet.create({
   name: {
     flex: 1,
     color: colors.textPrimary,
-  },
-  iconButton: {
-    width: layout.minTapTarget,
-    height: layout.minTapTarget,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surfaceCard,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-  alertDot: {
-    position: 'absolute',
-    top: 10,
-    right: 11,
-    width: 8,
-    height: 8,
-    borderRadius: radius.full,
-    backgroundColor: colors.accent,
   },
   section: {
     marginTop: spacing.xl,

@@ -90,6 +90,7 @@ function Kpi({
         style={[typography.currencyMd, valueToneStyle[tone]]}
         numberOfLines={1}
         adjustsFontSizeToFit
+        minimumFontScale={0.75}
       >
         Rp {formatGrouped(value, language)}
       </Text>

@@ -19,6 +19,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card, PrimaryButton, Screen, SkeletonList } from '@/components';
 import {
@@ -34,6 +35,7 @@ import { colors, layout, radius, spacing, typography } from '@/theme';
 
 export default function RecurringScreen() {
   const { rules, loading, error, refresh, setPaused, remove } = useRecurring();
+  const insets = useSafeAreaInsets();
   const [busyId, setBusyId] = useState<string | null>(null);
   // C6: copy follows the OS language (ADR-0008).
   const t = dictionaryFor(useLanguage());
@@ -90,7 +92,10 @@ export default function RecurringScreen() {
   }
 
   return (
-    <Screen style={styles.frame} testID="recurring-screen">
+    <Screen
+      style={[styles.frame, { paddingTop: insets.top + spacing.xl }]}
+      testID="recurring-screen"
+    >
       <View style={styles.header}>
         <Text style={[typography.labelUppercase, styles.kicker]}>
           {tr.screen.kicker}
@@ -198,7 +203,12 @@ function RuleRow({
         />
       </View>
       <View style={styles.cardBody}>
-        <Text style={[typography.bodyMd, styles.cardTitle]} numberOfLines={1}>
+        <Text
+          style={[typography.bodyMd, styles.cardTitle]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.75}
+        >
           {rule.categoryName} · Rp {formatGrouped(rule.amount, language)}
         </Text>
         <Text style={[typography.bodySm, styles.cardMeta]} numberOfLines={2}>
@@ -335,6 +345,6 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.lg,
   },
 });

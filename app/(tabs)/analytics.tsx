@@ -10,6 +10,8 @@
  * (AC #7), so a new account never sees a NaN/Infinity axis.
  */
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -28,8 +30,9 @@ import {
   useAnalytics,
 } from '@/features/analytics';
 import { Screen, AppHeader, ErrorStateCard, Skeleton, SkeletonBlock } from '@/components';
+import { useBudgets } from '@/features/budgets';
 import { useProfile } from '@/features/profile';
-import { dictionaryFor, useLanguage } from '@/i18n';
+import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, gradients, radius, spacing, typography } from '@/theme';
 
 export default function AnalyticsScreen() {
@@ -46,6 +49,8 @@ export default function AnalyticsScreen() {
     refresh,
   } = useAnalytics();
   const { avatarSignedUrl } = useProfile();
+  const { unreadCount } = useBudgets();
+  const insets = useSafeAreaInsets();
   // C6: section copy + bar labels follow the OS language (ADR-0008, R10).
   const language = useLanguage();
   const t = dictionaryFor(language);
@@ -56,8 +61,21 @@ export default function AnalyticsScreen() {
   const bars = overview ? toBars(overview.series, window, daily, 'Asia/Jakarta', language) : [];
 
   return (
-    <Screen style={styles.frame} testID="analytics-screen">
-      <AppHeader avatarUri={avatarSignedUrl} />
+    <Screen
+      style={[styles.frame, { paddingTop: insets.top + spacing.xl }]}
+      testID="analytics-screen"
+    >
+      <AppHeader
+        avatarUri={avatarSignedUrl}
+        bell={{
+          unread: unreadCount > 0,
+          accessibilityLabel:
+            unreadCount > 0
+              ? fill(t.dashboard.notif.unread, { count: unreadCount })
+              : t.dashboard.notif.open,
+          onPress: () => router.push('/notifications'),
+        }}
+      />
       <View style={styles.header}>
         <Text style={[typography.labelUppercase, styles.kicker]}>Insights</Text>
         <Text style={[typography.headlineLg, styles.title]}>

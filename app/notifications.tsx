@@ -112,6 +112,7 @@ export default function NotificationsScreen() {
               accessibilityLabel={tn.markAllA11y}
               onPress={() => void readAll()}
               hitSlop={spacing.sm}
+              style={styles.tap}
             >
               <Text style={[typography.labelUppercase, styles.action]}>
                 {busy ? '…' : tn.markAll}
@@ -228,6 +229,10 @@ const styles = StyleSheet.create({
   },
   action: {
     color: colors.accent,
+  },
+  tap: {
+    minHeight: layout.minTapTarget,
+    justifyContent: 'center',
   },
   meta: {
     color: colors.textSecondary,

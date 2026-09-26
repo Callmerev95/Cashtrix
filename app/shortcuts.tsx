@@ -15,6 +15,7 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card, Screen, SectionHeader } from '@/components';
 import { dictionaryFor, useLanguage } from '@/i18n';
@@ -51,13 +52,17 @@ const STEPS = [
 ] as const;
 
 export default function ShortcutsScreen() {
+  const insets = useSafeAreaInsets();
   // C6: copy follows the OS language (ADR-0008).
   const language = useLanguage();
   const t = dictionaryFor(language);
   const ts = t.shortcuts;
 
   return (
-    <Screen style={styles.frame} testID="shortcuts-screen">
+    <Screen
+      style={[styles.frame, { paddingTop: insets.top + spacing.xl }]}
+      testID="shortcuts-screen"
+    >
       <ScrollView
         testID="shortcuts-scroll"
         showsVerticalScrollIndicator={false}
