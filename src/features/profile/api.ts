@@ -99,9 +99,7 @@ export async function updateProfile(input: {
   if (error) throw error;
 }
 
-// ---------------------------------------------------------------------------
 // Categories (managed view: system + custom, both archive sources merged)
-// ---------------------------------------------------------------------------
 
 type CategoryRow = {
   id: string;
@@ -250,9 +248,7 @@ export async function deleteCategory(input: {
   if (error) throw error;
 }
 
-// ---------------------------------------------------------------------------
 // Avatar (private bucket, signed-URL display)
-// ---------------------------------------------------------------------------
 
 function avatarPath(userId: string): string {
   return `${userId}/avatar.jpg`;

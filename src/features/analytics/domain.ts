@@ -1,28 +1,13 @@
 /**
- * Analytics domain — pure functions only (no bridge, no network).
- *
- * This is the Jest seam for T6 (Epic D "Financial Intelligence"). The *money*
- * aggregation itself never happens here: every total, delta and share arrives
- * pre-computed from Postgres (`analytics_overview`, PRD §4.2). What lives here
- * is the presentation math that must be correct and is easy to get wrong:
- *
- *  - turning a range preset (`1M`/`3M`/`6M`/`1Y`/`ALL`) into a concrete
- *    `[start, end)` window plus the equal-length previous window for the delta;
- *  - the donut: top-8 categories, the rest folded into "Other", and dropping
- *    arcs thinner than 0.5% so the wheel does not render invisible slivers;
- *  - the bar chart: gap-filling empty days/months with a zero bucket so the
- *    axis is uniform, then normalising heights to the tallest bar;
- *  - formatting a delta `%` when the previous period was zero (the DB sends
- *    `null` — this must never render `NaN`/`Infinity`, AC #7).
+ * Analytics domain — pure presentation math (the Jest seam). Money arrives
+ * pre-aggregated from `analytics_overview` (PRD §4.2) — never summed here.
  */
 
 import { dictionaryFor, localeTagFor } from '@/i18n/dictionaries';
 import { id } from '@/i18n/id';
 import type { Language } from '@/i18n/locale';
 
-// ---------------------------------------------------------------------------
 // Types (mirror the `analytics_overview` JSON payload)
-// ---------------------------------------------------------------------------
 
 export type MoneyTotals = {
   expense: number;
@@ -63,10 +48,6 @@ export type AnalyticsOverview = {
   series: SeriesBucket[];
 };
 
-// ---------------------------------------------------------------------------
-// Range presets
-// ---------------------------------------------------------------------------
-
 export const RANGE_PRESETS = ['1M', '3M', '6M', '1Y', 'ALL'] as const;
 export type RangePreset = (typeof RANGE_PRESETS)[number];
 
@@ -104,17 +85,10 @@ export type DateRange = {
 };
 
 /**
- * Resolves a preset into `[start, end)` plus the equal-length previous window.
- *
- * `1M` is the *calendar* month-to-date — it starts at the first of the current
- * month in the device's local time (the tz the transaction dates were entered
- * in), not a rolling 30 days, so the label means what the user expects. `ALL`
- * starts at the epoch (Postgres has no rows before the user existed) and the
- * previous window is empty — the delta then comes back `null`, which the KPI
- * renders as a dash.
- *
- * `now` is injectable so the boundary math is testable without freezing the
- * clock.
+ * Preset → `[start, end)` plus the equal-length previous window. `1M` is the
+ * calendar month-to-date (not rolling 30 days); `ALL` starts at the epoch
+ * with an empty previous window, so its delta is `null` → dash. `now` is
+ * injectable for tests.
  */
 export function resolveRange(
   preset: RangePreset,
@@ -152,10 +126,6 @@ export function resolveRange(
 export function isDailyRange(preset: RangePreset): boolean {
   return preset === '1M';
 }
-
-// ---------------------------------------------------------------------------
-// Donut
-// ---------------------------------------------------------------------------
 
 /** The "Other" slice is real once there are more than 8 categories. */
 export const DONUT_TOP_N = 8;
@@ -233,10 +203,6 @@ export function toArcOffsets(
     return { start, end: cursor };
   });
 }
-
-// ---------------------------------------------------------------------------
-// Bar chart
-// ---------------------------------------------------------------------------
 
 export type BarDatum = {
   /** `YYYY-MM-DD` bucket the server returned. */
@@ -369,10 +335,6 @@ function monthLabel(bucket: string, lang: Language = 'id'): string {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Delta formatting
-// ---------------------------------------------------------------------------
-
 /**
  * The KPI delta string: `+12,3%` / `-4,1%` (id-ID decimal comma), or an em
  * dash when the previous period had no data (the API sends `null`). Never
@@ -410,10 +372,6 @@ export function deltaTone(delta: number | null | undefined): DeltaTone {
   return 'flat';
 }
 
-// ---------------------------------------------------------------------------
-// Empty state
-// ---------------------------------------------------------------------------
-
 /** `true` means "render the empty state" rather than the charts (AC #7). */
 export function isEmptyRange(overview: AnalyticsOverview | null): boolean {
   if (!overview) return true;
@@ -425,9 +383,7 @@ export function isEmptyRange(overview: AnalyticsOverview | null): boolean {
   );
 }
 
-// ---------------------------------------------------------------------------
 // Distance to previous month (for the "no data yet" copy) — kept tiny
-// ---------------------------------------------------------------------------
 
 /** Number of ring segments the donut renders; the angle→slice map is pure. */
 export const DONUT_SEGMENTS = 60;
@@ -466,9 +422,7 @@ export function donutSegmentSliceIndices(
   );
 }
 
-// ---------------------------------------------------------------------------
 // Monthly summary (A6 — "ringkasan bulan lalu" on the Dashboard)
-// ---------------------------------------------------------------------------
 
 /**
  * One month of server-aggregated totals, as read from `v_monthly_summary`.

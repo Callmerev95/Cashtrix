@@ -1,23 +1,11 @@
 /**
- * Transaction domain — pure functions only (no bridge, no network).
- *
- * This is the Jest seam from `specs/cashtrix-mvp.md` §Testing: `id-ID` amount
- * formatting, amount validation (12 digits / 2 decimals / no NaN or Infinity),
- * note trimming, the expense/income preference and the grouping rules that
- * make the history list scannable. All of it is testable without Supabase.
- *
- * Money direction rule (PRD §6.1 R4): `amount` is always stored positive and
- * `type` carries the sign. Nothing here ever adds raw amounts together — the
- * signed string is a *display* concern only.
+ * Transaction domain — pure functions only (the Jest seam). Amounts stay
+ * positive and `type` carries the sign (PRD §6.1 R4) — never summed here.
  */
 
 import { dictionaryFor, fill, localeTagFor } from '@/i18n/dictionaries';
 import { id } from '@/i18n/id';
 import type { Language } from '@/i18n/locale';
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
 export const TRANSACTION_TYPES = ['expense', 'income', 'transfer'] as const;
 export type TransactionType = (typeof TRANSACTION_TYPES)[number];
@@ -37,9 +25,7 @@ export function isTransactionType(value: unknown): value is TransactionType {
   );
 }
 
-// ---------------------------------------------------------------------------
 // Shortcut deep-link params (S1, ADR-0009)
-// ---------------------------------------------------------------------------
 
 /**
  * Types a shortcut may preselect. `transfer` is excluded on purpose (spec
@@ -114,10 +100,6 @@ export type WalletOption = {
   name: string;
 };
 
-// ---------------------------------------------------------------------------
-// Constants (AC #14–#23)
-// ---------------------------------------------------------------------------
-
 /** Page size for the history list — PRD §2.3 Epic C: 20/halaman. */
 export const PAGE_SIZE = 20;
 
@@ -128,10 +110,6 @@ export const AMOUNT_MAX = 999_999_999_999;
 
 /** Default when nothing has been persisted yet. */
 export const DEFAULT_TRANSACTION_TYPE: TransactionType = 'expense';
-
-// ---------------------------------------------------------------------------
-// Idempotency key
-// ---------------------------------------------------------------------------
 
 /**
  * UUID v4 generated **when the form opens** (AC #22), so a network retry of
@@ -158,10 +136,6 @@ export function newIdempotencyKey(): string {
     return value.toString(16);
   });
 }
-
-// ---------------------------------------------------------------------------
-// Amount entry
-// ---------------------------------------------------------------------------
 
 /**
  * Formats a *typing* value with id-ID grouping while preserving a trailing
@@ -244,18 +218,10 @@ export function validateAmount(
   return { ok: true, value };
 }
 
-// ---------------------------------------------------------------------------
-// Note
-// ---------------------------------------------------------------------------
-
 export function normalizeNote(raw: string): string | null {
   const trimmed = raw.trim();
   return trimmed === '' ? null : trimmed;
 }
-
-// ---------------------------------------------------------------------------
-// Date
-// ---------------------------------------------------------------------------
 
 /** Midnight of the given instant in local time — the grouping key. */
 export function startOfDay(date: Date): Date {
@@ -312,10 +278,6 @@ export function formatTime(iso: string): string {
   return `${hours}:${minutes}`;
 }
 
-// ---------------------------------------------------------------------------
-// Display
-// ---------------------------------------------------------------------------
-
 /**
  * The row's amount string. Income is green with no prefix (the colour alone
  * distinguishes it); expense is red and leads with `-` (DESIGN.md §1).
@@ -353,10 +315,6 @@ export function transactionTypeLabel(
   return dictionaryFor(lang).transactions.type[type];
 }
 
-// ---------------------------------------------------------------------------
-// Category selection
-// ---------------------------------------------------------------------------
-
 /**
  * Categories for the picker grid: only the given `kind`, and archived ones
  * are hidden (AC #18). Ordering is stable so the grid does not reshuffle.
@@ -369,9 +327,7 @@ export function categoriesForKind(
   return categories.filter((category) => category.kind === kind);
 }
 
-// ---------------------------------------------------------------------------
 // Transfer (V2, ADR-0004)
-// ---------------------------------------------------------------------------
 
 export const transferMessages = {
   sourceRequired: id.transactions.transfer.sourceRequired,
@@ -480,9 +436,7 @@ export function savedTransactionLabel(
   });
 }
 
-// ---------------------------------------------------------------------------
 // History grouping & pagination
-// ---------------------------------------------------------------------------
 
 export type TransactionDayGroup = {
   /** `YYYY-MM-DD` local — stable React key. */
@@ -527,7 +481,6 @@ export function hasMoreAfter(pageSize: number, received: number): boolean {
   return received === pageSize;
 }
 
-// ---------------------------------------------------------------------------
 // Calendar month grid (V5)
 //
 // The Add form picks its date from a full month grid built from plain `View`s
@@ -539,7 +492,6 @@ export function hasMoreAfter(pageSize: number, received: number): boolean {
 // Future days are *flagged*, never offered: the grid disables them and
 // `canSelectDay` mirrors that rule for tests, while the form keeps its
 // `isFutureDate` submit guard as defence in depth (income/expense/transfer).
-// ---------------------------------------------------------------------------
 
 /** Short weekday headers, Monday-first — the id-ID source of truth. */
 export const WEEKDAY_LABELS = [
@@ -662,13 +614,11 @@ export function formatMonthLabel(month: Date, lang: Language = 'id'): string {
   }).format(month);
 }
 
-// ---------------------------------------------------------------------------
 // Search (A3 — "cari & filter riwayat")
 //
 // The query builder A4 (bulk edit) reuses: `TransactionKindFilter` narrows by
 // `type`, `buildSearchPattern` turns free text into one PostgREST `ilike`
 // pattern matched OR-wise against note/category/wallet names server-side.
-// ---------------------------------------------------------------------------
 
 /** Kind narrow-down for search; `all` means "no type filter". */
 export type TransactionKindFilter = 'all' | TransactionType;
@@ -715,14 +665,12 @@ export function isSearchActive(
   return buildSearchPattern(query) !== null || kind !== 'all';
 }
 
-// ---------------------------------------------------------------------------
 // Bulk select (A4 — bulk edit kategori)
 //
 // Selection is a plain id list; the locked kind derives from the selected
 // rows (first row wins), so there is no kind state to drift. `toggleBulkRow`
 // is the single gate: transfers can never enter, and a second kind can never
 // join — the screen turns the rejection code into a hint.
-// ---------------------------------------------------------------------------
 
 /** Ids currently checked + the kind they locked (null when empty). */
 export type BulkSelection = {
@@ -764,7 +712,6 @@ export function toggleBulkRow(
   return { ids: [...ids, row.id], rejected: null };
 }
 
-// ---------------------------------------------------------------------------
 // Receipts (S2, ADR-0009)
 //
 // Opsi A: a photo is uploaded the moment it is taken (a row with
@@ -773,7 +720,6 @@ export function toggleBulkRow(
 // seam stays offline: expiry math mirroring `purge_expired_receipts()`
 // (`created_at < now() - 30 days`) and file validation mirroring the
 // `receipts` bucket (2MB PNG/JPG).
-// ---------------------------------------------------------------------------
 
 /** Storage cap mirrors the `receipts` bucket (2MB PNG/JPG). */
 export const RECEIPT_MAX_BYTES = 2 * 1024 * 1024;

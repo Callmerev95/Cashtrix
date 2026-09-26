@@ -1,18 +1,9 @@
 /**
- * Cashtrix theme — the single source of truth for every design token.
- *
- * This is the ONLY file in the codebase allowed to contain hex colour
- * literals (PRD §4.5, AGENTS.md). Components consume these tokens; a lint
- * rule flags bare hex strings anywhere else.
- *
- * Values mirror `DESIGN.md` exactly ("Minimalist Obsidian"). The canonical
- * palette comes from DESIGN.md §1 — never colour-pick from Stitch screens
- * (they render M3-derived greys, see DESIGN.md §1 / D10).
+ * Design tokens — the ONLY file allowed hex literals (PRD §4.5). Values
+ * mirror DESIGN.md; never colour-pick from Stitch (M3-derived greys).
  */
 
-// ---------------------------------------------------------------------------
 // Colour — DESIGN.md §1
-// ---------------------------------------------------------------------------
 
 export const palette = {
   /** Pure black canvas. Full app background. Zero light bleed on OLED. */
@@ -67,9 +58,7 @@ export const colors = {
   accentAmbience: 'rgba(212, 175, 55, 0.10)',
 } as const;
 
-// ---------------------------------------------------------------------------
 // Typography — DESIGN.md §2
-// ---------------------------------------------------------------------------
 
 /** Structural text. */
 export const fontFamily = {
@@ -197,9 +186,7 @@ export const type = {
   currencySm: typography.currencySm,
 } as const;
 
-// ---------------------------------------------------------------------------
 // Spacing — DESIGN.md §3 (4px base rhythm)
-// ---------------------------------------------------------------------------
 
 export const spacing = {
   xs: 4,
@@ -232,28 +219,19 @@ export const layout = {
   navBarHeight: 64,
 } as const;
 
-// ---------------------------------------------------------------------------
 // Radius — DESIGN.md §4
-// ---------------------------------------------------------------------------
 
 export const radius = {
-  /** Minor elements (rare). */
   sm: 8,
-  /** DEFAULT — inputs, buttons. */
   md: 16,
-  /** Standard cards. */
   lg: 20,
-  /** Large cards, sheets. */
   xl: 24,
-  /** Hero cards. */
   xxl: 32,
   /** Badges, chips, pills, progress, avatars (dominant). */
   full: 9999,
 } as const;
 
-// ---------------------------------------------------------------------------
 // Elevation & glow — DESIGN.md §4
-// ---------------------------------------------------------------------------
 
 /**
  * Gold glow catalog. For RN consumers these are `boxShadow` strings on
@@ -267,9 +245,7 @@ export const shadows = {
   activePill: '0 2px 12px rgba(212, 175, 55, 0.28)',
   /** Progress bar / ring fill. */
   progressGlow: '0 0 12px rgba(242, 202, 80, 0.50)',
-  /** Chart bars. */
   chartBar: '0 0 16px rgba(242, 202, 80, 0.35)',
-  /** FAB shadow. */
   fab: '0 0 24px rgba(212, 175, 55, 0.20)',
   /** Blur-ring glow around progress rings. */
   ringHalo: '0 0 0 8px rgba(212, 175, 55, 0.25)',
@@ -290,17 +266,10 @@ export const gradients = {
 } as const;
 
 /**
- * Distribution-chart ramp (pie slices + legend swatches, brightest first).
- *
- * Strictly fading in visual strength with rank: vivid gold → deep gold →
- * khaki → stone greys, so a 37/33/24/6 split reads at a glance. Anchored to
- * the Stitch Analytics reference (`stitch_cashtrix/cashtrix_analytics`), with
- * two deliberate deviations: Stitch's pale-champagne second stop is dropped
- * (it created a non-monotonic spike — rank 2 looked as strong as rank 0) and
- * the floor is raised (Stitch's darkest stop `#2A2A2A` vanishes against our
- * `#1C1C1E` cards, so the ramp ends at `#48484A`). Every stop is declared
- * here — the single file allowed hex literals — never color-picked ad hoc in
- * components.
+ * Distribution-chart ramp, brightest first, strictly fading with rank. Two
+ * deviations from the Stitch reference: the pale-champagne second stop is
+ * dropped (non-monotonic spike) and the floor is raised to `#48484A`
+ * (Stitch's `#2A2A2A` vanishes on our cards).
  */
 export const chartRamp = [
   '#F2CA50',
@@ -313,10 +282,6 @@ export const chartRamp = [
   '#504E4A',
   '#48484A',
 ] as const;
-
-// ---------------------------------------------------------------------------
-// Aggregate theme
-// ---------------------------------------------------------------------------
 
 export const theme = {
   colors,

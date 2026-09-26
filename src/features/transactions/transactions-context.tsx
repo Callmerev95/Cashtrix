@@ -485,10 +485,6 @@ export function useTransactions(): TransactionsContextValue {
   return context;
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 async function readStoredType(): Promise<TransactionType | null> {
   const stored = await AsyncStorage.getItem(LAST_TYPE_KEY);
   return isTransactionType(stored) ? stored : null;

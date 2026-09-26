@@ -1,21 +1,7 @@
 /**
- * Search (A3 — "cari & filter riwayat") + bulk select (A4).
- *
- * Text query + kind filter run server-side against `v_transactions_feed`
- * (note, category name, source + destination wallet names, OR-ed), paged 20
- * at a time into the shared `TransactionHistoryList`. Tapping a row opens the
- * edit form; coming back refetches so an edit is never stale.
- *
- * A4 adds select mode on top of the same results: "Pilih" checks rows, the
- * first checked row locks the kind (transfers can never join), then an
- * inline `CategoryGrid` picks the destination and one bulk UPDATE moves the
- * whole set. Post-apply refreshes mirror the save flow (history + budgets +
- * analytics + alert evaluation).
- *
- * State shape mirrors `AnalyticsProvider`: `loading` is derived
- * (`loadedKey !== requestedKey`), never set in an effect, so the
- * `react-hooks/set-state-in-effect` rule stays quiet. The debounce effect
- * only arms a timer; every state write lands in a promise/timeout/callback.
+ * Search (A3) + bulk select (A4): server-side query + kind filter into the
+ * shared history list; post-apply refreshes mirror the save flow. Loading is
+ * derived (`loadedKey !== requestedKey`), never set in an effect.
  */
 import { router, useFocusEffect } from 'expo-router';
 import {

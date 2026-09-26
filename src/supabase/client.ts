@@ -13,11 +13,7 @@ import { LOCK_ENABLED_KEY } from '@/features/lock/domain';
 /** Supabase project `Cashtrix` (AGENTS.md → Database). */
 const SUPABASE_URL = 'https://bklriyyuglwiqczgbqgq.supabase.co';
 
-/**
- * Publishable key. Sent with every client request, so it is not a secret;
- * the real guard is RLS (deny-by-default on 100% of tables). Only the service
- * role key — which lives in Edge Functions — must stay out of the bundle.
- */
+/** Publishable key — not a secret (RLS is the guard); the service role key stays out of the bundle. */
 const SUPABASE_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
 
 if (!SUPABASE_PUBLISHABLE_KEY) {

@@ -72,10 +72,6 @@ export type RecurringRule = {
   status: RuleStatus;
 };
 
-// ---------------------------------------------------------------------------
-// Labels
-// ---------------------------------------------------------------------------
-
 /** `Tgl 5` / `Akhir bulan` — the due line on rule cards (C6: lang-aware). */
 export function dueLabel(
   dueDay: number | null,
@@ -130,9 +126,7 @@ export function formatRuleWindow(
   return fill(windowCopy.range, { start, end: formatRuleMonth(endsOn, lang) });
 }
 
-// ---------------------------------------------------------------------------
 // Due-date math (mirrors the RPC window; pure so Jest pins it)
-// ---------------------------------------------------------------------------
 
 /** Last calendar day of a month (month is 1–12). Feb 2026 → 28. */
 export function lastDayOfMonth(year: number, month: number): number {
@@ -236,9 +230,7 @@ export function defaultStartsOn(input: {
   return input.currentMonthOne;
 }
 
-// ---------------------------------------------------------------------------
 // Validation (locked Indonesian copy, same style as the other seams)
-// ---------------------------------------------------------------------------
 
 export const recurringMessages = {
   kindRequired: id.recurring.validation.kindRequired,

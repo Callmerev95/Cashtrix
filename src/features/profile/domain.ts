@@ -143,9 +143,7 @@ export function isCurrencyCode(value: unknown): value is CurrencyCode {
 /** Default when the profile row has no explicit choice. */
 export const DEFAULT_CURRENCY: CurrencyCode = 'IDR';
 
-// ---------------------------------------------------------------------------
 // Validation (locked Indonesian copy, same style as the auth seam)
-// ---------------------------------------------------------------------------
 
 /** Returns the inline error, or `null` when the name is acceptable. */
 export function validateDisplayName(name: string, lang: Language = 'id'): string | null {
@@ -183,9 +181,7 @@ export function validateCurrency(code: string, lang: Language = 'id'): string | 
   return null;
 }
 
-// ---------------------------------------------------------------------------
 // Money display (no conversion — the code only changes the rendering)
-// ---------------------------------------------------------------------------
 
 /**
  * Formats an amount in the profile's display currency. Amounts are stored
@@ -204,9 +200,7 @@ export function formatMoney(
   }).format(amount);
 }
 
-// ---------------------------------------------------------------------------
 // Category visibility (two archive sources, one rule)
-// ---------------------------------------------------------------------------
 
 export type ManagedCategory = {
   id: string;

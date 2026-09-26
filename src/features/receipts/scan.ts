@@ -1,16 +1,7 @@
 /**
- * Receipt scan client (S3, ADR-0009) — prefill-only OCR over the `scan-receipt`
- * Edge Function.
- *
- * Fail-open by contract (spec story 16): every failure mode EXCEPT quota and
- * rate-limit resolves to "lanjut manual" (`empty`/`offline`) and must never
- * block Save. Only `rate_limited` (slow down) and `quota_exceeded` (paywall
- * prompt, roadmap §6.7) surface as distinct states.
- *
- * Privacy (PRD §4.4): the request carries only the storage path — never bytes
- * or base64 — and the response carries no image data. Amount/merchant travel
- * here because they ARE the prefill; they stay in form state and are never
- * passed to `trackEvent`/`captureError` (those carry kind + booleans only).
+ * Receipt scan client (S3) — prefill-only OCR. Fail-open: only rate-limit and
+ * quota surface distinctly, the rest resolve to manual. Requests carry the
+ * storage path only (PRD §4.4) — never bytes, never into analytics.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -168,7 +159,6 @@ export async function setScanConsent(): Promise<void> {
  */
 export const SCAN_MIN_DISPLAY_MS = 900;
 
-/** Resolves after the minimum display time (see above). */
 export function scanDisplayDelay(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, SCAN_MIN_DISPLAY_MS));
 }

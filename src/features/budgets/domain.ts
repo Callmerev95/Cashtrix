@@ -1,17 +1,7 @@
 /**
- * Budgets domain — pure functions only (no bridge, no network).
- *
- * This is the Jest seam for T7 (Epic E "Budget Architecture"). The *money*
- * aggregation never happens here: `spent`, `percent` and `state` arrive
- * pre-computed from Postgres (`v_budget_status`, PRD §4.2). What lives here is
- * the presentation + guard logic that must be exact and is easy to get wrong:
- *
- *  - the threshold boundary: `percent >= 80` → `warning`, `>= 100` →
- *    `exceeded` (79.9 stays `ok`, 99.9 stays `warning`);
- *  - mapping a state to its dedup key (`warning_80` / `exceeded_100` — the two
- *    values of the `budget_alerts.threshold` check, PRD §6.1 R1);
- *  - the create/update guard: expense categories only, amount within
- *    `0 < amount ≤ AMOUNT_MAX` (same 12-digit bound as transactions).
+ * Budgets domain — pure presentation + guards (the Jest seam). `spent`,
+ * `percent` and `state` arrive from `v_budget_status` (PRD §4.2); the 80/100
+ * thresholds mirror the SQL boundary exactly.
  */
 
 import { AMOUNT_MAX } from '../transactions/domain';
@@ -19,9 +9,7 @@ import { dictionaryFor, fill } from '@/i18n/dictionaries';
 import { id } from '@/i18n/id';
 import type { Language } from '@/i18n/locale';
 
-// ---------------------------------------------------------------------------
 // Thresholds (PRD §2.3 Epic E)
-// ---------------------------------------------------------------------------
 
 /** `spent/limit` in percent at which the ring turns fully gold. */
 export const WARNING_THRESHOLD = 80;
@@ -65,9 +53,7 @@ export type BudgetStatus = {
   state: BudgetState;
 };
 
-// ---------------------------------------------------------------------------
 // Percent + state (pure mirrors of the SQL — the DB is authoritative)
-// ---------------------------------------------------------------------------
 
 /**
  * `spent / limit * 100`. A non-positive or non-finite limit yields `0`
@@ -114,9 +100,7 @@ export function ringFillFor(percent: number): number {
   return Math.min(percent / 100, 1);
 }
 
-// ---------------------------------------------------------------------------
 // Validation (create/update guard — the DB trigger is the backstop)
-// ---------------------------------------------------------------------------
 
 export type BudgetValidation = {
   categoryError: string | null;
@@ -182,10 +166,8 @@ export function budgetLimitFromInput(amountRaw: string): number {
   return Number(amountRaw.replace(/[^0-9]/g, ''));
 }
 
-// ---------------------------------------------------------------------------
 // Labels (C6: screen + notification copy lives in the central dictionary;
 // these stay as the id-ID source of truth for unmigrated callers)
-// ---------------------------------------------------------------------------
 
 export const budgetStateLabels: Record<BudgetState, string> =
   id.budgets.state;
@@ -211,9 +193,7 @@ export function formatPercent(percent: number, lang: Language = 'id'): string {
   return `${text}%`;
 }
 
-// ---------------------------------------------------------------------------
 // Inbox (A5 — riwayat alert di app)
-// ---------------------------------------------------------------------------
 
 /**
  * One persisted alert row for the inbox: the fired alert plus its read flag.

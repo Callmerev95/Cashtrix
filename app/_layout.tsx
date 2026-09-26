@@ -201,20 +201,10 @@ const styles = StyleSheet.create({
 });
 
 /**
- * Data providers, remounted per user.
- *
- * Every provider below fetches once on mount. Without the `key`, that fetch
- * runs while the app boots — usually before a session exists — so RLS returns
- * nothing and no later event refetches: a returning user sees empty screens
- * until a restart. Keying on the stable `user.id` (not the session object,
- * so token refreshes never remount) guarantees each login gets a fresh,
- * authenticated load; sign-out remounts as `guest`, which also drops the
- * in-memory copies alongside the persisted purge.
- *
- * Order note: `AnalyticsProvider` sits above `RecurringProvider` (not below
- * it) so the recurring catch-up can refresh the overview when it births
- * occurrences. Analytics depends on no context — only the server — while
- * recurring needs wallets/transactions/budgets, which all stay above it.
+ * Data providers, remounted per user (`key` on the stable `user.id`, so each
+ * login gets a fresh authenticated load — the mount-time fetch runs before
+ * any session exists). `AnalyticsProvider` stays above `RecurringProvider`
+ * so catch-up can refresh the overview.
  */
 export function DataProviders({ children }: { children: ReactNode }) {
   const { session } = useAuth();

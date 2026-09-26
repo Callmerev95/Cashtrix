@@ -1,16 +1,7 @@
 /**
- * Wallet domain — pure functions only (no bridge, no network).
- *
- * This is the Jest seam from `specs/cashtrix-mvp.md`: money formatting and
- * input validation live here so they can be tested without Supabase or React.
- *
- * Key rules (PRD §2.3 Epic B / §4.6):
- *  - Maximum 10 wallets per account (`MAX_WALLETS`), enforced in the DB *and*
- *    here so the button can be disabled before a request is wasted.
- *  - `opening_balance` may be negative (a card can start in debt) and follows
- *    the same bounds as a transaction amount.
- *  - No custom colour picker in MVP: the colour/icon comes from the type token
- *    (`walletTypeMeta`). The DB stores only `type`.
+ * Wallet domain — pure formatting + validation (the Jest seam). Max 10
+ * wallets; `opening_balance` may be negative; colour/icon come from the type
+ * token, never from the user.
  */
 
 import { dictionaryFor, fill } from '@/i18n/dictionaries';
@@ -43,10 +34,6 @@ export type Wallet = {
 export function isWalletType(value: unknown): value is WalletType {
   return typeof value === 'string' && (WALLET_TYPES as readonly string[]).includes(value);
 }
-
-// ---------------------------------------------------------------------------
-// Amount parsing / formatting
-// ---------------------------------------------------------------------------
 
 /**
  * Parses a user-typed amount (`"1.250.000"`, `"12,5"`, `"Rp 40 000"`) into a
@@ -92,9 +79,7 @@ export function formatCurrency(
   return `${value < 0 ? '-' : ''}${currency} ${formatAmount(Math.abs(value), lang)}`;
 }
 
-// ---------------------------------------------------------------------------
 // Validation (copy from PRD §2.3 Epic B, mirrored in ticket #5)
-// ---------------------------------------------------------------------------
 
 export const walletMessages = {
   nameRequired: id.wallets.validation.nameRequired,
@@ -164,16 +149,13 @@ export function hasWalletErrors(errors: WalletFieldErrors): boolean {
   return Object.values(errors).some(Boolean);
 }
 
-/** Parses the opening-balance field; an empty field means 0. */
 export function openingBalanceFromInput(raw: string): number {
   const trimmed = raw.trim();
   if (trimmed === '') return 0;
   return parseAmountInput(trimmed) ?? 0;
 }
 
-// ---------------------------------------------------------------------------
 // Type metadata — colour/icon come from design tokens, never from the user
-// ---------------------------------------------------------------------------
 
 export type WalletTypeMeta = {
   label: string;
@@ -195,10 +177,8 @@ export function walletTypeLabel(type: WalletType, lang: Language = 'id'): string
   return dictionaryFor(lang).wallets.type[type];
 }
 
-// ---------------------------------------------------------------------------
 // Archive split (V4) — Dashboard and pickers render `activeWallets` only;
 // the Wallets screen also renders `archivedWallets` with an unarchive action.
-// ---------------------------------------------------------------------------
 
 /** Active (unarchived) wallets, in list order. */
 export function activeWallets(wallets: Wallet[]): Wallet[] {
@@ -209,10 +189,6 @@ export function activeWallets(wallets: Wallet[]): Wallet[] {
 export function archivedWallets(wallets: Wallet[]): Wallet[] {
   return wallets.filter((wallet) => wallet.archivedAt !== null);
 }
-
-// ---------------------------------------------------------------------------
-// Derived view data
-// ---------------------------------------------------------------------------
 
 export type WalletSummary = {
   /** Σ balance across every visible wallet — the Dashboard hero number. */
