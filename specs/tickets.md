@@ -207,6 +207,9 @@ Pintasan + `voice.yaml` masuk kontrak statis.
 Frontier: **voice selesai penuh** — follow-up tetap di luar scope (widget,
 long-press launcher, split-N, kata-bilangan, keyword Inggris, modal sukses,
 simpan audio, STT server-side).
+Spec #62 closed 2026-09-27 (device gate lolos: OTA `c2763363` runtime 1.2.0,
+uji manual akun asli + Urungkan, semua hijau). Ide v2.0 pemilik: widget
+Catat Suara (gabung batch native bareng widget + long-press launcher).
 
 ### Follow-up (bukan scope VC1–VC3, tidak hilang)
 
