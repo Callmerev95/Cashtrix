@@ -477,9 +477,11 @@ Katalog lengkap hidup di **[docs/roadmap.md](docs/roadmap.md)**.
 - **Pasca-1.2.0** ✅ Catat Suara, VC1 parser + domain murni (#63) → VC2 sheet +
   dikte keyboard OS (#64) → VC3 pintu `cashtrix://voice` + panduan (#65),
   device lolos 2026-09-27 (spec #62 closed, tanpa bump versi).
-- **v2.0** 🧊, offline outbox + read cache (satu paket konsistensi, jangan
-  dicicil; spec sync mencakup `transaction_receipts` sebagai tipe antrean),
-  lalu bank sync, multi-currency + kurs, AI insight.
+- **v2.0** 🧊, widget + fast-lane (WG1 parser split → WG2 widget native +
+  fast-lane → WG3 gerbang + bump `2.0.0`), lalu outbox + read cache paket
+  utuh (OB1 → OB2 → OB3, setelah WG3 hijau; spec sync mencakup
+  `transaction_receipts` sebagai tipe antrean), lalu bank sync,
+  multi-currency (parkir OPEN-4, mungkin IDR-saja) + kurs, AI insight.
 
 Prinsip urutan (§6.4): menutup lubang > menambah permukaan; fondasi ada >
 butuh keputusan (grill dulu, pola ADR); satu pass lintas-layar dikerjakan

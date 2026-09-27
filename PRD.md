@@ -173,7 +173,7 @@ Struktur navigasi = **floating bottom bar** (per `design.md` §5 Navigation), 4 
 - ❌ Offline write queue (outbox) + read cache, v2.0 (revisi R6; sebelumnya direncanakan v1.1). MVP: tulis butuh koneksi; baca dari cache lokal terakhir.
 - ❌ App lock biometrik (Face ID/PIN), v1.2 (butuh dev-client; lihat R6).
 - ❌ Cari/filter riwayat, bulk edit kategori, CSV import, lokalisasi ID/EN, v1.2.
-- ❌ Shared/household budget, web version, widget, email digest, AI insights.
+- ❌ Shared/household budget, web version, email digest, AI insights.
 
 ---
 
@@ -351,7 +351,7 @@ bukti kondisi kode hidup di **`docs/roadmap.md`**. Tabel di bawah ringkasannya.
 | **MVP (v1.0)** | Epic A–F persis seperti §2.3; TestFlight/internal distribution → Play Store + App Store | Semua AC terpenuhi + KPI instrumentasi hidup |
 | **v1.1** | **Dibekukan 2026-09-19** (revisi R6): jalur distribusi + instrumentasi crash (EAS + Sentry), reset password, konfirmasi email manual, halaman privasi/ToS, transfer antar-wallet, recurring transactions, kalender penuh, undo hapus, arsip wallet | Tidak ada regresi KPI stabilitas; crash-free terukur; lolos review store |
 | **v1.2** | Cari/filter riwayat, bulk edit kategori, inbox notifikasi, ringkasan bulan lalu, biometric app lock, CSV import, lokalisasi ID/EN, 2FA, E2E di CI | — |
-| **v2.0** | Offline outbox + read cache, agregasi bank via aggregator (Open Finance), multi-currency + kurs historis, smart insights | Compliance review selesai sebelum rilis |
+| **v2.0** | Widget + fast-lane (WG1–WG3: tombol home screen → deep-link existing, split-N, notifikasi lokal), lalu outbox + read cache (OB1–OB3, setelah WG3 hijau); bank sync, multi-currency, smart insight menyusul di payung 2.x | Gate hijau per rilis (pola Q10); widget tanpa label AI; antrean selalu eksplisit; compliance review selesai sebelum bank sync |
 
 ### 5.2 Technical Risks
 
@@ -376,6 +376,9 @@ Pertanyaan baru yang muncul selama development wajib ditambahkan ke sini dengan 
 | OPEN-1 | closed (R7) | Transfer = satu baris, `wallet_id` sumber + `counterparty_wallet_id` tujuan; `amount` positif; hapus/edit satu baris | — |
 | OPEN-2 | closed (R7) | Recurring = catch-up RPC saat app buka/foreground; semua Occurrence terlewat dilahirkan di tanggal jatuh tempo masing-masing; identik dengan Transaction manual untuk Spent/Alert | — |
 | OPEN-3 | closed (R9) | App lock biometrik: kunci perangkat saja (flag lokal, tanpa state server); grace 60 dtk background→foreground, cold start selalu kunci; biometrik + passcode OS, tanpa PIN app; opt-in via Profile; overlay penuh, lock ≠ sign-out | B4 v1.2 |
+| OPEN-4 | OPEN | IDR-only vs multi-currency: default perilaku hari ini (satu currency tampilan, tanpa konversi); ada kemungkinan app hanya mendukung IDR/Rupiah permanen; diputuskan ulang sebelum trek currency | Trek currency |
+
+Transfer / Recurring / V0 auth-legal tertutup di R7–R8. Tidak ada OPEN yang menghambat spec v1.1. OPEN-4 parkir dan tidak menghambat WG/OB.
 
 Transfer / Recurring / V0 auth-legal tertutup di R7–R8. Tidak ada OPEN yang menghambat spec v1.1.
 
@@ -414,3 +417,4 @@ Transfer / Recurring / V0 auth-legal tertutup di R7–R8. Tidak ada OPEN yang me
   4. **Reassign vs Transfer:** RPC memindahkan `wallet_id` dan `counterparty_wallet_id`; jika hasilnya sumber = tujuan, reassign ditolak. Occurrence bulan `starts_on` **tidak** lahir bila Due day sudah lewat (siklus berikutnya). **Auth gate v1.1:** session tanpa `email_confirmed_at` ditahan di layar "Cek email" (bukan tabs); E2E menandai terkonfirmasi via Admin API, bukan mematikan konfirmasi di hosted.
 - **R9, App lock device-local (2026-09-23, grill batch 2, menutup OPEN-3).** State kunci hanya di perangkat (flag lokal, tanpa kolom server, tanpa migrasi/RLS/pgTAP). Grace 60 detik background→foreground; cold start selalu kunci. Buka via biometrik + fallback passcode OS (`expo-local-authentication`); tanpa PIN buatan app. Opt-in via toggle Profile (mati default; perangkat tanpa biometrik = disabled + pesan). Overlay penuh pola auth gate; lock ≠ sign-out (sesi Supabase tetap). Modul native baru = satu rebuild preview, ditunda atas keputusan pemilik, kode B4 wajib degrade gracefully bila modul absen (Expo Go). ADR-0007.
 - **R10, Mekanisme i18n C6 (2026-09-23, grill batch 2).** Bahasa UI ikut locale OS via `expo-localization`, tanpa toggle (memenuhi janji Epic E apa adanya). Satu kamus terpusat `src/i18n/{id,en}.ts` (typed keys, fallback ID, kelengkapan dikunci Jest). Satu pass mencakup UI + body notifikasi + dokumen legal ID. Kategori sistem via mapping client-side (tanpa migrasi); data user tak diterjemahkan. Format angka/tanggal ikut bahasa aktif. `expo-localization` menumpang rebuild tertunda B4 (satu rebuild untuk dua modul); string baru B4 wajib lewat kamus ini sejak awal. ADR-0008.
+- **R11, Urutan v2 payung berurutan (2026-09-27, grill v2.0 + outbox, membuka OPEN-4).** Aturan lama "v2.0 = paket arsitektur, jangan dicicil" diganti: payung v2.x dikerjakan berurutan, tiap rilis gate hijau sendiri (Q10). **v2.0.0 = widget + fast-lane** (WG1 parser split #70 → WG2 widget native + fast-lane #71 → WG3 gerbang #72, spec #69, ADR-0011); **rilis berikut = outbox + read cache** paket utuh setelah WG3 hijau (OB1 #74 → OB2 #75 → OB3 #76, spec #73, ADR-0012). Widget keluar dari non-goal §2.4; baris v2.0 §5.1 diperbarui. **TanStack gugur permanen** untuk trek ini ("banyak user" = urusan server: indeks/pooling/rate-limit, bukan cache klien). Multi-currency parkir sebagai OPEN-4 (mungkin IDR-saja permanen); bank sync dan AI insight tetap antre di payung 2.x.

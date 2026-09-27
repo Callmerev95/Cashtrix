@@ -49,7 +49,7 @@ Prinsip yang dipakai:
 | A4 | **Bulk edit kategori** | belum ada | Salah kategori pada 20 transaksi = 20 kali buka form | 📦 v1.2 |
 | A5 | **Inbox notifikasi** | `budget_alerts` punya `fired_at` + indeks user/month, tanpa flag read | Alert yang lewat = hilang; butuh riwayat in-app | 📦 v1.2 |
 | A6 | **Ringkasan bulan lalu** | `v_monthly_summary` sudah ada, Dashboard belum memakainya | Menjawab "bulan ini lebih baik dari bulan lalu?" tanpa buka Analytics | 📦 v1.2 |
-| A7 | **Widget / quick-add** | Non-goal eksplisit PRD §2.4 | Menambah permukaan native + biaya build | 🧊 v2.0 |
+| A7 | **Widget / quick-add** | Spec beku `specs/cashtrix-v2.0-widget.md` + ADR-0011 | Tiga tombol home screen (suara/tambah/pindai) → fast-lane; satu batch native | 🎯 v2.0 (WG1–WG3, #70–#72, spec #69) |
 
 ### B. Fitur roadmap PRD §5.1
 
@@ -60,8 +60,8 @@ Prinsip yang dipakai:
 | B3 | **Kalender penuh** | stepper hari saja (ditunda di R5.4 karena date picker native) | Polish; bisa tanpa modul native dengan grid kalender dari `View` | 🎯 v1.1 |
 | B4 | **Biometric app lock** | belum ada; butuh modul native → dev-client | Q6 sudah disetujui: boleh pindah dev-client | 📦 v1.2 |
 | B5 | **CSV import** | belum ada; ekspor sudah ada (`src/features/data-ownership/`) | Nilai rendah vs effort, dan butuh pemetaan kategori | 📦 v1.2 |
-| B6 | **Offline outbox (tulis saat offline)** | MVP: tulis butuh koneksi; tidak ada `expo-sqlite` di `package.json` | Membalik keputusan MVP "tulis ditolak, bukan antrian buta" → lapisan sync + resolusi konflik | 🧊 v2.0 |
-| B7 | **Offline read cache** | tidak ada; `expo-sqlite` disebut di komentar `src/supabase/client.ts` tapi belum dipakai | Menyentuh semua screen; digabung dengan outbox agar satu model konsistensi | 🧊 v2.0 |
+| B6 | **Offline outbox (tulis saat offline)** | Spec beku `specs/cashtrix-v2.x-outbox.md` + ADR-0012 (LWW buta, FIFO, antrean eksplisit) | Membalik keputusan MVP "tulis ditolak, bukan antrian buta" → lapisan sync + resolusi konflik | 🧊 rilis berikut (OB1–OB3, #74–#76, spec #73, eksekusi setelah WG3 hijau) |
+| B7 | **Offline read cache** | Spec beku yang sama (baca terdegradasi: list/form cache, agregasi online-only) | Menyentuh semua screen; digabung dengan outbox agar satu model konsistensi | 🧊 rilis berikut (ikut OB1–OB3) |
 
 ### C. Kesiapan rilis / store
 
@@ -93,7 +93,7 @@ Prinsip yang dipakai:
 | ID | Ide | Alasan tunda |
 |---|---|---|
 | E1 | Bank sync / Open Finance | v2.0 (PRD D3); butuh compliance review |
-| E2 | Multi-currency + kurs historis | v2.0 (PRD D5) |
+| E2 | Multi-currency + kurs historis | Parkir (OPEN-4): default perilaku hari ini, mungkin IDR-saja permanen | Diputuskan ulang sebelum trek currency; TanStack gugur (bukan obat banyak-user) | 🚫/🧊 parkir |
 | E3 | Smart insight / AI | PRD §3 sengaja kosong sampai ada evaluasi sendiri |
 | E4 | Shared/household budget | Non-goal PRD §2.4 |
 | E5 | Server push notification | v1.0 sengaja local-only; baru berguna bersama recurring |
@@ -232,11 +232,20 @@ Memakai pola yang sudah ada (view/RPC + komponen):
 3. Satu pass lintas-layar (terminologi, skeleton, i18n) dikerjakan sekaligus, tidak dicicil.
 4. Item kecil tambahan di tengah jalan boleh masuk batch berjalan bila memenuhi 1–3; bila tidak, antre di batch berikutnya.
 
-### 6.5 v2.0: paket arsitektur, jangan dicicil
+### 6.5 v2: payung berurutan, satu gate per rilis (revisi R11, grill 2026-09-27)
 
-Offline outbox + read cache = satu pekerjaan konsistensi (satu model sync +
-resolusi konflik), didahului spec + grill seperti v1.1. Widget, bank sync,
-multi-currency, AI insight antre di belakangnya per PRD.
+Aturan lama "v2.0 = paket arsitektur, jangan dicicil" diganti: payung v2.x
+dikerjakan **berurutan, tiap rilis gate hijau sendiri** (pola Q10: satu
+kegagalan tidak menahan yang lain).
+
+| Urutan | Isi | Spec + ticket |
+|---|---|---|
+| **2.0.0** | Widget + fast-lane: tiga tombol home screen (suara/tambah/pindai) → deep-link existing → sheet yang sama, split-N maks 3 sejenis, notifikasi lokal khusus save-dari-widget, gate penuh, tanpa label AI | `specs/cashtrix-v2.0-widget.md` + ADR-0011, WG1 (#70) → WG2 (#71) → WG3 (#72), spec #69 |
+| Berikutnya | Offline outbox + read cache = satu pekerjaan konsistensi (LWW buta + hapus-menang, FIFO sekuensial, coalesce, antrean eksplisit, baca terdegradasi), didahului spec + grill seperti v1.1 | `specs/cashtrix-v2.x-outbox.md` + ADR-0003/0012, OB1 (#74) → OB2 (#75) → OB3 (#76), spec #73, eksekusi setelah WG3 hijau |
+
+Bank sync, multi-currency (parkir OPEN-4), AI insight antre di belakangnya
+per PRD. TanStack gugur permanen untuk trek ini ("banyak user" = urusan
+server: indeks/pooling/rate-limit, bukan cache klien).
 
 ### 6.6 v1.2.0: pintasan + scan struk (disetujui pemilik 2026-09-25)
 
@@ -298,8 +307,10 @@ Tanpa dialog recognizer di dalam app — tak ada modul STT di bundle Expo,
 maka mic membuka panel dan dikte lewat mic keyboard OS (Option A, disetujui
 pemilik). Tanpa modul native baru, tanpa DDL baru, tanpa rebuild (B-OTA).
 
-Ide v2.0 pemilik (belum ticket): **widget Catat Suara** — mencatat tanpa
-membuka app, gabung batch rebuild native yang sudah antre (widget +
-long-press launcher). Prinsip mengikat lebih dulu: widget = prefill, Simpan
-tetap satu ketuk di app — tebakan tak pernah menulis data kotor dari pintu
-belakang.
+Ide v2.0 pemilik (**sudah ticket**, grill v2.0 2026-09-27): **widget Catat
+Suara** + tambah + pindai, yaitu tombol di home screen yang tiap ketuknya
+membuka deep-link fast-lane (tanpa tab/chrome, auto-dismiss), satu batch
+rebuild native bareng long-press launcher voice. Prinsip mengikat: widget
+hanya tombol (tanpa data/sesi, ADR-0011); Simpan tetap satu ketuk di app,
+tebakan tak pernah menulis data kotor dari pintu belakang. Ticket WG1 (#70) → WG2 (#71) → WG3
+(#72), spec #69, rilis `2.0.0`.

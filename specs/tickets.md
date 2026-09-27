@@ -160,12 +160,14 @@ Semua ticket `ready-for-agent`. Urutan mengikat: S1 → S2 → S3 (tiap fase bis
 #55 (S1) ── #56 (S2) ── #57 (S3) ── #58 (RLS 1.2.0)
 ```
 
-### Aturan versi (disetujui pemilik 2026-09-25)
+### Aturan versi (disetujui pemilik 2026-09-25, direvisi R11 2026-09-27)
 
 - `1.2.0` = akumulasi pasca-1.1.0 (A3–A6, B4, C2, C6, D3–D5, skeleton) + S1–S3.
   Satu bump minor di akhir, bukan per fase.
-- `2.0.0` = hanya untuk perubahan besar arsitektur (offline outbox + read cache,
-  satu model sync). Bank sync / multi-currency / AI menyusul di payung 2.x.
+- `2.0.0` = widget + fast-lane (WG1–WG3, item pertama payung v2.x). Rilis
+  berikut = outbox + read cache paket utuh (OB1–OB3, setelah WG3 hijau).
+  Tiap rilis gate hijau sendiri (pola Q10). Bank sync / multi-currency / AI
+  menyusul di payung 2.x.
 - `1.2.x` = lubang tanpa ubah perilaku (pola `v1.1.x`).
 
 ### Frontier
