@@ -43,15 +43,18 @@ import {
 } from '../domain';
 
 type VoiceSheetProps = {
+  /** Controlled by the host: the Add form owns it so the save button can
+   * mirror it as `voice-save`, and seeds it open for the `cashtrix://voice`
+   * alias (VC3). */
+  open: boolean;
+  onOpenChange?: (open: boolean) => void;
   wallets: VoiceWallet[];
   onPrefill: (prefill: VoicePrefill) => void;
-  onOpenChange?: (open: boolean) => void;
 };
 
-export function VoiceSheet({ wallets, onPrefill, onOpenChange }: VoiceSheetProps) {
+export function VoiceSheet({ open, onOpenChange, wallets, onPrefill }: VoiceSheetProps) {
   const language = useLanguage();
   const t = dictionaryFor(language).voice;
-  const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   // Guards the prefill: identical parse outcomes never re-fire, so manual
   // corrections survive further typing in this box.
@@ -61,7 +64,6 @@ export function VoiceSheet({ wallets, onPrefill, onOpenChange }: VoiceSheetProps
   const result = parseVoiceText(text, wallets);
 
   function setPanelOpen(next: boolean) {
-    setOpen(next);
     onOpenChange?.(next);
   }
 

@@ -1,11 +1,13 @@
 /**
- * Shortcuts guide (S1, ADR-0009) — the one-page OS-pinning manual.
+ * Shortcuts guide (S1, ADR-0009; voice door VC3, issue #65) — the one-page
+ * OS-pinning manual.
  *
- * The app exposes doors, not detectors: the three buttons below fire the
- * same deep links an OS gesture would (`cashtrix://add-transaction?type=`
- * and `cashtrix://scan`), so the screen doubles as the manual test surface
- * for the shortcut contract. The static IDs `shortcut-expense`,
- * `shortcut-income` and `shortcut-scan` are literal on purpose — they feed
+ * The app exposes doors, not detectors: the four buttons below fire the
+ * same deep links an OS gesture would (`cashtrix://add-transaction?type=`,
+ * `cashtrix://scan`, `cashtrix://voice`), so the screen doubles as the
+ * manual test surface for the shortcut contract. The static IDs
+ * `shortcut-expense`, `shortcut-income`, `shortcut-scan` and
+ * `shortcut-voice` are literal on purpose — they feed
  * `scripts/verify-t11.mjs --static-only`.
  *
  * Reached from the Profile settings row (`profile-shortcuts-row`); gate
@@ -43,6 +45,13 @@ const DOORS = [
     titleKey: 'scanTitle',
     subtitleKey: 'scanSubtitle',
     href: '/add-transaction?scan=1',
+  },
+  {
+    testID: 'shortcut-voice',
+    icon: 'mic',
+    titleKey: 'voiceTitle',
+    subtitleKey: 'voiceSubtitle',
+    href: '/add-transaction?voice=1',
   },
 ] as const;
 

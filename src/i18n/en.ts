@@ -259,6 +259,8 @@ export const en: Dictionary = {
     incomeSubtitle: 'Open the form with the Income segment selected',
     scanTitle: 'Scan receipt',
     scanSubtitle: 'Open the form ready to photograph a receipt',
+    voiceTitle: 'Voice entry',
+    voiceSubtitle: 'Open the form with the voice panel open',
     guideKicker: 'Set up on your phone',
     iphoneTitle: 'iPhone: Back Tap',
     iphoneBody:
