@@ -53,6 +53,17 @@ export function parseScanFlag(value: unknown): boolean {
 }
 
 /**
+ * Entry source (WG2, ADR-0011): home-screen widget buttons fire the same
+ * deep links as the in-app doors plus `source=widget`
+ * (`cashtrix://voice?source=widget`). Only that exact value arms the
+ * widget path (local notification + auto-dismiss after save); anything
+ * else is an ordinary in-app session with the snackbar proof.
+ */
+export function parseEntrySource(value: unknown): 'widget' | null {
+  return value === 'widget' ? 'widget' : null;
+}
+
+/**
  * Scan mode (`?scan=1`) is expense-only (S3 UX, disetujui pemilik:
  * struk = belanja). Returns the forced segment, or null when scan mode is
  * off. The form seeds it BELOW an explicit toggle and shortcut `?type=`

@@ -10,6 +10,7 @@ export {
   voiceMessages,
   voiceRefusalMessage,
   voiceSplitRefusalMessage,
+  widgetSaveCopy,
 } from './domain';
 export type {
   VoiceParseResult,

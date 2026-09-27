@@ -737,5 +737,9 @@ export const en: Dictionary = {
     inputPlaceholder: 'Say it: soto mie 25rb pakai gopay',
     inputHint: 'Tap the keyboard mic to speak, or type directly.',
     close: 'Close',
+    splitSave: 'Save {count}',
+    removeRow: 'Remove this row',
+    splitSavedTitle: '{count} transactions saved',
+    splitSavedBody: 'Total {total}',
   },
 };

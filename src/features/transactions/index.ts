@@ -62,6 +62,7 @@ export {
   kindFilterLabel,
   newIdempotencyKey,
   normalizeNote,
+  parseEntrySource,
   parseScanFlag,
   parseShortcutType,
   receiptExpiryCutoff,

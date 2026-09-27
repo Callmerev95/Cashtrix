@@ -6,6 +6,7 @@
  * only the exact `scan=1` the `/scan` alias emits arms scan mode.
  */
 import {
+  parseEntrySource,
   parseScanFlag,
   parseShortcutType,
   scanForcedType,
@@ -45,4 +46,17 @@ describe('scanForcedType (S3: scan = expense-only)', () => {
   it('off → null (the usual override chain applies)', () => {
     expect(scanForcedType(false)).toBeNull();
   });
+});
+
+describe('parseEntrySource (WG2: only source=widget arms the widget path)', () => {
+  it('arms the widget path only for the exact source=widget the widget emits', () => {
+    expect(parseEntrySource('widget')).toBe('widget');
+  });
+
+  it.each([['app'], ['Widget'], [''], [null], [undefined]])(
+    'ignores %p (ordinary in-app session)',
+    (value) => {
+      expect(parseEntrySource(value)).toBeNull();
+    },
+  );
 });

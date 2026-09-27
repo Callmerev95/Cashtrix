@@ -7,9 +7,19 @@
  * then the form behaves like a plain create, so the alias is safe to ship
  * alone. Auth + lock parking stay the gate's job (`app/_layout.tsx`): an
  * unauthenticated deep link parks at Login, never inside the form.
+ *
+ * WG2 (ADR-0011): forwards `source=widget` like the voice alias, so the
+ * widget's scan button arms the widget save path.
  */
-import { Redirect } from 'expo-router';
+import { Redirect, useLocalSearchParams } from 'expo-router';
+
+import { parseEntrySource } from '@/features/transactions';
 
 export default function ScanAlias() {
-  return <Redirect href="/add-transaction?scan=1" />;
+  const params = useLocalSearchParams<{ source?: string }>();
+  const href =
+    parseEntrySource(params.source) === 'widget'
+      ? '/add-transaction?scan=1&source=widget'
+      : '/add-transaction?scan=1';
+  return <Redirect href={href} />;
 }

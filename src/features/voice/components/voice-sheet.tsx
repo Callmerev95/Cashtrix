@@ -31,14 +31,17 @@ import {
   formatGrouped,
   transactionTypeLabel,
 } from '@/features/transactions';
-import { dictionaryFor, useLanguage } from '@/i18n';
+import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 import { pressedFeedback } from '@/components/pressed';
 
 import {
+  parseVoiceSplit,
   parseVoiceText,
   voiceRefusalMessage,
+  voiceSplitRefusalMessage,
   type VoicePrefill,
+  type VoiceSplitOkRow,
   type VoiceWallet,
 } from '../domain';
 
@@ -50,25 +53,59 @@ type VoiceSheetProps = {
   onOpenChange?: (open: boolean) => void;
   wallets: VoiceWallet[];
   onPrefill: (prefill: VoicePrefill) => void;
+  /**
+   * Split commit (WG2, ADR-0011): the sheet calls back with the surviving ok
+   * rows (after per-row removal) and the host saves them all in one tap.
+   * Absent = single-prefill only (legacy callers).
+   */
+  onSplitSave?: (rows: VoiceSplitOkRow[]) => void;
 };
 
-export function VoiceSheet({ open, onOpenChange, wallets, onPrefill }: VoiceSheetProps) {
+export function VoiceSheet({
+  open,
+  onOpenChange,
+  wallets,
+  onPrefill,
+  onSplitSave,
+}: VoiceSheetProps) {
   const language = useLanguage();
   const t = dictionaryFor(language).voice;
   const [text, setText] = useState('');
   // Guards the prefill: identical parse outcomes never re-fire, so manual
   // corrections survive further typing in this box.
   const appliedKey = useRef<string | null>(null);
+  // Split-row removal (WG2 story 3): indices into the current parse, reset
+  // on every keystroke so a re-parse never resurrects a removed row.
+  const [removedIdx, setRemovedIdx] = useState<number[]>([]);
 
   // Pure — recomputed during render, no effect involved.
   const result = parseVoiceText(text, wallets);
+  const split = parseVoiceSplit(text, wallets);
 
   function setPanelOpen(next: boolean) {
     onOpenChange?.(next);
   }
 
+  /** One preview line: nominal · jenis · dompet · hint (misses dropped). */
+  function previewFor(row: {
+    amount: number;
+    kind: 'expense' | 'income';
+    walletId: string | null;
+    categoryHint: string | null;
+  }): string {
+    return [
+      formatGrouped(row.amount, language),
+      transactionTypeLabel(row.kind, language),
+      wallets.find((wallet) => wallet.id === row.walletId)?.name,
+      row.categoryHint,
+    ]
+      .filter((part): part is string => Boolean(part))
+      .join(' · ');
+  }
+
   function handleText(next: string) {
     setText(next);
+    setRemovedIdx([]);
     const parsed = parseVoiceText(next, wallets);
     if (parsed.status !== 'ok') return;
     const key = [
@@ -88,6 +125,12 @@ export function VoiceSheet({ open, onOpenChange, wallets, onPrefill }: VoiceShee
     });
   }
 
+  function removeSplitRow(index: number) {
+    setRemovedIdx((current) =>
+      current.includes(index) ? current : [...current, index],
+    );
+  }
+
   const previewParts =
     result.status === 'ok'
       ? [
@@ -97,6 +140,17 @@ export function VoiceSheet({ open, onOpenChange, wallets, onPrefill }: VoiceShee
           result.categoryHint,
         ].filter((part): part is string => Boolean(part))
       : [];
+
+  // Split preview (WG2): 2–3 clauses parse to 2–3 rows. Single-clause
+  // utterances keep the legacy single-prefill path above untouched.
+  const splitRows =
+    split.status === 'ok' && split.rows.length > 1 ? split.rows : null;
+  const visibleRows = splitRows
+    ? splitRows.filter((_, index) => !removedIdx.includes(index))
+    : [];
+  const savableRows = visibleRows.filter(
+    (row): row is VoiceSplitOkRow => row.ok,
+  );
 
   return (
     <View>
@@ -143,7 +197,64 @@ export function VoiceSheet({ open, onOpenChange, wallets, onPrefill }: VoiceShee
           <Text testID="voice-hint" style={[typography.bodySm, styles.hint]}>
             {t.inputHint}
           </Text>
-          {text === '' ? null : (
+          {text === '' ? null : splitRows ? (
+            <View testID="voice-split-preview" style={styles.splitList}>
+              {splitRows.map((row, index) => {
+                if (removedIdx.includes(index)) return null;
+                return (
+                  <View key={index} style={styles.splitRow}>
+                    <Text
+                      testID="voice-split-row"
+                      style={[typography.bodyMd, styles.status]}
+                    >
+                      {row.ok
+                        ? previewFor(row)
+                        : voiceSplitRefusalMessage(row.reason, language)}
+                    </Text>
+                    {!row.ok ? (
+                      <Text
+                        style={[typography.bodySm, styles.hint]}
+                        selectable
+                      >
+                        {row.text}
+                      </Text>
+                    ) : null}
+                    <Pressable
+                      testID="voice-row-remove"
+                      accessibilityRole="button"
+                      accessibilityLabel={`${t.removeRow}: ${row.ok ? row.note : row.text}`}
+                      onPress={() => removeSplitRow(index)}
+                      style={({ pressed }) => [
+                        styles.remove,
+                        pressed && pressedFeedback,
+                      ]}
+                    >
+                      <MaterialIcons
+                        name="close"
+                        size={18}
+                        color={colors.textSecondary}
+                      />
+                    </Pressable>
+                  </View>
+                );
+              })}
+              {savableRows.length > 0 ? (
+                <Pressable
+                  testID="voice-split-save"
+                  accessibilityRole="button"
+                  onPress={() => onSplitSave?.(savableRows)}
+                  style={({ pressed }) => [
+                    styles.splitSave,
+                    pressed && pressedFeedback,
+                  ]}
+                >
+                  <Text style={[typography.bodyMd, styles.splitSaveLabel]}>
+                    {fill(t.splitSave, { count: savableRows.length })}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : (
             <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
               {result.status === 'ok'
                 ? previewParts.join(' · ')
@@ -214,6 +325,33 @@ const styles = StyleSheet.create({
   },
   status: {
     color: colors.accent,
+  },
+  splitList: {
+    gap: spacing.sm,
+  },
+  splitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  remove: {
+    minHeight: layout.minTapTarget,
+    minWidth: layout.minTapTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  splitSave: {
+    minHeight: layout.minTapTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.lg,
+    backgroundColor: colors.accent,
+  },
+  splitSaveLabel: {
+    color: colors.background,
   },
   close: {
     minHeight: layout.minTapTarget,
