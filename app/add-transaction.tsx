@@ -55,6 +55,7 @@ import {
   type ReceiptAttachment,
 } from '@/features/receipts';
 import { useWallets } from '@/features/wallets';
+import { VoiceSheet, type VoicePrefill, type VoiceTransactionKind } from '@/features/voice';
 import {
   AmountField,
   CalendarGrid,
@@ -131,6 +132,14 @@ export default function AddTransactionScreen() {
   const [busy, setBusy] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
+  // VC2 (issue #64, Option A: dikte keyboard OS): the voice-detected kind
+  // feeds the segment chain below (create mode only — the panel never
+  // renders for `?id=`). `voiceOpen` only switches the save button's testID
+  // (`voice-save` in a voice session, `transaction-save` otherwise) so both
+  // Maestro paths keep a stable selector.
+  const [voiceType, setVoiceType] = useState<VoiceTransactionKind | null>(null);
+  const [voiceOpen, setVoiceOpen] = useState(false);
+
   // Edit mode loads a row into `loaded` and the fields read from it until the
   // user starts typing (each override wins over `loaded`).
   const [loaded, setLoaded] = useState<Transaction | null>(null);
@@ -146,11 +155,15 @@ export default function AddTransactionScreen() {
   // shared link can never retarget a row being edited. S3: scan mode forces
   // expense (struk = belanja) at the same level — a stale lastType=transfer
   // must never greet a scan session, but an explicit toggle still wins.
+  // VC2: a voice-detected kind sits below the deliberate choices (toggle,
+  // shortcut, scan) but above the remembered preference — a guess never
+  // outranks an explicit user decision.
   const shortcutType = isEdit ? null : parseShortcutType(params.type);
   const type: TransactionType =
     typeOverride ??
     shortcutType ??
     scanForcedType(scanMode) ??
+    voiceType ??
     loaded?.type ??
     lastType;
   const isTransfer = type === 'transfer';
@@ -254,6 +267,39 @@ export default function AddTransactionScreen() {
     // stays so a programmatic value can never slip through either.
     if (isFutureDate(next)) return; // AC #19: never a future date
     setOccurredAt(next);
+  }
+
+  // VC2 (issue #64, Option A: dikte keyboard OS): the voice-detected kind
+  // feeds the segment chain above (create mode only — the panel never
+  // renders for `?id=`). `voiceOpen` only switches the save button's testID
+  // (`voice-save` in a voice session, `transaction-save` otherwise) so both
+  // Maestro paths keep a stable selector.
+  // (State `voiceType`/`voiceOpen` lives with the other form state above,
+  // before the segment derivation that reads it.)
+
+  // Voice prefill (event handler, never an effect — same discipline as the
+  // S3 prefill above): nominal always (that is the point of speaking),
+  // kind as a guess below explicit choices, wallet/category/note as
+  // gap-fills that never clobber what the user already picked or typed.
+  // Refusals never reach here (the sheet only calls back on `ok`), so a
+  // failed parse leaves the form fully usable for manual entry.
+  function applyVoicePrefill(prefill: VoicePrefill) {
+    setAmountRaw(formatAmountInput(String(prefill.amount)));
+    setVoiceType(prefill.kind);
+    if (prefill.walletId) setWalletChoice(prefill.walletId);
+    if (!categoryId && prefill.categoryHint) {
+      const suggested = resolveCategorySuggestion(
+        prefill.categoryHint,
+        categories,
+      );
+      if (suggested) setCategoryChoice(suggested);
+    }
+    // PRD §4.4: the utterance survives only here, as ordinary user data
+    // (like anything typed) — the save path below still sends analytics a
+    // boolean `hasNote`, never text or amounts.
+    setNote((prev) =>
+      prev === '' ? prefill.note.slice(0, 200) : prev,
+    );
   }
 
   // S3: consent-once (disetujui pemilik) then prefill. Every field stays
@@ -569,6 +615,12 @@ export default function AddTransactionScreen() {
             onChange={onToggleType}
           />
 
+          {isEdit ? null : (
+            <View style={styles.gap}>
+              <VoiceSheet wallets={wallets} onPrefill={applyVoicePrefill} onOpenChange={setVoiceOpen} />
+            </View>
+          )}
+
           <Card style={[styles.entryCard, styles.gap]}>
             <Text style={[typography.labelUppercase, styles.kicker]}>
               {tf.amount}
@@ -800,7 +852,7 @@ export default function AddTransactionScreen() {
 
         <View style={styles.footer}>
           <PrimaryButton
-            testID="transaction-save"
+            testID={voiceOpen ? 'voice-save' : 'transaction-save'}
             label={isEdit ? tf.saveEdit : t.common.save}
             onPress={submit}
             loading={busy}

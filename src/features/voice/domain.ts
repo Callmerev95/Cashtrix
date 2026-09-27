@@ -38,19 +38,26 @@ export type VoiceWallet = {
 };
 
 export type VoiceParseResult =
-  | {
-      status: 'ok';
-      amount: number;
-      kind: VoiceTransactionKind;
-      /** Wallet id whose name was heard, or null (picker stays manual). */
-      walletId: string | null;
-      /** Category *name hint* (S3 contract) — the form resolves it against
-       * visible categories; a miss simply means no suggestion. */
-      categoryHint: string | null;
-      /** Trimmed utterance, for the sheet echo (VC2) and the note field. */
-      note: string;
-    }
+  | ({ status: 'ok' } & VoicePrefill)
   | { status: 'needAmount' | 'multiAmount' | 'wordsOnly' | 'transferRefused' };
+
+/**
+ * The prefill a successful parse hands to the form (VC2): nominal + kind +
+ * hints + the utterance itself. The form gap-fills its fields from this in
+ * an event handler (never an effect) — the same discipline as the S3
+ * prefill, so a post-save refetch can never stomp it.
+ */
+export type VoicePrefill = {
+  amount: number;
+  kind: VoiceTransactionKind;
+  /** Wallet id whose name was heard, or null (picker stays manual). */
+  walletId: string | null;
+  /** Category *name hint* (S3 contract) — the form resolves it against
+   * visible categories; a miss simply means no suggestion. */
+  categoryHint: string | null;
+  /** Trimmed utterance, for the sheet echo (VC2) and the note field. */
+  note: string;
+};
 
 /**
  * Normalises one Indonesian amount token to integer rupiah. S3 semantics,

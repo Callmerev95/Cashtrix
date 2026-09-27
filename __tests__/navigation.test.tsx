@@ -458,6 +458,143 @@ describe('shortcuts (S1)', () => {
   });
 });
 
+describe('voice entry (VC2)', () => {
+  const GOPAY = { id: 'w-gopay', name: 'GoPay' };
+  const CASH = { id: 'w-1', name: 'Cash' };
+  const FOOD = { id: 'c-1', name: 'Makanan', icon: 'restaurant', kind: 'expense' };
+
+  async function renderVoiceForm() {
+    seedSession('2026-09-17T00:00:00Z');
+    const api = require('@/features/transactions/api');
+    api.listWalletOptions.mockResolvedValue([GOPAY, CASH]);
+    api.listCategories.mockResolvedValue([FOOD]);
+    const router = await renderSignedInApp('/add-transaction');
+    fireEvent.press(await screen.findByTestId('voice-mic'));
+    await screen.findByTestId('voice-sheet');
+    return router;
+  }
+
+  it('opens the voice sheet from the mic with a dictation hint', async () => {
+    await renderVoiceForm();
+
+    expect(screen.getByTestId('voice-input')).toBeTruthy();
+    expect(screen.getByTestId('voice-hint')).toBeTruthy();
+  });
+
+  it('dictated text prefills amount, kind, wallet and category', async () => {
+    await renderVoiceForm();
+
+    fireEvent.changeText(
+      screen.getByTestId('voice-input'),
+      'soto mie 25rb pakai gopay',
+    );
+
+    expect(screen.getByTestId('amount-input').props.value).toBe('25.000');
+    expect(
+      screen.getByTestId('type-option-expense').props.accessibilityState,
+    ).toMatchObject({ selected: true });
+    expect(
+      screen.getByTestId('wallet-option-w-gopay').props.accessibilityState,
+    ).toMatchObject({ selected: true });
+    expect(screen.getByTestId('voice-status').props.children).toMatch(
+      /25\.000.*GoPay.*Makanan/,
+    );
+  });
+
+  it('multi-amount refusal leaves the form manual', async () => {
+    await renderVoiceForm();
+
+    fireEvent.changeText(
+      screen.getByTestId('voice-input'),
+      'nasi padang 30rb dan kopi 12rb',
+    );
+
+    expect(screen.getByTestId('voice-status').props.children).toBe(
+      'Sebutkan satu per satu',
+    );
+    expect(screen.getByTestId('amount-input').props.value).toBe('');
+  });
+
+  it('transfer utterance is refused, never parsed', async () => {
+    await renderVoiceForm();
+
+    fireEvent.changeText(
+      screen.getByTestId('voice-input'),
+      'transfer 50rb ke bca',
+    );
+
+    expect(screen.getByTestId('voice-status').props.children).toBe(
+      'Transfer pakai form',
+    );
+    expect(screen.getByTestId('amount-input').props.value).toBe('');
+  });
+
+  it('voice save commits one transaction with the app snackbar', async () => {
+    const { getPathname } = await renderVoiceForm();
+
+    fireEvent.changeText(
+      screen.getByTestId('voice-input'),
+      'soto mie 25rb pakai gopay',
+    );
+    fireEvent.press(screen.getByTestId('voice-save'));
+
+    expect(await screen.findByTestId('saved-snackbar')).toBeTruthy();
+    expect(
+      screen.getByText('Makanan · Rp 25.000 tersimpan'),
+    ).toBeTruthy();
+    expect(getPathname()).toBe('/');
+  });
+
+  it('edit mode has no mic (voice is create-only)', async () => {
+    seedSession('2026-09-17T00:00:00Z');
+    await renderSignedInApp('/add-transaction?id=tx-1');
+
+    expect(await screen.findByTestId('type-toggle')).toBeTruthy();
+    expect(screen.queryByTestId('voice-mic')).toBeNull();
+  });
+
+  it('parks an unconfirmed voice entry at Check Email', async () => {
+    seedSession(null);
+    const { getPathname } = await renderSignedInApp('/add-transaction');
+
+    expect(await screen.findByTestId('check-email-resend')).toBeTruthy();
+    expect(getPathname()).toBe('/check-email');
+    seedSession('2026-09-17T00:00:00Z');
+  });
+
+  it('holds a locked voice entry behind the overlay', async () => {
+    const LOCK_KEY = 'cashtrix:app-lock-enabled';
+    seedSession('2026-09-17T00:00:00Z');
+    require('./mocks/async-storage').sessionStorageSeed.set(LOCK_KEY, '1');
+    try {
+      await renderSignedInApp('/add-transaction');
+
+      expect(await screen.findByTestId('lock-overlay')).toBeTruthy();
+      expect(screen.queryByTestId('voice-mic')).toBeNull();
+    } finally {
+      require('./mocks/async-storage').sessionStorageSeed.delete(LOCK_KEY);
+    }
+  });
+
+  it('holds an aal1→aal2 voice entry at the challenge screen', async () => {
+    const mfa = require('@/supabase').supabase.auth.mfa;
+    const defaultAal = mfa.getAuthenticatorAssuranceLevel;
+    mfa.getAuthenticatorAssuranceLevel = async () => ({
+      data: { currentLevel: 'aal1', nextLevel: 'aal2' },
+      error: null,
+    });
+    try {
+      const { getPathname } = await renderSignedInApp('/add-transaction');
+
+      expect(await screen.findByTestId('mfa-challenge-screen')).toBeTruthy();
+      expect(getPathname()).toBe('/mfa-challenge');
+    } finally {
+      mfa.getAuthenticatorAssuranceLevel = defaultAal;
+      seedSession('2026-09-17T00:00:00Z');
+    }
+  });
+});
+
 describe('save proof (S1 follow-up)', () => {
   const CASH = { id: 'w-1', name: 'Cash' };
   const FOOD = { id: 'c-1', name: 'Makanan', icon: 'restaurant', kind: 'expense' };

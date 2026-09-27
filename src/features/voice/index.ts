@@ -9,6 +9,8 @@ export {
 export type {
   VoiceParseResult,
   VoiceParseStatus,
+  VoicePrefill,
   VoiceTransactionKind,
   VoiceWallet,
 } from './domain';
+export { VoiceSheet } from './components/voice-sheet';
