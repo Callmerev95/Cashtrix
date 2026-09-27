@@ -249,7 +249,7 @@ WG1 ── WG2 ── WG3 (2.0.0)
 
 ### Frontier
 
-#70 (WG1) terbuka, tanpa blocker. #71 blocked by #70. #72 blocked by #70 + #71.
+#70 (WG1) MERGED 2026-09-28 (PR #77, squash `99e37e7`; CI static pass). #71 siap dikerjakan. #72 blocked by #71.
 
 ---
 
