@@ -216,3 +216,35 @@ Catat Suara (gabung batch native bareng widget + long-press launcher).
 Widget home-screen · item long-press launcher (paket rebuild native) ·
 split-N transaksi · kata-bilangan Indonesia · keyword income Inggris ·
 modal sukses + notifikasi sistem · simpan/unggah audio · STT server-side.
+
+---
+
+## Widget + fast-lane (v2.0, rilis `2.0.0`)
+
+Spec: `specs/cashtrix-v2.0-widget.md` (issue **#69**) · Sumber: grill v2.0 2026-09-27 (ronde
+1-3 + final F1-F3) + ADR-0011 + referensi `stitch_cashtrix/reference_voice_capture/`.
+Keputusan terkunci: widget hanya tombol (tanpa data/sesi) → deep-link existing
+→ presentasi fast-lane; satu sheet, satu parser, satu jalur save; split maks 3
+sejenis; notifikasi lokal khusus save-dari-widget; gate penuh; tanpa label
+"AI". Semua ticket `ready-for-agent`. Urutan mengikat: WG1 → WG2 → WG3.
+
+| Ticket | Issue | Blocked by | Deliverable |
+|---|---|---|---|
+| WG1, Parser split + domain murni | #70 | — | Sensus nominal per klausa di `src/features/voice/domain.ts` (1-3 baris, 4+ tolak, campur-kind tolak, klausa-tanpa-angka = baris gagal F1a); aturan VC1 utuh; Jest ≥90% folder domain |
+| WG2, Widget native + fast-lane | #71 | #70 | Tombol widget iOS (`expo-widgets`) + Android + item long-press voice (satu batch rebuild); presentasi fast-lane (reuse sheet, auto-dismiss); notifikasi lokal ID/EN; mic in-app tetap |
+| WG3, Gerbang rilis `2.0.0` | #72 | #70, #71 | Jest + live + kontrak statis Maestro per-item + checklist visual + device HP + bump `app.json`/`package.json` → `2.0.0` |
+
+```
+WG1 ── WG2 ── WG3 (2.0.0)
+```
+
+### Aturan versi
+
+- `2.0.0` = widget + fast-lane (item pertama payung v2.x). Bump minor/major
+  sekali di akhir WG3 (runtimeVersion appVersion, pola RLS 1.2.0).
+- Berikutnya (di luar scope ini): multi-currency (OPEN-4, parkir) →
+  outbox + read cache paket utuh (ADR-0003).
+
+### Frontier
+
+#70 (WG1) terbuka, tanpa blocker. #71 blocked by #70. #72 blocked by #70 + #71.

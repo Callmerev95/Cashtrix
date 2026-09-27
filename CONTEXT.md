@@ -188,3 +188,42 @@ _Avoid_: dompet terkunci hasil suara, auto-wallet
 Kategori yang terpilih awal di picker karena ucapan menyebut petunjuknya.
 Picker selalu tampil dan kind-nya ikut tipe terdeteksi; saran bisa diganti manual.
 _Avoid_: auto-kategori, kategori terkunci hasil suara
+
+### Widget
+
+**Widget**:
+Tombol di home screen milik OS yang membuka satu pintu app: Catat Suara,
+tambah transaksi, atau pindai struk. Widget tidak menampilkan data dan tidak
+menyimpan sesi; tiap ketuk membuka app lewat deep-link yang sudah ada.
+_Avoid_: mini app, widget saldo, live widget
+
+**Pintu luar**:
+Jalur masuk app dari luar app: widget home screen, long-press icon, atau
+gesture OS (Back Tap iPhone, Quick Tap Pixel, Back-Tap Samsung). Semua pintu
+luar berakhir di layar app yang sama dengan pintu dalam, hanya dibuka tanpa
+tab dan tanpa chrome.
+_Avoid_: backdoor, external entry
+
+**Fast-lane**:
+Satu layar app yang dibuka dari pintu luar: tanpa tab bar, tanpa navigasi,
+tutup sendiri setelah simpan. Isinya komponen yang sama dengan versi in-app,
+bukan salinan.
+_Avoid_: lite mode, express screen
+
+**Split**:
+Satu ucapan Catat Suara yang menghasilkan sampai tiga Transaction sekaligus
+("nasi padang 30rb dan kopi 12rb" jadi dua baris). Tiap baris tampil di
+preview dan bisa dihapus sebelum ketuk Catat; semua baris harus sejenis
+(expense saja atau income saja).
+_Avoid_: multi-entry, batch voice, pecah diam-diam
+
+**Konfirmasi satu ketuk**:
+Satu ketukan Catat yang menulis semua baris hasil split sekaligus. Tidak ada
+simpan otomatis tanpa ketukan ini.
+_Avoid_: auto-save
+
+**Notifikasi lokal**:
+Pemberitahuan dari perangkat sendiri, tanpa server, yang muncul saat simpan
+berasal dari widget (snackbar in-app tidak terlihat dari home screen). Isinya
+hanya jumlah transaksi dan totalnya.
+_Avoid_: push notification, server push
