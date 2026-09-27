@@ -227,3 +227,35 @@ Pemberitahuan dari perangkat sendiri, tanpa server, yang muncul saat simpan
 berasal dari widget (snackbar in-app tidak terlihat dari home screen). Isinya
 hanya jumlah transaksi dan totalnya.
 _Avoid_: push notification, server push
+
+### Outbox
+
+**Outbox**:
+Antrean tulis milik User di perangkat: transaksi yang dibuat tanpa koneksi
+menunggu di sini sampai terkirim. Isinya niat terakhir, bukan rekaman
+sejarah (edit menimpa, hapus membuang).
+_Avoid_: outbox server, retry queue generik, draft
+
+**Flush**:
+Pengiriman antrean ke server saat koneksi kembali, satu baris per satu baris
+sesuai urutan dibuat. Tiap baris dapat hasilnya sendiri: terkirim atau gagal
+beralasan.
+_Avoid_: sync, push, bulk upload
+
+**Coalesce**:
+Penggabungan niat di antrean: edit atas baris yang belum terkirim menimpa
+baris itu, hapus membuangnya. Server tidak pernah melihat versi-versi
+antaranya.
+_Avoid_: version history, edit replay
+
+**Last-writer-wins**:
+Aturan menang saat dua perangkat menulis baris yang sama: siapa pun yang
+commit belakangan, dialah yang benar, tanpa bertanya. Hapus adalah niat paling
+tegas: edit yang tiba atas baris yang sudah dihapus ditolak.
+_Avoid_: merge, conflict resolution, versi-vektor
+
+**Cache baca**:
+Salinan baca di perangkat untuk Dashboard, Riwayat, dan form saat offline,
+berlabel data terakhir. Layar agregasi (Analytics, Budget) tetap butuh
+koneksi dan tidak dikloning ke cache.
+_Avoid_: full offline, read replica, duplikat agregasi

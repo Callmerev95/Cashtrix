@@ -248,3 +248,31 @@ WG1 ── WG2 ── WG3 (2.0.0)
 ### Frontier
 
 #70 (WG1) terbuka, tanpa blocker. #71 blocked by #70. #72 blocked by #70 + #71.
+
+---
+
+## Outbox + read cache (rilis berikut setelah WG3 hijau)
+
+Spec: `specs/cashtrix-v2.x-outbox.md` (issue **#73**) · Sumber: grill
+outbox 2026-09-27 (O1-O5 + R1-R6 + T1-T4) + ADR-0003 + ADR-0012. Keputusan
+terkunci: tulis = transaksi + receipts tertunda; LWW buta single-device +
+hapus-menang; baca terdegradasi (agregasi online-only); antrean eksplisit;
+FIFO sekuensial; kunci idempotency saat baris dibuat; tolak-server bertahan
+beralasan; foto di sandbox (yatim 7 hari disapu); cap 200 + purge sign-out.
+Dikerjakan setelah WG3 hijau (O4). Semua ticket `ready-for-agent`. Urutan
+mengikat: OB1 → OB2 → OB3.
+
+| Ticket | Issue | Blocked by | Deliverable |
+|---|---|---|---|
+| OB1, Store antrean + baca offline | #74 | — | `expo-sqlite` (satu rebuild) + tabel antrean (baris + kunci + status + path foto, cap 200) + cache Dashboard/Riwayat/form + gate koneksi agregasi + purge sign-out |
+| OB2, Flush + coalesce + konflik | #75 | #74 | Flush FIFO sekuensial (catch-up → flush → evaluasi-sekali); coalesce edit/hapus/undo; LWW + hapus-menang; tolak-server bertahan beralasan; upload foto pasca-commit + retry OCR |
+| OB3, Indikator + gerbang | #76 | #74, #75 | Strip + badge + buang-per-baris; Jest + live + kontrak statis Maestro; device mode-pesawat |
+
+```
+OB1 ── OB2 ── OB3 (rilis berikut, setelah WG3)
+```
+
+### Frontier
+
+OB1 (#74) terbuka setelah WG3 hijau (tiket boleh dibuat sekarang, eksekusi antre).
+OB2 (#75) blocked by #74. OB3 (#76) blocked by #74 + #75.
