@@ -7,10 +7,10 @@ analitik server-side, budget per kategori dengan alert anti-spam, pencarian
 riwayat, dan inbox notifikasi. Satu pengguna, satu perangkat; semua agregasi
 uang dihitung di Postgres, tidak pernah di klien.
 
-> **Status: v1.1.0 rilis (tag `v1.1.0`).** Pasca-1.1.0 selesai penuh
-> (A3–A6, B4, C2, C6, D3–D5, skeleton + Maestro device GREEN 2026-09-25).
-> Berikutnya: **v1.2.0: Pintasan + scan struk** (S1 deep-link → S2 lampiran
-> 30 hari → S3 OCR prefill, spec beku).
+> **Status: v1.2.0 rilis (tag `v1.2.0`).** Isi rilis: pintasan deep-link
+> (S1) + foto lampiran struk 30 hari (S2) + OCR server prefill mock-first
+> (S3) di atas fondasi pasca-1.1.0 (A3–A6, B4, C2, C6, D3–D5, skeleton),
+> gerbang RLS #58 hijau penuh (Jest + live + Maestro device 2026-09-27).
 > Peta ticket: [specs/tickets.md](specs/tickets.md).
 
 **Dokumen perencanaan (mengikat):**
@@ -460,9 +460,9 @@ Katalog lengkap hidup di **[docs/roadmap.md](docs/roadmap.md)**.
 - **Pasca-1.1.0** ✅ selesai penuh, A6 (#45) → A3 (#46) → A4 (#47) → A5 (#48) →
   D4 (#49) → B4 (#50) → C6 (#51) → C2 (#53) → D5 (#54) → D3 (#52, tetap manual) +
   skeleton/preloader + Maestro device GREEN 2026-09-25.
-- **v1.2.0** 🚧 direncanakan, S1 pintasan deep-link → S2 lampiran 30 hari →
-  S3 OCR prefill → RLS gerbang + bump minor + polish final UI/UX + screenshot
-  store (`specs/cashtrix-v1.2.md`, ADR-0009).
+- **v1.2.0** ✅, S1 pintasan deep-link → S2 lampiran 30 hari → S3 OCR
+  prefill (mock-first) → RLS gerbang + bump minor + polish final UI/UX +
+  screenshot HP + dokumen legal v1.2 (tag `v1.2.0`, #58 closed 2026-09-27).
 - **v2.0** 🧊, offline outbox + read cache (satu paket konsistensi, jangan
   dicicil; spec sync mencakup `transaction_receipts` sebagai tipe antrean),
   lalu bank sync, multi-currency + kurs, AI insight.

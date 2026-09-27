@@ -250,8 +250,8 @@ Detail beku di `specs/cashtrix-v1.2.md` + ADR-0009. Ticket: S1 → S2 → S3 →
 |---|---|---|
 | S1 | Pintasan deep-link + panduan OS | Tanpa native; membuka jalan tap-belakang di semua vendor |
 | S2 | Foto lampiran 30 hari | Nilai langsung tanpa tebakan OCR; fondasi Storage + tabel untuk S3 |
-| S3 | OCR server eksperimen | Prefill Starbucks "AMERICANO 30.000" → 30.000; gagal = lanjut manual, mock-first + device-gate lolos 2026-09-26 (siap PR, #57) |
-| RLS | Gerbang `1.2.0` | Bump minor sekali (akumulasi pasca-1.1.0 + S1–S3) + polish final UI/UX + screenshot store |
+| S3 | OCR server eksperimen | Prefill Starbucks "AMERICANO 30.000" → 30.000; gagal = lanjut manual, mock-first + device-gate lolos (closed via PR #60) |
+| RLS | Gerbang `1.2.0` | Bump minor sekali (akumulasi pasca-1.1.0 + S1–S3) + polish final UI/UX + screenshot HP (closed via PR #61, tag `v1.2.0`) |
 
 Aturan versi (mengikat): `1.2.0` = minor ini; `2.0.0` = hanya arsitektur besar;
 `1.2.x` = lubang tanpa ubah perilaku. v2.0 tetap trek terpisah, satu-satunya
