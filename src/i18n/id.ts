@@ -726,6 +726,13 @@ export const id = {
     deleteAction: 'Hapus akun permanen',
     deleteFail: 'Gagal menghapus akun',
   },
+  voice: {
+    needAmount: 'Sebutkan angkanya, mis. 30 ribu',
+    multiAmount: 'Sebutkan satu per satu',
+    wordsOnly:
+      'Kata-bilangan belum didukung di v1. Sebutkan angkanya, mis. 30 ribu',
+    transferRefused: 'Transfer pakai form',
+  },
 };
 
 export type Dictionary = typeof id;
