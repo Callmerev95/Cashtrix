@@ -734,6 +734,8 @@ export const id = {
     wordsOnly:
       'Kata-bilangan belum didukung di v1. Sebutkan angkanya, mis. 30 ribu',
     transferRefused: 'Transfer pakai form',
+    tooManyClauses: 'Maksimal tiga item sekaligus',
+    mixedKind: 'Jangan campur {expense} dan {income} — sebutkan sejenis saja',
     mic: 'Catat suara',
     micA11y: 'Buka panel suara',
     inputPlaceholder: 'Ucapkan: soto mie 25rb pakai gopay',
