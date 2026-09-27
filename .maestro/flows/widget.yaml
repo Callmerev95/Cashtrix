@@ -1,0 +1,64 @@
+# WG2 widget fast-lane (issue #71) — manual device run (D3: Maestro stays manual).
+# The three home-screen widget buttons fire the same deep links as the
+# in-app doors plus `source=widget`. Maestro cannot tap a home-screen
+# widget, so the taps themselves are manual (owner checklist in the PR);
+# these openLink steps prove each widget button lands on the right fast-lane
+# screen with the widget save path armed (no tab bar — root Stack routes).
+#
+# Provision once (same account as happy-path):
+#   SUPABASE_SERVICE_ROLE_KEY=<key> node scripts/provision-e2e.mjs
+# The flow always takes the login path (fresh register strands on Check
+# Email by design).
+#
+# Text match is the FULL string. The widget-save notification ("N
+# transaksi, Total RpX") is OS-level — verify it by eye, Maestro asserts
+# the in-app proof (saved-snackbar) instead.
+appId: com.callmerev95.cashtrix
+---
+- launchApp:
+    clearState: false
+
+# --- Auth: login with the pre-provisioned, pre-confirmed E2E account -----
+- extendedWaitUntil:
+    visible:
+      id: "login-submit"
+    timeout: 30000
+- tapOn:
+    id: "login-email"
+- inputText: "e2e@cashtrix.test"
+- tapOn:
+    id: "login-password"
+- inputText: "Cashtrix123"
+- hideKeyboard
+- tapOn:
+    id: "login-submit"
+
+- extendedWaitUntil:
+    visible:
+      id: "dashboard-wallets"
+    timeout: 20000
+
+# --- Widget voice door: split 2 rows, one Catat ---------------------------
+- openLink: "cashtrix://voice?source=widget"
+- assertVisible:
+    id: "voice-sheet"
+- tapOn:
+    id: "voice-input"
+- inputText: "nasi padang 30rb dan kopi 12rb"
+- hideKeyboard
+- assertVisible:
+    id: "voice-split-preview"
+- tapOn:
+    id: "voice-split-save"
+- assertVisible:
+    id: "saved-snackbar"
+
+# --- Widget add door: plain form, no tab bar --------------------------------
+- openLink: "cashtrix://add-transaction?source=widget"
+- assertVisible:
+    id: "transaction-save"
+
+# --- Widget scan door: scan-first form ---------------------------------------
+- openLink: "cashtrix://scan?source=widget"
+- assertVisible:
+    id: "transaction-save"

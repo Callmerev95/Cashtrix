@@ -502,7 +502,7 @@ describe('voice entry (VC2)', () => {
     );
   });
 
-  it('multi-amount refusal leaves the form manual', async () => {
+  it('split utterance previews rows without prefilling the form (WG2)', async () => {
     await renderVoiceForm();
 
     fireEvent.changeText(
@@ -510,10 +510,67 @@ describe('voice entry (VC2)', () => {
       'nasi padang 30rb dan kopi 12rb',
     );
 
-    expect(screen.getByTestId('voice-status').props.children).toBe(
-      'Sebutkan satu per satu',
-    );
+    expect(screen.getByTestId('voice-split-preview')).toBeTruthy();
+    expect(screen.getAllByTestId('voice-split-row')).toHaveLength(2);
+    expect(screen.getByTestId('voice-split-save')).toBeTruthy();
+    // Nothing lands in the single-transaction fields until Catat.
     expect(screen.getByTestId('amount-input').props.value).toBe('');
+  });
+
+  it('removing a split row drops it from the Catat commit (WG2 story 3)', async () => {
+    const api = require('@/features/transactions/api');
+    api.createTransaction.mockClear();
+    const { getPathname } = await renderVoiceForm();
+
+    fireEvent.changeText(
+      screen.getByTestId('voice-input'),
+      'nasi padang 30rb dan kopi 12rb',
+    );
+    fireEvent.press(screen.getAllByTestId('voice-row-remove')[0]);
+    fireEvent.press(screen.getByTestId('voice-split-save'));
+
+    expect(await screen.findByTestId('saved-snackbar')).toBeTruthy();
+    expect(api.createTransaction).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Makanan · Rp 12.000 tersimpan')).toBeTruthy();
+    expect(getPathname()).toBe('/');
+  });
+
+  it('split save writes every surviving row in one tap (WG2 story 4)', async () => {
+    const api = require('@/features/transactions/api');
+    api.createTransaction.mockClear();
+    const { getPathname } = await renderVoiceForm();
+
+    fireEvent.changeText(
+      screen.getByTestId('voice-input'),
+      'nasi padang 30rb dan kopi 12rb',
+    );
+    fireEvent.press(screen.getByTestId('voice-split-save'));
+
+    expect(await screen.findByTestId('saved-snackbar')).toBeTruthy();
+    expect(api.createTransaction).toHaveBeenCalledTimes(2);
+    expect(getPathname()).toBe('/');
+  });
+
+  it('widget split save dismisses with the snackbar proof (WG2)', async () => {
+    seedSession('2026-09-17T00:00:00Z');
+    const api = require('@/features/transactions/api');
+    api.listWalletOptions.mockResolvedValue([GOPAY, CASH]);
+    api.listCategories.mockResolvedValue([FOOD]);
+    api.createTransaction.mockClear();
+    const { getPathname } = await renderSignedInApp(
+      '/add-transaction?voice=1&source=widget',
+    );
+
+    expect(await screen.findByTestId('voice-sheet')).toBeTruthy();
+    fireEvent.changeText(
+      screen.getByTestId('voice-input'),
+      'nasi padang 30rb dan kopi 12rb',
+    );
+    fireEvent.press(screen.getByTestId('voice-split-save'));
+
+    expect(await screen.findByTestId('saved-snackbar')).toBeTruthy();
+    expect(api.createTransaction).toHaveBeenCalledTimes(2);
+    expect(getPathname()).toBe('/');
   });
 
   it('transfer utterance is refused, never parsed', async () => {
@@ -604,6 +661,22 @@ describe('voice doors (VC3)', () => {
     expect(await screen.findByTestId('voice-sheet')).toBeTruthy();
     expect(screen.getByTestId('voice-input')).toBeTruthy();
     expect(screen.getByTestId('voice-save')).toBeTruthy();
+    expect(getPathname()).toBe('/add-transaction');
+  });
+
+  it('forwards source=widget through the /voice alias (WG2)', async () => {
+    seedSession('2026-09-17T00:00:00Z');
+    const { getPathname } = await renderSignedInApp('/voice?source=widget');
+
+    expect(await screen.findByTestId('voice-sheet')).toBeTruthy();
+    expect(getPathname()).toBe('/add-transaction');
+  });
+
+  it('forwards source=widget through the /scan alias (WG2)', async () => {
+    seedSession('2026-09-17T00:00:00Z');
+    const { getPathname } = await renderSignedInApp('/scan?source=widget');
+
+    expect(await screen.findByTestId('type-toggle')).toBeTruthy();
     expect(getPathname()).toBe('/add-transaction');
   });
 

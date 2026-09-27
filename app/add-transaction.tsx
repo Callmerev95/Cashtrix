@@ -42,7 +42,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GhostButton, Card, LogoMark, PrimaryButton, Screen, SectionHeader } from '@/components';
 import { useAnalytics } from '@/features/analytics';
 import { useAuth } from '@/features/auth';
-import { useBudgets } from '@/features/budgets';
+import { requestPushPermission, sendBudgetAlert, useBudgets } from '@/features/budgets';
 import { trackEvent, txCreatedEvent } from '@/features/observability';
 import {
   hasScanConsent,
@@ -55,7 +55,7 @@ import {
   type ReceiptAttachment,
 } from '@/features/receipts';
 import { useWallets } from '@/features/wallets';
-import { VoiceSheet, parseVoiceFlag, type VoicePrefill, type VoiceTransactionKind } from '@/features/voice';
+import { VoiceSheet, parseVoiceFlag, widgetSaveCopy, type VoicePrefill, type VoiceSplitOkRow, type VoiceTransactionKind } from '@/features/voice';
 import {
   AmountField,
   CalendarGrid,
@@ -64,9 +64,11 @@ import {
   TypeSegmentedControl,
   categoriesForKind,
   formatAmountInput,
+  formatGrouped,
   isFutureDate,
   newIdempotencyKey,
   normalizeNote,
+  parseEntrySource,
   parseScanFlag,
   parseShortcutType,
   scanForcedType,
@@ -85,7 +87,7 @@ export default function AddTransactionScreen() {
   // `cashtrix://add-transaction?type=expense|income` and `cashtrix://scan`
   // (via the `/scan` alias as `scan=1`). `type` only preselects the segment —
   // `transfer` and unknown values fall through to the remembered preference.
-  const params = useLocalSearchParams<{ id?: string; type?: string; scan?: string; voice?: string }>();
+  const params = useLocalSearchParams<{ id?: string; type?: string; scan?: string; voice?: string; source?: string }>();
   const isEdit = Boolean(params.id);
   const insets = useSafeAreaInsets();
   // C6: copy + validation follow the OS language (ADR-0008).
@@ -113,6 +115,19 @@ export default function AddTransactionScreen() {
   // never regenerates it, and `refresh()` after a save cannot change it.
   const idempotencyKey = useRef(newIdempotencyKey()).current;
 
+  // Split-save keys (WG2): one idempotency key per row per sheet session, so
+  // a retry after a dropped connection resumes without double-posting any
+  // row. Keyed by index + note (stable while the utterance is unchanged).
+  const splitKeys = useRef<Record<string, string>>({});
+  function splitKeyFor(index: number, note: string): string {
+    const slot = `${index}|${note}`;
+    const existing = splitKeys.current[slot];
+    if (existing) return existing;
+    const fresh = newIdempotencyKey();
+    splitKeys.current[slot] = fresh;
+    return fresh;
+  }
+
   // Form state. Every "default" below is *derived during render* from the
   // context (remembered preference) plus an explicit user override, never
   // synced by an effect — a sync setState in an effect cascades renders, which
@@ -139,6 +154,11 @@ export default function AddTransactionScreen() {
   // `voiceOpen` mirrors the panel so the save button can switch its testID
   // (`voice-save` in a voice session, `transaction-save` otherwise) — both
   // Maestro paths keep a stable selector.
+  // WG2 (ADR-0011): the home-screen widget fires the same deep links plus
+  // `source=widget`. Only the widget path gains a local notification (the
+  // in-app snackbar is not visible from the home screen); the save itself,
+  // the gate parking, and the dismissal are identical.
+  const widgetSource = !isEdit && parseEntrySource(params.source) === 'widget';
   const voiceMode = !isEdit && parseVoiceFlag(params.voice);
   const [voiceType, setVoiceType] = useState<VoiceTransactionKind | null>(null);
   const [voiceOpen, setVoiceOpen] = useState(voiceMode);
@@ -407,6 +427,28 @@ export default function AddTransactionScreen() {
     setScanNote(null);
   }
 
+  // Split-row category (WG2): the row's kind is uniform across the split
+  // (mixed kinds refuse in the parser), so the hint resolves against that
+  // kind's visible categories — the S3 resolver is expense-only and stays
+  // untouched. Falls back to the form's picked category when it matches the
+  // row kind; null blocks the whole commit (validated before any write).
+  function resolveSplitCategory(
+    hint: string | null,
+    kind: VoiceTransactionKind,
+  ): string | null {
+    if (hint) {
+      const lowered = hint.toLowerCase();
+      const hinted = categories.find(
+        (category) =>
+          category.kind === kind &&
+          category.name.toLowerCase().includes(lowered),
+      );
+      if (hinted) return hinted.id;
+    }
+    const picked = categories.find((category) => category.id === categoryId);
+    return picked && picked.kind === kind ? picked.id : null;
+  }
+
   async function submit() {
     const amount = validateAmount(amountRaw, language);
     if (!amount.ok) {
@@ -508,6 +550,109 @@ export default function AddTransactionScreen() {
       setBusy(false);
       Alert.alert(
         isEdit ? tf.saveFailEdit : tf.saveFailCreate,
+        cause instanceof Error ? cause.message : t.common.retry,
+      );
+    }
+  }
+
+  // Split commit (WG2 stories 1–4, ADR-0011): one tap writes every surviving
+  // preview row. Each row carries its own idempotency key (minted once per
+  // sheet session above), so a retry resumes without double-posting. All
+  // rows validate before the first write — a missing wallet/category aborts
+  // the whole commit, never a partial one. Rows inherit the form's date
+  // (the S3 discipline: the form default owns history order) and carry no
+  // receipts (photos stay on the manual single-save path; unlinked orphans
+  // fall to the 30-day sweep).
+  async function submitSplit(rows: VoiceSplitOkRow[]) {
+    if (busy || rows.length === 0) return;
+    const userId = session?.user.id ?? '';
+    const planned = rows.map((row, index) => ({
+      row,
+      index,
+      rowWalletId: row.walletId ?? walletId,
+      rowCategoryId: resolveSplitCategory(row.categoryHint, row.kind),
+    }));
+    const blocked = planned.find(
+      (item) => !item.rowWalletId || !item.rowCategoryId,
+    );
+    if (blocked) {
+      setFormError(
+        !blocked.rowWalletId ? tf.walletRequired : tf.categoryRequired,
+      );
+      return;
+    }
+
+    setFormError(null);
+    setBusy(true);
+
+    try {
+      const occurred = occurredAt;
+      for (const item of planned) {
+        const rowNote = normalizeNote(item.row.note);
+        await save({
+          userId,
+          walletId: item.rowWalletId ?? '',
+          categoryId: item.rowCategoryId,
+          type: item.row.kind,
+          amount: item.row.amount,
+          occurredAt: occurred,
+          note: rowNote,
+          idempotencyKey: splitKeyFor(item.index, item.row.note),
+          receiptIds: [],
+        });
+        // Boolean-only per row (PRD §4.4 — never text or amounts).
+        try {
+          trackEvent(
+            txCreatedEvent({
+              type: item.row.kind,
+              hasNote: rowNote !== null,
+            }),
+          );
+        } catch {
+          // Analytics never blocks a save.
+        }
+      }
+
+      // Same post-save pattern as `submit()`: fire-and-forget re-reads plus
+      // a fresh-server alert evaluation (V6 — the cache is pre-commit here).
+      void refreshWallets();
+      void (async () => {
+        try {
+          await refreshBudgets();
+          await refreshAnalytics();
+          await evaluateAndAlert({ userId });
+        } catch {
+          // Non-fatal; the next save re-evaluates (dedup-safe).
+        }
+      })();
+
+      // Widget-only (ADR-0011): the home screen cannot see the Dashboard
+      // snackbar, so a widget save posts "N transaksi, Total RpX" instead.
+      // Permission is asked here — on the first widget save, never on launch
+      // (same rule as the first-budget prompt) — and everything is
+      // best-effort: a denial still leaves the committed save + snackbar.
+      // In-app split saves keep the snackbar and gain nothing new.
+      if (widgetSource) {
+        try {
+          await requestPushPermission();
+          const total = planned.reduce((sum, item) => sum + item.row.amount, 0);
+          const copy = widgetSaveCopy(
+            { count: planned.length, total: formatGrouped(total, language) },
+            language,
+          );
+          await sendBudgetAlert({ title: copy.title, body: copy.body });
+        } catch {
+          // Notification never blocks the save proof.
+        }
+      }
+
+      setBusy(false);
+      if (router.canGoBack()) router.back();
+      else router.replace('/');
+    } catch (cause) {
+      setBusy(false);
+      Alert.alert(
+        tf.saveFailCreate,
         cause instanceof Error ? cause.message : t.common.retry,
       );
     }
@@ -625,6 +770,7 @@ export default function AddTransactionScreen() {
                 onOpenChange={setVoiceOpen}
                 wallets={wallets}
                 onPrefill={applyVoicePrefill}
+                onSplitSave={submitSplit}
               />
             </View>
           )}

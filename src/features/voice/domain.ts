@@ -248,6 +248,22 @@ export function voiceRefusalMessage(
 }
 
 /**
+ * Copy for the widget-save local notification (WG2, ADR-0011): "N
+ * transaksi, Total RpX" through the central dictionary. `total` arrives
+ * preformatted (same pattern as the budget `alertCopy`) — the caller
+ * renders digits with `formatGrouped`, this only composes words.
+ */
+export function widgetSaveCopy(
+  input: { count: number; total: string },
+  lang: Language = 'id',
+): { title: string; body: string } {
+  const copy = dictionaryFor(lang).voice;
+  return {
+    title: fill(copy.splitSavedTitle, { count: input.count }),
+    body: fill(copy.splitSavedBody, { total: input.total }),
+  };
+}
+/**
  * Whole-split refusal copy (WG1): the VC1 keys delegate to
  * `voiceRefusalMessage` (so a failed row's `reason` resolves through the
  * same path), the two split-only keys read the new dictionary entries.

@@ -26,6 +26,7 @@ import {
   voiceMessages,
   voiceRefusalMessage,
   voiceSplitRefusalMessage,
+  widgetSaveCopy,
 } from '@/features/voice';
 import type { VoiceSplitRow, VoiceWallet } from '@/features/voice';
 import { id } from '@/i18n/id';
@@ -502,5 +503,25 @@ describe('voiceSplitRefusalMessage — copy split (WG1)', () => {
     expect(voiceSplitRefusalMessage('transferRefused', 'en')).toBe(
       voiceRefusalMessage('transferRefused', 'en'),
     );
+  });
+});
+
+describe('widgetSaveCopy — notifikasi widget "N transaksi, Total RpX" (WG2)', () => {
+  it('id: count + total terformat', () => {
+    expect(
+      widgetSaveCopy({ count: 2, total: '42.000' }),
+    ).toEqual({
+      title: '2 transaksi tersimpan',
+      body: 'Total 42.000',
+    });
+  });
+
+  it('en eksplisit', () => {
+    expect(
+      widgetSaveCopy({ count: 1, total: '12.000' }, 'en'),
+    ).toEqual({
+      title: '1 transactions saved',
+      body: 'Total 12.000',
+    });
   });
 });

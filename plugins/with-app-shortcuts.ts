@@ -3,7 +3,8 @@
  * runtime dependency.
  *
  * Long-press on the app icon offers Tambah Expense / Tambah Income / Scan
- * Struk. Each entry fires a plain `VIEW` intent at a deep link the app
+ * Struk / Catat Suara (voice joins in WG2, ADR-0011 — same batch rebuild,
+ * no new package). Each entry fires a plain `VIEW` intent at a deep link the app
  * already owns (`cashtrix://add-transaction?type=` / `cashtrix://scan`),
  * so expo-router routes them exactly like a tapped link — including the
  * auth-gate + lock parking (a shortcut never bypasses security).
@@ -60,6 +61,12 @@ const SHORTCUTS: ShortcutDef[] = [
     labelKey: 'shortcut_scan',
     label: 'Scan Struk',
     uri: 'cashtrix://scan',
+  },
+  {
+    id: 'voice',
+    labelKey: 'shortcut_voice',
+    label: 'Catat Suara',
+    uri: 'cashtrix://voice',
   },
 ];
 

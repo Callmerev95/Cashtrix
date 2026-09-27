@@ -741,6 +741,10 @@ export const id = {
     inputPlaceholder: 'Ucapkan: soto mie 25rb pakai gopay',
     inputHint: 'Ketuk mic di keyboard untuk bicara, atau ketik langsung.',
     close: 'Tutup',
+    splitSave: 'Catat {count}',
+    removeRow: 'Hapus baris ini',
+    splitSavedTitle: '{count} transaksi tersimpan',
+    splitSavedBody: 'Total {total}',
   },
 };
 

@@ -75,7 +75,9 @@ appId: com.callmerev95.cashtrix
 - assertVisible:
     id: "dashboard-history"
 
-# --- Multi-item refusal: form stays manual -----------------------------------
+# --- Split: two rows preview, one Catat writes both (WG2) ----------------------
+# (Pre-WG2 this utterance refused with "Sebutkan satu per satu" — split rows
+# are the new behaviour; refusals now only cover >3 clauses / mixed kinds.)
 - tapOn:
     id: "fab-add-transaction"
 - assertVisible:
@@ -88,8 +90,23 @@ appId: com.callmerev95.cashtrix
     id: "voice-input"
 - inputText: "nasi padang 30rb dan kopi 12rb"
 - hideKeyboard
-- assertVisible: "Sebutkan satu per satu"
-# Back out clean — nothing was written, manual entry never blocked.
+- assertVisible:
+    id: "voice-split-preview"
+- tapOn:
+    id: "voice-split-save"
+- scrollUntilVisible:
+    element:
+      id: "dashboard-history"
+    direction: DOWN
+    centerElement: true
+    timeout: 15000
+- assertVisible:
+    id: "dashboard-history"
+# Back out clean.
+- tapOn:
+    id: "fab-add-transaction"
+- assertVisible:
+    id: "transaction-save"
 - tapOn:
     id: "add-transaction-close"
 - assertVisible:
