@@ -153,8 +153,8 @@ Semua ticket `ready-for-agent`. Urutan mengikat: S1 → S2 → S3 (tiap fase bis
 |---|---|---|---|
 | S1, Pintasan deep-link + panduan OS | #55 | — | `cashtrix://add-transaction?type=` + `cashtrix://scan`, App Shortcuts long-press, panduan Back Tap/Quick Tap ID/EN, `testID` `shortcut-expense/income/scan`, selesai, di `main` (HEAD `05fc2aa`) |
 | S2, Foto lampiran 30 hari | #56 | #55 | Bucket privat `receipts`, tabel `transaction_receipts` + RLS + `purge_expired_receipts()` via `pg_cron`, thumbnail di form Add (pra-save legal), selesai, di `main` (PR #59, closed) |
-| S3, OCR server eksperimen | #57 | #56 | Edge Function `scan-receipt` (JWT → rate-limit 5/mnt → OCR → hapus temp → prefill), consent eksplisit, parser total+tanggal+merchant ID, saran kategori opsional, implementasi + device-gate hijau di working tree, siap PR (Jest 525/`verify-s3` 39/kontrak 78/8/3) |
-| RLS, Gerbang rilis `1.2.0` | #58 | #55, #56, #57 | Jest + pgTAP + `verify-s*` + kontrak statis Maestro + checklist visual + polish final UI/UX + screenshot store + bump `app.json`/`package.json` → `1.2.0` |
+| S3, OCR server eksperimen | #57 | #56 | Edge Function `scan-receipt` (JWT → rate-limit 5/mnt → OCR → hapus temp → prefill), consent eksplisit, parser total+tanggal+merchant ID, saran kategori opsional, selesai, di `main` (PR #60, closed) |
+| RLS, Gerbang rilis `1.2.0` | #58 | #55, #56, #57 | Jest + pgTAP + `verify-s*` + kontrak statis Maestro + checklist visual + polish final UI/UX + screenshot HP + bump `app.json`/`package.json` → `1.2.0`, selesai, di `main` (PR #61, closed; tag `v1.2.0`) |
 
 ```
 #55 (S1) ── #56 (S2) ── #57 (S3) ── #58 (RLS 1.2.0)
@@ -172,4 +172,6 @@ Semua ticket `ready-for-agent`. Urutan mengikat: S1 → S2 → S3 (tiap fase bis
 
 #55 (S1) closed: di `main` (HEAD `05fc2aa`). #56 (S2) closed via PR #59
 (HEAD `8108b53`). #57 (S3) closed via PR #60 (HEAD `4995b78`).
-Frontier: #58 (RLS 1.2.0) unblocked.
+#58 (RLS 1.2.0) closed via PR #61 (HEAD `553aa80`); tag `v1.2.0`.
+Frontier: **v1.2 selesai penuh** — item berikut menunggu keputusan pemilik
+(v2.0 paket arsitektur, atau rilis store).
