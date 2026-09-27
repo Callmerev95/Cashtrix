@@ -233,7 +233,7 @@ sejenis; notifikasi lokal khusus save-dari-widget; gate penuh; tanpa label
 | Ticket | Issue | Blocked by | Deliverable |
 |---|---|---|---|
 | WG1, Parser split + domain murni | #70 | — | Sensus nominal per klausa di `src/features/voice/domain.ts` (1-3 baris, 4+ tolak, campur-kind tolak, klausa-tanpa-angka = baris gagal F1a); aturan VC1 utuh; Jest ≥90% folder domain |
-| WG2, Widget native + fast-lane | #71 | #70 | Tombol widget iOS (`expo-widgets`) + Android + item long-press voice (satu batch rebuild); presentasi fast-lane (reuse sheet, auto-dismiss); notifikasi lokal ID/EN; mic in-app tetap |
+| WG2, Widget native + fast-lane | #71 | #70 | Widget Android (plugin hand-rolled, tanpa dep native) + item long-press voice (satu batch rebuild); presentasi fast-lane (reuse sheet, auto-dismiss); notifikasi lokal ID/EN; mic in-app tetap; iOS widget DITUNDA |
 | WG3, Gerbang rilis `2.0.0` | #72 | #70, #71 | Jest + live + kontrak statis Maestro per-item + checklist visual + device HP + bump `app.json`/`package.json` → `2.0.0` |
 
 ```
@@ -249,7 +249,7 @@ WG1 ── WG2 ── WG3 (2.0.0)
 
 ### Frontier
 
-#70 (WG1) MERGED 2026-09-28 (PR #77, squash `99e37e7`; CI static pass). #71 siap dikerjakan. #72 blocked by #71.
+#70 (WG1) MERGED 2026-09-28 (PR #77, squash `99e37e7`; CI static pass). #71 (WG2) MERGED 2026-09-28 (PR #78; CI static pass; Android-only, iOS widget ditunda). #72 siap dikerjakan.
 
 ---
 
