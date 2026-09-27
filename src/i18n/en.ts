@@ -722,4 +722,11 @@ export const en: Dictionary = {
     deleteAction: 'Delete account permanently',
     deleteFail: 'Failed to delete account',
   },
+  voice: {
+    needAmount: 'Say the amount, e.g. 30 ribu',
+    multiAmount: 'One item at a time',
+    wordsOnly:
+      'Number words are not supported in v1. Say the digits, e.g. 30 ribu',
+    transferRefused: 'Use the form for transfers',
+  },
 };
