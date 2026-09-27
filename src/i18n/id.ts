@@ -732,6 +732,11 @@ export const id = {
     wordsOnly:
       'Kata-bilangan belum didukung di v1. Sebutkan angkanya, mis. 30 ribu',
     transferRefused: 'Transfer pakai form',
+    mic: 'Catat suara',
+    micA11y: 'Buka panel suara',
+    inputPlaceholder: 'Ucapkan: soto mie 25rb pakai gopay',
+    inputHint: 'Ketuk mic di keyboard untuk bicara, atau ketik langsung.',
+    close: 'Tutup',
   },
 };
 

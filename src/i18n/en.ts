@@ -728,5 +728,10 @@ export const en: Dictionary = {
     wordsOnly:
       'Number words are not supported in v1. Say the digits, e.g. 30 ribu',
     transferRefused: 'Use the form for transfers',
+    mic: 'Voice entry',
+    micA11y: 'Open voice panel',
+    inputPlaceholder: 'Say it: soto mie 25rb pakai gopay',
+    inputHint: 'Tap the keyboard mic to speak, or type directly.',
+    close: 'Close',
   },
 };

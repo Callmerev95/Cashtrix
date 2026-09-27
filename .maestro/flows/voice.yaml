@@ -1,0 +1,96 @@
+# VC2 voice entry (issue #64) — manual device run (D3: Maestro stays manual).
+# Mic → sheet → dictate/type → preselect → Dompet (tap 1) → Simpan (tap 2)
+# → snackbar; multi-item → refusal message, form stays manual.
+#
+# Provision once (same account as happy-path):
+#   SUPABASE_SERVICE_ROLE_KEY=<key> node scripts/provision-e2e.mjs
+# The flow always takes the login path (fresh register strands on Check
+# Email by design). Wipe voice rows between runs only if you assert exact
+# amounts — the assertions below are structural (snackbar + history row).
+#
+# NOTE (Option A, disetujui pemilik): no STT module ships in Expo Go, so the
+# mic opens the voice panel with the text field focused — dictation happens
+# through the OS keyboard mic (Gboard / dikte iOS). On device, tap the
+# keyboard mic and speak; in this flow `inputText` stands in for dictation.
+# Text match is the FULL string: the status line reads e.g.
+# "25.000 · Pengeluaran · Cash · Makanan".
+appId: com.callmerev95.cashtrix
+---
+- launchApp:
+    clearState: false
+
+# --- Auth: login with the pre-provisioned, pre-confirmed E2E account -----
+- extendedWaitUntil:
+    visible:
+      id: "login-submit"
+    timeout: 30000
+- tapOn:
+    id: "login-email"
+- inputText: "e2e@cashtrix.test"
+- tapOn:
+    id: "login-password"
+- inputText: "Cashtrix123"
+- hideKeyboard
+- tapOn:
+    id: "login-submit"
+
+- extendedWaitUntil:
+    visible:
+      id: "dashboard-wallets"
+    timeout: 20000
+
+# --- Voice Tx: "soto mie 25rb" → expense 25.000 -----------------------------
+- tapOn:
+    id: "fab-add-transaction"
+- assertVisible:
+    id: "transaction-save"
+- tapOn:
+    id: "voice-mic"
+- assertVisible:
+    id: "voice-sheet"
+- tapOn:
+    id: "voice-input"
+- inputText: "soto mie 25rb"
+- hideKeyboard
+# Prefill proof: the form now carries the spoken amount on the expense rail.
+- assertVisible:
+    id: "amount-input"
+# The voice panel adds height above the grid — scroll the category into view.
+- scrollUntilVisible:
+    element:
+      text: "Makanan"
+    direction: DOWN
+    timeout: 15000
+- tapOn: "Makanan"
+# Tap 1 (Dompet, keeps the suggestion) + tap 2 (Simpan via voice-save).
+- tapOn: "Cash"
+- tapOn:
+    id: "voice-save"
+- scrollUntilVisible:
+    element:
+      id: "dashboard-history"
+    direction: DOWN
+    centerElement: true
+    timeout: 15000
+- assertVisible:
+    id: "dashboard-history"
+
+# --- Multi-item refusal: form stays manual -----------------------------------
+- tapOn:
+    id: "fab-add-transaction"
+- assertVisible:
+    id: "transaction-save"
+- tapOn:
+    id: "voice-mic"
+- assertVisible:
+    id: "voice-sheet"
+- tapOn:
+    id: "voice-input"
+- inputText: "nasi padang 30rb dan kopi 12rb"
+- hideKeyboard
+- assertVisible: "Sebutkan satu per satu"
+# Back out clean — nothing was written, manual entry never blocked.
+- tapOn:
+    id: "add-transaction-close"
+- assertVisible:
+    id: "dashboard-history"
