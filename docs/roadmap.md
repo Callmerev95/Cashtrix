@@ -285,3 +285,21 @@ keputusan tidak hilang:
   riil sebelum dikunci ke store listing.
 - RLS `1.2.0` **tidak mengklaim akurasi OCR** ke store; Data Safety ditulis
   apa adanya ("foto diproses sementara").
+
+### 6.8 Pasca-1.2: Catat Suara (selesai penuh, device lolos 2026-09-27)
+
+Spec `specs/cashtrix-voice-capture.md` + ADR-0010. Ticket VC1 (#63) → VC2
+(#64) → VC3 (#65), PR squash #66/#67/#68, spec #62 closed. Tanpa bump versi
+(JS-only, OTA preview runtime `1.2.0`).
+
+Keputusan grill yang bertahan di device: STT milik OS + parser aturan lokal +
+prefill-saja (satu ucapan satu transaksi, Simpan selalu manual + snackbar).
+Tanpa dialog recognizer di dalam app — tak ada modul STT di bundle Expo,
+maka mic membuka panel dan dikte lewat mic keyboard OS (Option A, disetujui
+pemilik). Tanpa modul native baru, tanpa DDL baru, tanpa rebuild (B-OTA).
+
+Ide v2.0 pemilik (belum ticket): **widget Catat Suara** — mencatat tanpa
+membuka app, gabung batch rebuild native yang sudah antre (widget +
+long-press launcher). Prinsip mengikat lebih dulu: widget = prefill, Simpan
+tetap satu ketuk di app — tebakan tak pernah menulis data kotor dari pintu
+belakang.

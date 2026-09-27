@@ -263,6 +263,7 @@
 - VC2: **tanpa dialog recognizer** — tak ada modul STT di bundle Expo (hanya `expo-speech` = TTS), `expo-intent-launcher` satu arah → Option A disetujui pemilik: mic membuka panel, dikte via mic keyboard OS (STT tetap Google/Apple) atau ketik. `VoiceSheet` controlled (`open`/`onOpenChange` milik form agar tombol simpan bisa mirror `voice-save`); `voiceType` di rantai segmen di bawah toggle/shortcut/scan; prefill gap-fill dari handler + guard kunci-hasil (koreksi manual selamat); penolakan tak menyentuh form; panel create-only. Simpan 100% reuse jalur form (idempotency per sesi form, refresh + `evaluateAndAlert`, KPI boolean-only — ucapan hanya mendarat sebagai note). `.maestro/flows/voice.yaml` run manual (D3), di luar kontrak.
 - VC3: `app/voice.tsx` alias → `/add-transaction?voice=1` (pola `scan.tsx`; `parseVoiceFlag` exact-`'1'`); pintu ke-4 di `/shortcuts` (`shortcut-voice`, panel auto-buka via `voiceOpen` init `voiceMode`); `voice.yaml` masuk daftar flow `verify-t11.mjs`. Gate parkir = auth gate + `LockOverlay` (tanpa logika sesi di pintu); Jest: `/voice` → panel terbuka + parkir unconfirmed/locked/MFA.
 - Catatan proses (instruksi pemilik, berlaku terus): hapus branch lokal + remote setelah merge ke `main`; update `specs/tickets.md` (+ bagian AGENTS ini) di tiap ticket.
+- Device gate lolos 2026-09-27 (OTA `c2763363` runtime 1.2.0, uji manual akun asli + Urungkan, semua hijau); spec #62 closed. Tanpa bump versi (voice = JS-only, OTA preview).
 
 ### Graphify + Obsidian (handoff antar-sesi, 2026-09-25)
 

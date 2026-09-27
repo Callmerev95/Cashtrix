@@ -22,9 +22,10 @@ uang dihitung di Postgres, tidak pernah di klien.
 | [specs/cashtrix-mvp.md](specs/cashtrix-mvp.md) | Spec MVP v1.0 |
 | [specs/cashtrix-v1.1.md](specs/cashtrix-v1.1.md) | Spec v1.1 (V0–V6) |
 | [specs/cashtrix-v1.2.md](specs/cashtrix-v1.2.md) | Spec v1.2 (S1–S3 pintasan + scan, gerbang `1.2.0`) |
-| [specs/tickets.md](specs/tickets.md) | Peta ticket: T1–T11, V0–V6, A3–A6, D4, B4, C6, C2/D5/D3, S1–S3 + RLS |
+| [specs/cashtrix-voice-capture.md](specs/cashtrix-voice-capture.md) | Spec voice capture / Catat Suara (VC1–VC3, device lolos, tanpa bump versi) |
+| [specs/tickets.md](specs/tickets.md) | Peta ticket: T1–T11, V0–V6, A3–A6, D4, B4, C6, C2/D5/D3, S1–S3 + RLS, VC1–VC3 |
 | [docs/roadmap.md](docs/roadmap.md) | Katalog ide + urutan rilis + keputusan OPEN |
-| [docs/adr/](docs/adr/) | ADR-0001..0009 (scope, dev-client, transfer, recurring, legal, lock, i18n, shortcut/scan) |
+| [docs/adr/](docs/adr/) | ADR-0001..0010 (scope, dev-client, transfer, recurring, legal, lock, i18n, shortcut/scan, voice) |
 | [docs/release-gate.md](docs/release-gate.md) | Gerbang rilis: bukti E2E, KPI, checklist visual, pra-store |
 | [docs/store-submit.md](docs/store-submit.md) | Mekanik submit TestFlight / Play Store |
 | [CONTEXT.md](CONTEXT.md) | Glosarium + konteks domain |
@@ -128,6 +129,16 @@ uang dihitung di Postgres, tidak pernah di klien.
   lahir di tanggal jatuh temponya masing-masing (plafon 12 per rule per sesi,
   anti-ganda termasuk soft-delete). Occurrence identik dengan transaksi manual
   (masuk spent, bisa memicu alert). Tanpa server-push di v1.x.
+
+### Catat Suara (VC1–VC3)
+
+- Mic di form Add → panel voice: dikte via mic keyboard OS (STT milik
+  Google/Apple, tanpa modul native, B-OTA) atau ketik langsung.
+- Parser aturan lokal membaca nominal digit-ID (`25rb`, `30 ribu`,
+  `Rp30.000`, `5 juta`); multi-nominal, kata-bilangan, dan transfer ditolak
+  jujur. Saran dompet/kategori = preselect, Simpan selalu manual + snackbar.
+- Pintu `cashtrix://voice` + baris panduan di layar Pintasan (tempel ke
+  Back Tap / Quick Tap / RegiStar).
 
 ### Profile & data milik pengguna (Epic F, T8, T9)
 
@@ -463,6 +474,9 @@ Katalog lengkap hidup di **[docs/roadmap.md](docs/roadmap.md)**.
 - **v1.2.0** ✅, S1 pintasan deep-link → S2 lampiran 30 hari → S3 OCR
   prefill (mock-first) → RLS gerbang + bump minor + polish final UI/UX +
   screenshot HP + dokumen legal v1.2 (tag `v1.2.0`, #58 closed 2026-09-27).
+- **Pasca-1.2.0** ✅ Catat Suara, VC1 parser + domain murni (#63) → VC2 sheet +
+  dikte keyboard OS (#64) → VC3 pintu `cashtrix://voice` + panduan (#65),
+  device lolos 2026-09-27 (spec #62 closed, tanpa bump versi).
 - **v2.0** 🧊, offline outbox + read cache (satu paket konsistensi, jangan
   dicicil; spec sync mencakup `transaction_receipts` sebagai tipe antrean),
   lalu bank sync, multi-currency + kurs, AI insight.
