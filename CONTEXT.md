@@ -169,3 +169,22 @@ _Avoid_: receipt permanen, avatar bucket, attachment tanpa retensi
 Usulan Category dari hasil OCR (misal struk Starbucks → "Makanan"). Selalu opsional:
 bisa diterima atau diganti manual.
 _Avoid_: auto-kategori, kategori terkunci hasil scan
+
+### Catat Suara
+
+**Catat Suara**:
+Isi form Add lewat ucapan. STT milik OS mengubah suara jadi teks, parser aturan
+membaca nominalnya, lalu form terisi sebagai prefill. Audio tidak disimpan di
+mana pun. Satu ucapan menghasilkan satu Transaction. Ketuk pilih Dompet dan
+ketuk Simpan tetap dilakukan User secara manual.
+_Avoid_: AI entry, quick entry, voice note, auto-save suara
+
+**Saran dompet**:
+Dompet yang terpilih awal di sheet konfirmasi karena namanya disebut di ucapan
+(misal "... pakai gopay"). Selalu bisa diganti lewat picker sebelum Simpan.
+_Avoid_: dompet terkunci hasil suara, auto-wallet
+
+**Saran kategori (suara)**:
+Kategori yang terpilih awal di picker karena ucapan menyebut petunjuknya.
+Picker selalu tampil dan kind-nya ikut tipe terdeteksi; saran bisa diganti manual.
+_Avoid_: auto-kategori, kategori terkunci hasil suara

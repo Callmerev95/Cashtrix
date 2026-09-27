@@ -175,3 +175,34 @@ Semua ticket `ready-for-agent`. Urutan mengikat: S1 → S2 → S3 (tiap fase bis
 #58 (RLS 1.2.0) closed via PR #61 (HEAD `553aa80`); tag `v1.2.0`.
 Frontier: **v1.2 selesai penuh** — item berikut menunggu keputusan pemilik
 (v2.0 paket arsitektur, atau rilis store).
+
+---
+
+## Voice capture (Catat Suara, v-berikutnya)
+
+Spec: `specs/cashtrix-voice-capture.md` · Sumber: grill 2026-09-27 + ADR-0010.
+Keputusan terkunci: STT milik OS + parser aturan lokal + prefill-saja; satu
+ucapan satu transaksi; B-OTA (mic form + `cashtrix://voice`, tanpa long-press);
+snackbar sukses tanpa notifikasi sistem. Tanpa modul native baru, tanpa DDL baru.
+Semua ticket `ready-for-agent`. Urutan mengikat: VC1 → VC2 → VC3 (tiap fase
+bisa rilis sendiri).
+
+| Ticket | Issue | Blocked by | Deliverable |
+|---|---|---|---|
+| VC1, Parser + domain murni | #63 | — | `src/features/voice/domain.ts` (nominal digit-ID, tolak multi-nominal + kata-bilangan, keyword income, tolak transfer, saran dompet/kategori); Jest ≥90% folder domain |
+| VC2, Sheet + intent STT OS | #64 | #63 | Tombol mic form Add + sheet konfirmasi (teks ucapan + picker dompet/kategori preselect + Simpan) + snackbar sukses; fallback ketik saat STT/parse gagal |
+| VC3, Pintu deep-link + panduan | #65 | #64 | `cashtrix://voice` (mic auto-buka) + baris panduan di layar Pintasan ID/EN + `testID` `voice-mic/sheet/save` di kontrak statis; gate parkir ikut auth gate |
+
+```
+#63 (VC1) ── #64 (VC2) ── #65 (VC3)
+```
+
+### Frontier
+
+#63 tanpa blocker, terbuka. #64 blocked by #63. #65 blocked by #64.
+
+### Follow-up (bukan scope VC1–VC3, tidak hilang)
+
+Widget home-screen · item long-press launcher (paket rebuild native) ·
+split-N transaksi · kata-bilangan Indonesia · keyword income Inggris ·
+modal sukses + notifikasi sistem · simpan/unggah audio · STT server-side.
