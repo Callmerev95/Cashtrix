@@ -150,7 +150,6 @@ function parseJutaAmount(numPart: string): number | null {
 
 /** One amount-shaped span: `30.000`, `30 ribu`, `25rb`, `Rp30.000`, `5 juta`. */
 const AMOUNT_SPAN = /(rp\.?\s*)?\d[\d.,]*\s*(rb|ribu|juta|jt)?/gi;
-
 /** Transfer is refused over voice and directed to the form (ADR-0010). */
 const TRANSFER_WORDS = /transfer|\btf\b|kirim\s+(ke|uang)|pindah\s+dana/i;
 
@@ -207,8 +206,17 @@ export function suggestVoiceWallet(
   return null;
 }
 
-export const voiceMessages = {
-  needAmount: id.voice.needAmount,
+/**
+ * Parses `?voice=` from the voice alias (`cashtrix://voice` → `voice=1`,
+ * VC3 following the S1 `parseScanFlag` pattern). Only the exact `voice=1`
+ * the alias emits arms voice-first mode (panel auto-open); anything else —
+ * missing, `0`, free text — is a plain create.
+ */
+export function parseVoiceFlag(value: unknown): boolean {
+  return value === '1';
+}
+
+export const voiceMessages = {  needAmount: id.voice.needAmount,
   multiAmount: id.voice.multiAmount,
   wordsOnly: id.voice.wordsOnly,
   transferRefused: id.voice.transferRefused,

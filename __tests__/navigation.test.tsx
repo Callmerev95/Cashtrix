@@ -93,6 +93,7 @@ async function renderSignedInApp(initialUrl = '/') {
       '(auth)/reset-password': require('../app/(auth)/reset-password').default,
       '(auth)/mfa-challenge': require('../app/(auth)/mfa-challenge').default,
       'mfa-enroll': require('../app/mfa-enroll').default,
+      'voice': require('../app/voice').default,
       search: require('../app/search').default,
       notifications: require('../app/notifications').default,
       recurring: require('../app/recurring').default,
@@ -585,6 +586,71 @@ describe('voice entry (VC2)', () => {
     });
     try {
       const { getPathname } = await renderSignedInApp('/add-transaction');
+
+      expect(await screen.findByTestId('mfa-challenge-screen')).toBeTruthy();
+      expect(getPathname()).toBe('/mfa-challenge');
+    } finally {
+      mfa.getAuthenticatorAssuranceLevel = defaultAal;
+      seedSession('2026-09-17T00:00:00Z');
+    }
+  });
+});
+
+describe('voice doors (VC3)', () => {
+  it('opens the /voice alias straight into the open panel', async () => {
+    seedSession('2026-09-17T00:00:00Z');
+    const { getPathname } = await renderSignedInApp('/voice');
+
+    expect(await screen.findByTestId('voice-sheet')).toBeTruthy();
+    expect(screen.getByTestId('voice-input')).toBeTruthy();
+    expect(screen.getByTestId('voice-save')).toBeTruthy();
+    expect(getPathname()).toBe('/add-transaction');
+  });
+
+  it('reaches voice-first from the Pintasan guide row', async () => {
+    seedSession('2026-09-17T00:00:00Z');
+    const { getPathname } = await renderSignedInApp('/');
+
+    fireEvent.press(await screen.findByLabelText('Profile'));
+    fireEvent.press(await screen.findByTestId('profile-shortcuts-row'));
+    fireEvent.press(await screen.findByTestId('shortcut-voice'));
+
+    expect(getPathname()).toBe('/add-transaction');
+    expect(await screen.findByTestId('voice-sheet')).toBeTruthy();
+  });
+
+  it('parks an unconfirmed /voice at Check Email', async () => {
+    seedSession(null);
+    const { getPathname } = await renderSignedInApp('/voice');
+
+    expect(await screen.findByTestId('check-email-resend')).toBeTruthy();
+    expect(getPathname()).toBe('/check-email');
+    seedSession('2026-09-17T00:00:00Z');
+  });
+
+  it('holds a locked /voice behind the overlay', async () => {
+    const LOCK_KEY = 'cashtrix:app-lock-enabled';
+    seedSession('2026-09-17T00:00:00Z');
+    require('./mocks/async-storage').sessionStorageSeed.set(LOCK_KEY, '1');
+    try {
+      await renderSignedInApp('/voice');
+
+      expect(await screen.findByTestId('lock-overlay')).toBeTruthy();
+      expect(screen.queryByTestId('voice-sheet')).toBeNull();
+    } finally {
+      require('./mocks/async-storage').sessionStorageSeed.delete(LOCK_KEY);
+    }
+  });
+
+  it('holds an aal1→aal2 /voice at the challenge screen', async () => {
+    const mfa = require('@/supabase').supabase.auth.mfa;
+    const defaultAal = mfa.getAuthenticatorAssuranceLevel;
+    mfa.getAuthenticatorAssuranceLevel = async () => ({
+      data: { currentLevel: 'aal1', nextLevel: 'aal2' },
+      error: null,
+    });
+    try {
+      const { getPathname } = await renderSignedInApp('/voice');
 
       expect(await screen.findByTestId('mfa-challenge-screen')).toBeTruthy();
       expect(getPathname()).toBe('/mfa-challenge');

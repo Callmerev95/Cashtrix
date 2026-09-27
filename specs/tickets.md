@@ -199,7 +199,14 @@ bisa rilis sendiri).
 
 ### Frontier
 
-#63 tanpa blocker, terbuka. #64 blocked by #63. #65 blocked by #64.
+#63 closed via PR #66 (squash `dbd745c`): parser + domain murni + kamus `voice`.
+#64 closed via PR #67 (squash `dc1e189`): VoiceSheet + wiring form (Option A,
+dikte keyboard OS — tanpa modul STT di bundle Expo) + flow manual `voice.yaml`.
+#65 closed via PR #68: alias `/voice` (mic auto-buka) + pintu ke-4 di layar
+Pintasan + `voice.yaml` masuk kontrak statis.
+Frontier: **voice selesai penuh** — follow-up tetap di luar scope (widget,
+long-press launcher, split-N, kata-bilangan, keyword Inggris, modal sukses,
+simpan audio, STT server-side).
 
 ### Follow-up (bukan scope VC1–VC3, tidak hilang)
 

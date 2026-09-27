@@ -324,7 +324,7 @@ function runStaticContract() {
         id.endsWith(suffix) && staticIds.has(id.slice(0, -suffix.length)),
     );
 
-  const flowText = ['happy-path.yaml', 'smoke.yaml']
+  const flowText = ['happy-path.yaml', 'smoke.yaml', 'voice.yaml']
     .map((name) => readFileSync(join(ROOT, '.maestro/flows', name), 'utf8'))
     .join('\n');
   const ids = [

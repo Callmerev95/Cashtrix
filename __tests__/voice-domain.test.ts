@@ -17,6 +17,7 @@ import { parseAmountToken } from '../supabase/functions/scan-receipt/parse';
 import {
   hintVoiceCategory,
   parseVoiceAmountToken,
+  parseVoiceFlag,
   parseVoiceText,
   suggestVoiceWallet,
   voiceMessages,
@@ -100,6 +101,19 @@ describe('paritas S3 (Opsi A′) — kedua parser setuju', () => {
   it.each(shared)('%s → sama', (token) => {
     expect(parseVoiceAmountToken(token)).toBe(parseAmountToken(token));
   });
+});
+
+describe('parseVoiceFlag (VC3: only the /voice alias arms voice-first)', () => {
+  it('arms voice-first mode only for the exact voice=1 the alias emits', () => {
+    expect(parseVoiceFlag('1')).toBe(true);
+  });
+
+  it.each([['0'], ['true'], [''], [null], [undefined]])(
+    'ignores %p',
+    (value) => {
+      expect(parseVoiceFlag(value)).toBe(false);
+    },
+  );
 });
 
 describe('parseVoiceText — ok satu nominal digit', () => {

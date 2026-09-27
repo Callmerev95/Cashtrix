@@ -258,6 +258,8 @@ export const id = {
     incomeSubtitle: 'Buka form dengan segmen Income terpilih',
     scanTitle: 'Scan struk',
     scanSubtitle: 'Buka form langsung siap memotret struk',
+    voiceTitle: 'Catat suara',
+    voiceSubtitle: 'Buka form dengan panel suara terbuka',
     guideKicker: 'Pasang di HP',
     iphoneTitle: 'iPhone: Back Tap',
     iphoneBody:

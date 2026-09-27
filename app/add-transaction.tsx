@@ -55,7 +55,7 @@ import {
   type ReceiptAttachment,
 } from '@/features/receipts';
 import { useWallets } from '@/features/wallets';
-import { VoiceSheet, type VoicePrefill, type VoiceTransactionKind } from '@/features/voice';
+import { VoiceSheet, parseVoiceFlag, type VoicePrefill, type VoiceTransactionKind } from '@/features/voice';
 import {
   AmountField,
   CalendarGrid,
@@ -85,7 +85,7 @@ export default function AddTransactionScreen() {
   // `cashtrix://add-transaction?type=expense|income` and `cashtrix://scan`
   // (via the `/scan` alias as `scan=1`). `type` only preselects the segment —
   // `transfer` and unknown values fall through to the remembered preference.
-  const params = useLocalSearchParams<{ id?: string; type?: string; scan?: string }>();
+  const params = useLocalSearchParams<{ id?: string; type?: string; scan?: string; voice?: string }>();
   const isEdit = Boolean(params.id);
   const insets = useSafeAreaInsets();
   // C6: copy + validation follow the OS language (ADR-0008).
@@ -134,11 +134,14 @@ export default function AddTransactionScreen() {
 
   // VC2 (issue #64, Option A: dikte keyboard OS): the voice-detected kind
   // feeds the segment chain below (create mode only — the panel never
-  // renders for `?id=`). `voiceOpen` only switches the save button's testID
-  // (`voice-save` in a voice session, `transaction-save` otherwise) so both
+  // renders for `?id=`). VC3: `voice=1` (only emitted by the `/voice`
+  // alias for `cashtrix://voice`) opens the panel on first paint.
+  // `voiceOpen` mirrors the panel so the save button can switch its testID
+  // (`voice-save` in a voice session, `transaction-save` otherwise) — both
   // Maestro paths keep a stable selector.
+  const voiceMode = !isEdit && parseVoiceFlag(params.voice);
   const [voiceType, setVoiceType] = useState<VoiceTransactionKind | null>(null);
-  const [voiceOpen, setVoiceOpen] = useState(false);
+  const [voiceOpen, setVoiceOpen] = useState(voiceMode);
 
   // Edit mode loads a row into `loaded` and the fields read from it until the
   // user starts typing (each override wins over `loaded`).
@@ -617,7 +620,12 @@ export default function AddTransactionScreen() {
 
           {isEdit ? null : (
             <View style={styles.gap}>
-              <VoiceSheet wallets={wallets} onPrefill={applyVoicePrefill} onOpenChange={setVoiceOpen} />
+              <VoiceSheet
+                open={voiceOpen}
+                onOpenChange={setVoiceOpen}
+                wallets={wallets}
+                onPrefill={applyVoicePrefill}
+              />
             </View>
           )}
 
@@ -851,12 +859,21 @@ export default function AddTransactionScreen() {
         </ScrollView>
 
         <View style={styles.footer}>
-          <PrimaryButton
-            testID={voiceOpen ? 'voice-save' : 'transaction-save'}
-            label={isEdit ? tf.saveEdit : t.common.save}
-            onPress={submit}
-            loading={busy}
-          />
+          {voiceOpen ? (
+            <PrimaryButton
+              testID="voice-save"
+              label={isEdit ? tf.saveEdit : t.common.save}
+              onPress={submit}
+              loading={busy}
+            />
+          ) : (
+            <PrimaryButton
+              testID="transaction-save"
+              label={isEdit ? tf.saveEdit : t.common.save}
+              onPress={submit}
+              loading={busy}
+            />
+          )}
           <GhostButton
             testID="transaction-cancel"
             label={t.common.cancel}

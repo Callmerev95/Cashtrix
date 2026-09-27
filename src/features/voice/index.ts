@@ -1,6 +1,7 @@
 export {
   hintVoiceCategory,
   parseVoiceAmountToken,
+  parseVoiceFlag,
   parseVoiceText,
   suggestVoiceWallet,
   voiceMessages,
