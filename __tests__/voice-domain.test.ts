@@ -16,14 +16,18 @@
 import { parseAmountToken } from '../supabase/functions/scan-receipt/parse';
 import {
   hintVoiceCategory,
+  MAX_SPLIT_CLAUSES,
   parseVoiceAmountToken,
   parseVoiceFlag,
+  parseVoiceSplit,
   parseVoiceText,
+  splitVoiceClauses,
   suggestVoiceWallet,
   voiceMessages,
   voiceRefusalMessage,
+  voiceSplitRefusalMessage,
 } from '@/features/voice';
-import type { VoiceWallet } from '@/features/voice';
+import type { VoiceSplitRow, VoiceWallet } from '@/features/voice';
 import { id } from '@/i18n/id';
 
 const WALLETS: VoiceWallet[] = [
@@ -250,6 +254,253 @@ describe('hintVoiceCategory + copy penolakan', () => {
     );
     expect(voiceRefusalMessage('transferRefused', 'en')).toBe(
       'Use the form for transfers',
+    );
+  });
+});
+
+describe('splitVoiceClauses — pemisah klausa (WG1)', () => {
+  it('satu klausa tanpa pemisah tetap satu', () => {
+    expect(splitVoiceClauses('kopi 30rb')).toEqual(['kopi 30rb']);
+  });
+
+  it.each([
+    ['nasi padang 30rb dan kopi 12rb', ['nasi padang 30rb', 'kopi 12rb']],
+    ['nasi padang 30rb, kopi 12rb', ['nasi padang 30rb', 'kopi 12rb']],
+    ['nasi 30rb; kopi 12rb', ['nasi 30rb', 'kopi 12rb']],
+    ['nasi 30rb terus kopi 12rb', ['nasi 30rb', 'kopi 12rb']],
+    ['nasi 30rb lalu kopi 12rb', ['nasi 30rb', 'kopi 12rb']],
+    ['nasi 30rb plus kopi 12rb', ['nasi 30rb', 'kopi 12rb']],
+    ['nasi 30rb kemudian kopi 12rb', ['nasi 30rb', 'kopi 12rb']],
+    ['nasi 30rb DAN kopi 12rb', ['nasi 30rb', 'kopi 12rb']],
+  ])('%s → %p', (text, expected) => {
+    expect(splitVoiceClauses(text)).toEqual(expected);
+  });
+
+  it('"dengan"/"sama" bukan pemisah (frasa utuh)', () => {
+    expect(splitVoiceClauses('kopi dengan gula 12rb')).toEqual([
+      'kopi dengan gula 12rb',
+    ]);
+    expect(splitVoiceClauses('nasi sama ayam 30rb')).toEqual([
+      'nasi sama ayam 30rb',
+    ]);
+  });
+
+  it('pemisah ganda/ujung tidak melahirkan klausa kosong', () => {
+    expect(splitVoiceClauses('nasi 30rb,, kopi 12rb')).toEqual([
+      'nasi 30rb',
+      'kopi 12rb',
+    ]);
+    expect(splitVoiceClauses('  nasi 30rb, ')).toEqual(['nasi 30rb']);
+    expect(splitVoiceClauses('')).toEqual([]);
+  });
+});
+
+describe('parseVoiceSplit — 1/2/3 klausa jadi 1/2/3 baris (WG1)', () => {
+  it('satu klausa = perilaku VC1 (nominal, kind, dompet, hint, note)', () => {
+    const result = parseVoiceSplit('soto mie 25rb pakai gopay', WALLETS);
+    expect(result).toEqual({
+      status: 'ok',
+      kind: 'expense',
+      rows: [
+        {
+          ok: true,
+          amount: 25000,
+          kind: 'expense',
+          walletId: 'w-gopay',
+          categoryHint: 'Makanan',
+          note: 'soto mie 25rb pakai gopay',
+        },
+      ],
+    });
+  });
+
+  it('dua klausa = dua baris, tiap baris punya nominal + hint sendiri', () => {
+    const result = parseVoiceSplit('nasi padang 30rb dan kopi 12rb', WALLETS);
+    expect(result.status).toBe('ok');
+    if (result.status !== 'ok') return;
+    expect(result.kind).toBe('expense');
+    expect(result.rows).toEqual([
+      {
+        ok: true,
+        amount: 30000,
+        kind: 'expense',
+        walletId: null,
+        categoryHint: 'Makanan',
+        note: 'nasi padang 30rb',
+      },
+      {
+        ok: true,
+        amount: 12000,
+        kind: 'expense',
+        walletId: null,
+        categoryHint: 'Makanan',
+        note: 'kopi 12rb',
+      },
+    ]);
+  });
+
+  it('tiga klausa sejenis = tiga baris (batas atas)', () => {
+    const result = parseVoiceSplit(
+      'nasi 30rb, kopi 12rb, parkir 5rb',
+      WALLETS,
+    );
+    expect(result.status).toBe('ok');
+    if (result.status !== 'ok') return;
+    expect(result.rows).toHaveLength(3);
+    expect(
+      result.rows.filter((row) => row.ok).map((row) => row.ok && row.amount),
+    ).toEqual([30000, 12000, 5000]);
+  });
+
+  it('dompet + hint di-resolve per klausa', () => {
+    const result = parseVoiceSplit(
+      'kopi 30rb pakai gopay dan bensin 50rb',
+      WALLETS,
+    );
+    expect(result.status).toBe('ok');
+    if (result.status !== 'ok') return;
+    const rows = result.rows;
+    expect(rows[0].ok && rows[0].walletId).toBe('w-gopay');
+    expect(rows[1].ok && rows[1].categoryHint).toBe('Transportasi');
+  });
+
+  it('income dua klausa sejenis = ok income', () => {
+    const result = parseVoiceSplit(
+      'gajian 5 juta dan dapat bonus 50rb',
+      WALLETS,
+    );
+    expect(result.status).toBe('ok');
+    if (result.status !== 'ok') return;
+    expect(result.kind).toBe('income');
+    expect(result.rows.every((row) => row.ok && row.kind === 'income')).toBe(
+      true,
+    );
+  });
+});
+
+describe('parseVoiceSplit — penolakan utuh (WG1)', () => {
+  it('empat klausa → tooManyClauses', () => {
+    expect(
+      parseVoiceSplit('a 10rb, b 20rb, c 30rb, d 40rb', WALLETS),
+    ).toEqual({ status: 'tooManyClauses' });
+  });
+
+  it('campur expense + income → mixedKind', () => {
+    expect(parseVoiceSplit('gajian 5 juta dan kopi 12rb', WALLETS)).toEqual({
+      status: 'mixedKind',
+    });
+  });
+
+  it('transfer menang atas klausa (menolak utuh)', () => {
+    expect(parseVoiceSplit('kopi 12rb dan transfer 50rb ke bca', WALLETS)).toEqual(
+      { status: 'transferRefused' },
+    );
+  });
+
+  it('tanpa angka = needAmount; kata-bilangan = wordsOnly', () => {
+    expect(parseVoiceSplit('kopi dan nasi', WALLETS)).toEqual({
+      status: 'needAmount',
+    });
+    expect(parseVoiceSplit('tiga puluh ribu', WALLETS)).toEqual({
+      status: 'wordsOnly',
+    });
+  });
+
+  it('hanya pemisah/whitespace = needAmount', () => {
+    expect(parseVoiceSplit('', WALLETS)).toEqual({ status: 'needAmount' });
+    expect(parseVoiceSplit(' , ', WALLETS)).toEqual({
+      status: 'needAmount',
+    });
+  });
+
+  it('MAX_SPLIT_CLAUSES = 3', () => {
+    expect(MAX_SPLIT_CLAUSES).toBe(3);
+  });
+});
+
+describe('parseVoiceSplit — baris gagal F1a (WG1)', () => {
+  it('klausa tanpa angka = baris gagal needAmount + teks mentah utuh', () => {
+    const result = parseVoiceSplit('nasi padang 30rb dan kerupuk', WALLETS);
+    expect(result.status).toBe('ok');
+    if (result.status !== 'ok') return;
+    expect(result.rows).toEqual([
+      {
+        ok: true,
+        amount: 30000,
+        kind: 'expense',
+        walletId: null,
+        categoryHint: 'Makanan',
+        note: 'nasi padang 30rb',
+      },
+      { ok: false, text: 'kerupuk', reason: 'needAmount' },
+    ]);
+  });
+
+  it('klausa multi-nominal = baris gagal multiAmount (bukan tolak utuh)', () => {
+    const result = parseVoiceSplit('kopi 12rb 15rb dan nasi 30rb', WALLETS);
+    expect(result.status).toBe('ok');
+    if (result.status !== 'ok') return;
+    const failed: VoiceSplitRow[] = result.rows.filter((row) => !row.ok);
+    expect(failed).toEqual([
+      { ok: false, text: 'kopi 12rb 15rb', reason: 'multiAmount' },
+    ]);
+  });
+
+  it('klausa kata-bilangan = baris gagal wordsOnly', () => {
+    const result = parseVoiceSplit(
+      'nasi 30rb dan tiga puluh ribu buat jajan',
+      WALLETS,
+    );
+    expect(result.status).toBe('ok');
+    if (result.status !== 'ok') return;
+    expect(result.rows[1]).toEqual({
+      ok: false,
+      text: 'tiga puluh ribu buat jajan',
+      reason: 'wordsOnly',
+    });
+  });
+
+  it('nol baris valid = penolakan utuh ala VC1 (bukan ok kosong)', () => {
+    expect(parseVoiceSplit('kerupuk dan gorengan', WALLETS)).toEqual({
+      status: 'needAmount',
+    });
+    expect(
+      parseVoiceSplit('kerupuk dan tiga puluh ribu buat jajan', WALLETS),
+    ).toEqual({ status: 'wordsOnly' });
+  });
+});
+
+describe('voiceSplitRefusalMessage — copy split (WG1)', () => {
+  it('tooManyClauses id/en', () => {
+    expect(voiceSplitRefusalMessage('tooManyClauses')).toBe(
+      'Maksimal tiga item sekaligus',
+    );
+    expect(voiceSplitRefusalMessage('tooManyClauses', 'en')).toBe(
+      'Up to three items at once',
+    );
+  });
+
+  it('mixedKind memakai label kind dari kamus (bukan hardcode)', () => {
+    expect(voiceSplitRefusalMessage('mixedKind')).toBe(
+      'Jangan campur Pengeluaran dan Pemasukan — sebutkan sejenis saja',
+    );
+    expect(voiceSplitRefusalMessage('mixedKind', 'en')).toBe(
+      "Don't mix Expense and Income — one kind at a time",
+    );
+  });
+
+  it('kunci VC1 delegasi ke voiceRefusalMessage (jalur reason baris gagal)', () => {
+    expect(voiceSplitRefusalMessage('needAmount')).toBe(
+      voiceRefusalMessage('needAmount'),
+    );
+    expect(voiceSplitRefusalMessage('multiAmount', 'en')).toBe(
+      voiceRefusalMessage('multiAmount', 'en'),
+    );
+    expect(voiceSplitRefusalMessage('wordsOnly')).toBe(
+      voiceRefusalMessage('wordsOnly'),
+    );
+    expect(voiceSplitRefusalMessage('transferRefused', 'en')).toBe(
+      voiceRefusalMessage('transferRefused', 'en'),
     );
   });
 });

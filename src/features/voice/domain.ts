@@ -16,7 +16,7 @@
  * `transferMessages` in transactions.
  */
 
-import { dictionaryFor } from '@/i18n/dictionaries';
+import { dictionaryFor, fill } from '@/i18n/dictionaries';
 import { id } from '@/i18n/id';
 import type { Language } from '@/i18n/locale';
 
@@ -27,6 +27,20 @@ export type VoiceParseStatus =
   | 'multiAmount'
   | 'wordsOnly'
   | 'transferRefused';
+
+/**
+ * Split statuses (WG1, issue #70 — spec `specs/cashtrix-v2.0-widget.md` §WG1,
+ * ADR-0011): the VC1 refusals plus the two whole-utterance split refusals.
+ * `VoiceParseStatus` above stays frozen — `parseVoiceText` never returns the
+ * split-only literals.
+ */
+export type VoiceSplitStatus =
+  | VoiceParseStatus
+  | 'tooManyClauses'
+  | 'mixedKind';
+
+/** At most three transactions per utterance (ADR-0011, owner-approved). */
+export const MAX_SPLIT_CLAUSES = 3;
 
 export type VoiceTransactionKind = 'expense' | 'income';
 
@@ -234,6 +248,28 @@ export function voiceRefusalMessage(
 }
 
 /**
+ * Whole-split refusal copy (WG1): the VC1 keys delegate to
+ * `voiceRefusalMessage` (so a failed row's `reason` resolves through the
+ * same path), the two split-only keys read the new dictionary entries.
+ * `mixedKind` is composed from the `transactions.type.*` kind labels —
+ * never hardcoded kind words.
+ */
+export function voiceSplitRefusalMessage(
+  status: Exclude<VoiceSplitStatus, 'ok'>,
+  lang: Language = 'id',
+): string {
+  const dictionary = dictionaryFor(lang);
+  if (status === 'tooManyClauses') return dictionary.voice.tooManyClauses;
+  if (status === 'mixedKind') {
+    return fill(dictionary.voice.mixedKind, {
+      expense: dictionary.transactions.type.expense,
+      income: dictionary.transactions.type.income,
+    });
+  }
+  return voiceRefusalMessage(status, lang);
+}
+
+/**
  * One utterance → one parse result (spec §VC3). Order is deliberate:
  * transfer refuses before amounts are even counted (no two-wallet guessing),
  * then the amount census (0 → need, ≥2 → multi), then the honest
@@ -266,5 +302,142 @@ export function parseVoiceText(
     walletId: suggestVoiceWallet(note, wallets),
     categoryHint: hintVoiceCategory(note),
     note,
+  };
+}
+
+/**
+ * Clause separators (WG1, owner-approved): comma/semicolon plus the small
+ * locked word list `dan/terus/lalu/plus/kemudian`. `dengan`/`sama` are
+ * deliberately NOT separators — they break phrases like "kopi dengan gula
+ * 12rb" into a phantom clause. Word boundaries keep "kemudian" from firing
+ * inside other words; empty segments (leading/trailing/doubled separators)
+ * are dropped.
+ */
+const CLAUSE_SPLIT = /\s*[,;]\s*|\s+(?:dan|terus|lalu|plus|kemudian)\s+/gi;
+
+/** Non-empty trimmed clauses of an utterance, in spoken order. */
+export function splitVoiceClauses(text: string): string[] {
+  return text
+    .split(CLAUSE_SPLIT)
+    .map((clause) => clause.trim())
+    .filter((clause) => clause.length > 0);
+}
+
+/** A successfully parsed split row: the VC1 prefill of one clause. */
+export type VoiceSplitOkRow = { ok: true } & VoicePrefill;
+
+/**
+ * A failed split row (F1a): the raw clause text plus the VC1 status key
+ * explaining why (`needAmount` | `multiAmount` | `wordsOnly`) — the WG2
+ * sheet resolves `reason` through `voiceRefusalMessage` and hands `text`
+ * back for manual typing, so nothing intelligible is ever thrown away.
+ */
+export type VoiceSplitFailedRow = {
+  ok: false;
+  text: string;
+  reason: 'needAmount' | 'multiAmount' | 'wordsOnly';
+};
+
+export type VoiceSplitRow = VoiceSplitOkRow | VoiceSplitFailedRow;
+
+export type VoiceSplitResult =
+  | {
+      status: 'ok';
+      /** All rows share one kind — mixed kinds refuse, never split. */
+      kind: VoiceTransactionKind;
+      rows: VoiceSplitRow[];
+    }
+  | { status: Exclude<VoiceSplitStatus, 'ok'> };
+
+/**
+ * Parses one clause with the VC1 rules (digit-ID amounts, honest
+ * number-words refusal, per-clause income keywords, substring wallet,
+ * category hint). A clause with zero amounts is a `needAmount`/`wordsOnly`
+ * failure; a clause with two or more is a `multiAmount` failure
+ * (owner-approved: never a whole-utterance refusal, never a guess).
+ */
+function parseVoiceClause(
+  clause: string,
+  wallets: VoiceWallet[],
+): VoiceSplitRow {
+  const amounts: number[] = [];
+  for (const span of clause.matchAll(AMOUNT_SPAN)) {
+    const value = parseVoiceAmountToken(span[0]);
+    if (value !== null) amounts.push(value);
+  }
+  if (amounts.length === 0) {
+    return {
+      ok: false,
+      text: clause,
+      reason: NUMBER_WORDS.test(clause) ? 'wordsOnly' : 'needAmount',
+    };
+  }
+  if (amounts.length > 1) {
+    return { ok: false, text: clause, reason: 'multiAmount' };
+  }
+  return {
+    ok: true,
+    amount: amounts[0],
+    kind: INCOME_WORDS.test(clause) ? 'income' : 'expense',
+    walletId: suggestVoiceWallet(clause, wallets),
+    categoryHint: hintVoiceCategory(clause),
+    note: clause,
+  };
+}
+
+/**
+ * One utterance → up to three same-kind rows (WG1). Order is deliberate:
+ * transfer refuses before clauses are even counted (no two-wallet
+ * guessing); one clause delegates to `parseVoiceText` so VC1 behaviour is
+ * bit-identical; more than three clauses refuses whole; mixed expense +
+ * income refuses whole (no kind guessing); otherwise each clause parses
+ * under the VC1 rules and amount-less/multi-amount clauses come back as
+ * failed rows carrying their raw text (F1a).
+ */
+export function parseVoiceSplit(
+  text: string,
+  wallets: VoiceWallet[] = [],
+): VoiceSplitResult {
+  const note = text.trim();
+  if (TRANSFER_WORDS.test(note)) return { status: 'transferRefused' };
+  const clauses = splitVoiceClauses(note);
+  // Only separators/whitespace in, nothing out: no digits are possible here
+  // (separator words are not number words), so this is plain `needAmount`
+  // — matching `parseVoiceText('')`.
+  if (clauses.length === 0) return { status: 'needAmount' };
+  if (clauses.length === 1) {
+    const single = parseVoiceText(note, wallets);
+    if (single.status !== 'ok') return { status: single.status };
+    return {
+      status: 'ok',
+      kind: single.kind,
+      rows: [
+        {
+          ok: true,
+          amount: single.amount,
+          kind: single.kind,
+          walletId: single.walletId,
+          categoryHint: single.categoryHint,
+          note: single.note,
+        },
+      ],
+    };
+  }
+  if (clauses.length > MAX_SPLIT_CLAUSES) return { status: 'tooManyClauses' };
+  const rows = clauses.map((clause) => parseVoiceClause(clause, wallets));
+  // Nothing savable: collapse to the VC1 whole-utterance refusal (F1a only
+  // covers partial failure — an all-failed "ok" would offer Catat with
+  // zero savable rows).
+  if (!rows.some((row) => row.ok)) {
+    return { status: NUMBER_WORDS.test(note) ? 'wordsOnly' : 'needAmount' };
+  }
+  const kinds = new Set(
+    rows.filter((row) => row.ok).map((row) => row.kind),
+  );
+  if (kinds.size > 1) return { status: 'mixedKind' };
+  return {
+    status: 'ok',
+    kind: [...kinds][0],
+    rows,
   };
 }
