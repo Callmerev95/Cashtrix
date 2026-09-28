@@ -7,7 +7,10 @@ analitik server-side, budget per kategori dengan alert anti-spam, pencarian
 riwayat, dan inbox notifikasi. Satu pengguna, satu perangkat; semua agregasi
 uang dihitung di Postgres, tidak pernah di klien.
 
-> **Status: v1.2.0 rilis (tag `v1.2.0`).** Isi rilis: pintasan deep-link
+> **Status: v2.0.0 rilis.** Isi rilis: widget Android + fast-lane (WG1 parser
+> split, WG2 widget + notifikasi) + polish (kartu Profile, pill Keluar, hero
+> obsidian + eye, 76 ikon, kartu Mata Uang) + fix refresh opsi dompet, di atas
+> fondasi v1.2.0. Sebelumnya: v1.2.0 (tag `v1.2.0`): pintasan deep-link
 > (S1) + foto lampiran struk 30 hari (S2) + OCR server prefill mock-first
 > (S3) di atas fondasi pasca-1.1.0 (A3–A6, B4, C2, C6, D3–D5, skeleton),
 > gerbang RLS #58 hijau penuh (Jest + live + Maestro device 2026-09-27).

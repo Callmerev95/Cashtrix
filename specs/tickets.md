@@ -249,7 +249,7 @@ WG1 ── WG2 ── WG3 (2.0.0)
 
 ### Frontier
 
-#70 (WG1) MERGED 2026-09-28 (PR #77, squash `99e37e7`; CI static pass). #71 (WG2) MERGED 2026-09-28 (PR #78; CI static pass; Android-only, iOS widget ditunda). #72 siap dikerjakan.
+#70 (WG1) MERGED 2026-09-28 (PR #77; CI static pass). #71 (WG2) MERGED 2026-09-28 (PR #78; CI static pass; Android-only, iOS widget ditunda). #72 (WG3) bump 2.0.0 — menunggu device gate + tag pemilik.
 
 ---
 
