@@ -133,26 +133,78 @@ uang dihitung di Postgres, tidak pernah di klien.
   anti-ganda termasuk soft-delete). Occurrence identik dengan transaksi manual
   (masuk spent, bisa memicu alert). Tanpa server-push di v1.x.
 
-### Catat Suara (VC1–VC3)
+### Catat Suara (VC1–VC3, WG1 split)
 
 - Mic di form Add → panel voice: dikte via mic keyboard OS (STT milik
   Google/Apple, tanpa modul native, B-OTA) atau ketik langsung.
 - Parser aturan lokal membaca nominal digit-ID (`25rb`, `30 ribu`,
   `Rp30.000`, `5 juta`); multi-nominal, kata-bilangan, dan transfer ditolak
   jujur. Saran dompet/kategori = preselect, Simpan selalu manual + snackbar.
+- **Split (WG1)**: satu ucapan 2–3 klausa sejenis menjadi 2–3 baris preview
+  (hapus per baris, klausa gagal kembali sebagai teks mentah); 4+ klausa dan
+  campur kind ditolak. Satu ketuk Catat menulis semua baris (idempotency key
+  per baris).
 - Pintu `cashtrix://voice` + baris panduan di layar Pintasan (tempel ke
   Back Tap / Quick Tap / RegiStar).
 
+### Widget + fast-lane (WG2–WG3, rilis 2.0.0, Android)
+
+- Tiga tombol home screen (Catat Suara, Tambah, Pindai) membuka deep-link
+  yang sudah ada + `source=widget`, tanpa tab/chrome, tutup sendiri setelah
+  simpan. Widget tanpa data, tanpa sesi, tanpa query.
+- Simpan dari widget memposting notifikasi lokal (`N transaksi, Total RpX`,
+  izin diminta saat save pertama); simpan in-app tetap snackbar.
+- Long-press ikon app: Tambah Expense / Tambah Income / Scan Struk /
+  Catat Suara. iOS widget ditunda (butuh Team ID + device Apple).
+
+### Dashboard hero obsidian + eye toggle
+
+- Kartu aspect 1.58: chip EMV rakitan + NFC, watermark Cashtrix, kicker +
+  eye, nominal JetBrains Mono, meta dompet, divider + nama pemegang.
+- Background gradasi metal 4-stop + sheen gold bolak-balik (mati saat
+  reduce-motion) + glow tepi (gold penuh hanya di iOS).
+- Eye menyembunyikan nominal (`Rp ••••••`), pilihan menetap per perangkat
+  (tidak ikut hapus saat keluar).
+
 ### Profile & data milik pengguna (Epic F, T8, T9)
 
+- Kartu per bagian: identitas (avatar + nama + editor + ubah foto), mata uang
+  (sumur ringkasan + chips bersimbol), keamanan (kunci + 2FA), pengaturan
+  (baris tanpa bingkai, Hapus Akun terakhir aksen merah), pill Keluar danger
+  full-width di bawah.
 - Nama (≤60 char), avatar (≤2MB PNG/JPG, resize 512×512 sebelum upload ke
   bucket privat, tampil via signed URL), currency display (default `IDR`,
   tanpa konversi).
-- Kategori kustom (nama + ikon katalog, ≤40 char); kategori sistem hanya bisa
+- Kategori kustom (nama + ikon katalog 76 ikon, ≤40 char); kategori sistem hanya bisa
   diarsipkan per-user via `category_mutes`, histori tetap valid.
 - **Ekspor CSV** via share sheet (transfer = satu baris `type=transfer`,
   kategori `Transfer ke {tujuan}`). **Hapus akun** dua langkah (ketik `HAPUS`)
   via Edge Function, menghapus seluruh data + avatar + auth user.
+
+### Kunci aplikasi biometrik (B4)
+
+- Opt-in via toggle Profile (section Keamanan): flag lokal per perangkat,
+  tanpa state server, tanpa secret tersimpan (fallback passcode OS).
+- Cold start selalu terkunci bila aktif; relock saat kembali dari background
+  setelah grace 60 detik. Overlay penuh menutup saldo/nama/nominal.
+- Lock bukan sign-out: sesi Supabase persist; sign-out menghapus flag.
+- Perangkat tanpa biometrik terdaftar = toggle disabled + pesan.
+
+### 2FA TOTP (C2)
+
+- Opt-in via Profile: enroll satu faktor TOTP (tautan `otpauth://` + secret
+  manual, tanpa gambar QR), verifikasi 6 digit.
+- Login dengan 2FA aktif: password → layar challenge → tabs. Batal = sign-out
+  (sesi setengah jalan tidak dibiarkan linger).
+- Unenroll via konfirmasi dari Profile. Recovery = reset password via email
+  (tanpa backup code/SMS).
+
+### Rate limiting Edge Functions (D5)
+
+- Counter per user per fungsi di tabel `function_rate_limits` (fixed window
+  60 detik): seed-user 10, export-csv 5, delete-account 3, scan-receipt 5.
+- Tanpa JWT = 401 sebelum rate check; limit tercapai = 429 + `Retry-After`.
+- Fail-open: gangguan guard tidak pernah membrick login.
 
 ### Ketahanan & status (D4)
 
@@ -379,7 +431,8 @@ Akun E2E persisten via `scripts/provision-e2e.mjs` (selalu jalur login).
 Detail penuh: [docs/release-gate.md](docs/release-gate.md). Per rilis wajib:
 Maestro hijau → event KPI (`screen_view`, `tx_created`,
 `budget_threshold_reached`) → checklist visual → tanpa regresi → crash-free
-tercatat → tag (`v1.0.0` di `492a117`, `v1.1.0` di HEAD gerbang).
+tercatat → tag (`v1.0.0` di `492a117`, `v1.1.0` di HEAD gerbang, `v2.0.0`
+di commit bump WG3).
 
 - **EAS**: 3 profil (`development` / `preview` / `production`); kerja JS
   harian tetap di Expo Go, dev-client untuk fitur native.
@@ -389,8 +442,9 @@ tercatat → tag (`v1.0.0` di `492a117`, `v1.1.0` di HEAD gerbang).
   modul baru = satu rebuild preview (~10 mnt). Rebuild gabungan berikutnya
   mencakup `expo-local-authentication` (B4) + `expo-localization` (C6).
 - **CI** (`release-gate.yml`): lint → typecheck → Jest → `e2e:check` →
-  `expo export`; matriks live penuh (`verify-t5/t6/t7/t8/t9/v2/v3/v4/t11`)
-  saat push `main` dengan 2 secret, self-cleanup.
+  `expo export`; matriks live penuh
+  (`verify-t5/t6/t7/t8/t9/v2/v3/v4/t11` + `a5`/`d5` + `s2`/`s3`) saat push
+  `main` dengan 2 secret, self-cleanup.
 - **Sebelum TestFlight / Play Store** (`docs/store-submit.md`): kembalikan
   `auth.email.enable_confirmations` ke manual (hosted masih auto-confirm
   untuk dev); jangan `supabase config push` dari repo root (pakai workdir
@@ -459,6 +513,10 @@ Penuhnya di PRD §6.1 dan [docs/adr/](docs/adr/); yang paling memengaruhi kode:
   (ADR-0007, menutup OPEN-3).
 - **R10**, i18n ikut locale OS + kamus terpusat, satu pass termasuk legal
   ID (ADR-0008).
+- **R11**, Payung v2.x berurutan, tiap rilis gate sendiri; TanStack gugur;
+  multi-currency parkir OPEN-4.
+- **R12**, Rilis 2.0.0: widget + fast-lane + polish batch (tag `v2.0.0`);
+  widget Android hand-rolled, iOS tunda; tanpa label AI; tanpa angka fiktif.
 - Pola yang hanya boleh dilanggar dengan revisi PRD dulu: D1–D11.
 
 ---

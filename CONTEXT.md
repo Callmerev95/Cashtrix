@@ -175,8 +175,9 @@ _Avoid_: auto-kategori, kategori terkunci hasil scan
 **Catat Suara**:
 Isi form Add lewat ucapan. STT milik OS mengubah suara jadi teks, parser aturan
 membaca nominalnya, lalu form terisi sebagai prefill. Audio tidak disimpan di
-mana pun. Satu ucapan menghasilkan satu Transaction. Ketuk pilih Dompet dan
-ketuk Simpan tetap dilakukan User secara manual.
+mana pun. Satu ucapan menghasilkan satu Transaction, atau satu Split (lihat
+entri Split). Ketuk pilih Dompet dan ketuk Simpan tetap dilakukan User secara
+manual.
 _Avoid_: AI entry, quick entry, voice note, auto-save suara
 
 **Saran dompet**:

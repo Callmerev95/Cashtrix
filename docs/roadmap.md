@@ -1,7 +1,7 @@
 # Roadmap Cashtrix: katalog ide lengkap
 
 Dokumen ini menampung **semua** kandidat pengembangan beserta alasan, bukti kondisi
-kode saat ini (`v1.0`, commit `492a117`), dan urutan usul. `PRD.md` tetap sumber
+kode saat ini (`v2.0.0`, tag `v2.0.0`), dan urutan usul. `PRD.md` tetap sumber
 keputusan produk; dokumen ini sumber *antrean* pekerjaan.
 
 Aturan: ide boleh masuk katalog tanpa komitmen rilis. Setiap rilis mengambil
@@ -49,7 +49,7 @@ Prinsip yang dipakai:
 | A4 | **Bulk edit kategori** | belum ada | Salah kategori pada 20 transaksi = 20 kali buka form | 📦 v1.2 |
 | A5 | **Inbox notifikasi** | `budget_alerts` punya `fired_at` + indeks user/month, tanpa flag read | Alert yang lewat = hilang; butuh riwayat in-app | 📦 v1.2 |
 | A6 | **Ringkasan bulan lalu** | `v_monthly_summary` sudah ada, Dashboard belum memakainya | Menjawab "bulan ini lebih baik dari bulan lalu?" tanpa buka Analytics | 📦 v1.2 |
-| A7 | **Widget / quick-add** | Spec beku `specs/cashtrix-v2.0-widget.md` + ADR-0011 | Tiga tombol home screen (suara/tambah/pindai) → fast-lane; satu batch native | 🎯 v2.0 (WG1–WG3, #70–#72, spec #69) |
+| A7 | **Widget / quick-add** | Spec beku `specs/cashtrix-v2.0-widget.md` + ADR-0011 | Tiga tombol home screen (suara/tambah/pindai) → fast-lane; satu batch native | ✅ selesai 2026-09-29 (WG1–WG3 #70–#72, tag `v2.0.0`, Android-only) |
 
 ### B. Fitur roadmap PRD §5.1
 
@@ -314,3 +314,19 @@ rebuild native bareng long-press launcher voice. Prinsip mengikat: widget
 hanya tombol (tanpa data/sesi, ADR-0011); Simpan tetap satu ketuk di app,
 tebakan tak pernah menulis data kotor dari pintu belakang. Ticket WG1 (#70) → WG2 (#71) → WG3
 (#72), spec #69, rilis `2.0.0`.
+
+### 6.9 v2.0.0: widget + fast-lane + polish (rilis 2026-09-29, tag `v2.0.0`)
+
+WG1 parser split (#70) → WG2 widget + fast-lane (#71) → WG3 gerbang (#72),
+spec #69 closed. Gate: CI static + live matriks penuh hijau di commit bump,
+pgTAP tak diulang (nol DDL, tercatat), rebuild preview + fresh-install,
+device Redmi lolos, tag seizin pemilik.
+
+Ikut rilis yang sama: restyle kartu widget + fix ukuran 4x2 (HyperOS),
+pill Keluar danger, kartu Profile per bagian, sumur kurs + chips bersimbol,
+hero obsidian + eye toggle, katalog 76 ikon, fix refresh opsi dompet (#81).
+Keputusan terkunci: Android hand-rolled (tanpa dep runtime), iOS tunda,
+tanpa label AI, tanpa angka/statistik fiktif di widget maupun kartu.
+
+Berikutnya: OB1–OB3 outbox + read cache (rilis berikut, eksekusi setelah
+WG3 hijau; prasyarat terpenuhi).

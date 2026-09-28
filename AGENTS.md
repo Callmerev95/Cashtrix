@@ -265,6 +265,41 @@
 - Catatan proses (instruksi pemilik, berlaku terus): hapus branch lokal + remote setelah merge ke `main`; update `specs/tickets.md` (+ bagian AGENTS ini) di tiap ticket.
 - Device gate lolos 2026-09-27 (OTA `c2763363` runtime 1.2.0, uji manual akun asli + Urungkan, semua hijau); spec #62 closed. Tanpa bump versi (voice = JS-only, OTA preview).
 
+### Parser split (WG1, #70)
+
+- Perluasan `parseVoiceText` → `parseVoiceSplit(text, wallets)` di seam yang sama: `splitVoiceClauses` (`, ; dan terus lalu plus kemudian`; `dengan`/`sama` dikecualikan agar frasa "kopi dengan gula 12rb" tak terpecah); 1 klausa = delegasi `parseVoiceText` bit-identik (`parseVoiceText` dibekukan); 2-3 sejenis = baris; 4+ = `tooManyClauses`; campur kind = `mixedKind` (label kind dari `transactions.type.*`, bukan hardcode); klausa 0/multi nominal = baris gagal F1a `{ok:false, text, reason}`; nol baris valid = runtuh ke penolakan utuh VC1 (ok kosong yang tak menulis apa-apa adalah dusta).
+- Kunci kamus baru `voice.tooManyClauses/mixedKind` + `voiceSplitRefusalMessage` (kunci VC1 delegasi ke `voiceRefusalMessage`, agar `reason` resolve lewat jalur sama); `MAX_SPLIT_CLAUSES = 3`.
+- Gate: voice-domain 109 test; coverage domain stmts 97.8/branch 91.3/funcs 100/lines 100. Kontrak statis tak berubah (tanpa UI).
+
+### Widget + fast-lane (WG2, #71)
+
+- Satu batch native **Android-only** (iOS tunda: butuh Team ID + device Apple, disetujui pemilik). Plugin hand-rolled `plugins/with-app-widget.ts` (RemoteViews, tanpa dep runtime; `@bittingz/expo-widgets` ditolak: beta-only 3.1.0-beta.x), bukan paket community. Long-press voice = entri ke-4 di `with-app-shortcuts.ts` (batch yang sama). Hex di plugin = konstanta mirror token + eslint-disable terlingkup (XML native tak bisa impor `@/theme`; aturan hex menyasar `plugins/` juga).
+- Widget = 3 tombol → deep-link existing + `source=widget` (`parseEntrySource` exact-`'widget'` di transactions/domain; alias `voice.tsx`/`scan.tsx` meneruskan param sebagai dua literal agar typedRoutes lolos). Tanpa data/sesi/query; `updatePeriodMillis=0`.
+- `VoiceSheet` melebar (Opsi 1, reuse penuh, mic in-app ikut dapat split): 1 baris = prefill lama; 2-3 = preview + `voice-row-remove` per baris + `voice-split-save` (`Catat {N}` via `fill`); gagal = teks mentah selectable + copy reason; tolak utuh = status, form tetap manual. Removal = indeks + reset per keystroke (duplikat klausa aman).
+- `submitSplit` di add-transaction: validasi semua baris dulu (gagal = nol tertulis); key idempotency per baris per sesi (`splitKeys` ref `${index}|${note}`); warisi tanggal form (disiplin S3); receiptIds kosong (yatim ikut sweep 30 hari); KPI per baris boolean-only; refresh + `evaluateAndAlert` sekali pola S1. Widget-source: izin notif saat save pertama best-effort (pola first-budget) + `widgetSaveCopy` "N transaksi, Total RpX" via `sendBudgetAlert` reuse; in-app tetap snackbar (`lastSaved` = baris terakhir, jujur apa adanya).
+- TestID kontrak: `voice-split-preview`, `voice-split-row`, `voice-row-remove`, `voice-split-save`; flow baru `.maestro/flows/widget.yaml` (openLink doors; tap widget asli manual oleh pemilik) masuk daftar `verify-t11.mjs` (kontrak 111/10/3); `voice.yaml` ditulis ulang ke perilaku split.
+- Prebuild memverifikasi plugin (`expo prebuild --platform android`, inspeksi res + manifest, revert `package.json` + `rm -rf android`). Tiap modul/XML native berubah = satu rebuild preview; OTA tak mengantar native.
+- Restyle kartu (tanpa ticket, disetujui pemilik): header (ikon `@mipmap/ic_launcher` + `@string/app_name` + pill WIDGET) + 3 kartu (label/sub: Catat Suara/Voice, Tambah Transaksi/Keypad, Pindai Struk/Auto OCR); shape drawable via plugin; tanpa angka (tetap out-of-scope), tanpa AI. Size fix (temuan device: HyperOS menempatkan sebaris header saja, kartu terpotong): `targetCellWidth/Height` 4x2 + `resizeMode` + ramping kartu 148dp→120dp; instance lama mengunci ukuran, jadi hapus-pasang ulang.
+
+### Gerbang rilis 2.0.0 (WG3, #72)
+
+- Bump sekali di akhir: `app.json` + `package.json` → `2.0.0` + baris status README + frontier tickets (PR #89). runtimeVersion appVersion: OTA 1.2.0 invalid → rebuild + fresh-install wajib untuk device gate (uninstall dulu: versionCode preview sama + widget mengunci layout lama; sesi + pref lokal ikut reset, data aman di server).
+- Gate di commit bump: CI `main` static (lint/typecheck/Jest 676/676/kontrak/export) + live matriks penuh hijau (run 36449531733: static 1m25s, live 3m53s); pgTAP tak di-run ulang dengan justifikasi tercatat (nol DDL sejak hijau terakhir); device Redmi lolos checklist widget/fast-lane + visual + smoke; tag `v2.0.0` di `5224cb0` (seizin pemilik); tutup #72 (auto-close oleh merge) + spec #69 manual.
+- PRD mendapat R12; roadmap §6.9; DESIGN §1/§5/§7/§8 diamandemen menyertai rilis.
+
+### Polish batch (tanpa ticket pasca-WG2; semua murni JS, batch OTA)
+
+- Pill Keluar (#82): varian danger GhostButton (dipakai hanya tombol Keluar, aman diubah global): full-width 52px radius 24 bg `dangerSurface` + ikon power + label error; prop `icon` opsional baru; copy/testID/alur confirm/busy tak berubah. `styles.signOut` flex-start → stretch (pill lama menyusut).
+- Kartu Profile (#83): tiap bagian satu Card (identitas + editor nama dengan guard `!loading && !error`; mata uang header + hint + chips; keamanan header + kunci + 2FA; pengaturan header + baris tanpa bingkai + divider pola A3; Hapus Akun baris terakhir aksen merah, confirm tak berubah). Nol kunci kamus baru; semua testID + logika tak berubah. Style mati dihapus (`row`, `kicker`, `gap`).
+- Sumur kurs (#88): well read-only cermin chips (tanpa chevron/tag Default karena tak ada perilaku di belakangnya); chips berprefix simbol; `CURRENCY_SYMBOLS` + `currencyName` (20 string kamus); tanpa klaim real-time; multi-currency akuntansi tetap parkir OPEN-4.
+- Hero obsidian (#85-87): `total-balance-card` aspect 1.58 (chip EMV rakitan + NFC `nfc` + watermark + eye + nominal + meta + divider + nama pemegang huruf-besar via prop `holderName` dari `displayNameOrEmail` Dashboard); bg `gradients.obsidian` 4-stop + locations mock (stop pertama terlalu flop → diganti abu-hangat berkontras ikut `card-reference.png`); sheen ping-pong 7 dtk via wrapper tilt 15deg terpisah (gabung rotate + translate satu array mengirimnya diagonal keluar jalur; polanya ikut frame entrance `_layout` untuk `useState(new Animated.Value)` agar lolos lint `react-hooks/refs`); mati saat reduce-motion; glow tepi shadowOpacity 0.28 y12 (gold hanya iOS karena Android mengabaikan shadowColor); eye = pref `cashtrix:balance-hidden` persisten tak ikut purge + mask `Rp ••••••` + 2 kunci a11y; `visibility.ts` + barrel. Tanpa badge growth (agregat tak ada), tanpa nomor/tier fiktif.
+- 52 ikon (#84): katalog 24 → 76 kurasi bertema; tiap nama dicek ke glyphmap dulu (`medications` gugur, `school` tak didobel); tanpa migrasi; test konvensi + domain mengunci otomatis.
+
+### Refresh opsi dompet (#81 fix, bug device)
+
+- Picker add/recurring membaca `TransactionsProvider.wallets` (state sendiri, mount-sekali); mutasi dompet hanya me-refresh `WalletsProvider` → basi sampai restart. Fix pola T8: 5 titik (`wallet-form` buat + ubah; `wallets` hapus, arsip/buka-arsip, reassign + hapus) `await Promise.all([refresh(), refreshTransactionOptions()])`.
+- Test hermetis `__tests__/wallet-options-refresh.test.tsx` (kedua konteks di-canned; merah tanpa fix, hijau dengan fix; terverifikasi bolak-balik). Pelajaran harness: `testRouter.push` butuh histori (back() single-entry = warning GO_BACK + push berikutnya gagal); `renderRouter` hanya expose getPathname/getSegments (pakai `testRouter` impor); mount ganda membuat asersi hitungan rapuh → gate pada flag, bukan urutan panggilan.
+
 ### Graphify + Obsidian (handoff antar-sesi, 2026-09-25)
 
 - `graphify-out/` = knowledge graph lokal (AST, tanpa API): `graph.json` (penuh), `graph.html` (visual), `GRAPH_REPORT.md` (ringkasan). **Di-ignore git** (generated ~4MB, artefak lokal seperti `coverage/`). Jangan di-commit.

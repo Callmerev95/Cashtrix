@@ -93,11 +93,13 @@ appVersion: OTA lama tidak berlaku pasca-bump, pola RLS 1.2.0).
   pasca-save). Baris valid yang sudah tersimpan tidak ditulis ulang saat retry.
 
 **Widget + fast-lane (WG2, satu batch native):**
-- iOS: `expo-widgets` (SDK 57-ready, config plugin, butuh dev build + binary
-  baru, bukan Expo Go). Android: paket widget community (RemoteViews, config
-  plugin, dev build + binary baru). Widget hanya tombol + deep-link
+- Status implementasi 2026-09-28 (menggantikan rencana iOS/Android di bawah):
+  **Android hand-rolled** (`plugins/with-app-widget.ts`, RemoteViews +
+  PendingIntent, tanpa dependensi runtime; `@bittingz/expo-widgets` ditolak
+  karena beta-only). **iOS ditunda** (butuh Team ID + device Apple).
+  Widget hanya tombol + deep-link
   (`voice`/`add-transaction?type=`/`scan` + `source=widget`); tanpa data, tanpa
-  sesi, tanpa query.
+  sesi, tanpa query. Restyle kartu + fix ukuran 4x2 menyusul di batch yang sama.
 - Presentasi fast-lane: rute yang sama dibuka tanpa tab bar dan tanpa chrome
   navigasi, auto-dismiss setelah save + notifikasi lokal. Sheet/komponen reuse
   penuh, bukan salinan.
@@ -148,3 +150,9 @@ tanpa `amount`/`note`/teks ucapan mentah; device gate HP (pola V6/RLS).
   keychain, ditolak ADR-0011).
 - Multi-currency (OPEN-4, parkir); TanStack (gugur); offline outbox + read
   cache (rilis berikut, ADR-0003); bank sync; AI insight.
+
+## Status rilis (2026-09-29)
+
+WG1 (#70) → WG2 (#71) → WG3 (#72) merged; CI static + live matriks penuh
+hijau; tag `v2.0.0`; spec #69 closed. Device Redmi lolos. iOS widget tetap
+tunda; angka live di widget tetap out-of-scope sampai desain privasi/refresh.

@@ -27,6 +27,9 @@ These are the source-of-truth tokens. All UI must reference them.
 | `text-primary` | `#E5E5E5` | Muted warm white. Headings, body copy, transaction names, combined total. |
 | `text-secondary` | `#8E8E93` | Cool grey. Timestamps, metadata, inactive labels, disabled states. |
 | `text-on-accent` | `#0A0A0A` | Obsidian text on gold fills (primary buttons). |
+| `danger-surface` | `rgba(147, 0, 10, 0.28)` | Tinted danger pill (sign-out). Destructive only. |
+| `obsidian` (gradient) | `#2C2925 → #191714 → #0B0A09 → #161311` | Hero metal background, diagonal. Registered in `gradients`, never inline. |
+| `accent-ambience` | `rgba(212, 175, 55, 0.10)` | Soft gold blobs behind hero surfaces. |
 
 ### Semantic rules
 
@@ -162,6 +165,7 @@ Depth = tonal layering + hairline edges + diffuse gold glow (never heavy drop sh
 - **Primary:** solid/gradient gold (`from #D4AF37` → `#F2CA50`), obsidian text `#0A0A0A`, 52px height, radius 16px, `shadow-md`, hover `brightness-105`, tap `opacity 0.7`.
 - **Secondary:** `#2C2C2E` fill, `#E5E5E5` text, 1px `#3A3A3C` border.
 - **Ghost:** transparent, gold text, no border.
+- **Ghost danger (sign-out only):** full-width 52px pill, radius 24px, `danger-surface` fill, power icon + `error` label. Destructive actions never use plain ghost.
 - **Press feedback (all controls):** `opacity 0.7` on press via the shared `pressedFeedback` const (`src/components/pressed.ts`) — one value everywhere, state-driven (no animation loop). Full-width rows/cards inside a scroller add `unstable_pressDelay` of `PRESS_FEEDBACK_DELAY_MS` (150ms) so scroll touches never flash; `onPress` timing is unaffected.
 
 ### Inputs
@@ -172,6 +176,9 @@ Depth = tonal layering + hairline edges + diffuse gold glow (never heavy drop sh
 ### Cards
 - L1 container, 20–24px padding, 1px `#2C2C2E` border, radius 20–32px.
 - Highlight variants: gradient border gold→`#2C2C2E`, or radial gold ambience blob behind.
+- **Obsidian hero:** fixed 1.58 aspect, `obsidian` diagonal fill, View-composed EMV chip + NFC mark, gold watermark, eye toggle, `currency-display` nominal, hairline divider, uppercase holder line. Ambient sheen + glowing gold edge (iOS renders the tint; Android carries it via frame + contrast).
+- **Section cards (Profile pattern):** one card per section: icon + title header, then borderless rows on hairline dividers (rule 5 exception). Destructive rows keep red icon/title but lose their own frame.
+- **Currency well:** read-only mirror of the chips (symbol + code + full name), no chevron, no tags, since decoration without behaviour is refused.
 
 ### Transaction rows
 - 16px vertical padding, 1px `#2C2C2E` divider.
@@ -200,11 +207,11 @@ Depth = tonal layering + hairline edges + diffuse gold glow (never heavy drop sh
 |---|---|---|
 | **Login** (`2b91c004…`) | "Welcome Back" | Centered stack on `#0A0A0A`; logo, headline-lg, inputs (L2), full-width gold primary button, ghost tertiary link. |
 | **Register** (`fd14555b…`) | "Cashtrix" | Same auth pattern as Login; stacked inputs, gold CTA. |
-| **Dashboard** (`cf457859…`) | "Good evening, Evelyn" | Greeting + notification icon → hero balance card (gradient gold border, `currency-display`) → quick-action tray (4-column) → transaction list → floating nav + FAB. 780×2284. |
+| **Dashboard** (`cf457859…`) | "Good evening, Evelyn" | Greeting + notification icon → obsidian hero card (EMV chip, eye toggle, holder line, ambient sheen) → quick-action tray (4-column) → transaction list → floating nav + FAB. 780×2284. |
 | **Add Transaction** (`647011f9…`) | "Add Expense" | Segmented Expense/Income toggle (gold active pill) → large `currency-display` amount entry → category grid (circular `#2C2C2E` wells) → date/note inputs → gold CTA pinned at base. 780×1982. |
 | **Analytics** (`43c228fd…`) | "Financial Intelligence" | Segmented range pills → donut/spend wheel (gold gradient + glow) → bar chart (gold gradient bars, `0 0 16px` glow) → category breakdown rows. 780×3200. |
 | **Budgets** (`bd97d810…`) | "Budget Architecture" | Progress rings/bars per budget (gold fill, `#2C2C2E` track), L1 cards 24px padding, deepest screen (780×3608). |
-| **Profile** (`0659499e…`) | "Evelyn Vance" | Avatar (generated obsidian portrait) + gold `verified_user` → settings list (L1 cards, row pattern) → sign-out. 780×3564. |
+| **Profile** (`0659499e…`) | "Evelyn Vance" | Avatar (generated obsidian portrait) + gold `verified_user` → section cards (identity with name editor, currency with symbol well, security, settings with in-card rows) → danger-pill sign-out. 780×3564. |
 | **Logo** (`afc82fe0…`) | — | 120×120 SVG: `#141416` squircle (rx 30), gold gradient stroke `#F9E498 → #D4AF37 → #997A15`, radial gold glow 15%, "C" + arrow mark. |
 
 ---
@@ -212,17 +219,19 @@ Depth = tonal layering + hairline edges + diffuse gold glow (never heavy drop sh
 ## 7. Golden Rules
 
 1. Gold is a scalpel, not a paintbrush, CTA, income, active state, one highlight per viewport.
-2. Expenses stay in `#E5E5E5`; red only for destructive confirmation.
+2. Expenses render `#FF6B62` with a leading `-` (the colour carries the direction); red elsewhere only for destructive confirmation.
 3. Depth = tone + hairline + glow; no drop-shadow stacking.
 4. Numbers in JetBrains Mono, everything else Inter.
-5. Section labels in `label-uppercase` kickers instead of divider lines.
+5. Section labels in `label-uppercase` kickers instead of divider lines, except rows grouped inside one card (Profile settings pattern), which separate with hairline `border` dividers, divider above every row but the first.
 6. Every scrollable screen leaves room for the floating nav (≥96px + safe-area inset).
 
 ---
 
 ## 8. Motion (Preloader + skeleton)
 
-Motion is reserved for loading feedback, no decorative animation elsewhere.
+Motion is reserved for loading feedback, plus one ambient exception: the
+Dashboard hero's slow gold sheen (ping-pong sweep, dead under reduce-motion
+like everything else). No other decorative animation.
 
 ### Skeleton pulse (shimmer)
 
