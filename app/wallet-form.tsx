@@ -38,6 +38,7 @@ import {
   type WalletFieldErrors,
   type WalletType,
 } from '@/features/wallets';
+import { useTransactions } from '@/features/transactions';
 import { WalletTypePicker } from '@/features/wallets/components/wallet-type-picker';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, fontFamily, layout, radius, spacing, typography } from '@/theme';
@@ -47,6 +48,11 @@ export default function WalletFormScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
   const { session } = useAuth();
   const { wallets, summary, refresh } = useWallets();
+  // Pickers (Add + recurring form) read their own option list from the
+  // transactions provider — a wallet write must re-read it too, or the new
+  // wallet only appears after a restart (same class as the T8 category
+  // fix, where category writes refresh the same lists).
+  const { refresh: refreshTransactionOptions } = useTransactions();
   const insets = useSafeAreaInsets();
   // C6: copy follows the OS language (ADR-0008); validation renders it too.
   const language = useLanguage();
@@ -99,7 +105,7 @@ export default function WalletFormScreen() {
         });
       }
 
-      await refresh();
+      await Promise.all([refresh(), refreshTransactionOptions()]);
       router.back();
     } catch (cause) {
       setBusy(false);

@@ -34,6 +34,7 @@ import {
   type Wallet,
 } from '@/features/wallets';
 import { WalletRow } from '@/features/wallets/components/wallet-row';
+import { useTransactions } from '@/features/transactions';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 import { pressedFeedback } from '@/components/pressed';
@@ -41,6 +42,10 @@ import { pressedFeedback } from '@/components/pressed';
 export default function WalletsScreen() {
   const { wallets, archivedWallets, summary, loading, error, refresh } =
     useWallets();
+  // Same staleness as the wallet form (see its comment): pickers read the
+  // transactions provider's own option list, so every mutation below
+  // re-reads it alongside the manage list.
+  const { refresh: refreshTransactionOptions } = useTransactions();
   const { refresh: refreshAnalytics } = useAnalytics();
   const insets = useSafeAreaInsets();
   // C6: copy + amount format follow the OS language (ADR-0008, R10).
@@ -56,7 +61,7 @@ export default function WalletsScreen() {
     setBusy(true);
     try {
       await deleteWallet(wallet.id);
-      await refresh();
+      await Promise.all([refresh(), refreshTransactionOptions()]);
     } catch (cause) {
       Alert.alert(
         tw.list.deleteFail,
@@ -91,7 +96,7 @@ export default function WalletsScreen() {
     setBusy(true);
     try {
       await setWalletArchived(wallet.id, archived);
-      await refresh();
+      await Promise.all([refresh(), refreshTransactionOptions()]);
       Alert.alert(
         archived ? tw.list.archivedOk : tw.list.unarchivedOk,
         fill(archived ? tw.list.archivedBody : tw.list.unarchivedBody, {
@@ -117,7 +122,7 @@ export default function WalletsScreen() {
         toWalletId: target.id,
       });
       setPendingDelete(null);
-      await refresh();
+      await Promise.all([refresh(), refreshTransactionOptions()]);
       // Rows changed wallets, so per-wallet Insight filters re-read too.
       // Best-effort: the move already committed.
       await refreshAnalytics().catch(() => undefined);
