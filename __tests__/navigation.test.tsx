@@ -301,6 +301,17 @@ describe('MFA challenge gate (C2)', () => {
 
     expect(await screen.findByTestId('profile-mfa-toggle')).toBeTruthy();
   });
+
+  it('shows the currency well with symbol + full name on Profile', async () => {
+    await renderSignedInApp();
+
+    fireEvent.press(await screen.findByLabelText('Profile'));
+
+    // Canned profile is IDR: the well mirrors the chips' selection.
+    expect(await screen.findByTestId('profile-currency-well')).toBeTruthy();
+    expect(screen.getByText('Rupiah Indonesia')).toBeTruthy();
+    expect(screen.getByText('Rp IDR')).toBeTruthy();
+  });
 });
 
 describe('secondary routes (D3)', () => {
