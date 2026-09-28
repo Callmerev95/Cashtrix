@@ -1,9 +1,12 @@
 /**
  * Buttons per DESIGN.md §5: primary = gradient gold, obsidian label, 52px,
- * radius 16, tap opacity; ghost = transparent with gold text.
+ * radius 16, tap opacity; ghost = transparent with gold text; ghost danger
+ * (sign-out only) = tinted danger pill with a power icon, per the approved
+ * Stitch reference (layout only — colours stay theme tokens).
  */
 import { ActivityIndicator, Pressable, StyleSheet, Text, type ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { colors, gradients, layout, radius, spacing, typography } from '@/theme';
 import { pressedFeedback } from '@/components/pressed';
@@ -72,9 +75,14 @@ export function GhostButton({
   onPress,
   disabled,
   danger = false,
+  icon,
   style,
   testID,
-}: LinkButtonProps & { danger?: boolean }) {
+}: LinkButtonProps & {
+  danger?: boolean;
+  /** Rendered before the label (the danger pill uses the power icon). */
+  icon?: React.ComponentProps<typeof MaterialIcons>['name'];
+}) {
   return (
     <Pressable
       testID={testID}
@@ -85,11 +93,20 @@ export function GhostButton({
       onPress={onPress}
       style={({ pressed }: { pressed: boolean }) => [
         styles.ghost,
+        danger && styles.ghostDanger,
         style,
         pressed && pressedFeedback,
       ]}
     >
-      <Text style={[styles.ghostLabel, danger && styles.ghostLabelDanger]}>
+      {icon ? (
+        <MaterialIcons name={icon} size={20} color={colors.error} />
+      ) : null}
+      <Text
+        style={[
+          styles.ghostLabel,
+          danger && styles.ghostLabelDanger,
+        ]}
+      >
         {label}
       </Text>
     </Pressable>
@@ -123,6 +140,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
+  },
+  ghostDanger: {
+    minHeight: layout.buttonHeight,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    borderRadius: radius.xl,
+    backgroundColor: colors.dangerSurface,
   },
   ghostLabel: {
     color: colors.accent,

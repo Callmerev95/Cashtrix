@@ -36,6 +36,11 @@ export const palette = {
   error: '#FFB4AB',
   /** Error container. Destructive actions only. */
   errorContainer: '#93000A',
+  /**
+   * Tinted danger surface (sign-out pill): the error container at low alpha
+   * over the canvas. Destructive actions only.
+   */
+  dangerSurface: 'rgba(147, 0, 10, 0.28)',
 } as const;
 
 /**
