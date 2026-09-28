@@ -203,6 +203,20 @@ async function main() {
   // -------------------------------------------------------------------------
   section('flood: 5 lolos + 2 ditolak 429 ber-body');
   await awaitFreshRateWindow();
+  // Parkir hanya menjamin RUANG (±45 detik), bukan counter NOL: bila parkir
+  // di-skip (mod ≤ 15) counter masih memuat prefill + 3 error-path
+  // terautentikasi (D5: enforce jalan setelah getUser, sebelum kerja —
+  // prefix-asing, objek-hilang, dan body-kosong ikut terhitung). Tanpa reset,
+  // flood 7x menghasilkan 1+6 persis seperti CI run 36480651898. Reset
+  // eksplisit via service-role membuat 5+2 deterministik di window mana pun
+  // (pola ini tak perlu di d5: parkirnya SEBELUM konsumsi + asersinya
+  // dikurangi hit yang terpakai).
+  const { error: floodResetError } = await admin
+    .from('function_rate_limits')
+    .delete()
+    .eq('function_name', 'scan-receipt')
+    .eq('bucket_key', userId);
+  check('counter rate-limit A di-reset sebelum flood', !floodResetError, floodResetError?.message);
   let okCount = 0;
   let limitedCount = 0;
   let shapeOk = true;
