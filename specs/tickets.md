@@ -249,7 +249,7 @@ WG1 ── WG2 ── WG3 (2.0.0)
 
 ### Frontier
 
-#70 (WG1) MERGED 2026-09-28 (PR #77; CI static pass). #71 (WG2) MERGED 2026-09-28 (PR #78; CI static pass; Android-only, iOS widget ditunda). #72 (WG3) bump 2.0.0 — menunggu device gate + tag pemilik.
+#70 (WG1) MERGED 2026-09-28 (PR #77; CI static pass). #71 (WG2) MERGED 2026-09-28 (PR #78; CI static pass; Android-only, iOS widget ditunda). #72 (WG3) CLOSED 2026-09-29 — bump PR #89 merge, CI static + live matriks hijau, rebuild preview 2.0.0, device gate Redmi lolos, tag `v2.0.0` di `5224cb0`, spec #69 closed.
 
 ---
 
