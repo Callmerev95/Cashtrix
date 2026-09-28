@@ -5,10 +5,13 @@ import {
   AVATAR_MAX_BYTES,
   AVATAR_SIZE_PX,
   CATEGORY_NAME_MAX_LENGTH,
+  CURRENCY_SYMBOLS,
   DEFAULT_CURRENCY,
   DISPLAY_NAME_MAX_LENGTH,
   ICON_CATALOG,
   SUPPORTED_CURRENCIES,
+  currencyName,
+  currencySymbol,
   displayNameOrEmail,
   formatMoney,
   isAvatarMimeType,
@@ -101,6 +104,19 @@ describe('currency', () => {
     expect(isCurrencyCode('XXX')).toBe(false);
     expect(isCategoryKind('income')).toBe(true);
     expect(isCategoryKind('transfer')).toBe(false);
+  });
+
+  it('setiap kode punya simbol + nama non-kosong id/en (kartu Mata Uang)', () => {
+    for (const code of SUPPORTED_CURRENCIES) {
+      expect(typeof currencySymbol(code)).toBe('string');
+      expect(currencySymbol(code).length).toBeGreaterThan(0);
+      expect(CURRENCY_SYMBOLS[code]).toBe(currencySymbol(code));
+      expect(currencyName(code).length).toBeGreaterThan(0);
+      expect(currencyName(code, 'en').length).toBeGreaterThan(0);
+    }
+    expect(currencySymbol('IDR')).toBe('Rp');
+    expect(currencyName('IDR')).toBe('Rupiah Indonesia');
+    expect(currencyName('IDR', 'en')).toBe('Indonesian Rupiah');
   });
 
   it('formatMoney me-render tanpa konversi dan tanpa NaN', () => {

@@ -203,6 +203,35 @@ export function isCurrencyCode(value: unknown): value is CurrencyCode {
 /** Default when the profile row has no explicit choice. */
 export const DEFAULT_CURRENCY: CurrencyCode = 'IDR';
 
+/**
+ * Display symbols per code (universal, not localised). Powers the currency
+ * well + chips on the Profile card (the multi-currency.png polish).
+ */
+export const CURRENCY_SYMBOLS: Record<CurrencyCode, string> = {
+  IDR: 'Rp',
+  USD: '$',
+  SGD: '$',
+  MYR: 'RM',
+  THB: '฿',
+  PHP: '₱',
+  JPY: '¥',
+  AUD: '$',
+  EUR: '€',
+  GBP: '£',
+};
+
+export function currencySymbol(code: CurrencyCode): string {
+  return CURRENCY_SYMBOLS[code];
+}
+
+/** Full currency name in the active language (C6); defaults to id-ID. */
+export function currencyName(
+  code: CurrencyCode,
+  lang: Language = 'id',
+): string {
+  return dictionaryFor(lang).profile.screen.currencyNames[code];
+}
+
 // Validation (locked Indonesian copy, same style as the auth seam)
 
 /** Returns the inline error, or `null` when the name is acceptable. */

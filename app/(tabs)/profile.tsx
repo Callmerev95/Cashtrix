@@ -34,6 +34,8 @@ import { useLock } from '@/features/lock';
 import { useMfa } from '@/features/mfa';
 import {
   SUPPORTED_CURRENCIES,
+  currencyName,
+  currencySymbol,
   formatMoney,
   useProfile,
   validateDisplayName,
@@ -379,6 +381,21 @@ export default function ProfileScreen() {
                   </Text>
                 </View>
               </View>
+              <View testID="profile-currency-well" style={styles.currencyWell}>
+                <View style={styles.wellIcon}>
+                  <Text style={[typography.bodyLg, styles.wellSymbol]}>
+                    {currencySymbol(profile?.currencyCode ?? 'IDR')}
+                  </Text>
+                </View>
+                <View style={styles.rowBody}>
+                  <Text style={[typography.bodyLg, styles.rowTitle]}>
+                    {profile?.currencyCode ?? 'IDR'}
+                  </Text>
+                  <Text style={[typography.bodySm, styles.hint]}>
+                    {currencyName(profile?.currencyCode ?? 'IDR', language)}
+                  </Text>
+                </View>
+              </View>
               <View style={styles.currencyGrid}>
               {SUPPORTED_CURRENCIES.map((code) => {
                 const active = code === profile?.currencyCode;
@@ -403,7 +420,7 @@ export default function ProfileScreen() {
                         active && styles.chipTextActive,
                       ]}
                     >
-                      {code}
+                      {currencySymbol(code)} {code}
                     </Text>
                   </Pressable>
                 );
@@ -841,6 +858,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
+  },
+  currencyWell: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceElevated,
+  },
+  wellIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.full,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  wellSymbol: {
+    color: colors.accent,
   },
   chip: {
     minWidth: layout.minTapTarget,
