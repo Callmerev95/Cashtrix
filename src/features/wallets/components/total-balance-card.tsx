@@ -105,19 +105,27 @@ export function TotalBalanceCard({
       end={{ x: 1, y: 1 }}
       style={[styles.frame, styles.aspect]}
     >
-      <View style={styles.inner}>
+      <LinearGradient
+        colors={[...gradients.obsidian]}
+        locations={[0, 0.35, 0.7, 1]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.inner}
+      >
         <View style={styles.ambience} pointerEvents="none" />
         <View style={styles.ambienceLow} pointerEvents="none" />
         <View style={styles.sheenClip} pointerEvents="none">
           <Animated.View
             style={[styles.sheenBar, { transform: [{ translateX: sheenX }] }]}
           >
-            <LinearGradient
-              colors={['transparent', colors.accentAmbience, 'transparent']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.sheenFill}
-            />
+            <View style={styles.sheenTilt}>
+              <LinearGradient
+                colors={['transparent', colors.accentAmbience, 'transparent']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.sheenFill}
+              />
+            </View>
           </Animated.View>
         </View>
         <LinearGradient
@@ -209,7 +217,7 @@ export function TotalBalanceCard({
             {holderName.toUpperCase()}
           </Text>
         </View>
-      </View>
+      </LinearGradient>
     </LinearGradient>
   );
 }
@@ -231,7 +239,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: spacing.md,
     borderRadius: radius.xxl - 1,
-    backgroundColor: colors.surfaceCard,
     overflow: 'hidden',
   },
   ambience: {
@@ -264,6 +271,19 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 160,
+  },
+  // Static tilt lives on its own wrapper (owner direction: diagonal sweep).
+  // translateX above stays in screen space so the bar sweeps horizontally;
+  // merging rotate + translate in one transform array would send it off on
+  // a diagonal path instead. The wrapper overhangs top/bottom so the tilt
+  // never exposes uncovered corners.
+  sheenTilt: {
+    position: 'absolute',
+    top: '-100%',
+    bottom: '-100%',
+    left: 0,
+    right: 0,
+    transform: [{ rotate: '15deg' }],
   },
   sheenFill: {
     flex: 1,
