@@ -256,60 +256,93 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-        <View style={styles.identity}>
-          <LinearGradient
-            colors={[...gradients.cardBorder]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.avatarRing}
-          >
-            <Pressable
-              testID="profile-avatar"
-              accessibilityRole="button"
-              accessibilityLabel={ts.changeAvatarA11y}
+        <Card style={styles.section}>
+          <View style={styles.identity}>
+            <LinearGradient
+              colors={[...gradients.cardBorder]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.avatarRing}
+            >
+              <Pressable
+                testID="profile-avatar"
+                accessibilityRole="button"
+                accessibilityLabel={ts.changeAvatarA11y}
+                onPress={onChangeAvatar}
+                disabled={uploadingAvatar}
+                style={({ pressed }) => [
+                  styles.avatarPress,
+                  pressed && pressedFeedback,
+                ]}
+              >
+                {avatarSignedUrl && !avatarBroken ? (
+                  <Image
+                    source={{ uri: avatarSignedUrl }}
+                    style={styles.avatar}
+                    testID="profile-avatar-image"
+                    onError={() => setAvatarBroken(true)}
+                  />
+                ) : (
+                  <View style={[styles.avatar, styles.avatarFallback]}>
+                    <Text style={[typography.headlineMd, styles.avatarInitial]}>
+                      {(profile?.displayName ?? 'C').charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+              </Pressable>
+            </LinearGradient>
+            <View style={styles.nameRow}>
+              <Text style={[typography.headlineMd, styles.avatarName]} numberOfLines={1}>
+                {profile?.displayName ?? ts.fallbackName}
+              </Text>
+              <MaterialIcons
+                name="verified-user"
+                size={18}
+                color={colors.accent}
+              />
+            </View>
+            <Text style={[typography.bodySm, styles.email]} numberOfLines={1}>
+              {session?.user.email ?? ''}
+            </Text>
+            <GhostButton
+              testID="profile-change-avatar"
+              label={uploadingAvatar ? ts.uploading : ts.changeAvatar}
               onPress={onChangeAvatar}
               disabled={uploadingAvatar}
-              style={({ pressed }) => [
-                styles.avatarPress,
-                pressed && pressedFeedback,
-              ]}
-            >
-              {avatarSignedUrl && !avatarBroken ? (
-                <Image
-                  source={{ uri: avatarSignedUrl }}
-                  style={styles.avatar}
-                  testID="profile-avatar-image"
-                  onError={() => setAvatarBroken(true)}
-                />
-              ) : (
-                <View style={[styles.avatar, styles.avatarFallback]}>
-                  <Text style={[typography.headlineMd, styles.avatarInitial]}>
-                    {(profile?.displayName ?? 'C').charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-              )}
-            </Pressable>
-          </LinearGradient>
-          <View style={styles.nameRow}>
-            <Text style={[typography.headlineMd, styles.avatarName]} numberOfLines={1}>
-              {profile?.displayName ?? ts.fallbackName}
-            </Text>
-            <MaterialIcons
-              name="verified-user"
-              size={18}
-              color={colors.accent}
             />
           </View>
-          <Text style={[typography.bodySm, styles.email]} numberOfLines={1}>
-            {session?.user.email ?? ''}
-          </Text>
-          <GhostButton
-            testID="profile-change-avatar"
-            label={uploadingAvatar ? ts.uploading : ts.changeAvatar}
-            onPress={onChangeAvatar}
-            disabled={uploadingAvatar}
-          />
-        </View>
+          {!loading && !error ? (
+            <View style={styles.editor}>
+              <TextField
+                testID="profile-name"
+                value={draftName}
+                onChangeText={(text) => {
+                  setName(text);
+                  if (nameError) setNameError(validateDisplayName(text, language));
+                }}
+                placeholder={ts.namePlaceholder}
+                autoCapitalize="words"
+                maxLength={70}
+                hasError={Boolean(nameError)}
+                returnKeyType="done"
+                onSubmitEditing={() => void onSaveName()}
+              />
+              {nameError ? (
+                <Text testID="profile-name-error" style={[typography.bodySm, styles.errorText]}>
+                  {nameError}
+                </Text>
+              ) : null}
+              {name !== null ? (
+                <PrimaryButton
+                  testID="profile-save-name"
+                  label={ts.saveName}
+                  onPress={() => void onSaveName()}
+                  loading={savingName}
+                />
+              ) : null}
+            </View>
+          ) : null}
+        </Card>
 
         {loading ? (
           <SkeletonList testID="profile-loading" rows={4} />
@@ -322,50 +355,31 @@ export default function ProfileScreen() {
           </View>
         ) : (
           <>
-            <Text style={[typography.labelUppercase, styles.kicker]}>
-              {ts.nameLabel}
-            </Text>
-            <TextField
-              testID="profile-name"
-              value={draftName}
-              onChangeText={(text) => {
-                setName(text);
-                if (nameError) setNameError(validateDisplayName(text, language));
-              }}
-              placeholder={ts.namePlaceholder}
-              autoCapitalize="words"
-              maxLength={70}
-              hasError={Boolean(nameError)}
-              returnKeyType="done"
-              onSubmitEditing={() => void onSaveName()}
-            />
-            {nameError ? (
-              <Text testID="profile-name-error" style={[typography.bodySm, styles.errorText]}>
-                {nameError}
-              </Text>
-            ) : null}
-            {name !== null ? (
-              <PrimaryButton
-                testID="profile-save-name"
-                label={ts.saveName}
-                onPress={() => void onSaveName()}
-                loading={savingName}
-              />
-            ) : null}
-
-            <Text style={[typography.labelUppercase, styles.kicker, styles.gap]}>
-              {ts.currencyLabel}
-            </Text>
-            <Text style={[typography.bodySm, styles.hint]}>
-              {fill(ts.currencyHint, {
-                example: formatMoney(
-                  1250000,
-                  profile?.currencyCode ?? 'IDR',
-                  language,
-                ),
-              })}
-            </Text>
-            <View style={styles.currencyGrid}>
+            <Card style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.rowIcon}>
+                  <MaterialIcons
+                    name="currency-exchange"
+                    size={20}
+                    color={colors.accent}
+                  />
+                </View>
+                <View style={styles.rowBody}>
+                  <Text style={[typography.bodyLg, styles.rowTitle]}>
+                    {ts.currencyLabel}
+                  </Text>
+                  <Text style={[typography.bodySm, styles.hint]}>
+                    {fill(ts.currencyHint, {
+                      example: formatMoney(
+                        1250000,
+                        profile?.currencyCode ?? 'IDR',
+                        language,
+                      ),
+                    })}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.currencyGrid}>
               {SUPPORTED_CURRENCIES.map((code) => {
                 const active = code === profile?.currencyCode;
                 return (
@@ -395,37 +409,50 @@ export default function ProfileScreen() {
                 );
               })}
             </View>
+            </Card>
 
-            <Text style={[typography.labelUppercase, styles.kicker, styles.gap]}>
-              {t.lock.section}
-            </Text>
-            <Card style={styles.row}>
-              <View style={styles.rowIcon}>
-                <MaterialIcons
-                  name="fingerprint"
-                  size={20}
-                  color={colors.accent}
+            <Card style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.rowIcon}>
+                  <MaterialIcons
+                    name="lock"
+                    size={20}
+                    color={colors.accent}
+                  />
+                </View>
+                <View style={styles.rowBody}>
+                  <Text style={[typography.bodyLg, styles.rowTitle]}>
+                    {t.lock.section}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.plainRow}>
+                <View style={styles.rowIcon}>
+                  <MaterialIcons
+                    name="fingerprint"
+                    size={20}
+                    color={colors.accent}
+                  />
+                </View>
+                <View style={styles.rowBody}>
+                  <Text style={[typography.bodyMd, styles.rowTitle]}>
+                    {t.lock.title}
+                  </Text>
+                  <Text style={[typography.bodySm, styles.rowSubtitle]}>
+                    {biometricsReady ? t.lock.subtitle : t.lock.unavailable}
+                  </Text>
+                </View>
+                <Switch
+                  testID="profile-lock-toggle"
+                  accessibilityLabel={t.lock.toggleA11y}
+                  value={lockEnabled}
+                  onValueChange={(value) => void setEnabled(value)}
+                  disabled={!biometricsReady}
+                  trackColor={{ false: colors.surfaceElevated, true: colors.accent }}
+                  thumbColor={colors.textPrimary}
                 />
               </View>
-              <View style={styles.rowBody}>
-                <Text style={[typography.bodyMd, styles.rowTitle]}>
-                  {t.lock.title}
-                </Text>
-                <Text style={[typography.bodySm, styles.rowSubtitle]}>
-                  {biometricsReady ? t.lock.subtitle : t.lock.unavailable}
-                </Text>
-              </View>
-              <Switch
-                testID="profile-lock-toggle"
-                accessibilityLabel={t.lock.toggleA11y}
-                value={lockEnabled}
-                onValueChange={(value) => void setEnabled(value)}
-                disabled={!biometricsReady}
-                trackColor={{ false: colors.surfaceElevated, true: colors.accent }}
-                thumbColor={colors.textPrimary}
-              />
-            </Card>
-            <Card style={styles.row}>
+              <View style={styles.plainRow}>
               <View style={styles.rowIcon}>
                 <MaterialIcons
                   name="phonelink-lock"
@@ -450,12 +477,25 @@ export default function ProfileScreen() {
                 trackColor={{ false: colors.surfaceElevated, true: colors.accent }}
                 thumbColor={colors.textPrimary}
               />
+            </View>
             </Card>
 
-            <Text style={[typography.labelUppercase, styles.kicker, styles.gap]}>
-              {ts.settings}
-            </Text>
-            {archivedPauses.length > 0 ? (
+            <Card style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.rowIcon}>
+                  <MaterialIcons
+                    name="settings"
+                    size={20}
+                    color={colors.accent}
+                  />
+                </View>
+                <View style={styles.rowBody}>
+                  <Text style={[typography.bodyLg, styles.rowTitle]}>
+                    {ts.settings}
+                  </Text>
+                </View>
+              </View>
+              {archivedPauses.length > 0 ? (
               <Pressable
                 testID="profile-recurring-banner"
                 accessibilityRole="button"
@@ -467,7 +507,7 @@ export default function ProfileScreen() {
                 pressed && pressedFeedback,
               ]}
               >
-                <Card style={styles.row}>
+                <View style={[styles.plainRow, styles.rowDivider]}>
                   <View style={styles.rowIcon}>
                     <MaterialIcons
                       name="pause-circle-outline"
@@ -488,39 +528,39 @@ export default function ProfileScreen() {
                     size={20}
                     color={colors.textSecondary}
                   />
-                </Card>
+                </View>
               </Pressable>
-            ) : null}
-            <Pressable
-              testID="profile-recurring-row"
-              accessibilityRole="button"
-              accessibilityLabel={ts.recurringA11y}
-              onPress={() => router.push('/recurring')}
-              unstable_pressDelay={PRESS_FEEDBACK_DELAY_MS}
-              style={({ pressed }) => [
-                styles.rowPress,
-                pressed && pressedFeedback,
-              ]}
-            >
-              <Card style={styles.row}>
-              <View style={styles.rowIcon}>
-                <MaterialIcons name="repeat" size={20} color={colors.accent} />
-              </View>
-              <View style={styles.rowBody}>
-                <Text style={[typography.bodyMd, styles.rowTitle]}>
-                  {ts.recurringTitle}
-                </Text>
-                <Text style={[typography.bodySm, styles.rowSubtitle]}>
-                  {ts.recurringSubtitle}
-                </Text>
-              </View>
-              <MaterialIcons
-                name="chevron-right"
-                size={20}
-                color={colors.textSecondary}
-              />
-              </Card>
-            </Pressable>
+              ) : null}
+              <Pressable
+                testID="profile-recurring-row"
+                accessibilityRole="button"
+                accessibilityLabel={ts.recurringA11y}
+                onPress={() => router.push('/recurring')}
+                unstable_pressDelay={PRESS_FEEDBACK_DELAY_MS}
+                style={({ pressed }) => [
+                  styles.rowPress,
+                  pressed && pressedFeedback,
+                ]}
+              >
+                <View style={[styles.plainRow, styles.rowDivider]}>
+                <View style={styles.rowIcon}>
+                  <MaterialIcons name="repeat" size={20} color={colors.accent} />
+                </View>
+                <View style={styles.rowBody}>
+                  <Text style={[typography.bodyMd, styles.rowTitle]}>
+                    {ts.recurringTitle}
+                  </Text>
+                  <Text style={[typography.bodySm, styles.rowSubtitle]}>
+                    {ts.recurringSubtitle}
+                  </Text>
+                </View>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={20}
+                  color={colors.textSecondary}
+                />
+                </View>
+              </Pressable>
             <Pressable
               testID="profile-shortcuts-row"
               accessibilityRole="button"
@@ -532,7 +572,7 @@ export default function ProfileScreen() {
                 pressed && pressedFeedback,
               ]}
             >
-              <Card style={styles.row}>
+              <View style={[styles.plainRow, styles.rowDivider]}>
               <View style={styles.rowIcon}>
                 <MaterialIcons name="bolt" size={20} color={colors.accent} />
               </View>
@@ -549,8 +589,8 @@ export default function ProfileScreen() {
                 size={20}
                 color={colors.textSecondary}
               />
-              </Card>
-            </Pressable>
+              </View>
+              </Pressable>
             <Pressable
               testID="profile-categories-row"
               accessibilityRole="button"
@@ -562,7 +602,7 @@ export default function ProfileScreen() {
                 pressed && pressedFeedback,
               ]}
             >
-              <Card style={styles.row}>
+              <View style={[styles.plainRow, styles.rowDivider]}>
               <View style={styles.rowIcon}>
                 <MaterialIcons name="category" size={20} color={colors.accent} />
               </View>
@@ -579,8 +619,8 @@ export default function ProfileScreen() {
                 size={20}
                 color={colors.textSecondary}
               />
-              </Card>
-            </Pressable>
+              </View>
+              </Pressable>
             <Pressable
               testID="profile-export-row"
               accessibilityRole="button"
@@ -593,7 +633,7 @@ export default function ProfileScreen() {
                 pressed && pressedFeedback,
               ]}
             >
-              <Card style={styles.row}>
+              <View style={[styles.plainRow, styles.rowDivider]}>
               <View style={styles.rowIcon}>
                 <MaterialIcons
                   name="download"
@@ -618,8 +658,8 @@ export default function ProfileScreen() {
                   color={colors.textSecondary}
                 />
               )}
-              </Card>
-            </Pressable>
+              </View>
+              </Pressable>
             <Pressable
               testID="profile-delete-account-row"
               accessibilityRole="button"
@@ -631,7 +671,7 @@ export default function ProfileScreen() {
                 pressed && pressedFeedback,
               ]}
             >
-              <Card style={styles.row} borderColor={colors.error}>
+              <View style={[styles.plainRow, styles.rowDivider]}>
               <View style={styles.rowIcon}>
                 <MaterialIcons
                   name="delete-forever"
@@ -652,8 +692,8 @@ export default function ProfileScreen() {
                 size={20}
                 color={colors.textSecondary}
               />
-              </Card>
-            </Pressable>
+              </View>
+              </Pressable>
 
             <Pressable
               testID="profile-privacy-row"
@@ -666,7 +706,7 @@ export default function ProfileScreen() {
                 pressed && pressedFeedback,
               ]}
             >
-              <Card style={styles.row}>
+              <View style={[styles.plainRow, styles.rowDivider]}>
               <View style={styles.rowIcon}>
                 <MaterialIcons name="shield" size={20} color={colors.accent} />
               </View>
@@ -683,8 +723,8 @@ export default function ProfileScreen() {
                 size={20}
                 color={colors.textSecondary}
               />
-              </Card>
-            </Pressable>
+              </View>
+              </Pressable>
 
             <Pressable
               testID="profile-terms-row"
@@ -697,7 +737,7 @@ export default function ProfileScreen() {
                 pressed && pressedFeedback,
               ]}
             >
-              <Card style={styles.row}>
+              <View style={styles.plainRow}>
               <View style={styles.rowIcon}>
                 <MaterialIcons name="description" size={20} color={colors.accent} />
               </View>
@@ -714,8 +754,9 @@ export default function ProfileScreen() {
                 size={20}
                 color={colors.textSecondary}
               />
-              </Card>
-            </Pressable>
+              </View>
+              </Pressable>
+            </Card>
 
             <View style={styles.signOut}>
               <GhostButton
@@ -738,9 +779,6 @@ const styles = StyleSheet.create({
   frame: {
     paddingTop: spacing.xl,
     gap: spacing.md,
-  },
-  kicker: {
-    color: colors.textSecondary,
   },
   email: {
     color: colors.textSecondary,
@@ -796,9 +834,6 @@ const styles = StyleSheet.create({
   avatarName: {
     color: colors.textPrimary,
   },
-  gap: {
-    marginTop: spacing.md,
-  },
   hint: {
     color: colors.textSecondary,
   },
@@ -834,11 +869,27 @@ const styles = StyleSheet.create({
   rowPress: {
     borderRadius: radius.lg,
   },
-  row: {
+  section: {
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+  sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    padding: spacing.md,
+  },
+  editor: {
+    gap: spacing.sm,
+  },
+  plainRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  rowDivider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
   rowIcon: {
     width: 40,
@@ -862,6 +913,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   signOut: {
-    alignItems: 'flex-start',
+    alignItems: 'stretch',
   },
 });
