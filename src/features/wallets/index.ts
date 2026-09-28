@@ -1,5 +1,11 @@
 export { WalletsProvider, useWallets } from './wallets-context';
 export {
+  BALANCE_HIDDEN_KEY,
+  parseBalanceHidden,
+  readBalanceHidden,
+  writeBalanceHidden,
+} from './visibility';
+export {
   createWallet,
   deleteWallet,
   listWallets,

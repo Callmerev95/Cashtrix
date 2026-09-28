@@ -390,6 +390,8 @@ export const en: Dictionary = {
     card: {
       total: 'Total Balance',
       count: '{count} wallets',
+      hideBalance: 'Hide balance',
+      showBalance: 'Show balance',
     },
     row: {
       transactions: '{count} transactions',
