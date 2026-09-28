@@ -226,10 +226,14 @@ const styles = StyleSheet.create({
   frame: {
     borderRadius: radius.xxl,
     padding: StyleSheet.hairlineWidth,
+    // Floating gold edge (card-reference.png): soft outer glow, brighter
+    // up top via the offset. iOS renders the gold tint; Android ignores
+    // shadowColor (grey elevation only), where the gold frame + contrast
+    // carry the effect instead.
     shadowColor: colors.accent,
-    shadowOpacity: 0.08,
-    shadowRadius: 32,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
   },
   aspect: {
     aspectRatio: 1.58,

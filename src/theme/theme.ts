@@ -267,11 +267,12 @@ export const gradients = {
   /** Card surface fill — L1 to Canvas gradient */
   cardFill: [palette.surfaceCard, palette.background] as const,
   /**
-   * Obsidian metal (hero only) — 4-stop diagonal from the approved Stitch
-   * mock (`linear-gradient(135deg, …)`). Registered here so components stay
-   * hex-free (PRD §4.5); the mock is a layout reference only.
+   * Obsidian metal (hero only) — warm diagonal per the approved
+   * `card-reference.png` (bright warm-grey top-left melting to near-black
+   * bottom-right). Registered here so components stay hex-free (PRD §4.5);
+   * references are layout guides only.
    */
-  obsidian: ['#1F1E20', '#151416', '#0D0D0F', '#18171A'] as const,
+  obsidian: ['#2C2925', '#191714', '#0B0A09', '#161311'] as const,
   /** Horizontal fade for glows/overlays. */
   glow: ['rgba(212, 175, 55, 0.35)', 'rgba(212, 175, 55, 0)'] as const,
 } as const;
