@@ -391,6 +391,8 @@ export const id = {
     card: {
       total: 'Total Saldo',
       count: '{count} dompet',
+      hideBalance: 'Sembunyikan nominal',
+      showBalance: 'Tampilkan nominal',
     },
     row: {
       transactions: '{count} transaksi',

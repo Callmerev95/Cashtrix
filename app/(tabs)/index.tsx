@@ -107,6 +107,7 @@ export default function DashboardScreen() {
       <TotalBalanceCard
         total={summary.totalBalance}
         walletCount={summary.count}
+        holderName={name}
         loading={loading}
       />
 
