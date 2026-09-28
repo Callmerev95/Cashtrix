@@ -724,6 +724,7 @@ export default function ProfileScreen() {
                 onPress={onSignOutPress}
                 disabled={signingOut}
                 danger
+                icon="power-settings-new"
               />
             </View>
           </>
