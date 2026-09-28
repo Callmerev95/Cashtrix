@@ -15,6 +15,7 @@ import {
   PASSWORD_MIN_LENGTH,
   runSeedUser,
   registerErrorMessage,
+  signInWithGoogle,
   signUpWithEmail,
   validateRegister,
   hasErrors,
@@ -39,6 +40,7 @@ export default function RegisterScreen() {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
 
   async function onSubmit() {
     const validation = validateRegister(email, password, language);
@@ -63,6 +65,21 @@ export default function RegisterScreen() {
       setFormError(registerErrorMessage(error as { status?: number }, language));
     } finally {
       setBusy(false);
+    }
+  }
+
+  // Same Google path as Login: register-vs-login is decided server-side
+  // (one email, one account), so both screens share `signInWithGoogle`.
+  async function onGoogle() {
+    if (busy || googleBusy) return;
+    setFormError('');
+    setGoogleBusy(true);
+    try {
+      await signInWithGoogle();
+    } catch {
+      setFormError(t.auth.register.googleFail);
+    } finally {
+      setGoogleBusy(false);
     }
   }
 
@@ -141,6 +158,15 @@ export default function RegisterScreen() {
             onPress={onSubmit}
             loading={busy}
             style={styles.cta}
+          />
+
+          <Text style={[typography.bodySm, styles.divider]}>{t.auth.register.or}</Text>
+
+          <GhostButton
+            testID="register-google"
+            label={googleBusy ? t.auth.register.googleBusy : t.auth.register.google}
+            onPress={onGoogle}
+            disabled={busy || googleBusy}
           />
         </Card>
 
@@ -223,6 +249,11 @@ const styles = StyleSheet.create({
   formError: {
     ...typography.bodyMd,
     color: colors.error,
+  },
+  divider: {
+    ...typography.bodySm,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
   hint: {
     marginTop: spacing.xs,

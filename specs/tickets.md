@@ -278,3 +278,22 @@ OB1 ── OB2 ── OB3 (rilis berikut, setelah WG3)
 
 OB1 (#74) terbuka setelah WG3 hijau (tiket boleh dibuat sekarang, eksekusi antre).
 OB2 (#75) blocked by #74. OB3 (#76) blocked by #74 + #75.
+
+---
+
+## Auth: SMTP + template + OAuth Google (grill 2026-09-29)
+
+Sumber: grill-with-docs SMTP (Q1–Q6) + OAuth (Q7–Q9) + template (Q10–Q14) + ADR-0013 + ADR-0014. Tanpa DDL, tanpa modul native. Console (Resend, Google Cloud, Dashboard Supabase) = owner; kode + docs = agen.
+
+| Ticket | Issue | Blocked by | Deliverable |
+|---|---|---|---|
+| AU1, SMTP Resend + template ID | — | — | Domain `cashtrix.my.id` verified; SMTP `smtp.resend.com:587` + From `noreply@cashtrix.my.id`; template confirmation + recovery (ID, `{{ .ConfirmationURL }}` utuh, logo Pages); sumber di `supabase/templates/`; gate = 1 signup + 1 recovery real mendarat di app |
+| AU2, OAuth Google | — | — | Provider Google enable (callback `https://bklriyyuglwiqczgbqgq.supabase.co/auth/v1/callback`); tombol di Login + Register (`login-google`, `register-google`); seed pasca-exchange; asersi live: skip `unconfirmed` + satu-akun; Apple = follow-up terkunci (4.8) |
+
+```
+AU1 ═ AU2 (paralel; satu sesi console owner)
+```
+
+### Frontier
+
+AU1: kode + sumber template selesai di working tree; aksi owner = paste Dashboard + verifikasi 2 email (panduan console di handoff grill). AU2: kode + Jest hijau di working tree; aksi owner = Google Cloud Console + enable provider + verifikasi live di device (email OAuth skip `unconfirmed`, email ganda satu akun).

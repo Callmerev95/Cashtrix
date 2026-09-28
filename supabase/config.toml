@@ -242,10 +242,18 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
-# Uncomment to customize email template
-# [auth.email.template.invite]
-# subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+# Email templates (local dev parity). Hosted templates are managed in the
+# Dashboard (Auth > Email Templates) — never `config push` from this repo
+# (see AGENTS.md: push would overwrite hosted site_url/MFA/Twilio).
+# Source of truth for the custom designs lives in ./templates/*.html; the
+# hosted copies are pasted from those files.
+[auth.email.template.confirmation]
+subject = "Konfirmasi Alamat Email Anda"
+content_path = "./supabase/templates/confirm-signup.html"
+
+[auth.email.template.recovery]
+subject = "Atur Ulang Kata Sandi Anda"
+content_path = "./supabase/templates/recovery.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]

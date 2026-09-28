@@ -17,6 +17,7 @@ import {
   loginErrorMessage,
   runSeedUser,
   signInWithEmail,
+  signInWithGoogle,
   validateRegister,
   hasErrors,
   type FieldErrors,
@@ -41,6 +42,7 @@ export default function LoginScreen() {
   const [formError, setFormError] = useState('');
   const [unconfirmed, setUnconfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
 
   async function onSubmit() {
     const validation = validateRegister(email, password, language);
@@ -67,6 +69,23 @@ export default function LoginScreen() {
       setUnconfirmed(isEmailNotConfirmedError(err));
     } finally {
       setBusy(false);
+    }
+  }
+
+  // OAuth Google: browser round-trip, code exchange + seed live in
+  // `signInWithGoogle`; the gate moves to tabs, same as password login.
+  // A browser dismiss resolves false and is not an error.
+  async function onGoogle() {
+    if (busy || googleBusy) return;
+    setFormError('');
+    setUnconfirmed(false);
+    setGoogleBusy(true);
+    try {
+      await signInWithGoogle();
+    } catch {
+      setFormError(t.auth.login.googleFail);
+    } finally {
+      setGoogleBusy(false);
     }
   }
 
@@ -157,6 +176,15 @@ export default function LoginScreen() {
             loading={busy}
             style={styles.cta}
           />
+
+          <Text style={[typography.bodySm, styles.divider]}>{t.auth.login.or}</Text>
+
+          <GhostButton
+            testID="login-google"
+            label={googleBusy ? t.auth.login.googleBusy : t.auth.login.google}
+            onPress={onGoogle}
+            disabled={busy || googleBusy}
+          />
         </Card>
 
         <View style={styles.footer}>
@@ -244,6 +272,11 @@ const styles = StyleSheet.create({
   formError: {
     ...typography.bodyMd,
     color: colors.error,
+  },
+  divider: {
+    ...typography.bodySm,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
   footer: {
     flexDirection: 'row',

@@ -3,6 +3,7 @@ export type { AuthStatus } from './auth-context';
 export {
   signUpWithEmail,
   signInWithEmail,
+  signInWithGoogle,
   sendPasswordResetEmail,
   resendSignupEmail,
   exchangeAuthCallback,

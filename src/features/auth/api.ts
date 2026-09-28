@@ -3,9 +3,15 @@
  * password reset, and the `seed-user` call. Everything user-visible (copy, validation) lives
  * in `./validation.ts` so it stays unit-testable without a bridge.
  */
+import * as WebBrowser from 'expo-web-browser';
+
 import { supabase, purgeLocalUserData } from '@/supabase';
 
 import { parseAuthCallbackUrl } from './deep-link';
+
+// Browser-based OAuth needs the in-app session completed on return (web
+// only; a no-op on native, so calling it at module scope is safe).
+WebBrowser.maybeCompleteAuthSession();
 
 /**
  * Where Supabase sends the user after they tap the signup-confirmation
@@ -51,6 +57,30 @@ export async function signInWithEmail(email: string, password: string) {
   return data;
 }
 
+/**
+ * Signs in (or registers) with Google via the system browser. The OAuth
+ * round-trip returns to `cashtrix://check-email` carrying a PKCE `code`,
+ * which the Check Email screen exchanges for a session and seeds — the same
+ * path as the email-confirmation link, so the gate, MFA, and lock behave
+ * identically. Resolves `true` on success, `false` when the user dismisses
+ * the browser without completing (not an error). Seeds best-effort on a new
+ * session — `openAuthSessionAsync` consumes the return URL itself, so the
+ * Check Email screen never sees it.
+ */
+export async function signInWithGoogle(): Promise<boolean> {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: CHECK_EMAIL_DEEP_LINK, skipBrowserRedirect: true },
+  });
+  if (error) throw error;
+  if (!data.url) throw new Error('oauth_no_url');
+
+  const result = await WebBrowser.openAuthSessionAsync(data.url, CHECK_EMAIL_DEEP_LINK);
+  if (result.type !== 'success' || !result.url) return false;
+  const exchanged = await exchangeAuthCallback(result.url);
+  if (exchanged) await runSeedUser().catch(() => undefined);
+  return exchanged;
+}
 /**
  * Sends a password reset email to the user.
  * The email contains a deep link to `cashtrix://reset-password` which opens the app.

@@ -13,7 +13,7 @@ import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card, GhostButton, LogoMark, PrimaryButton } from '@/components';
-import { exchangeAuthCallback, resendSignupEmail, useAuth } from '@/features/auth';
+import { exchangeAuthCallback, resendSignupEmail, runSeedUser, useAuth } from '@/features/auth';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, radius, spacing, typography } from '@/theme';
 
@@ -32,14 +32,21 @@ export default function CheckEmailScreen() {
   const [callbackError, setCallbackError] = useState('');
 
   // A confirmation tap on this device arrives as a deep link carrying the
-  // credential. Exchange it; the auth gate reacts to the new session.
+  // credential. Exchange it, then seed best-effort: link-tap entry never
+  // passes the login screen, so without this the Cash wallet would only
+  // appear after a later password login (OAuth Google seeds in its own
+  // call, but a double-delivered link landing here must seed too).
   // State updates live inside promise callbacks (never synchronously in the
   // effect body) per the `react-hooks/set-state-in-effect` rule.
   useEffect(() => {
     function handle(url: string) {
-      exchangeAuthCallback(url).catch(() => {
-        setCallbackError(t.auth.checkEmail.invalidLink);
-      });
+      exchangeAuthCallback(url)
+        .then((exchanged) => {
+          if (exchanged) return runSeedUser().catch(() => undefined);
+        })
+        .catch(() => {
+          setCallbackError(t.auth.checkEmail.invalidLink);
+        });
     }
     Linking.getInitialURL()
       .then((url) => {
