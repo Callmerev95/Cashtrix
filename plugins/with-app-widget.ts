@@ -99,10 +99,20 @@ const BUTTONS: WidgetButton[] = [
 ];
 
 function widgetInfoXml(): string {
+  // Device finding (Redmi/HyperOS): `minWidth/minHeight` alone do not stop
+  // the launcher from placing the widget one row tall with the cards cut
+  // off. `targetCellWidth/Height` (API 31+) tells it the intended 4x2
+  // footprint up front, and `resizeMode` + min-resize bounds let the user
+  // fix a squeezed placement by hand instead of re-adding the widget.
   return `<?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-  android:minWidth="300dp"
-  android:minHeight="220dp"
+  android:minWidth="250dp"
+  android:minHeight="200dp"
+  android:minResizeWidth="180dp"
+  android:minResizeHeight="110dp"
+  android:targetCellWidth="4"
+  android:targetCellHeight="2"
+  android:resizeMode="horizontal|vertical"
   android:updatePeriodMillis="0"
   android:initialLayout="@layout/${WIDGET_LAYOUT_XML}"
   android:description="@string/widget_desc"
@@ -122,24 +132,24 @@ function widgetCardXml(button: WidgetButton): string {
   return `  <LinearLayout
     android:id="@+id/${button.viewId}"
     android:layout_width="0dp"
-    android:layout_height="148dp"
+    android:layout_height="120dp"
     android:layout_weight="1"
     android:layout_margin="4dp"
     android:orientation="vertical"
     android:gravity="center"
-    android:padding="12dp"
+    android:padding="8dp"
     android:background="${cardBg}"
     android:contentDescription="${button.description}">
     <ImageView
-      android:layout_width="40dp"
-      android:layout_height="40dp"
+      android:layout_width="32dp"
+      android:layout_height="32dp"
       android:src="@android:drawable/${button.icon}"
       android:tint="${accent}"
       android:contentDescription="${button.description}" />
     <TextView
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
-      android:layout_marginTop="8dp"
+      android:layout_marginTop="6dp"
       android:text="@string/${button.labelKey}"
       android:textColor="${titleColor}"
       android:textSize="13sp"
@@ -163,7 +173,7 @@ function widgetLayoutXml(): string {
   android:layout_width="match_parent"
   android:layout_height="wrap_content"
   android:orientation="vertical"
-  android:padding="12dp"
+  android:padding="10dp"
   android:background="@drawable/cashtrix_widget_bg">
   <LinearLayout
     android:layout_width="match_parent"
@@ -172,8 +182,8 @@ function widgetLayoutXml(): string {
     android:gravity="center_vertical"
     android:paddingBottom="8dp">
     <ImageView
-      android:layout_width="40dp"
-      android:layout_height="40dp"
+      android:layout_width="32dp"
+      android:layout_height="32dp"
       android:src="@mipmap/ic_launcher"
       android:contentDescription="@string/app_name" />
     <TextView
@@ -182,7 +192,7 @@ function widgetLayoutXml(): string {
       android:layout_marginStart="8dp"
       android:text="@string/app_name"
       android:textColor="${WIDGET_COLORS.text}"
-      android:textSize="18sp"
+      android:textSize="16sp"
       android:textStyle="bold" />
     <TextView
       android:layout_width="wrap_content"
