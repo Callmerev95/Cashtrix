@@ -64,9 +64,9 @@ describe('rate-limit config: parse-voice 5/mnt (D5)', () => {
     expect(FUNCTION_RATE_LIMITS['parse-voice']).toBe(5);
   });
 
-  it('model exact dikunci (primer 3.8-flash, fallback alias anti-404)', () => {
-    expect(GEMINI_PRIMARY_MODEL).toBe('gemini-3.8-flash');
-    expect(GEMINI_FALLBACK_MODEL).toBe('gemini-flash-latest');
+  it('model dikunci (primer lite lapang + fallback 3.8 pintar)', () => {
+    expect(GEMINI_PRIMARY_MODEL).toBe('gemini-3.5-flash-lite');
+    expect(GEMINI_FALLBACK_MODEL).toBe('gemini-3.8-flash');
     expect(GEMINI_FALLBACK_MODEL).not.toBe(GEMINI_PRIMARY_MODEL);
   });
 });

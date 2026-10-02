@@ -7,14 +7,14 @@
  * or the response (PRD 4.4: user text stays out of logs).
  */
 
-export const GEMINI_PRIMARY_MODEL = 'gemini-3.8-flash';
+export const GEMINI_PRIMARY_MODEL = 'gemini-3.5-flash-lite';
 
 /**
- * Fallback alias resmi (bukan exact): pelajaran 2.x — exact di bawah exact
- * hanya menunda 404 berikutnya. Alias selalu hidup; drift perilakunya
- * ditanggung `validate.ts` (asing ditolak, tidak pernah jadi data korup).
+ * Fallback: model pintar berbayar-kuota-ketat. Catatan kuota per-model
+ * (Okt 2026): primer lite 15 RPM/500 RPD, 3.8-flash hanya 5 RPM/20 RPD —
+ * ember terpisah, jadi fallback lintas-model = cadangan kuota juga.
  */
-export const GEMINI_FALLBACK_MODEL = 'gemini-flash-latest';
+export const GEMINI_FALLBACK_MODEL = 'gemini-3.8-flash';
 
 type GeminiResponse = {
   candidates?: { content?: { parts?: { text?: unknown }[] } }[];

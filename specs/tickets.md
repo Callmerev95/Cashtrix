@@ -307,7 +307,7 @@ keyboard OS, nol modul native baru, OTA aman. Tanpa DDL baru.
 
 | Ticket | Issue | Blocked by | Deliverable |
 |---|---|---|---|
-| AI1, Edge parse-voice teks-ke-JSON | #90 | — | `parse-voice` (JWT → rate-limit 5/mnt → quota seam 402 → konteks server → Gemini 3.8-flash + fallback alias flash-latest → JSON strict); `verify-ai-voice.mjs` + matriks CI; aksi owner = secret `GEMINI_API_KEY` + deploy fungsi |
+| AI1, Edge parse-voice teks-ke-JSON | #90 | — | `parse-voice` (JWT → rate-limit 5/mnt → quota seam 402 → konteks server → Gemini lite primer + 3.8-flash fallback → JSON strict); `verify-ai-voice.mjs` + matriks CI; aksi owner = secret `GEMINI_API_KEY` + deploy fungsi |
 
 ```
 AI1 #90 (tanpa blocker, langsung jalan)
@@ -332,3 +332,8 @@ isolasi-akun, cleanup 0 residu); 6 gagal murni ember Google kosong
 flood didekoupel dari model). Rerun pasca-rotasi key ketiga: **39/39
 hijau total** (probe strict 4/4 termasuk goceng=5000 + 1,5jt=1500000,
 flood, isolasi, 0 residu) — siap PR.
+
+Keputusan model final (uji empiris 2026-10-02): primer `gemini-3.5-flash-lite`
+(lolos 4/4 probe strict termasuk `Gaji`-untuk-income; kuota free 15 RPM/500
+RPD) + fallback `gemini-3.8-flash` (5 RPM/20 RPD; ember per-model terpisah =
+cadangan kuota). Full verify 39/39 pada build final — PR #96.
