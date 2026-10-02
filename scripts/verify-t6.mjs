@@ -102,7 +102,11 @@ async function main() {
   section('menulis transaksi lintas dua bulan');
   // Current month (this month, WIB): expense Makanan 300k + expense Transport
   // 100k + income 5.000.000. Previous month: expense Makanan 200k.
-  const thisMonthIncome = new Date(monthStartWib(now, 0).getTime() + 9 * 3_600_000);
+  // Clamp every current-month offset to the past: on the 1st–3rd of a month
+  // `monthStart + 50h` is still future and `enforce_transaction_no_future`
+  // rejects the whole atomic 4-row insert (CI went red every month-start).
+  const pastClamp = (date) => new Date(Math.min(date.getTime(), now.getTime() - 60_000));
+  const thisMonthIncome = pastClamp(new Date(monthStartWib(now, 0).getTime() + 9 * 3_600_000));
   const row = (over) => ({
     user_id: userId,
     wallet_id: cashId,
@@ -116,13 +120,13 @@ async function main() {
       category_id: food.id,
       type: 'expense',
       amount: 300_000,
-      occurred_at: new Date(monthStartWib(now, 0).getTime() + 2 * 3_600_000).toISOString(),
+      occurred_at: pastClamp(new Date(monthStartWib(now, 0).getTime() + 2 * 3_600_000)).toISOString(),
     }),
     row({
       category_id: transport.id,
       type: 'expense',
       amount: 100_000,
-      occurred_at: new Date(monthStartWib(now, 0).getTime() + 50 * 3_600_000).toISOString(),
+      occurred_at: pastClamp(new Date(monthStartWib(now, 0).getTime() + 50 * 3_600_000)).toISOString(),
     }),
     row({
       category_id: salary.id,
