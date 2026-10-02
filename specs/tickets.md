@@ -339,7 +339,7 @@ Keputusan model final (uji empiris 2026-10-02): primer `gemini-3.5-flash-lite`
 RPD) + fallback `gemini-3.8-flash` (5 RPM/20 RPD; ember per-model terpisah =
 cadangan kuota). Full verify 39/39 pada build final — PR #96.
 
-#91 (AI2) implementasi di working tree: `__tests__/ai-golden.test.ts`
+#91 (AI2) MERGED 2026-10-03 (PR #97; CI static pass): `__tests__/ai-golden.test.ts`
 (pin prompt + agregator gate) + `__tests__/fixtures/ai-golden-voice.ts`
 (20 ucapan: slang, urutan terbalik, income-keyword, transfer-disamarkan,
 tanggal, 2 liar) + `__tests__/fixtures/ai-golden-receipt.ts` (20 struk:

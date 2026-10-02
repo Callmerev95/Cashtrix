@@ -410,7 +410,7 @@ Single-context layout — one `CONTEXT.md` + `docs/adr/` at the repo root. See `
 - Aksi owner sebelum live hijau: set secret `GEMINI_API_KEY` (opsional `GEMINI_FALLBACK_MODEL`) di Dashboard + `npx supabase functions deploy parse-voice --use-api`. Tanpa secret fungsi menjawab 500 `server_misconfigured` dan verify gagal dengan pesan yang jelas.
 - `delete __tests__/.session-seed.json` sebelum Jest (sama). Kontrak statis tak berubah (server-only, tanpa testID baru).
 
-### Golden set AI (AI2, #91 — implementasi di working tree)
+### Golden set AI (AI2, #91 — MERGED via PR #97)
 
 - `__tests__/ai-golden.test.ts` + `__tests__/fixtures/ai-golden-{voice,receipt}.ts` (fixture `.ts`, bukan JSON — `tsconfig` tanpa `resolveJsonModule`): 20 suara (slang, urutan terbalik, income-keyword, transfer-disamarkan→expense, tanggal, 2 liar `Kripto Elon`/`NFT Coin`) + 20 struk (multi-item, diskon/PPN/service, tender menempel, tanggal ID/EN, buram OCR r16 hint-null legal). Split dua parser independen (keputusan pemilik): suara = pin prompt + replay `modelJson` rekaman lewat validator asli; struk = `parseReceiptText` murni langsung.
 - Gate satu `it` agregator (Jest tak punya lulus-parsial): pass = nominal+kind+hint exact (suara) / nominal+hint (struk); `wild` (hint non-null di luar allow-list) = FAIL mutlak walau pass ≥36; `pass ≥ 36/40` else throw berdaftar-miss; miss di bawah threshold hanya `console.warn` agar tak busuk diam-diam. Sensitivitas terbukti: 5 miss buatan → FAIL, revert → hijau. Live drift vendor tetap eksklusif di `verify-ai-voice.mjs` (Jest tanpa secret, disiplin Rp 0).
