@@ -51,7 +51,7 @@ export const id = {
       passwordHint: 'Minimal {min} karakter, memuat huruf dan angka.',
       submit: 'Daftar',
       or: 'atau',
-      google: 'Lanjut dengan Google',
+      google: 'Daftar dengan Google',
       googleBusy: 'Membuka browser…',
       googleFail: 'Gagal daftar dengan Google. Coba lagi sebentar lagi.',
       toLoginPrompt: 'Sudah punya akun?',

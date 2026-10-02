@@ -11,6 +11,7 @@ export {
   shadows,
   gradients,
   chartRamp,
+  googleButton,
   default,
 } from './theme';
 

@@ -11,7 +11,7 @@ import { useState } from 'react';
 import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Card, GhostButton, LogoMark, PrimaryButton, TextField } from '@/components';
+import { Card, GhostButton, GoogleButton, LogoMark, PrimaryButton, TextField } from '@/components';
 import {
   isEmailNotConfirmedError,
   loginErrorMessage,
@@ -179,11 +179,12 @@ export default function LoginScreen() {
 
           <Text style={[typography.bodySm, styles.divider]}>{t.auth.login.or}</Text>
 
-          <GhostButton
+          <GoogleButton
             testID="login-google"
             label={googleBusy ? t.auth.login.googleBusy : t.auth.login.google}
             onPress={onGoogle}
-            disabled={busy || googleBusy}
+            disabled={busy}
+            loading={googleBusy}
           />
         </Card>
 

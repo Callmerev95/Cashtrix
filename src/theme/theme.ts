@@ -295,6 +295,21 @@ export const chartRamp = [
   '#48484A',
 ] as const;
 
+/**
+ * Google Sign-In button (GSI dark theme) — fixed brand values from Google's
+ * button spec, registered here so components stay hex-free (PRD §4.5).
+ * Height is 48 (repo tap target), not the spec's 40px.
+ */
+export const googleButton = {
+  surface: '#131314',
+  border: '#8e918f',
+  label: '#e3e3e3',
+  height: 48,
+  borderRadius: 20,
+  iconSize: 20,
+  iconGap: 10,
+} as const;
+
 export const theme = {
   colors,
   palette,

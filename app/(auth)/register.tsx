@@ -10,7 +10,7 @@ import { useState } from 'react';
 import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Card, GhostButton, LogoMark, PrimaryButton, TextField } from '@/components';
+import { Card, GhostButton, GoogleButton, LogoMark, PrimaryButton, TextField } from '@/components';
 import {
   PASSWORD_MIN_LENGTH,
   runSeedUser,
@@ -162,11 +162,12 @@ export default function RegisterScreen() {
 
           <Text style={[typography.bodySm, styles.divider]}>{t.auth.register.or}</Text>
 
-          <GhostButton
+          <GoogleButton
             testID="register-google"
             label={googleBusy ? t.auth.register.googleBusy : t.auth.register.google}
             onPress={onGoogle}
-            disabled={busy || googleBusy}
+            disabled={busy}
+            loading={googleBusy}
           />
         </Card>
 

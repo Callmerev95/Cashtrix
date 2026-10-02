@@ -52,7 +52,7 @@ export const en: Dictionary = {
       passwordHint: 'At least {min} characters, with letters and numbers.',
       submit: 'Sign up',
       or: 'or',
-      google: 'Continue with Google',
+      google: 'Sign up with Google',
       googleBusy: 'Opening browser…',
       googleFail: 'Google sign-up failed. Try again in a moment.',
       toLoginPrompt: 'Already have an account?',
