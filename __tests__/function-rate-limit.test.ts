@@ -1,6 +1,6 @@
 /**
  * Function rate-limit seam (D5, issue #54) — the pure Jest lock on the abuse
- * guard shared by the three Edge Functions.
+ * guard shared by the Edge Functions.
  *
  * What is pinned here:
  * - ambang per user per 60 detik (seed-user 10 / export-csv 5 /
@@ -42,12 +42,13 @@ describe('rate-limit config — ambang issue #54', () => {
     expect(RATE_LIMIT_WINDOW_SECONDS).toBe(60);
   });
 
-  it('seed-user 10, export-csv 5, delete-account 3, scan-receipt 5 (S3)', () => {
+  it('seed-user 10, export-csv 5, delete-account 3, scan-receipt 5 (S3), parse-voice 5 (AI1)', () => {
     expect(FUNCTION_RATE_LIMITS).toEqual({
       'seed-user': 10,
       'export-csv': 5,
       'delete-account': 3,
       'scan-receipt': 5,
+      'parse-voice': 5,
     });
   });
 });

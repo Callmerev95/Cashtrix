@@ -297,3 +297,38 @@ AU1 ═ AU2 (paralel; satu sesi console owner)
 ### Frontier
 
 AU1: kode + sumber template selesai di working tree; aksi owner = paste Dashboard + verifikasi 2 email (panduan console di handoff grill). AU2: kode + Jest hijau di working tree; aksi owner = Google Cloud Console + enable provider + verifikasi live di device (email OAuth skip `unconfirmed`, email ganda satu akun).
+
+---
+
+## AI voice server (payung AI)
+
+Sumber: issue #90. Fondasi kecerdasan AI di server, input tetap dikte
+keyboard OS, nol modul native baru, OTA aman. Tanpa DDL baru.
+
+| Ticket | Issue | Blocked by | Deliverable |
+|---|---|---|---|
+| AI1, Edge parse-voice teks-ke-JSON | #90 | — | `parse-voice` (JWT → rate-limit 5/mnt → quota seam 402 → konteks server → Gemini 3.8-flash + fallback alias flash-latest → JSON strict); `verify-ai-voice.mjs` + matriks CI; aksi owner = secret `GEMINI_API_KEY` + deploy fungsi |
+
+```
+AI1 #90 (tanpa blocker, langsung jalan)
+```
+
+### Frontier
+
+#90 (AI1) implementasi di working tree: Edge `parse-voice`
+(`prompt.ts` + `validate.ts` + `gemini.ts` + `index.ts` + `deno.json`
+per-direktori) + `FUNCTION_RATE_LIMITS` 5 + Jest
+`__tests__/ai-voice-parse.test.ts` (30 test: prompt, validasi strict,
+ekstraksi Gemini, ambang) + `scripts/verify-ai-voice.mjs` (pola S3/D5:
+fresh-window + reset counter, flood 5+2 jadi 429, isolasi antar-user) +
+matriks CI setelah `verify-s3`. Gate working tree: lint + typecheck +
+Jest 724/724 + kontrak statis 111/10/3 hijau. Fungsi sudah ter-deploy
+(kontrak beku bersih).
+
+Live 2026-10-02 (kuota segar pasca-rotasi): 33/39 — seluruh jalur
+non-model hijau (flood OUR 5x400 + 2x429 disiplin Rp 0, error-path,
+isolasi-akun, cleanup 0 residu); 6 gagal murni ember Google kosong
+(free-tier 3.8-flash habis dalam ±15 panggilan; retry memperkuat spiral,
+flood didekoupel dari model). Rerun pasca-rotasi key ketiga: **39/39
+hijau total** (probe strict 4/4 termasuk goceng=5000 + 1,5jt=1500000,
+flood, isolasi, 0 residu) — siap PR.

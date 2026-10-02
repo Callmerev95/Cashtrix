@@ -25,6 +25,7 @@ export const FUNCTION_RATE_LIMITS: Record<string, number> = {
   'export-csv': 5,
   'delete-account': 3,
   'scan-receipt': 5,
+  'parse-voice': 5,
 };
 
 export type RateLimitRow = {
