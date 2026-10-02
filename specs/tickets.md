@@ -350,7 +350,7 @@ buram OCR). Gate working tree: lint + typecheck + Jest 727/727 +
 kontrak statis 111/10/3 hijau; sensitivitas gate terbukti (5 miss
 buatan → FAIL berdaftar-miss, revert → hijau).
 
-#92 (AI3) implementasi di working tree: `scan-receipt` Gemini 1-call
+#92 (AI3) MERGED 2026-10-03 (PR #98; CI static pass): `scan-receipt` Gemini 1-call
 (`prompt.ts` + `gemini.ts` multimodal `inline_data` + `validate.ts`
 strict + `index.ts` rewire; Mock hanya seam Jest) + `SCAN_CONFIDENCE`
 fixed 0.42 (keputusan pemilik) + `__tests__/scan-gemini.test.ts` (39 test:
@@ -361,4 +361,4 @@ kontrak statis 111/10/3 hijau. Deploy + live 2026-10-03: 39/39 hijau
 (happy + isolasi ok:true Gemini; flood Rp0 5x404 + 2x429; 0 residu).
 Pelajaran: deploy hanya bundel direktori fungsi + `_shared/` —
 import `../parse-voice/*` = BOOT_ERROR 503; konstanta model disalin +
-paritas test. Siap PR.
+paritas test. MERGED via PR #98.
