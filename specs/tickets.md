@@ -309,9 +309,11 @@ keyboard OS, nol modul native baru, OTA aman. Tanpa DDL baru.
 |---|---|---|---|
 | AI1, Edge parse-voice teks-ke-JSON | #90 | — | `parse-voice` (JWT → rate-limit 5/mnt → quota seam 402 → konteks server → Gemini lite primer + 3.8-flash fallback → JSON strict); `verify-ai-voice.mjs` + matriks CI; aksi owner = secret `GEMINI_API_KEY` + deploy fungsi |
 | AI2, Golden set 40 kasus + gate 90 persen | #91 | #90 | `__tests__/ai-golden.test.ts` + 2 fixture (20 suara via replay validator + 20 struk via parser murni); gate 36/40 + liar nol; live drift tetap di `verify-ai-voice.mjs` |
+| AI3, scan-receipt Gemini 1-call | #92 | #90 | `scan-receipt` Gemini multimodal (gambar → JSON, `storage_path`-only, konteks expense + timezone server, validator strict, confidence fixed 0.42); `verify-s3.mjs` longgar + flood Rp0 via 404; tanpa DDL/native; aksi owner = deploy fungsi + live `verify-s3` |
 
 ```
 AI1 #90 ── AI2 #91 (kontrak beku dulu, baru benteng drift)
+   └────── AI3 #92 (pola prompt + D5 + secret reuse dari AI1)
 ```
 
 ### Frontier
@@ -347,3 +349,16 @@ multi-item, diskon/PPN/service, tender menempel, tanggal ID/EN,
 buram OCR). Gate working tree: lint + typecheck + Jest 727/727 +
 kontrak statis 111/10/3 hijau; sensitivitas gate terbukti (5 miss
 buatan → FAIL berdaftar-miss, revert → hijau).
+
+#92 (AI3) implementasi di working tree: `scan-receipt` Gemini 1-call
+(`prompt.ts` + `gemini.ts` multimodal `inline_data` + `validate.ts`
+strict + `index.ts` rewire; Mock hanya seam Jest) + `SCAN_CONFIDENCE`
+fixed 0.42 (keputusan pemilik) + `__tests__/scan-gemini.test.ts` (39 test:
+pin prompt, validator, transport, base64 murni) + `verify-s3.mjs`
+diperluas (happy longgar + struk sintetis PNG + flood Rp0 via 404 +
+pace model). Gate working tree: lint + typecheck + Jest 766/766 +
+kontrak statis 111/10/3 hijau. Deploy + live 2026-10-03: 39/39 hijau
+(happy + isolasi ok:true Gemini; flood Rp0 5x404 + 2x429; 0 residu).
+Pelajaran: deploy hanya bundel direktori fungsi + `_shared/` —
+import `../parse-voice/*` = BOOT_ERROR 503; konstanta model disalin +
+paritas test. Siap PR.
