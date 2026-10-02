@@ -1,12 +1,12 @@
 /**
- * OCR provider seam (S3, ADR-0009).
+ * OCR provider seam (S3, ADR-0009; AI3, issue #92).
  *
- * S3 ships mock-first (owner decision 2026-09-25): the plumbing
- * auth → rate-limit → quota seam → read object → parse → prefill is real,
- * only the text recognition is a deterministic mock. Swapping in Cloud
- * Vision later (free 1.000 unit/bulan, then $1,50/1.000) means replacing
- * `MockScanProvider` with a Vision REST call — same input (bytes), same
- * output (text), no client or contract change.
+ * S3 shipped mock-first (owner decision 2026-09-25). AI3 replaced the
+ * production path with one Gemini multimodal call (image → JSON, see
+ * `gemini.ts` + `prompt.ts` + `validate.ts`); the mock below is retained
+ * ONLY as a deterministic Jest seam (`scan-parser.test.ts` pins the legacy
+ * rule-parser against `MOCK_RECEIPT_TEXT`). Production `index.ts` no longer
+ * calls it.
  *
  * Pure (no Deno globals) so the mock text stays importable from tests.
  */
@@ -28,6 +28,14 @@ export const MOCK_RECEIPT_TEXT = [
 /** Honest-by-design: a mock must never report high confidence (catatan S3:
  * kepercayaan palsu lebih mahal daripada skeptisisme sehat). */
 export const MOCK_CONFIDENCE = 0.42;
+
+/**
+ * Fixed honest confidence for live Gemini scans (AI3, owner decision):
+ * Gemini returns no score, and the client contract requires a number, so the
+ * server reports the same static 0.42 — never a high or self-assessed value.
+ * Pinned by `scan-gemini.test.ts` (exact value + <0.5).
+ */
+export const SCAN_CONFIDENCE = MOCK_CONFIDENCE;
 
 export type OcrResult = { ok: true; text: string } | { ok: false };
 
