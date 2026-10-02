@@ -386,3 +386,15 @@ Issues live as GitHub issues in `Callmerev95/Cashtrix`, managed with the `gh` CL
 ### Domain docs
 
 Single-context layout — one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+### Tiket tracer-bullet + handoff (anti konteks-hilang)
+
+- Pecah kerja jadi tiket tracer-bullet vertikal (server + test + demo per tiket), satu tiket muat satu context window.
+- Satu tiket = satu sesi fresh + handoff doc; jangan akumulasi multi-tiket dalam satu sesi (batas ideal ±150k token).
+- Docs (`AGENTS.md`/`CONTEXT.md`/ADR) di-update per tiket, bukan di akhir.
+- `graphify update .` per tiket setelah merge ke `main`, agar sesi berikut tidak mewarisi graf basi.
+- Aturan ini untuk menghindari kehilangan konteks dan halusinasi.
+
+### Bahasa pesan repo (commit, PR, dsb.)
+
+- Semua pesan di dalam repo (commit message, PR title/body, tag annotation, dsb.) selalu dalam bahasa Inggris. Jangan campur bahasa Indonesia dan bahasa Inggris dalam satu pesan.
