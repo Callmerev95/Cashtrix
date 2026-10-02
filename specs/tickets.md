@@ -308,9 +308,10 @@ keyboard OS, nol modul native baru, OTA aman. Tanpa DDL baru.
 | Ticket | Issue | Blocked by | Deliverable |
 |---|---|---|---|
 | AI1, Edge parse-voice teks-ke-JSON | #90 | — | `parse-voice` (JWT → rate-limit 5/mnt → quota seam 402 → konteks server → Gemini lite primer + 3.8-flash fallback → JSON strict); `verify-ai-voice.mjs` + matriks CI; aksi owner = secret `GEMINI_API_KEY` + deploy fungsi |
+| AI2, Golden set 40 kasus + gate 90 persen | #91 | #90 | `__tests__/ai-golden.test.ts` + 2 fixture (20 suara via replay validator + 20 struk via parser murni); gate 36/40 + liar nol; live drift tetap di `verify-ai-voice.mjs` |
 
 ```
-AI1 #90 (tanpa blocker, langsung jalan)
+AI1 #90 ── AI2 #91 (kontrak beku dulu, baru benteng drift)
 ```
 
 ### Frontier
@@ -337,3 +338,12 @@ Keputusan model final (uji empiris 2026-10-02): primer `gemini-3.5-flash-lite`
 (lolos 4/4 probe strict termasuk `Gaji`-untuk-income; kuota free 15 RPM/500
 RPD) + fallback `gemini-3.8-flash` (5 RPM/20 RPD; ember per-model terpisah =
 cadangan kuota). Full verify 39/39 pada build final — PR #96.
+
+#91 (AI2) implementasi di working tree: `__tests__/ai-golden.test.ts`
+(pin prompt + agregator gate) + `__tests__/fixtures/ai-golden-voice.ts`
+(20 ucapan: slang, urutan terbalik, income-keyword, transfer-disamarkan,
+tanggal, 2 liar) + `__tests__/fixtures/ai-golden-receipt.ts` (20 struk:
+multi-item, diskon/PPN/service, tender menempel, tanggal ID/EN,
+buram OCR). Gate working tree: lint + typecheck + Jest 727/727 +
+kontrak statis 111/10/3 hijau; sensitivitas gate terbukti (5 miss
+buatan → FAIL berdaftar-miss, revert → hijau).
