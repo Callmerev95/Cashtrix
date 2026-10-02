@@ -10,7 +10,7 @@ import { useState } from 'react';
 import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Card, GhostButton, GoogleButton, LogoMark, PrimaryButton, TextField } from '@/components';
+import { Card, GhostButton, GoogleButton, LogoMark, OrDivider, PrimaryButton, TextField } from '@/components';
 import {
   PASSWORD_MIN_LENGTH,
   runSeedUser,
@@ -93,13 +93,13 @@ export default function RegisterScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.xl },
+          { paddingTop: insets.top + spacing.lg, paddingBottom: insets.bottom + spacing.lg },
         ]}
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
       >
         <View style={styles.header}>
-          <LogoMark size={72} />
+          <LogoMark size={64} />
           <Text style={[typography.labelUppercase, styles.kicker]}>Cashtrix</Text>
           <Text style={[typography.headlineLg, styles.title]}>{t.auth.register.title}</Text>
           <Text style={[typography.bodyMd, styles.subtitle]}>
@@ -160,7 +160,7 @@ export default function RegisterScreen() {
             style={styles.cta}
           />
 
-          <Text style={[typography.bodySm, styles.divider]}>{t.auth.register.or}</Text>
+          <OrDivider label={t.auth.register.or} />
 
           <GoogleButton
             testID="register-google"
@@ -177,6 +177,8 @@ export default function RegisterScreen() {
             <GhostButton label={t.auth.register.toLogin} testID="register-to-login" />
           </Link>
         </View>
+
+        <View style={styles.spacer} />
 
         <View style={styles.legal}>
           <Text style={[typography.bodySm, styles.legalText]}>{t.auth.legal.registerPrefix}</Text>
@@ -213,7 +215,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: spacing.margin,
-    gap: spacing.xl,
+    gap: spacing.lg,
   },
   header: {
     alignItems: 'center',
@@ -232,7 +234,7 @@ const styles = StyleSheet.create({
   },
   card: {
     gap: spacing.md,
-    padding: spacing.lg,
+    padding: spacing.md,
     borderRadius: radius.xl,
   },
   fieldLabel: {
@@ -240,7 +242,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   cta: {
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
   },
   fieldError: {
     marginTop: spacing.xs,
@@ -250,11 +252,6 @@ const styles = StyleSheet.create({
   formError: {
     ...typography.bodyMd,
     color: colors.error,
-  },
-  divider: {
-    ...typography.bodySm,
-    color: colors.textSecondary,
-    textAlign: 'center',
   },
   hint: {
     marginTop: spacing.xs,
@@ -269,6 +266,11 @@ const styles = StyleSheet.create({
   },
   footerText: {
     color: colors.textSecondary,
+  },
+  // Pushes legal to the bottom edge so the auth column fills one screen.
+  spacer: {
+    flex: 1,
+    minHeight: spacing.md,
   },
   legal: {
     flexDirection: 'row',

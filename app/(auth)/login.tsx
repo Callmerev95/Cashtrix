@@ -11,7 +11,7 @@ import { useState } from 'react';
 import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Card, GhostButton, GoogleButton, LogoMark, PrimaryButton, TextField } from '@/components';
+import { Card, GhostButton, GoogleButton, LogoMark, OrDivider, PrimaryButton, TextField } from '@/components';
 import {
   isEmailNotConfirmedError,
   loginErrorMessage,
@@ -101,13 +101,13 @@ export default function LoginScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.xl },
+          { paddingTop: insets.top + spacing.lg, paddingBottom: insets.bottom + spacing.lg },
         ]}
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
       >
         <View style={styles.header}>
-          <LogoMark size={72} />
+          <LogoMark size={64} />
           <Text style={[typography.labelUppercase, styles.kicker]}>Cashtrix</Text>
           <Text style={[typography.headlineLg, styles.title]}>Welcome Back</Text>
           <Text style={[typography.bodyMd, styles.subtitle]}>
@@ -138,7 +138,14 @@ export default function LoginScreen() {
           </View>
 
           <View>
-            <Text style={[typography.labelUppercase, styles.fieldLabel]}>Password</Text>
+            <View style={styles.passwordHeader}>
+              <Text style={[typography.labelUppercase, styles.fieldLabel]}>Password</Text>
+              <Link href="/(auth)/forgot-password" asChild>
+                <Text style={styles.forgotLink} testID="login-forgot-password">
+                  {t.auth.login.forgot}
+                </Text>
+              </Link>
+            </View>
             <TextField
               testID="login-password"
               accessibilityLabel="Password"
@@ -177,7 +184,7 @@ export default function LoginScreen() {
             style={styles.cta}
           />
 
-          <Text style={[typography.bodySm, styles.divider]}>{t.auth.login.or}</Text>
+          <OrDivider label={t.auth.login.or} />
 
           <GoogleButton
             testID="login-google"
@@ -195,11 +202,7 @@ export default function LoginScreen() {
           </Link>
         </View>
 
-        <View style={styles.footer}>
-          <Link href="/(auth)/forgot-password" asChild>
-            <GhostButton label={t.auth.login.forgot} testID="login-forgot-password" />
-          </Link>
-        </View>
+        <View style={styles.spacer} />
 
         <View style={styles.legal}>
           <Text style={[typography.bodySm, styles.legalText]}>{t.auth.legal.loginPrefix}</Text>
@@ -236,7 +239,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: spacing.margin,
-    gap: spacing.xl,
+    gap: spacing.lg,
   },
   header: {
     alignItems: 'center',
@@ -255,15 +258,26 @@ const styles = StyleSheet.create({
   },
   card: {
     gap: spacing.md,
-    padding: spacing.lg,
+    padding: spacing.md,
     borderRadius: radius.xl,
+  },
+  passwordHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  // Single object on purpose: `Link asChild` throws when its child gets a
+  // style array, so the bodySm token is spread here instead of inline.
+  forgotLink: {
+    ...typography.bodySm,
+    color: colors.accent,
   },
   fieldLabel: {
     marginBottom: spacing.xs,
     color: colors.textSecondary,
   },
   cta: {
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
   },
   fieldError: {
     marginTop: spacing.xs,
@@ -274,11 +288,6 @@ const styles = StyleSheet.create({
     ...typography.bodyMd,
     color: colors.error,
   },
-  divider: {
-    ...typography.bodySm,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -287,6 +296,11 @@ const styles = StyleSheet.create({
   },
   footerText: {
     color: colors.textSecondary,
+  },
+  // Pushes legal to the bottom edge so the auth column fills one screen.
+  spacer: {
+    flex: 1,
+    minHeight: spacing.md,
   },
   legal: {
     flexDirection: 'row',

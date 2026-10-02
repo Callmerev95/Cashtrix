@@ -14,6 +14,7 @@ export { TextField } from './text-field';
 export type { TextFieldProps } from './text-field';
 export { PrimaryButton, GhostButton } from './button';
 export { GoogleButton } from './google-button';
+export { OrDivider } from './or-divider';
 export { Card } from './card';
 export { LogoMark } from './logo-mark';
 export { AppHeader } from './app-header';
