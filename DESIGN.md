@@ -190,11 +190,41 @@ Depth = tonal layering + hairline edges + diffuse gold glow (never heavy drop sh
 - Well: `#1C1C1E`, 4px inner padding, `rounded-full`.
 - Active: `#2C2C2E` (or gold fill on filters) + glow `0 2px 12px rgba(212,175,55,0.28)`.
 - Filter chips active: gold border + gold text.
+### Voice record (AI6) + waveform (B1, Stitch adoption)
 
-### Voice record (AI6) + waveform placeholder (B1)
-- **Record button:** full-width L2 row in the voice panel (`fiber-manual-record` idle / `stop` active, gold icon + label, gold fill while recording). Live second counter while recording; hard auto-stop at 15s. Status line below cycles uploading → transcribing → prefill/failed — honest states only, never a fake percentage.
-- **Waveform placeholder:** 18 static gold bars (deterministic heights, 36px row, decorative/hidden from accessibility). Shown only while the AI call is in flight, next to the working copy. Static by honesty rule: no audio-level stream exists on the dictation path, so a "live" meter would lie; the AI6 record path owns no meter either.
+- **Mic hero (Stitch `Layar Suara Instan`):** 84px circular record button (`mic`
+  36px); idle L2 fill, recording state flips to `loss` fill + white icon.
+  One concentric pulse ring fires while the AI call is in flight OR a take is
+  recording (scale `1 → 1.8` + opacity `0.6 → 0`, 1400ms loop) — one final AI
+  result loading, replacing a generic spinner.
+- **Phase tabs:** `Merekam` (red dot) / `Mengolah` (gold dot) pill row mirrors
+  the real states (`isRecording/uploading/transcribing` vs `aiLoading`) —
+  visual indicator only, never interactive, never a fake percentage.
+- **Hero timer:** `00:SS / 00:15` mono readout while recording, from the real
+  second counter capped at `VOICE_RECORD_MAX_MS`.
+- **Waveform:** 18 gold bars (deterministic heights, 36px row,
+  decorative/hidden from accessibility). Shown only while the AI call is in
+  flight, next to the working copy. Stagger animation (scaleY `0.45 ↔ 1`,
+  350ms per leg, 90ms per-bar offset) — purely "AI is working", never a live
+  meter: no audio-level stream exists on the dictation path, so a
+  level-driven visual would lie (same rule as the fixed 0.42 scan
+  confidence). Static at rest under reduce-motion.
+- **Record take (AI6):** the record button itself is the indicator (gold
+  fill + live second counter); no extra animation is added on top.
 - **Haptics (B1, tactile, never visual):** one best-effort buzz each — save (success), undo snackbar, threshold batch (warning), record start (heavy) / stop (light), AI prefill landing (soft tick, only when it applies), lock/MFA toggle (light). Never throws, never blocks, never a substitute for visible proof (snackbar/banner stays).
+
+### Scan receipt (S3, Stitch adoption)
+
+- **Thumb (Stitch `Layar Pemindaian Struk`):** 72px tile with 4 gold
+  viewfinder corners + hairline `accent` frame + ambient glow while scanning.
+- **Scan state:** `AUTO-ALIGN` pill + the real `Membaca struk…` copy — no
+  fake percentage, ever (design honesty).
+- **Laser:** 2px champagne-gold gradient bar (`transparent → accent →
+  transparent`) sweeping the tile top to bottom, ping-pong 1300ms per leg.
+  Marks the OCR read position, replacing a generic skeleton.
+- **Prefill banner:** `✨ {aiAutoTitle}` header + `Terverifikasi` pill above
+  the landed values — one shared `AiPrefillBanner` so voice and scan never
+  drift apart. Split rows pass `header={null}` (one header per preview).
 
 ### Progress
 - Track: `#2C2C2E`, rounded caps.
@@ -267,21 +297,27 @@ like everything else). No other decorative animation.
   0.97 → 1, 400ms. Content is already mounted, so this masks the cut with
   zero added latency. Skipped when the OS reduce-motion setting is on.
 
-### AI loading (AI4, #93)
+### AI loading (AI4, #93; Stitch adoption)
 
-- **Voice pulse:** one concentric ring around the mic pill while the AI call
-  is in flight, scale `1 → 1.8` + opacity `0.6 → 0`, 1400ms loop. Reason:
-  one final AI result is loading, replacing a generic spinner.
-- **Waveform placeholder (B1):** static 18-bar gold row beside the working
-  copy (see §5). No animation — see the honesty rule there.
+- **Voice pulse:** one concentric ring around the 84px mic hero while the AI
+  call is in flight OR a take is recording, scale `1 → 1.8` + opacity
+  `0.6 → 0`, 1400ms loop. Reason: one final AI result is loading, replacing
+  a generic spinner.
+- **Phase tabs:** `Merekam`/`Mengolah` pill mirrors the real record/AI
+  states — indicator only, never a fake percentage (see §5).
+- **Waveform (B1, Stitch):** 18-bar gold row beside the working copy (see
+  §5). Stagger animation, static at rest under reduce-motion.
 - **Record take (AI6):** the record button itself is the indicator (gold
-  fill + live second counter); no extra animation is added on top.
-- **Scan laser:** one 2px gold bar sweeping the receipt thumbnail top to
-  bottom, ping-pong 1300ms per leg. Reason: marks the OCR read position,
+  fill + live second counter, plus the hero timer); no extra animation is
+  added on top.
+- **Scan laser:** 2px champagne-gold gradient bar sweeping the 72px tile top
+  to bottom, ping-pong 1300ms per leg + `AUTO-ALIGN` pill + real status
+  copy. No fake percentage, ever. Reason: marks the OCR read position,
   replacing a generic skeleton.
 - **Prefill entrance (approved exception to the loading-only rule):** when an
   AI prefill lands, the `AiPrefillBanner` eases in once — opacity 0 → 1 plus
-  a settle-up `translateY` 20 → 0, consecutive rows staggered 60ms. Same
-  `Animated`-only, reduce-motion-dead discipline as everything above.
+  a settle-up `translateY` 20 → 0, consecutive rows staggered 60ms, with the
+  `✨ {aiAutoTitle}` + `Terverifikasi` header. Same `Animated`-only,
+  reduce-motion-dead discipline as everything above.
 - All are `Animated` only (OTA-safe, no native module), dead under
   reduce-motion like every other animation.

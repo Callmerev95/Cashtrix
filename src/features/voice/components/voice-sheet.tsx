@@ -95,6 +95,18 @@ function resolveWalletHint(
   );
 }
 
+/** Hero mic diameter (Stitch: 84px record button). */
+const MIC_SIZE = 84;
+
+/** Hero record timer `00:SS / 00:15` — real seconds, cap from the API. */
+function formatRecordTimer(secs: number): string {
+  const max = VOICE_RECORD_MAX_MS / 1000;
+  const capped = Math.min(Math.max(secs, 0), max);
+  const current = String(capped).padStart(2, '0');
+  const total = String(max).padStart(2, '0');
+  return `00:${current} / 00:${total}`;
+}
+
 export function VoiceSheet({
   open,
   onOpenChange,
@@ -502,7 +514,7 @@ export function VoiceSheet({
 
   const [pulse] = useState(() => new Animated.Value(0));
   useEffect(() => {
-    if (!aiLoading || reduceMotion) return;
+    if (!(aiLoading || isRecording) || reduceMotion) return;
     const loop = Animated.loop(
       Animated.timing(pulse, {
         toValue: 1,
@@ -513,7 +525,7 @@ export function VoiceSheet({
     );
     loop.start();
     return () => loop.stop();
-  }, [aiLoading, pulse, reduceMotion]);
+  }, [aiLoading, isRecording, pulse, reduceMotion]);
   const pulseScale = pulse.interpolate({
     inputRange: [0, 1],
     outputRange: [1, 1.8],
@@ -523,10 +535,16 @@ export function VoiceSheet({
     outputRange: [0.6, 0],
   });
 
+  const recordingActive =
+    isRecording ||
+    recordNote === 'uploading' ||
+    recordNote === 'transcribing';
+  const processingActive = aiLoading;
+
   return (
     <View>
       <View style={styles.micWrap}>
-        {aiLoading && !reduceMotion ? (
+        {(aiLoading || isRecording) && !reduceMotion ? (
           <Animated.View
             pointerEvents="none"
             accessibilityElementsHidden
@@ -545,28 +563,79 @@ export function VoiceSheet({
           style={({ pressed }) => [
             styles.mic,
             open && styles.micActive,
+            isRecording && styles.micRecording,
             pressed && pressedFeedback,
           ]}
         >
           <MaterialIcons
             name="mic"
-            size={18}
-            color={open ? colors.accent : colors.textSecondary}
+            size={36}
+            color={
+              isRecording
+                ? colors.textPrimary
+                : open
+                  ? colors.accent
+                  : colors.textSecondary
+            }
           />
-          <Text
-            style={[
-              typography.bodyMd,
-              styles.micLabel,
-              open && styles.micLabelActive,
-            ]}
-          >
-            {t.mic}
-          </Text>
         </Pressable>
+        <Text style={[typography.bodyMd, styles.micLabel]}>
+          {t.mic}
+        </Text>
       </View>
 
       {open ? (
         <View testID="voice-sheet" style={styles.panel}>
+          <View testID="voice-phase" style={styles.phaseRow}>
+            <View
+              testID="voice-phase-record"
+              style={[styles.phase, recordingActive && styles.phaseActive]}
+            >
+              <View
+                style={[
+                  styles.phaseDot,
+                  { backgroundColor: colors.expense },
+                ]}
+              />
+              <Text
+                style={[
+                  typography.bodySm,
+                  styles.phaseLabel,
+                  recordingActive && styles.phaseLabelActive,
+                ]}
+              >
+                {t.phaseRecord}
+              </Text>
+            </View>
+            <View
+              testID="voice-phase-process"
+              style={[styles.phase, processingActive && styles.phaseActive]}
+            >
+              <View
+                style={[
+                  styles.phaseDot,
+                  { backgroundColor: colors.accent },
+                ]}
+              />
+              <Text
+                style={[
+                  typography.bodySm,
+                  styles.phaseLabel,
+                  processingActive && styles.phaseLabelActive,
+                ]}
+              >
+                {t.phaseProcess}
+              </Text>
+            </View>
+          </View>
+          {recordingActive ? (
+            <Text
+              testID="voice-timer"
+              style={[typography.currencyDisplay, styles.timer]}
+            >
+              {formatRecordTimer(recordSecs)}
+            </Text>
+          ) : null}
           {userId ? (
             <Pressable
               testID="voice-record"
@@ -660,6 +729,7 @@ export function VoiceSheet({
                 return (
                   <View key={index} style={styles.splitRow}>
                     <AiPrefillBanner
+                      header={null}
                       delay={index * AI_BANNER_STAGGER_MS}
                       style={styles.splitBanner}
                     >
@@ -748,27 +818,26 @@ export function VoiceSheet({
 
 const styles = StyleSheet.create({
   micWrap: {
-    alignItems: 'stretch',
+    alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: spacing.lg,
+    gap: spacing.sm,
   },
   pulseRing: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    top: spacing.lg,
+    width: MIC_SIZE,
+    height: MIC_SIZE,
     borderRadius: radius.full,
     borderWidth: 1,
     borderColor: colors.accent,
   },
   mic: {
-    minHeight: layout.minTapTarget,
-    paddingHorizontal: spacing.md,
-    flexDirection: 'row',
+    width: MIC_SIZE,
+    height: MIC_SIZE,
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
-    borderRadius: radius.full,
     backgroundColor: colors.surfaceElevated,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderStrong,
@@ -780,11 +849,56 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 2 },
   },
+  micRecording: {
+    backgroundColor: colors.expense,
+    borderColor: colors.expense,
+    shadowColor: colors.expense,
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 0 },
+  },
   micLabel: {
     color: colors.textSecondary,
   },
-  micLabelActive: {
+  phaseRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    padding: spacing.xs,
+    borderRadius: radius.full,
+    backgroundColor: colors.surfaceCard,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  phase: {
+    flex: 1,
+    minHeight: layout.minTapTarget,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs / 2,
+    borderRadius: radius.full,
+  },
+  phaseActive: {
+    backgroundColor: colors.surfaceElevated,
+    shadowColor: colors.accent,
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  phaseDot: {
+    width: 8,
+    height: 8,
+    borderRadius: radius.full,
+  },
+  phaseLabel: {
+    color: colors.textSecondary,
+  },
+  phaseLabelActive: {
+    color: colors.textPrimary,
+  },
+  timer: {
     color: colors.accent,
+    textAlign: 'center',
   },
   record: {
     minHeight: layout.minTapTarget,

@@ -13,6 +13,7 @@
  * the parent auto-scan each new photo (event-driven, never an effect).
  */
 import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -220,6 +221,10 @@ export function ReceiptAttachmentSection({
               source={{ uri: attachment.previewUrl }}
               style={styles.image}
             />
+            <View style={styles.cornerTl} pointerEvents="none" />
+            <View style={styles.cornerTr} pointerEvents="none" />
+            <View style={styles.cornerBl} pointerEvents="none" />
+            <View style={styles.cornerBr} pointerEvents="none" />
             <Pressable
               testID={`receipt-remove-${attachment.id}`}
               accessibilityRole="button"
@@ -270,17 +275,32 @@ export function ReceiptAttachmentSection({
               />
             </Skeleton>
             {!reduceMotion ? (
-              <Animated.View
-                pointerEvents="none"
-                accessibilityElementsHidden
-                importantForAccessibility="no-hide-descendants"
-                style={[styles.laser, { transform: [{ translateY: laserY }] }]}
-              />
+              <>
+                <LinearGradient
+                  colors={['transparent', colors.accent, 'transparent']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  pointerEvents="none"
+                  style={[styles.laser, { transform: [{ translateY: laserY }] }]}
+                />
+                <View style={styles.scanGlow} pointerEvents="none" />
+              </>
             ) : null}
           </View>
-          <Text style={[typography.bodySm, styles.scanningLabel]}>
-            {t.scanning}
-          </Text>
+          <View style={styles.scanCopy}>
+            <View style={styles.alignPill}>
+              <View style={styles.alignDot} />
+              <Text style={[typography.bodySm, styles.alignLabel]}>
+                AUTO-ALIGN
+              </Text>
+            </View>
+            <Text
+              testID="receipt-scan-state"
+              style={[typography.bodySm, styles.scanningLabel]}
+            >
+              {t.scanning}
+            </Text>
+          </View>
         </View>
       ) : null}
       <Text style={[typography.bodySm, styles.note]}>{t.retentionNote}</Text>
@@ -349,6 +369,8 @@ export function ReceiptAttachmentSection({
 
 const THUMB = 72;
 const LASER_HEIGHT = 2;
+/** Gold viewfinder corner length (Stitch: 7px-scale corners). */
+const CORNER = 14;
 
 const styles = StyleSheet.create({
   row: {
@@ -368,6 +390,46 @@ const styles = StyleSheet.create({
   image: {
     width: THUMB,
     height: THUMB,
+  },
+  cornerTl: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+    width: CORNER,
+    height: CORNER,
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderColor: colors.accent,
+  },
+  cornerTr: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: CORNER,
+    height: CORNER,
+    borderTopWidth: 2,
+    borderRightWidth: 2,
+    borderColor: colors.accent,
+  },
+  cornerBl: {
+    position: 'absolute',
+    bottom: 4,
+    left: 4,
+    width: CORNER,
+    height: CORNER,
+    borderBottomWidth: 2,
+    borderLeftWidth: 2,
+    borderColor: colors.accent,
+  },
+  cornerBr: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    width: CORNER,
+    height: CORNER,
+    borderBottomWidth: 2,
+    borderRightWidth: 2,
+    borderColor: colors.accent,
   },
   remove: {
     position: 'absolute',
@@ -407,17 +469,55 @@ const styles = StyleSheet.create({
     height: THUMB,
     borderRadius: radius.md,
     overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.accent,
+    shadowColor: colors.accent,
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 0 },
   },
   laser: {
     position: 'absolute',
     left: 0,
     right: 0,
     height: LASER_HEIGHT,
-    backgroundColor: colors.accent,
     shadowColor: colors.accent,
     shadowOpacity: 0.8,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 0 },
+  },
+  scanGlow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: colors.accentAmbience,
+  },
+  scanCopy: {
+    flex: 1,
+    gap: spacing.xs / 2,
+  },
+  alignPill: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs / 2,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs / 2,
+    borderRadius: radius.full,
+    backgroundColor: colors.surfaceCard,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  alignDot: {
+    width: 6,
+    height: 6,
+    borderRadius: radius.full,
+    backgroundColor: colors.gain,
+  },
+  alignLabel: {
+    color: colors.textPrimary,
   },
   scanningLabel: {
     color: colors.textSecondary,

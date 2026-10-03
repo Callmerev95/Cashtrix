@@ -12,6 +12,8 @@ export const en: Dictionary = {
     save: 'Save',
     delete: 'Delete',
     retry: 'Please try again shortly.',
+    verified: 'Verified',
+    aiAutoTitle: 'Auto-filled via AI Assistant',
   },
   auth: {
     validation: {
@@ -756,6 +758,8 @@ export const en: Dictionary = {
     mixedKind: "Don't mix {expense} and {income} — one kind at a time",
     mic: 'Voice entry',
     micA11y: 'Open voice panel',
+    phaseRecord: 'Recording',
+    phaseProcess: 'Processing',
     inputPlaceholder: 'Say it: soto mie 25rb pakai gopay',
     inputHint: 'Tap the keyboard mic to speak, or type directly.',
     close: 'Close',

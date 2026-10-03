@@ -4,11 +4,14 @@ import {
   Animated,
   Easing,
   StyleSheet,
+  Text,
+  View,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
 
-import { colors, radius, spacing } from '@/theme';
+import { colors, radius, spacing, typography } from '@/theme';
+import { dictionaryFor, useLanguage } from '@/i18n';
 
 import { useReducedMotion } from './skeleton';
 
@@ -31,14 +34,23 @@ export function AiPrefillBanner({
   testID = 'ai-prefill-banner',
   delay = 0,
   style,
+  header,
   children,
 }: {
   testID?: string;
   /** Stagger offset in ms — pass `index * AI_BANNER_STAGGER_MS` for rows. */
   delay?: number;
   style?: StyleProp<ViewStyle>;
+  /**
+   * Override the header line. Defaults to the `✨ {aiAutoTitle}` +
+   * `Terverifikasi` pill (Stitch landing copy, via the dictionary).
+   * Pass `null` to render a bare banner (split rows already carry it).
+   */
+  header?: ReactNode | null;
   children: ReactNode;
 }) {
+  const language = useLanguage();
+  const common = dictionaryFor(language).common;
   const reduceMotion = useReducedMotion();
   const [opacity] = useState(
     () => new Animated.Value(reduceMotion ? 1 : 0),
@@ -73,6 +85,19 @@ export function AiPrefillBanner({
       testID={testID}
       style={[styles.banner, { opacity, transform: [{ translateY }] }, style]}
     >
+      {header === null ? null : (
+        <View testID={`${testID}-header`} style={styles.header}>
+          <Text style={[typography.bodySm, styles.title]}>
+            ✨ {header ?? common.aiAutoTitle}
+          </Text>
+          <View style={styles.verified}>
+            <View style={styles.verifiedDot} />
+            <Text style={[typography.bodySm, styles.verifiedLabel]}>
+              {common.verified}
+            </Text>
+          </View>
+        </View>
+      )}
       {children}
     </Animated.View>
   );
@@ -82,9 +107,38 @@ const styles = StyleSheet.create({
   banner: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+    gap: spacing.xs,
     borderRadius: radius.lg,
     backgroundColor: colors.surfaceCard,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  title: {
+    flex: 1,
+    color: colors.accent,
+  },
+  verified: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs / 2,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs / 2,
+    borderRadius: radius.full,
+    backgroundColor: colors.surfaceElevated,
+  },
+  verifiedDot: {
+    width: 6,
+    height: 6,
+    borderRadius: radius.full,
+    backgroundColor: colors.gain,
+  },
+  verifiedLabel: {
+    color: colors.textSecondary,
   },
 });

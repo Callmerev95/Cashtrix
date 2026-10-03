@@ -12,6 +12,8 @@ export const id = {
     save: 'Simpan',
     delete: 'Hapus',
     retry: 'Coba lagi sebentar lagi.',
+    verified: 'Terverifikasi',
+    aiAutoTitle: 'Terisi otomatis via Asisten AI',
   },
   auth: {
     validation: {
@@ -760,6 +762,8 @@ export const id = {
     mixedKind: 'Jangan campur {expense} dan {income} — sebutkan sejenis saja',
     mic: 'Catat suara',
     micA11y: 'Buka panel suara',
+    phaseRecord: 'Merekam',
+    phaseProcess: 'Mengolah',
     inputPlaceholder: 'Ucapkan: soto mie 25rb pakai gopay',
     inputHint: 'Ketuk mic di keyboard untuk bicara, atau ketik langsung.',
     close: 'Tutup',

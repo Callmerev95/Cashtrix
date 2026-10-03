@@ -1,7 +1,7 @@
 /**
  * Waveform + prefill-haptic tests — the Jest seam for B1 item (d).
  *
- * Locked: the static View-only waveform appears while the AI prefill is
+ * Locked: the View-only waveform appears while the AI prefill is
  * in flight (and never before the first keystroke), and exactly one
  * `tapPrefill` fires when the AI prefill actually lands. The sheet's AI
  * API is mocked with a deferred promise so the loading window is
