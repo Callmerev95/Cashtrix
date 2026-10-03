@@ -3,7 +3,7 @@
 **Name:** Obsidian Luxury (Minimalist Obsidian)
 **Source:** Stitch project `Cashtrix` (`projects/16569655893689994`), design system asset `assets/4b61549b44c64e5f9f2b2ef2437c18dd` v1
 **Mode:** Dark only · Mobile-first (390px canvas)
-**Style:** Minimalism with Luminous Glass Accents, discreet, private-wealth aesthetic. Deep obsidian depths, tactile card surfaces, subtle champagne-gold glows, disciplined alignment. No consumer fintech gimmicks; red is reserved for expense amounts only (never destructive actions).
+**Style:** Minimalism with Luminous Glass Accents, discreet, private-wealth aesthetic. Deep obsidian depths, tactile card surfaces, subtle champagne-gold glows, disciplined alignment. No consumer fintech gimmicks; expense amounts render red (never muted), destructive actions use the separate `error` token.
 
 ---
 
@@ -191,6 +191,11 @@ Depth = tonal layering + hairline edges + diffuse gold glow (never heavy drop sh
 - Active: `#2C2C2E` (or gold fill on filters) + glow `0 2px 12px rgba(212,175,55,0.28)`.
 - Filter chips active: gold border + gold text.
 
+### Voice record (AI6) + waveform placeholder (B1)
+- **Record button:** full-width L2 row in the voice panel (`fiber-manual-record` idle / `stop` active, gold icon + label, gold fill while recording). Live second counter while recording; hard auto-stop at 15s. Status line below cycles uploading → transcribing → prefill/failed — honest states only, never a fake percentage.
+- **Waveform placeholder:** 18 static gold bars (deterministic heights, 36px row, decorative/hidden from accessibility). Shown only while the AI call is in flight, next to the working copy. Static by honesty rule: no audio-level stream exists on the dictation path, so a "live" meter would lie; the AI6 record path owns no meter either.
+- **Haptics (B1, tactile, never visual):** one best-effort buzz each — save (success), undo snackbar, threshold batch (warning), record start (heavy) / stop (light), AI prefill landing (soft tick, only when it applies), lock/MFA toggle (light). Never throws, never blocks, never a substitute for visible proof (snackbar/banner stays).
+
 ### Progress
 - Track: `#2C2C2E`, rounded caps.
 - Fill: gradient `#D4AF37` → `#F3E5AB` with `0 0 12px rgba(242,202,80,0.5)` glow; ring variant adds `rgba(212,175,55,0.25)` blur ring.
@@ -267,8 +272,12 @@ like everything else). No other decorative animation.
 - **Voice pulse:** one concentric ring around the mic pill while the AI call
   is in flight, scale `1 → 1.8` + opacity `0.6 → 0`, 1400ms loop. Reason:
   one final AI result is loading, replacing a generic spinner.
+- **Waveform placeholder (B1):** static 18-bar gold row beside the working
+  copy (see §5). No animation — see the honesty rule there.
+- **Record take (AI6):** the record button itself is the indicator (gold
+  fill + live second counter); no extra animation is added on top.
 - **Scan laser:** one 2px gold bar sweeping the receipt thumbnail top to
   bottom, ping-pong 1300ms per leg. Reason: marks the OCR read position,
   replacing a generic skeleton.
-- Both are `Animated` only (OTA-safe, no native module), dead under
+- All are `Animated` only (OTA-safe, no native module), dead under
   reduce-motion like every other animation.

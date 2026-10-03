@@ -1,6 +1,6 @@
 # PRD: Cashtrix
 
-**Versi:** 1.0 · **Status:** Approved · **Tanggal:** 2026-09-17 · **Revisi terakhir:** 2026-09-19 (R6–R8, cakupan & bentuk v1.1)
+**Versi:** 1.0 · **Status:** Approved · **Tanggal:** 2026-09-17 · **Revisi terakhir:** 2026-10-04 (R13, AI Fase 1 + batch haptics B1)
 **Dokumen pendamping:** `design.md` (Obsidian Luxury / Minimalist Obsidian design system), sumber kebenaran visual.
 
 ---
@@ -79,6 +79,7 @@ Struktur navigasi = **floating bottom bar** (per `design.md` §5 Navigation), 4 
 - Login gagal (email/password salah) → pesan generik "Email atau password salah" (tidak membocorkan mana yang salah).
 - Session persisten via refresh token; app re-open → langsung ke Dashboard tanpa login ulang.
 - Sign out (Profile) → hapus session lokal + seluruh storage lokal aplikasi, kembali ke Login (revisi R2; purge cache persisten menyusul saat cache `expo-sqlite` lahir di T5).
+- **Revisi R13 (V0/C2/B4/AU1/AU2):** session tanpa `email_confirmed_at` ditahan di layar "Cek email" (deep link `cashtrix://check-email` menukar PKCE/hash sendiri); reset password via `cashtrix://reset-password`; login Google (OAuth, `expo-auth-session`, satu email satu akun, seed pasca-exchange); 2FA TOTP (enroll tanpa QR — secret + link `otpauth://`, challenge saat login, recovery = reset email); app lock device-local (flag lokal, grace 60 dtk, overlay penuh, lock ≠ sign-out); SMTP Resend + template konfirmasi/recovery ID.
 
 #### Epic B: Multi-Wallet
 
@@ -94,6 +95,7 @@ Struktur navigasi = **floating bottom bar** (per `design.md` §5 Navigation), 4 
 - Saldo total Dashboard = Σ saldo semua wallet, dirender `currency-display` JetBrains Mono.
 - **Transfer antar-wallet bukan bagian MVP** (lihat Non-Goals); skema `transactions.type` menyediakan enum `transfer` untuk v1.1.
 - Hapus wallet hanya boleh jika memiliki 0 transaksi; jika ada transaksi → UI menawarkan reassign ke wallet lain (bulk update) atau tolak.
+- **Revisi R13 (V2/V4):** Transfer = satu baris `type=transfer` (sumber `wallet_id`, tujuan `counterparty_wallet_id`, tanpa kategori); saldo sumber − / tujuan + / gabungan diam; arsip wallet (`archived_at`, tanpa DDL baru) menyembunyikan dari Dashboard + picker tanpa menghapus riwayat; hapus wallet bertransaksi tetap lewat jalur reassign.
 
 #### Epic C: Transaksi
 
@@ -108,6 +110,7 @@ Struktur navigasi = **floating bottom bar** (per `design.md` §5 Navigation), 4 
 - Entry amount: keyboard numerik kustom; validasi: `0 < amount ≤ 999,999,999,999` (12 digit), maks 2 desimal; bukan NaN/Infinity. Live-format `id-ID` saat mengetik; glyph `Rp` statis warna gold.
 - Kategori: grid ikon (Material Symbols) dari kategori yang aktif **sesuai tipe transaksi**, income hanya melihat kategori income, dst.
 - Tanggal: default *now*, bisa diubah via date picker, maksimal hari ini (tidak boleh future date untuk income/expense).
+- **Revisi R13:** segmen ketiga **Transfer** (grid kategori hilang → pemilih dompet tujuan, sumber dikecualikan); tanggal via grid kalender `View`-only (tanpa modul native), future disabled + guard submit untuk income/expense/**transfer**; undo hapus = snackbar ~10 detik → `restore_transaction` (tanpa recycle bin); layar `/search` (teks + filter jenis, debounce 300ms, mode bulk-edit kategori sejenis) dengan divider hairline antar grup hari; lampiran struk (foto pra-save legal, retensi 30 hari) + OCR prefill; Catat Suara (STT OS + parser aturan + prefill, satu ucapan satu transaksi atau split maks 3 sejenis, Simpan manual wajib) + rekaman audio opsional Fase 2; warna nominal: income `#30D158`, expense `#FF6B62` + glyph `-`, net gold (amandemen #26 dibalik).
 - Catatan (note): opsional, maks 200 karakter, di-trim.
 - Wallet: default = wallet yang dipakai pada transaksi terakhir; bisa diganti.
 - Simpan → optimistic insert + idempotency key (UUID v4 dibuat saat form dibuka; dikirim sebagai header `x-idempotency-key`); retry aman.
@@ -129,6 +132,7 @@ Struktur navigasi = **floating bottom bar** (per `design.md` §5 Navigation), 4 
 - Semua agregasi dihitung di Postgres (view / RPC), **bukan** di-fetch mentah lalu dihitung di client. Target p95 <300ms untuk 10k transaksi.
 - Filter tambahan (opsional di UI): per wallet.
 - Range `ALL` dengan 0 transaksi → empty state (bukan NaN/Infinity).
+- **Revisi R13:** copy layar + body notifikasi ikut bahasa OS (kamus ID/EN, fallback ID); kartu ringkasan bulan lalu di Dashboard (`v_monthly_summary`, tap → Analytics); filter dompet via chips; donut/bar `View`-only (tanpa `react-native-svg`).
 
 #### Epic E: Budget & Alert ("Budget Architecture")
 
@@ -148,6 +152,7 @@ Struktur navigasi = **floating bottom bar** (per `design.md` §5 Navigation), 4 
   - Dedup alert disimpan di tabel `budget_alerts (user_id, month, category_id, threshold, fired_at)`, **kunci dedup per-user**: `unique(user_id, category_id, month, threshold)`. Ini disengaja agar kategori sistem yang dipakai bersama banyak akun tidak saling memblokir baris alert; transaksi edit/hapus yang menurunkan % tidak menghapus alert yang sudah fired, dan tidak double-fire di bulan yang sama untuk user tersebut.
 - Push = **local notification** (expo-notifications), trigger dievaluasi client-side tepat setelah commit transaksi + saat app foreground; body sesuai bahasa OS (ID/EN).
 - Reset bulanan: tidak ada pekerjaan cron, karena `month` adalah dimensi data, budget bulan baru otomatis "kosong" (0 spent). View Analytics/Budget selalu query `month = current_month(tz)`.
+- **Revisi R13:** evaluasi ambang membaca ulang server pasca-commit (save transaksi/budget, catch-up menulis baris, undo-restore; hapus tidak mengevaluasi); inbox notifikasi (`read_at`, grup per bulan, tap = tandai + ke Budgets, bel Dashboard + dot unread); umpan taktil sekali per batch penembusan.
 
 #### Epic F: Profile & Settings
 
@@ -163,23 +168,46 @@ Struktur navigasi = **floating bottom bar** (per `design.md` §5 Navigation), 4 
 - Pengaturan mata uang: pilihan currency disimpan di profil (default `IDR`, tampilan mengikuti `Intl.NumberFormat`), **belum ada konversi** (D5).
 - Ekspor CSV: query semua transaksi user → file CSV (kolom: date, type, category, wallet, amount, currency, note) → share sheet. Generasi via Edge Function agar tidak membebani memori client.
 - Hapus akun: konfirmasi dua langkah (ketik "HAPUS") → Edge Function (service role) menghapus semua baris user + storage avatar; Auth user dihapus. **Tidak reversible**, UI harus menyatakannya eksplisit.
+- **Revisi R13:** kategori sistem tidak bisa diarsip (baris milik bersama) — disembunyikan per-user via `category_mutes`; kustom bisa arsip/hapus (hapus ditolak FK bila berhitori → tawarkan arsip); mata uang = sumur read-only + chips bersimbol (tanpa konversi, tanpa klaim real-time); Profile = kartu per bagian (identitas, mata uang, keamanan berisi lock + 2FA, pengaturan, hapus akun); banner offline + kartu error retry seragam di semua permukaan; i18n ID/EN + dokumen legal ID.
 
-### 2.4 Non-Goals (Tidak dibangun di MVP)
+### 2.4 Non-Goals (per R13 — yang di bawah ini *masih* di luar, sisanya sudah rilis)
 
-- ❌ Sinkronisasi/agregasi bank (open banking), v2; hanya skema yang disiapkan.
-- ❌ Multi-currency dengan konversi kurs, hanya field `currency_code` di skema.
-- ❌ Transfer antar-wallet, v1.1 (enum `transfer` sudah disiapkan).
-- ❌ Recurring/subscription transactions, v1.1.
-- ❌ Offline write queue (outbox) + read cache, v2.0 (revisi R6; sebelumnya direncanakan v1.1). MVP: tulis butuh koneksi; baca dari cache lokal terakhir.
-- ❌ App lock biometrik (Face ID/PIN), v1.2 (butuh dev-client; lihat R6).
-- ❌ Cari/filter riwayat, bulk edit kategori, CSV import, lokalisasi ID/EN, v1.2.
-- ❌ Shared/household budget, web version, email digest, AI insights.
+- ❌ Sinkronisasi/agregasi bank (open banking); butuh compliance review (antre di payung 2.x).
+- ❌ Multi-currency dengan konversi kurs (OPEN-4: mungkin IDR-saja permanen).
+- ❌ Shared/household budget, web version, email digest.
+- ❌ CSV import (drop 2026-09-24: nilai rendah vs biaya; kembali hanya bila user riil meminta).
+- ❌ Server push notification (masih local-only; berguna bersama recurring + outbox).
+- ❌ Smart insight/AI di luar prefill Fase 1 (tanpa auto-kategori terkunci, tanpa auto-save).
+- ❌ Widget iOS + saldo/widget berdata (widget = tombol saja, Android-only).
+
+Sudah rilis dan keluar dari daftar ini: transfer (V2), recurring (V3), undo + arsip (V4), kalender (V5), auth gate + reset + legal (V0), EAS + Sentry (V1), ringkasan/A3–A6, lock (B4), i18n (C6), 2FA (C2), rate-limit (D5), pintasan + scan (S1–S3), voice VC1–VC3 + split + widget/fast-lane (WG1–WG3), outbox masih antre (OB1–OB3), AI Fase 1 (AI1–AI6), haptics + polish (B1).
 
 ---
 
 ## 3. AI System Requirements
 
-**Tidak berlaku untuk MVP.** Cashtrix MVP tidak memakai fitur AI/ML. Bagian ini direservasi kosong dengan sengaja; kategori "smart insight" (v2+) akan mendokumentasikan evaluasinya sendiri.
+**Fase 1 rilis (R13, AI1–AI6 #90–#95 + AI5 legal).** AI hanya mengusulkan,
+tidak pernah menyimpan: satu panggilan server per foto/ucapan/teks,
+hasilnya selalu prefill yang wajib diketuk Simpan manual oleh user
+(auto-save ditolak permanen, ADR-0009/0010).
+
+| Jalur | Fungsi | Kontrak |
+|---|---|---|
+| Teks dikte → JSON | Edge `parse-voice` (JWT → rate-limit 5/mnt → seam kuota 402 → konteks server → Gemini) | `{amount, kind, walletHint, categoryHint, note}` / `{ok:false}` / `{error:'quota_exceeded'}` (402) |
+| Foto struk → JSON | Edge `scan-receipt` Gemini multimodal 1-call (`storage_path`-only, tanpa base64 klien, tanpa file temp) | `{amount, occurred_on, merchant, category_suggestion, confidence}` / `{ok:false}`; `confidence` fixed jujur `0.42` (model tak mengembalikan skor); `occurred_on` diabaikan form (momen scan pemilik urutan riwayat) |
+| Audio → prefill | Edge `transcribe-voice` (rekaman sementara → transkrip sementara → validasi reuse AI1 → hapus objek instan) | prefill langsung, tanpa transkrip perantara di klien |
+| Golden set | 40 kasus (20 suara + 20 struk), gate 36/40 + liar nol, tanpa secret di Jest | `__tests__/ai-golden.test.ts` |
+
+Keputusan terkunci: model primer `gemini-3.5-flash-lite` + fallback
+`gemini-3.8-flash` (uji empiris; `temperature:0` + `responseSchema`
+subset OpenAPI 3.0); konteks disuntik server dari `user_id` (timezone,
+kategori visible, dompet aktif) — klien hanya kirim teks maks 500 char
+atau `storage_path`; teks/nominal tidak pernah masuk log (hanya kode);
+observability boolean-only (`ai_prefill_ok`); consent kamera dan mikrofon
+terpisah; STT ketikan milik OS, rekam audio milik `expo-audio` (cap
+15 detik / <1MB, bucket `voice_drafts` objek-only retensi-nol, tanpa
+tabel/cron). Disiplin Rp 0: flood verify memakai payload pra-model
+sehingga bukti rate-limit tanpa bakar kuota Gemini.
 
 ---
 
@@ -191,24 +219,32 @@ Struktur navigasi = **floating bottom bar** (per `design.md` §5 Navigation), 4 
 ┌─────────────────────────────┐
 │  Expo App (iOS/Android)     │
 │  - Expo Router (tabs)       │
-│  - TanStack Query (cache)   │
+│  - Context providers +      │
+│    refresh eksplisit        │
+│    (tanpa TanStack — R11)   │
 │  - expo-notifications       │
-│  - expo-sqlite (read cache) │
+│  - expo-audio (rekam suara) │
+│  - expo-haptics (taktil)    │
+│  - Widget Android           │
+│    (plugin hand-rolled)     │
 └──────────┬──────────────────┘
            │ HTTPS / supabase-js
            ▼
 ┌─────────────────────────────┐     ┌────────────────────┐
 │  Supabase                   │     │  Edge Functions    │
-│  - Auth (email+password)    │     │  - seed-user       │
-│  - Postgres + RLS           │◄────│  - export-csv      │
-│  - Views/RPC (agregasi)     │     │  - delete-account  │
-│  - Storage (avatar)         │     └────────────────────┘
-└─────────────────────────────┘
+│  - Auth (email+password,    │     │  - seed-user       │
+│    Google OAuth, MFA TOTP)  │     │  - export-csv      │
+│  - Postgres + RLS           │◄────│  - delete-account  │
+│  - Views/RPC (agregasi)     │     │  - scan-receipt    │
+│  - Storage (avatar, struk,  │     │  - parse-voice     │
+│    rekaman suara sementara) │     │  - transcribe-voice│
+└─────────────────────────────┘     └────────────────────┘
 ```
 
-- **State:** TanStack Query sebagai single source untuk data remote; `expo-sqlite` hanya read-through cache untuk list & dashboard (agar app terasa instan saat re-open).
+- **State:** React context per fitur sebagai single source untuk data remote; refresh eksplisit pasca-tulis (TanStack ditolak permanen R11 — "banyak user" urusan server). Tanpa Realtime (satu user–satu perangkat).
 - **Tidak ada state saldo di client yang persisten**, saldo selalu berasal dari SQL view saat fetch; cache hanya untuk render awal.
 - **Agregasi** (analytics, budget spent, saldo) semuanya di Postgres via view/RPC. Client tidak pernah menghitung agregat finansial.
+- **Umpan taktil** (B1, ADR-0016): getar best-effort never-throw di save/undo/ambang/rekam/prefill/toggle; bukan suara, bukan animasi.
 
 ### 4.2 Data Model (Postgres)
 
@@ -274,8 +310,48 @@ budget_alerts (
   month date not null,
   threshold text not null check (threshold in ('warning_80','exceeded_100')),
   fired_at timestamptz not null default now(),
+  read_at timestamptz,             -- null = belum dibaca (inbox A5)
   unique (user_id, category_id, month, threshold)  -- dedup per-user (revisi §0/§6)
 )
+
+-- v1.1 (V2/V3): transfer satu baris + recurring catch-up
+-- transactions.counterparty_wallet_id fk komposit (counterparty_wallet_id, user_id)
+--   RESTRICT; category_id nullable iff type=transfer; check transfer-shape +
+--   wallets-differ; unique(id, user_id) sebagai target FK komposit;
+--   trigger tolak future-date (toleransi 1 menit).
+-- transactions.recurring_rule_id fk RESTRICT + occurred_on date;
+--   unique (recurring_rule_id, occurred_on) termasuk baris soft-delete.
+recurring_rules (
+  id, user_id fk,
+  kind text not null check (kind in ('income','expense')),  -- bukan transfer
+  wallet_id fk komposit, category_id fk,
+  amount numeric(18,2) not null check (amount > 0),
+  note text, due_day int null, due_last bool not null default false,
+  starts_on date not null, ends_on date null,
+  paused_at timestamptz,               -- jeda: catch-up berhenti, histori tetap
+  check (due_last = true and due_day is null)
+     or (due_last = false and due_day between 1 and 28)
+)
+-- Maks 20 rule aktif per user (trigger; paused tidak dihitung). Arsip wallet
+-- → rule otomatis jeda. Hapus rule men-SET NULL kaitan occurrence via trigger
+-- (FK RESTRICT + BEFORE DELETE; histori tetap, occurred_on bertahan).
+
+-- v1.2: mute kategori sistem per-user (T8) + lampiran struk (S2) + rate-limit (D5)
+category_mutes (user_id fk, category_id fk categories, unique keduanya)
+transaction_receipts (
+  id, user_id fk, transaction_id fk komposit nullable,  -- null = foto pra-save
+  storage_path text not null, created_at, expires_at   -- retensi 30 hari
+)
+function_rate_limits (
+  function_name text, bucket_key text, window_start timestamptz, count int,
+  primary key ketiganya
+)
+-- RPC check_function_rate_limit(fn, key, limit, 60s) → fixed window atomik;
+-- EXECUTE hanya service_role; bucket = user_id; tolak = 429 + Retry-After.
+
+-- Bucket Storage privat: avatars/{userId}/ (2MB), receipts/{userId}/ (2MB,
+-- retensi 30 hari), voice_drafts/{userId}/ (cap ~1MB, objek-only TANPA tabel,
+-- dihapus server instan pasca-transkrip = retensi nol, AI6).
 ```
 
 **View wajib (agregasi server-side):**
@@ -298,6 +374,10 @@ budget_alerts (
 | Supabase Postgres | Semua data domain | RLS aktif di semua tabel |
 | Supabase Storage | Avatar | Bucket privat, path `avatars/{user_id}` |
 | Supabase Edge Functions | seed-user, export-csv, delete-account | Service role, dipanggil dengan JWT user |
+| Supabase Edge Functions (AI) | scan-receipt, parse-voice, transcribe-voice | JWT dulu → rate-limit per-user → konteks server → Gemini; gagal = prefill kosong, tanpa tulis transaksi |
+| Resend SMTP | Email konfirmasi + recovery | `smtp.resend.com:587`, From `noreply@cashtrix.my.id`; template ID di `supabase/templates/` |
+| Google OAuth | Login/register sekali ketuk | Satu email satu akun; Apple = follow-up |
+| Gemini | Prefill saran (teks, gambar, audio) | Prosesor temporal: tanpa simpan prompt/respons; payung kuota di §3 |
 | expo-notifications | Local push budget alert | Tidak butuh server push di MVP |
 | Sentry (atau setara) | Crash + performance | Wajib sebelum rilis |
 | Analytics event | KPI §1 | Event minimal: `tx_created`, `budget_threshold_reached`, `screen_view` |
@@ -350,8 +430,10 @@ bukti kondisi kode hidup di **`docs/roadmap.md`**. Tabel di bawah ringkasannya.
 |---|---|---|
 | **MVP (v1.0)** | Epic A–F persis seperti §2.3; TestFlight/internal distribution → Play Store + App Store | Semua AC terpenuhi + KPI instrumentasi hidup |
 | **v1.1** | **Dibekukan 2026-09-19** (revisi R6): jalur distribusi + instrumentasi crash (EAS + Sentry), reset password, konfirmasi email manual, halaman privasi/ToS, transfer antar-wallet, recurring transactions, kalender penuh, undo hapus, arsip wallet | Tidak ada regresi KPI stabilitas; crash-free terukur; lolos review store |
-| **v1.2** | Cari/filter riwayat, bulk edit kategori, inbox notifikasi, ringkasan bulan lalu, biometric app lock, CSV import, lokalisasi ID/EN, 2FA, E2E di CI | — |
+| **v1.2** | ✅ rilis `1.2.0` (RLS #58): A6 + A3 + A4 + A5 + D4, lalu B4 + C6 + C2 + D5 + D3 (riset: tetap manual), skeleton/motion, S1 pintasan + S2 lampiran + S3 OCR mock-first, VC1–VC3 Catat Suara, SMTP Resend + template ID + OAuth Google (AU1/AU2) | — |
 | **v2.0** | ✅ **rilis 2026-09-29** (R12, tag `v2.0.0`): widget + fast-lane (WG1–WG3) + polish batch + fix opsi dompet; lalu outbox + read cache (OB1–OB3); bank sync, multi-currency, smart insight menyusul di payung 2.x | Gate hijau per rilis (pola Q10); widget tanpa label AI; antrean selalu eksplisit; compliance review selesai sebelum bank sync |
+| **AI Fase 1 + B1** | ✅ R13 (2026-10-03): AI1 Edge `parse-voice` + AI2 golden set 40 + AI3 `scan-receipt` Gemini 1-call + AI4 wiring form + AI5 legal v2.0.0 + AI6 audio Fase 2 (`transcribe-voice`, `expo-audio`) + B1 haptics (`expo-haptics`, satu rebuild) + waveform + Screen pin; preview build `0c8b2fc2` FINISHED | Prefill-only; disiplin Rp 0; device re-gate Redmi |
+| **Berikutnya** | 2.1.0 Analytics Overhaul (svg yang ditunda B1) → OB1–OB3 outbox + read cache | Spec + grill per rilis seperti v1.1 |
 
 ### 5.2 Technical Risks
 
@@ -381,6 +463,8 @@ Pertanyaan baru yang muncul selama development wajib ditambahkan ke sini dengan 
 Transfer / Recurring / V0 auth-legal tertutup di R7–R8. Tidak ada OPEN yang menghambat spec v1.1. OPEN-4 parkir dan tidak menghambat WG/OB.
 
 Transfer / Recurring / V0 auth-legal tertutup di R7–R8. Tidak ada OPEN yang menghambat spec v1.1.
+
+- **R13, AI Fase 1 + batch haptics B1 (2026-10-03, #90–#95 + ADR-0015/0016, PR #96–#102, build `0c8b2fc2`).** AI1 `parse-voice` (lite primer + 3.8 fallback, validator strict) → AI2 golden set 40 (gate 36/40 + liar nol) → AI3 `scan-receipt` Gemini 1-call (confidence fixed jujur 0.42, `occurred_on` diabaikan form) → AI4 wiring (`VoiceSheet` AI-first + laser scan + gap-fill render-safe, KPI `ai_prefill_ok`) → AI5 legal v2.0.0 + consent suara terpisah + `verify-legal.mjs` → AI6 audio Fase 2 (`expo-audio`, bucket `voice_drafts` objek-only retensi-nol, `transcribe-voice`, cap 15dtk/<1MB, consent rekam terpisah) + B1 haptics (`expo-haptics`, 6 tap best-effort, satu rebuild preview, waveform placeholder + Screen pin search/notifications/voice). Keputusan terkunci susulan: tanpa gambar QR (ganti link `otpauth://` + secret selectable — `react-native-svg` = rebuild); STT tetap milik OS (tanpa dialog recognizer di app); widget iOS tunda; `2.1.0` = Analytics Overhaul (svg). Disiplin Rp 0 mengikat semua verify AI (flood pra-model).
 
 ### 6.1 Revisi tercatat (resolved)
 

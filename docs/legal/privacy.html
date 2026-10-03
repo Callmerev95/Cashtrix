@@ -44,9 +44,21 @@
     category hint for receipts). Processing is temporary: nothing is saved
     until you press Save yourself, no temporary files are created, and server
     logs record codes only, never text or amounts. Speech itself stays with
-    your OS (keyboard microphone or typed text); no audio is recorded or
-    uploaded by the app. The confidence value shown is a fixed honest marker
-    (0.42), not a measured accuracy score.</li>
+    your OS     (keyboard microphone or typed text); no audio is recorded or
+    uploaded by the app except the voice recording you explicitly choose
+    to make (next item). The confidence value shown is a fixed honest marker
+    (0.42),     not a measured accuracy score. Speech dictated through the OS
+    keyboard or typed by hand stays with your OS. (Audio you choose to
+    record is covered separately below.)</li>
+    <li><strong>AI voice recording (Phase 2):</strong> only if you tap record
+    in voice entry, after a separate explicit microphone consent. The app
+    records at most 15 seconds of audio and uploads it to a private
+    per-user drafts area. The server transcribes it with the
+    <code>transcribe-voice</code> function, validates the result like any
+    other suggestion, then deletes the file immediately: zero retention,
+    no table, the transcript itself is never stored. Server logs record
+    codes only, never audio or amounts. The result only pre-fills the form,
+    and nothing is saved until you press Save yourself.</li>
     <li><strong>Two-factor authentication (optional):</strong> if you turn it
     on, a one-time-code factor is registered with Supabase Auth; recovery is
     the email password reset.</li>
@@ -65,6 +77,8 @@
     form.</li>
     <li>To turn your dictated text into a form suggestion, only to pre-fill
     the form.</li>
+    <li>To transcribe a voice recording you choose to make, only to pre-fill
+    the form.</li>
     <li>To keep your account secure and to send account-related email
     (verification, password reset).</li>
     <li>To fix crashes and improve stability using aggregated diagnostics.</li>
@@ -81,7 +95,9 @@
     <li>Avatar files live in a private bucket, readable only by their owner.
     Receipt photos live in a separate private bucket with the same
     owner-only access, and are deleted automatically 30 days after
-    capture.</li>
+    capture. Voice drafts live in a separate private area with the same
+    owner-only access, and are deleted by the server immediately after
+    transcription (zero retention).</li>
   </ul>
 
   <h2>4. Your rights: export and deletion</h2>
