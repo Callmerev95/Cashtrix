@@ -134,6 +134,20 @@ timezone). Hasil = prefill saja, Simpan manual wajib, tanpa auto-save.
 Gagal model = `{ ok: false }` lalu fallback parser lokal diam-diam.
 Dokumen legal v2.0.0 (3 Oktober 2026) + `verify-legal.mjs` jadi syarat gate.
 
+## Addendum Fase 2 audio (AI6, #95 — grill 2026-10-03, gate HIJAU TOTAL)
+
+Rekam di perangkat via `expo-audio` (maks 15 detik, <1MB), upload ke objek
+privat `voice_drafts/{userId}/`, Edge baru `transcribe-voice` mengubah audio
+jadi teks (Gemini 3.5 Flash-Lite multimodal 1-call primer, klausul fallback
+dinamis), teks masuk jalur validasi `parse-voice` yang sama, prefill saja,
+Simpan manual wajib. Objek audio dihapus service-role seketika pasca-transkrip
+(retensi 0 hari, objek-only, tanpa tabel, tanpa cron). Consent rekam terpisah
+(`cashtrix:voice-record-consent-v1`, device-local) + izin mic OS. Tombol rekam
+= evolusi fast-lane `/voice` (bukan rute baru); notifikasi pola WG2
+(`widgetSaveCopy` agregat, boolean-only, tanpa label "AI"). Modul native baru
+= satu rebuild preview mandiri. Kontrak `{audio} → {teks}` beku; `parse-voice`
+tak berubah.
+
 ## Out of Scope
 
 - Widget home-screen, item long-press launcher (antre batch native).

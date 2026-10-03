@@ -829,6 +829,7 @@ export default function AddTransactionScreen() {
                 wallets={wallets}
                 onPrefill={applyVoicePrefill}
                 onSplitSave={submitSplit}
+                userId={session?.user.id}
               />
             </View>
           )}

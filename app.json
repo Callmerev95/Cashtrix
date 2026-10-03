@@ -45,6 +45,12 @@
         {
           "faceIDPermission": "Allow $(PRODUCT_NAME) to unlock the app with Face ID."
         }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Izinkan $(PRODUCT_NAME) merekam suara untuk mencatat transaksi."
+        }
       ]
     ],
     "experiments": {

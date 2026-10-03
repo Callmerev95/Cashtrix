@@ -174,11 +174,25 @@ _Avoid_: auto-kategori, kategori terkunci hasil scan
 
 **Catat Suara**:
 Isi form Add lewat ucapan. STT milik OS mengubah suara jadi teks, parser aturan
-membaca nominalnya, lalu form terisi sebagai prefill. Audio tidak disimpan di
-mana pun. Satu ucapan menghasilkan satu Transaction, atau satu Split (lihat
-entri Split). Ketuk pilih Dompet dan ketuk Simpan tetap dilakukan User secara
-manual.
+membaca nominalnya, lalu form terisi sebagai prefill. Fase 1 tanpa audio
+tersimpan; Fase 2 (ADR-0015) boleh menyimpan Rekaman suara sementara dengan
+retensi nol hari. Satu ucapan menghasilkan satu Transaction, atau satu Split
+(lihat entri Split). Ketuk pilih Dompet dan ketuk Simpan tetap dilakukan User
+secara manual.
 _Avoid_: AI entry, quick entry, voice note, auto-save suara
+
+**Rekaman suara sementara**:
+File audio ucapan milik User di bucket privat `voice_drafts`
+(`{userId}/{uuid}.m4a`), ditulis saat merekam dari fast-lane `/voice` dan
+dihapus server seketika setelah transkrip berhasil (retensi 0 hari, tanpa
+tabel, tanpa cron). Beda dari Lampiran struk yang retensinya 30 hari.
+_Avoid_: voice note tersimpan, rekaman permanen, draft table
+
+**Transkrip sementara**:
+Teks hasil transkripsi server atas Rekaman suara sementara, diteruskan ke
+jalur validasi `parse-voice` yang sama lalu menjadi prefill. Tidak disimpan
+di mana pun; yang tercatat hanya KPI boolean `ai_prefill_ok`.
+_Avoid_: transcript tersimpan, log ucapan mentah
 
 **Saran dompet**:
 Dompet yang terpilih awal di sheet konfirmasi karena namanya disebut di ucapan

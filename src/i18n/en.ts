@@ -771,5 +771,16 @@ export const en: Dictionary = {
       'Dictated text is sent to the server for Gemini reading and only fills this form. Temporary processing, nothing is saved. You still press Save manually.',
     consentPersistNote: 'Applies on this device.',
     consentSend: 'Send',
+    record: 'Record',
+    recordA11y: 'Record an utterance up to 15 seconds',
+    recording: 'Recording… {secs}s',
+    recordUploading: 'Sending the recording…',
+    recordTranscribing: 'Understanding the recording…',
+    recordDenied: 'Microphone permission denied. Manual typing still works.',
+    recordUnavailable: 'Recorder unavailable on this device. Manual typing still works.',
+    recordTooLarge: 'Recording exceeds 1 MB. Try a shorter utterance.',
+    recordConsentTitle: 'Record and send voice?',
+    recordConsentBody:
+      'A recording up to 15 seconds is sent to the server for Gemini reading and only fills this form. Audio is deleted the moment it is read, nothing is saved. You still press Save manually.',
   },
 };
