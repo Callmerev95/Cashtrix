@@ -26,6 +26,7 @@ import {
 
 import { onLocalDataPurge } from '@/supabase';
 import { dictionaryFor, useLanguage } from '@/i18n';
+import { tapUndo } from '@/features/haptics';
 import { linkReceiptsToTransaction } from '@/features/receipts';
 
 import {
@@ -396,6 +397,8 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
             }
           : null,
       );
+      // B1: the snackbar is the delete's proof — buzz only when it opens.
+      if (deleted) void tapUndo();
 
       await refresh();
     },

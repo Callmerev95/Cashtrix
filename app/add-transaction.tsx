@@ -43,6 +43,7 @@ import { GhostButton, Card, LogoMark, PrimaryButton, Screen, SectionHeader } fro
 import { useAnalytics } from '@/features/analytics';
 import { useAuth } from '@/features/auth';
 import { requestPushPermission, sendBudgetAlert, useBudgets } from '@/features/budgets';
+import { tapSave } from '@/features/haptics';
 import { trackEvent, txCreatedEvent } from '@/features/observability';
 import {
   hasScanConsent,
@@ -540,6 +541,10 @@ export default function AddTransactionScreen() {
         receiptIds: receipts.map((attachment) => attachment.id),
       });
 
+      // B1: the commit landed — buzz before the proof (snackbar / widget
+      // notification) is posted. Best-effort, never blocks the save.
+      void tapSave();
+
       // T10 (issue #11): `tx_created` carries only the kind + whether a note
       // exists (boolean, never the text or amount). Best-effort — a failure
       // here must not lose the saved transaction.
@@ -670,6 +675,8 @@ export default function AddTransactionScreen() {
           // Analytics never blocks a save.
         }
       }
+      // B1: all rows committed — one buzz for the whole split (cf. submit()).
+      void tapSave();
 
       // Same post-save pattern as `submit()`: fire-and-forget re-reads plus
       // a fresh-server alert evaluation (V6 — the cache is pre-commit here).

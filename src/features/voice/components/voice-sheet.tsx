@@ -19,6 +19,7 @@ import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 import { pressedFeedback } from '@/components/pressed';
 import { useReducedMotion } from '@/components/skeleton';
+import { tapPrefill, tapRecord } from '@/features/haptics';
 import { aiPrefillEvent, trackEvent } from '@/features/observability';
 
 import {
@@ -42,6 +43,7 @@ import {
   VOICE_RECORD_MAX_MS,
   type AiVoicePrefillPayload,
 } from '../api';
+import { VoiceWaveform } from './voice-waveform';
 
 /** Minimal structural shape of `expo-audio` (lazy-loaded, may be absent). */
 type AudioRecorderShape = {
@@ -158,6 +160,8 @@ export function VoiceSheet({
   }
 
   async function finishRecording() {
+    // B1: the take ended — buzz stop first, everything below is upload.
+    void tapRecord('stop');
     const recorder = recorderRef.current;
     recorderRef.current = null;
     clearRecordTimers();
@@ -255,6 +259,8 @@ export function VoiceSheet({
       setRecordNote('unavailable');
       return;
     }
+    // B1: the take started — buzz start. Best-effort, never blocks.
+    void tapRecord('start');
     recordTimerRef.current = setInterval(() => {
       setRecordSecs((secs) => secs + 1);
     }, 1000);
@@ -311,16 +317,17 @@ export function VoiceSheet({
       .join(' · ');
   }
 
-  function firePrefill(prefill: VoicePrefill) {
+  function firePrefill(prefill: VoicePrefill): boolean {
     const key = [
       prefill.amount,
       prefill.kind,
       prefill.walletId ?? '',
       prefill.categoryHint ?? '',
     ].join('|');
-    if (appliedKey.current === key) return;
+    if (appliedKey.current === key) return false;
     appliedKey.current = key;
     onPrefill(prefill);
+    return true;
   }
 
   function trackAi(ok: boolean) {
@@ -410,13 +417,19 @@ export function VoiceSheet({
       setAiPrefill({ payload: outcome.prefill, walletId });
       setAiNote(null);
       trackAi(true);
-      firePrefill({
-        amount: outcome.prefill.amount,
-        kind: outcome.prefill.kind,
-        walletId,
-        categoryHint: outcome.prefill.categoryHint,
-        note: outcome.prefill.note,
-      });
+      // B1: the AI prefill landed — one soft tick, only when it actually
+      // applies (the guard above swallows keystroke duplicates).
+      if (
+        firePrefill({
+          amount: outcome.prefill.amount,
+          kind: outcome.prefill.kind,
+          walletId,
+          categoryHint: outcome.prefill.categoryHint,
+          note: outcome.prefill.note,
+        })
+      ) {
+        void tapPrefill();
+      }
       return;
     }
     if (outcome.status === 'rate_limited') {
@@ -619,9 +632,12 @@ export function VoiceSheet({
             {t.inputHint}
           </Text>
           {text === '' ? null : aiLoading ? (
-            <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
-              {t.aiWorking}
-            </Text>
+            <>
+              <VoiceWaveform />
+              <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
+                {t.aiWorking}
+              </Text>
+            </>
           ) : aiNote === 'rate_limited' ? (
             <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
               {t.aiRateLimited}
