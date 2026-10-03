@@ -8,6 +8,9 @@
       "type": "remote",
       "url": "https://stitch.googleapis.com/mcp",
       "enabled": true,
+      // Header-only: server OAuth lacks dynamic client registration, so
+      // auto-detect always dies at DCR. The API key header is the auth.
+      "oauth": false,
       "timeout": 15000,
       "headers": {
         "X-Goog-Api-Key": "{env:STITCH_API_KEY}"
