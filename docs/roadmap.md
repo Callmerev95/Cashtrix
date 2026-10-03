@@ -336,3 +336,12 @@ WG3 hijau; prasyarat terpenuhi).
 `expo-audio` (AI6) + `expo-haptics` (B1) dikompilasi sekali (ADR-0016).
 `2.1.0` = Analytics Overhaul (svg yang ditangguhkan dari batch ini).
 Backlog: recent search queries.
+
+Status 2026-10-03: **selesai penuh** — #101 (AI6) + #102 (B1) squash-merge
+ke `main` (`eb2b3b6`, `96796e6`); preview build `0c8b2fc2` FINISHED (app
+2.0.0 vc 1, dari HEAD pasca-#102). Sisa: device re-gate Redmi.
+
+### 6.11 Berikutnya (disetujui pemilik: PRD R13)
+
+Device re-gate build gabungan → 2.1.0 Analytics Overhaul → OB1–OB3
+outbox + read cache. Gate hijau per rilis (pola Q10).

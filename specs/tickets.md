@@ -323,7 +323,7 @@ AI1 #90 ── AI4 #93 ── AI5 #94 ── AI6 #95 (audio Fase 2, objek-only)
 
 ### Frontier
 
-#95 (AI6) implementasi di working tree: ADR-0015 + glosarium (`Rekaman suara
+#95 (AI6) MERGED 2026-10-03 (PR #101; CI static pass): ADR-0015 + glosarium (`Rekaman suara
 sementara`, `Transkrip sementara`) + migrasi bucket `voice_drafts` + Edge
 `transcribe-voice` (prompt/validate/gemini/index + deno.json per-direktori,
 tanpa import lintas-direktori) + `FUNCTION_RATE_LIMITS` 5 + klien
@@ -341,8 +341,8 @@ Live 2026-10-03: **31/31 hijau run kedua** (bucket own upload/list/remove +
 0 residu, 404 asing, 400/405/anon-401/JWT-mati-401, flood Rp0 5x400 + 2x429,
 isolasi B, cleanup 0 residu; run pertama 28+3fail — body `{}` menjawab 404
 bukan 400, kontrak diperbaiki + redeploy). Migrasi applied + fungsi
-ter-deploy. Sisa: rebuild preview (DITUNDA hemat kuota, digabung batch
-native berikut) + happy `--with-model` + device Redmi.
+ter-deploy. Rebuild digabung batch B1 (satu kompilasi, ADR-0016) —
+build `0c8b2fc2` FINISHED (app 2.0.0 vc 1).
 
 ### Batch B1 (satu rebuild: AI6 audio + haptics)
 
@@ -358,7 +358,15 @@ sqlite OB1. Backlog: recent search queries.
 |---|---|---|---|
 | B1, Batch haptics + polish (satu rebuild) | — | #95 | `expo-haptics` + Stack.Screen (c) + waveform + haptic-prefill (d); ADR-0016; rebuild tunggal dengan AI6 |
 
-Frontier: B1 terbuka; eksekusi sesi baru (konteks penuh).
+Frontier: **AI + B1 selesai penuh** — B1 MERGED 2026-10-03 (PR #102; CI static
+pass): `expo-haptics@~57.0.3` + `src/features/haptics/` (6 tap best-effort) +
+wiring save/undo/threshold/record/prefill/toggle + Screen pin
+search/notifications/voice + `VoiceWaveform` + haptic-prefill +
+`tapRecord` di record AI6 (mendarat saat rebase pasca-#101). Gate
+pasca-rebase: lint + typecheck + Jest 807/807 + kontrak 111/10/3 + export
+hijau; branch dihapus; preview build `0c8b2fc2` FINISHED (app 2.0.0 vc 1).
+Sisa: device re-gate Redmi. Berikutnya: 2.1.0 Analytics Overhaul, lalu
+OB1–OB3.
 
 ```
 AI1 #90 ── AI2 #91 (kontrak beku dulu, baru benteng drift)

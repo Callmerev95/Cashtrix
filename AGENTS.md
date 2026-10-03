@@ -439,3 +439,21 @@ Single-context layout — one `CONTEXT.md` + `docs/adr/` at the repo root. See `
 - Gate: `scripts/verify-legal.mjs` baru (32 cek: 4 file + keyword + tanpa klaim basi + footer v2.0.0) wiring di CI `static` setelah kontrak testID. Kontrak tetap 111/10/3, tanpa `scan.yaml` (putusan pemilik: jaga stabilitas CI; scan E2E di checklist device manual saja).
 - `store-submit.md` + `release-gate.md` cantum Gemini prosesor temporal; spec voice addendum Fase 1; ADR-0010 koreksi klaim OS; `specs/tickets.md` baris AI5.
 - `delete __tests__/.session-seed.json` sebelum Jest (sama). Tanpa DDL/native baru.
+
+### Audio Fase 2 via expo-audio (AI6 #95, MERGED via PR #101)
+
+- Edge `transcribe-voice` (pola D5/S3: JWT dulu → `enforceRateLimit` 5/mnt/user → quota seam 402 → Gemini audio 1-call → validasi reuse AI1 → hapus objek via service-role **instan**; gagal = `200 {ok:false}`, tanpa simpan transaksi). Bucket privat `voice_drafts/{userId}/` **objek-only**: tanpa tabel, tanpa cron (retensi nol = hapus-seketika, bukan sweep). Cap klien 15 detik (`VOICE_RECORD_MAX_MS`) + <1MB (`uploadVoiceRecording` tolak `voice_too_large`).
+- Klien: `expo-audio@~57.0.5` lazy `require` pola lock/api (null bila absen); consent rekam terpisah `VOICE_RECORD_CONSENT_KEY` (sensor ketiga: kamera vs dikte vs rekam); tombol `voice-record` hanya bila `userId` ada (degrade); prefill langsung tanpa transkrip perantara (transkrip tak pernah transit di klien); evolusi fast-lane `/voice`.
+- Pelajaran kuota/model warisan AI1 berlaku penuh (primer lite + fallback 3.8, `responseSchema` subset 3.0, flood pra-model Rp 0). `verify-ai6.mjs` default tanpa model (flood 5x400 + 2x429) + happy via `--with-model` 1 call; matriks CI setelah `verify-ai-voice`.
+- Live 2026-10-03: 31/31 (kontrak `{}` → 404 bukan 400, diperbaiki + redeploy); migrasi applied + fungsi ter-deploy. Rebuild digabung B1 (satu kompilasi, ADR-0016).
+- `delete __tests__/.session-seed.json` sebelum Jest (sama). Tanpa DDL tabel; satu modul native baru.
+
+### Batch haptics + polish (B1, ADR-0016 — MERGED via PR #102)
+
+- `expo-haptics@~57.0.3` (versi dari `expo/bundledNativeModules.json` SDK 57; install `--legacy-peer-deps`). `src/features/haptics/`: `domain.ts` (pure seam: `recordImpactStyle` start-heavy/stop-light) + `api.ts` (lazy require try/catch, 6 tap — `tapSave/tapUndo/tapThreshold/tapRecord/tapToggle/tapPrefill` — best-effort never-throw, pola lock/api) + barrel.
+- Wiring: save sukses (`submit` + `submitSplit`, satu buzz per split), snackbar Urungkan (hanya bila terbuka), threshold (satu per batch di `evaluateRows`), record start/stop (di `beginRecording`/`finishRecording` AI6 — mendarat saat rebase pasca-#101), prefill AI (hanya bila `firePrefill` benar-benar teraplikasi; `firePrefill` kini return boolean), toggle lock/MFA.
+- Mock: `__tests__/mocks/expo-haptics.js` (resolve semua, pola sentry) + blok `jest.mock` di setup; `haptics.test.ts` (peta tap + reject-bridge) + `haptics-absent.test.ts` (factory throw → resolve sunyi).
+- Item (c): pin `Stack.Screen` search/notifications/voice di `app/_layout.tsx` (tanpa options; parkir ikut AuthGate). Item (d): `VoiceWaveform` (18 bar statis deterministik, dekoratif hidden-a11y, `testID="voice-waveform"` — kontrak statis tak assert total jadi aman) tampil saat AI flight.
+- Gotcha RNTL v13: elemen a11y-hidden dikecualikan dari query default — test memakai `{ includeHiddenElements: true }` di argumen ke-2 (text-match), bukan ke-3 (waitFor).
+- Gate B1: lint + typecheck + Jest 793/793 + kontrak 111/10/3 + export Android; pasca-rebase 807/807 (51 suite, +14 AI6). PR #101/#102 keduanya squash-merge; branch dihapus; preview build `0c8b2fc2` FINISHED (app 2.0.0 vc 1).
+- `delete __tests__/.session-seed.json` sebelum Jest (sama). Tanpa DDL; satu rebuild dengan AI6.

@@ -44,10 +44,20 @@
     atau nominal, merchant, petunjuk kategori untuk struk). Pemrosesan bersifat
     sementara: tidak ada yang tersimpan sebelum Anda menekan Simpan sendiri,
     tidak ada berkas sementara yang dibuat, dan log server hanya mencatat kode,
-    tidak pernah teks atau nominal. Suara itu sendiri tetap di OS Anda (mikrofon
-    keyboard atau ketikan); aplikasi tidak merekam atau mengunggah audio. Nilai
+    tidak pernah teks atau nominal. Suara yang didiktekan lewat keyboard OS
+    atau diketik tangan tetap di OS Anda. (Rekaman audio yang Anda pilih
+    sendiri dibahas di butir berikut.) Nilai
     confidence yang tampil adalah penanda jujur tetap (0.42), bukan skor akurasi
     terukur.</li>
+    <li><strong>Rekaman suara AI (Fase 2):</strong> hanya jika Anda menekan rekam
+    di entri suara, setelah persetujuan mikrofon terpisah yang eksplisit.
+    Aplikasi merekam audio maksimal 15 detik dan mengunggahnya ke area draf
+    privat milik Anda. Server mentranskripsinya lewat fungsi
+    <code>transcribe-voice</code>, memvalidasi hasilnya seperti saran lain,
+    lalu menghapus berkasnya seketika: retensi nol, tanpa tabel, transkripnya
+    sendiri tidak pernah disimpan. Log server hanya mencatat kode, tidak pernah
+    audio atau nominal. Hasilnya hanya mengisi form, dan tidak ada yang
+    tersimpan sebelum Anda menekan Simpan sendiri.</li>
     <li><strong>Autentikasi dua faktor (opsional):</strong> jika Anda
     mengaktifkannya, faktor kode sekali pakai didaftarkan ke Supabase Auth;
     pemulihannya lewat reset kata sandi via email.</li>
@@ -67,6 +77,8 @@
     form.</li>
     <li>Mengubah teks dikte Anda menjadi saran form, hanya untuk mengisi
     form.</li>
+    <li>Mentranskripsikan rekaman suara yang Anda pilih untuk dibuat, hanya
+    untuk mengisi form.</li>
     <li>Menjaga keamanan akun Anda dan mengirim email terkait akun (verifikasi,
     reset kata sandi).</li>
     <li>Memperbaiki crash dan meningkatkan kestabilan melalui diagnostik
@@ -85,7 +97,9 @@
     <li>Berkas avatar berada di bucket privat, hanya dapat dibaca oleh
     pemiliknya. Foto struk berada di bucket privat terpisah dengan akses
     khusus pemilik yang sama, dan otomatis dihapus 30 hari setelah
-    diambil.</li>
+    diambil. Draf suara berada di area privat terpisah dengan akses khusus
+    pemilik yang sama, dan dihapus server seketika setelah transkripsi
+    (retensi nol).</li>
   </ul>
 
   <h2>4. Hak Anda: ekspor dan penghapusan</h2>

@@ -7,28 +7,30 @@ analitik server-side, budget per kategori dengan alert anti-spam, pencarian
 riwayat, dan inbox notifikasi. Satu pengguna, satu perangkat; semua agregasi
 uang dihitung di Postgres, tidak pernah di klien.
 
-> **Status: v2.0.0 rilis.** Isi rilis: widget Android + fast-lane (WG1 parser
-> split, WG2 widget + notifikasi) + polish (kartu Profile, pill Keluar, hero
-> obsidian + eye, 76 ikon, kartu Mata Uang) + fix refresh opsi dompet, di atas
-> fondasi v1.2.0. Sebelumnya: v1.2.0 (tag `v1.2.0`): pintasan deep-link
-> (S1) + foto lampiran struk 30 hari (S2) + OCR server prefill mock-first
-> (S3) di atas fondasi pasca-1.1.0 (A3–A6, B4, C2, C6, D3–D5, skeleton),
-> gerbang RLS #58 hijau penuh (Jest + live + Maestro device 2026-09-27).
-> Peta ticket: [specs/tickets.md](specs/tickets.md).
+> **Status: AI Fase 1 + B1 di `main` (PRD R13).** Di atas v2.0.0: AI server
+> prefill-only (AI1 `parse-voice` + AI2 golden 40 + AI3 `scan-receipt`
+> Gemini + AI4 wiring form + AI5 legal + AI6 rekam audio
+> `transcribe-voice`) + batch haptics B1 (`expo-haptics`, waveform,
+> Screen pin); preview build `0c8b2fc2` FINISHED (app 2.0.0 vc 1).
+> Sebelumnya: v2.0.0 (tag `v2.0.0`): widget Android + fast-lane
+> (WG1 parser split, WG2 widget + notifikasi) + polish (kartu Profile,
+> pill Keluar, hero obsidian + eye, 76 ikon, kartu Mata Uang) + fix
+> refresh opsi dompet, di atas fondasi v1.2.0. Peta ticket:
+> [specs/tickets.md](specs/tickets.md).
 
 **Dokumen perencanaan (mengikat):**
 
 | Dokumen | Isi |
 |---|---|
-| [PRD.md](PRD.md) | Keputusan produk terkunci (D1–D11), KPI, Epic A–F, risiko, revisi R1–R10 |
+| [PRD.md](PRD.md) | Keputusan produk terkunci (D1–D11), KPI, Epic A–F, AI Fase 1 (§3), risiko, revisi R1–R13 |
 | [DESIGN.md](DESIGN.md) | Design system kanonik "Minimalist Obsidian" (sumber kebenaran visual) |
 | [specs/cashtrix-mvp.md](specs/cashtrix-mvp.md) | Spec MVP v1.0 |
 | [specs/cashtrix-v1.1.md](specs/cashtrix-v1.1.md) | Spec v1.1 (V0–V6) |
 | [specs/cashtrix-v1.2.md](specs/cashtrix-v1.2.md) | Spec v1.2 (S1–S3 pintasan + scan, gerbang `1.2.0`) |
 | [specs/cashtrix-voice-capture.md](specs/cashtrix-voice-capture.md) | Spec voice capture / Catat Suara (VC1–VC3, device lolos, tanpa bump versi) |
-| [specs/tickets.md](specs/tickets.md) | Peta ticket: T1–T11, V0–V6, A3–A6, D4, B4, C6, C2/D5/D3, S1–S3 + RLS, VC1–VC3 |
+| [specs/tickets.md](specs/tickets.md) | Peta ticket: T1–T11, V0–V6, A3–A6, D4, B4, C6, C2/D5/D3, S1–S3 + RLS, VC1–VC3, WG1–WG3, OB1–OB3, AU1/AU2, AI1–AI6 + B1 |
 | [docs/roadmap.md](docs/roadmap.md) | Katalog ide + urutan rilis + keputusan OPEN |
-| [docs/adr/](docs/adr/) | ADR-0001..0010 (scope, dev-client, transfer, recurring, legal, lock, i18n, shortcut/scan, voice) |
+| [docs/adr/](docs/adr/) | ADR-0001..0016 (scope, dev-client, transfer, recurring, legal, lock, i18n, shortcut/scan, voice, widget, outbox, SMTP, OAuth, audio Fase 2, batch haptics) |
 | [docs/release-gate.md](docs/release-gate.md) | Gerbang rilis: bukti E2E, KPI, checklist visual, pra-store |
 | [docs/store-submit.md](docs/store-submit.md) | Mekanik submit TestFlight / Play Store |
 | [CONTEXT.md](CONTEXT.md) | Glosarium + konteks domain |
