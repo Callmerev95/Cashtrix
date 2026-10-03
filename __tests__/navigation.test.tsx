@@ -48,6 +48,18 @@ jest.mock('@/features/transactions/api', () => {
     lastUsedWalletId: jest.fn(async () => null),
   };
 });
+// AI4 (issue #93): the sheet is AI-first with an honesty floor (`requestAiVoice`
+// would hit the network with the inert test key. Default stand-in resolves
+// `empty` with no delay (instant local fallback, same visible result as the
+// old sync parser); tests that drive AI override per-test via require.
+jest.mock('@/features/voice/api', () => {
+  const actual = jest.requireActual('@/features/voice/api');
+  return {
+    ...actual,
+    requestAiVoice: jest.fn(async () => ({ status: 'empty' })),
+    aiVoiceDisplayDelay: jest.fn(async () => undefined),
+  };
+});
 // C2: provider reads hit the network with the inert test key, so the Profile
 // screen would sit in its error branch and the 2FA toggle never renders.
 // Canned profile only — every other export stays real.
@@ -501,6 +513,9 @@ describe('voice entry (VC2)', () => {
       'soto mie 25rb pakai gopay',
     );
 
+    // AI4: the sheet is AI-first, so the mock resolves `empty` and the local
+    // rule fallback lands after the honesty floor, not synchronously.
+    await screen.findByText(/25\.000.*GoPay.*Makanan/);
     expect(screen.getByTestId('amount-input').props.value).toBe('25.000');
     expect(
       screen.getByTestId('type-option-expense').props.accessibilityState,
@@ -521,7 +536,7 @@ describe('voice entry (VC2)', () => {
       'nasi padang 30rb dan kopi 12rb',
     );
 
-    expect(screen.getByTestId('voice-split-preview')).toBeTruthy();
+    expect(await screen.findByTestId('voice-split-preview')).toBeTruthy();
     expect(screen.getAllByTestId('voice-split-row')).toHaveLength(2);
     expect(screen.getByTestId('voice-split-save')).toBeTruthy();
     // Nothing lands in the single-transaction fields until Catat.
@@ -537,6 +552,7 @@ describe('voice entry (VC2)', () => {
       screen.getByTestId('voice-input'),
       'nasi padang 30rb dan kopi 12rb',
     );
+    await screen.findByTestId('voice-split-preview');
     fireEvent.press(screen.getAllByTestId('voice-row-remove')[0]);
     fireEvent.press(screen.getByTestId('voice-split-save'));
 
@@ -555,6 +571,7 @@ describe('voice entry (VC2)', () => {
       screen.getByTestId('voice-input'),
       'nasi padang 30rb dan kopi 12rb',
     );
+    await screen.findByTestId('voice-split-preview');
     fireEvent.press(screen.getByTestId('voice-split-save'));
 
     expect(await screen.findByTestId('saved-snackbar')).toBeTruthy();
@@ -577,6 +594,7 @@ describe('voice entry (VC2)', () => {
       screen.getByTestId('voice-input'),
       'nasi padang 30rb dan kopi 12rb',
     );
+    await screen.findByTestId('voice-split-preview');
     fireEvent.press(screen.getByTestId('voice-split-save'));
 
     expect(await screen.findByTestId('saved-snackbar')).toBeTruthy();
@@ -592,9 +610,7 @@ describe('voice entry (VC2)', () => {
       'transfer 50rb ke bca',
     );
 
-    expect(screen.getByTestId('voice-status').props.children).toBe(
-      'Transfer pakai form',
-    );
+    await screen.findByText('Transfer pakai form');
     expect(screen.getByTestId('amount-input').props.value).toBe('');
   });
 
@@ -605,6 +621,7 @@ describe('voice entry (VC2)', () => {
       screen.getByTestId('voice-input'),
       'soto mie 25rb pakai gopay',
     );
+    await screen.findByText(/25\.000.*GoPay.*Makanan/);
     fireEvent.press(screen.getByTestId('voice-save'));
 
     expect(await screen.findByTestId('saved-snackbar')).toBeTruthy();

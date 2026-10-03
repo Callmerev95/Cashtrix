@@ -763,5 +763,8 @@ export const en: Dictionary = {
     removeRow: 'Remove this row',
     splitSavedTitle: '{count} transactions saved',
     splitSavedBody: 'Total {total}',
+    aiWorking: 'Understanding the utterance…',
+    aiRateLimited: 'Voice AI used too often. Try again in a moment.',
+    aiQuota: 'Voice AI quota used up. Manual entry still works.',
   },
 };

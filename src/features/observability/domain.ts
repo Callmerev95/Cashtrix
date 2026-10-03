@@ -21,6 +21,7 @@ export const OBSERVABILITY_EVENT_NAMES = [
   'screen_view',
   'tx_created',
   'budget_threshold_reached',
+  'ai_prefill_ok',
 ] as const;
 
 export type ObservabilityEventName =
@@ -153,6 +154,17 @@ export function txCreatedEvent(input: {
   return {
     name: 'tx_created',
     params: { type: input.type, has_note: input.hasNote },
+  };
+}
+
+/**
+ * `ai_prefill_ok`: AI wiring proof (AI4), whether one AI prefill landed.
+ * Boolean only (PRD §4.4: never text, amount, or hint).
+ */
+export function aiPrefillEvent(input: { ok: boolean }): AnalyticsEvent {
+  return {
+    name: 'ai_prefill_ok',
+    params: { ok: input.ok },
   };
 }
 

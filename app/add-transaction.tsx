@@ -301,21 +301,45 @@ export default function AddTransactionScreen() {
   // before the segment derivation that reads it.)
 
   // Voice prefill (event handler, never an effect — same discipline as the
-  // S3 prefill above): nominal always (that is the point of speaking),
-  // kind as a guess below explicit choices, wallet/category/note as
-  // gap-fills that never clobber what the user already picked or typed.
-  // Refusals never reach here (the sheet only calls back on `ok`), so a
-  // failed parse leaves the form fully usable for manual entry.
+  // S3 prefill above): every field is a gap-fill that never clobbers what
+  // the user already picked or typed. Nominal only when the amount field is
+  // still empty, wallet only when no explicit choice exists, category only
+  // when none is picked (kind-aware: the S3 resolver is expense-only and
+  // stays untouched), note only when empty. `occurred_on` from AI is
+  // discarded permanently (S3 discipline: the form default owns history
+  // order). Refusals never reach here (the sheet only calls back on `ok`),
+  // so a failed parse leaves the form fully usable for manual entry.
+  function resolveAiVoiceCategory(
+    hint: string | null,
+    kind: VoiceTransactionKind,
+    currentCategoryId: string | null,
+  ): string | null {
+    if (currentCategoryId) return currentCategoryId;
+    if (!hint) return null;
+    const lowered = hint.toLowerCase();
+    const hinted = categories.find(
+      (category) =>
+        category.kind === kind &&
+        category.name.toLowerCase().includes(lowered),
+    );
+    return hinted?.id ?? null;
+  }
+
   function applyVoicePrefill(prefill: VoicePrefill) {
-    setAmountRaw(formatAmountInput(String(prefill.amount)));
+    const formatted = formatAmountInput(String(prefill.amount));
+    setAmountRaw((prev) => (prev === '' ? formatted : prev));
     setVoiceType(prefill.kind);
-    if (prefill.walletId) setWalletChoice(prefill.walletId);
-    if (!categoryId && prefill.categoryHint) {
-      const suggested = resolveCategorySuggestion(
+    if (prefill.walletId) {
+      setWalletChoice((prev) => (prev === null ? prefill.walletId : prev));
+    }
+    if (prefill.categoryHint) {
+      const pickedId = categoryId;
+      const suggested = resolveAiVoiceCategory(
         prefill.categoryHint,
-        categories,
+        prefill.kind,
+        pickedId,
       );
-      if (suggested) setCategoryChoice(suggested);
+      if (suggested && suggested !== pickedId) setCategoryChoice(suggested);
     }
     // PRD §4.4: the utterance survives only here, as ordinary user data
     // (like anything typed) — the save path below still sends analytics a
@@ -390,16 +414,32 @@ export default function AddTransactionScreen() {
         const { prefill } = outcome;
         // Prefill is nominal + category (+ merchant→note) only (keputusan
         // pemilik): datetime is NEVER touched, in create or edit — the form
-        // default (scan moment) owns the history order.
-        setAmountRaw(formatAmountInput(String(prefill.amount)));
+        // default (scan moment) owns the history order. Every field is a
+        // gap-fill via functional updates (render-safe): a follow-up photo
+        // can never stomp a manual correction.
+        const formatted = formatAmountInput(String(prefill.amount));
+        setAmountRaw((prev) => (prev === '' ? formatted : prev));
         // Never clobber what the user already typed — prefill fills gaps.
         setNote((prev) => (prev === '' && prefill.merchant ? prefill.merchant : prev));
-        if (!categoryId && prefill.categorySuggestion) {
-          const suggested = resolveCategorySuggestion(
-            prefill.categorySuggestion,
-            categories,
-          );
-          if (suggested) setCategoryChoice(suggested);
+        if (prefill.categorySuggestion) {
+          const pickedId = categories.some(
+            (category) => category.id === categoryId && category.kind === type,
+          )
+            ? categoryId
+            : null;
+          if (!pickedId) {
+            const suggested = resolveCategorySuggestion(
+              prefill.categorySuggestion,
+              categories,
+            );
+            if (suggested) {
+              const match = categories.some(
+                (category) =>
+                  category.id === suggested && category.kind === type,
+              );
+              if (match) setCategoryChoice(suggested);
+            }
+          }
         }
         setScanNote(tr.scanApplied);
         setScanOk(true);
@@ -540,6 +580,24 @@ export default function AddTransactionScreen() {
           // Non-fatal; the next save re-evaluates (dedup-safe).
         }
       })();
+      // AI-first prefill sessions (AI4) and widget saves alike post the same
+      // local notification: the home screen cannot see the Dashboard
+      // snackbar, so a widget save posts "N transaksi, Total RpX" instead.
+      // Permission is asked here (on the first widget save, never on launch,
+      // same rule as the first-budget prompt) and everything is
+      // best-effort: a denial still leaves the committed save + snackbar.
+      if (widgetSource) {
+        try {
+          await requestPushPermission();
+          const copy = widgetSaveCopy(
+            { count: 1, total: formatGrouped(amount.value, language) },
+            language,
+          );
+          await sendBudgetAlert({ title: copy.title, body: copy.body });
+        } catch {
+          // Notification never blocks the save proof.
+        }
+      }
       // A shortcut deep link can land here with an empty history (cold start
       // or a router state reset): a bare `back()` is then a no-op and the
       // form never unmounts, so fall back to replacing at the Dashboard.

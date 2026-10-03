@@ -1,6 +1,7 @@
 export {
   OBSERVABILITY_EVENT_NAMES,
   REDACTED,
+  aiPrefillEvent,
   budgetThresholdEvent,
   containsFinancialData,
   screenNameFromSegments,
