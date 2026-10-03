@@ -28,8 +28,11 @@ export {
   AI_VOICE_MAX_TEXT_LENGTH,
   AI_VOICE_MIN_DISPLAY_MS,
   aiVoiceDisplayDelay,
+  hasVoiceConsent,
   parseAiVoicePayload,
   requestAiVoice,
+  setVoiceConsent,
+  VOICE_CONSENT_KEY,
 } from './api';
 export type { AiVoiceOutcome, AiVoicePrefillPayload } from './api';
 export { VoiceSheet } from './components/voice-sheet';

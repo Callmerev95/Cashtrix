@@ -534,7 +534,7 @@ export const en: Dictionary = {
       scanQuota: 'Scan quota used up. Manual entry still works.',
       consentTitle: 'Send the photo for automatic reading?',
       consentBody:
-        'The receipt photo is sent to be read and only fills this form. Nothing is saved. You still press Save manually.',
+        'The receipt photo is sent to the server for Gemini reading and only fills this form. Temporary processing, nothing is saved. You still press Save manually.',
       consentPersistNote: 'Applies on this device.',
       consentSend: 'Send',
     },
@@ -766,5 +766,10 @@ export const en: Dictionary = {
     aiWorking: 'Understanding the utterance…',
     aiRateLimited: 'Voice AI used too often. Try again in a moment.',
     aiQuota: 'Voice AI quota used up. Manual entry still works.',
+    consentTitle: 'Send text for automatic reading?',
+    consentBody:
+      'Dictated text is sent to the server for Gemini reading and only fills this form. Temporary processing, nothing is saved. You still press Save manually.',
+    consentPersistNote: 'Applies on this device.',
+    consentSend: 'Send',
   },
 };

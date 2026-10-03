@@ -6,6 +6,8 @@
  * `user_id`. Never logs text or amounts (PRD §4.4); KPI is boolean-only
  * (`ai_prefill_ok`) emitted by the caller.
  */
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { supabase } from '@/supabase';
 
 import type { VoiceTransactionKind } from './domain';
@@ -78,6 +80,30 @@ function invokeStatus(error: unknown): number | null {
 export const AI_VOICE_MAX_TEXT_LENGTH = 500;
 
 export const AI_VOICE_MIN_DISPLAY_MS = 900;
+
+/**
+ * Consent-once flag (AI5, issue #94): separate from scan consent because
+ * voice and receipt scan use different device sensors (microphone vs
+ * camera). Same device-local pattern as `SCAN_CONSENT_KEY`: sticks to the
+ * device, not the session, so re-login never re-asks. Only `'1'` counts.
+ */
+export const VOICE_CONSENT_KEY = 'cashtrix:voice-consent-v1';
+
+export async function hasVoiceConsent(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(VOICE_CONSENT_KEY)) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export async function setVoiceConsent(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(VOICE_CONSENT_KEY, '1');
+  } catch {
+    // Best-effort: a failed write just means the next voice use asks again.
+  }
+}
 
 export function aiVoiceDisplayDelay(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, AI_VOICE_MIN_DISPLAY_MS));

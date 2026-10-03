@@ -12,7 +12,7 @@
 </head>
 <body>
   <h1>Kebijakan Privasi | Cashtrix</h1>
-  <p><strong>Tanggal berlaku:</strong> 27 September 2026</p>
+  <p><strong>Tanggal berlaku:</strong> 3 Oktober 2026</p>
 
   <p>Cashtrix ("kami") adalah aplikasi pencatat keuangan pribadi. Kebijakan ini
   menjelaskan data yang dikumpulkan aplikasi Cashtrix, cara data itu digunakan,
@@ -33,8 +33,21 @@
     30 hari setelah diambil. Jika Anda meminta aplikasi membaca struk, foto
     dikirim ke server kami untuk dibaca otomatis hanya setelah persetujuan
     eksplisit Anda; hasilnya hanya mengisi form, dan tidak ada yang tersimpan
-    sebelum Anda menekan Simpan sendiri. Berkas sementara pemrosesan dihapus
-    setelah respons.</li>
+    sebelum Anda menekan Simpan sendiri.</li>
+    <li><strong>Isi-otomatis AI (Fase 1):</strong> jika Anda memakai entri suara
+    atau pindai struk, aplikasi hanya mengirim teks dikte (maks 500 karakter)
+    ke fungsi <code>parse-voice</code>, atau hanya referensi foto tersimpan
+    (<code>storage_path</code>, bukan byte) ke fungsi
+    <code>scan-receipt</code>. Server menambahkan dompet aktif, kategori
+    terlihat, dan zona waktu Anda sebagai konteks, lalu meminta Gemini
+    mengembalikan saran (nominal, jenis, petunjuk dompet dan kategori, catatan;
+    atau nominal, merchant, petunjuk kategori untuk struk). Pemrosesan bersifat
+    sementara: tidak ada yang tersimpan sebelum Anda menekan Simpan sendiri,
+    tidak ada berkas sementara yang dibuat, dan log server hanya mencatat kode,
+    tidak pernah teks atau nominal. Suara itu sendiri tetap di OS Anda (mikrofon
+    keyboard atau ketikan); aplikasi tidak merekam atau mengunggah audio. Nilai
+    confidence yang tampil adalah penanda jujur tetap (0.42), bukan skor akurasi
+    terukur.</li>
     <li><strong>Autentikasi dua faktor (opsional):</strong> jika Anda
     mengaktifkannya, faktor kode sekali pakai didaftarkan ke Supabase Auth;
     pemulihannya lewat reset kata sandi via email.</li>
@@ -51,6 +64,8 @@
   <ul>
     <li>Menyediakan aplikasi: masuk, saldo, riwayat, budget, analitik.</li>
     <li>Membaca struk yang Anda pilih untuk dipindai, hanya untuk mengisi
+    form.</li>
+    <li>Mengubah teks dikte Anda menjadi saran form, hanya untuk mengisi
     form.</li>
     <li>Menjaga keamanan akun Anda dan mengirim email terkait akun (verifikasi,
     reset kata sandi).</li>
@@ -95,6 +110,6 @@
   <p>Pertanyaan tentang kebijakan ini:
   <a href="https://github.com/Callmerev95/Cashtrix">github.com/Callmerev95/Cashtrix</a>.</p>
 
-  <footer>Cashtrix · Kebijakan Privasi v1.2 (Indonesia). Versi bahasa Inggris tersedia di <a href="privacy.html">privacy.html</a>.</footer>
+  <footer>Cashtrix · Kebijakan Privasi v2.0.0 (Indonesia, berlaku 3 Oktober 2026). Versi bahasa Inggris tersedia di <a href="privacy.html">privacy.html</a>.</footer>
 </body>
 </html>

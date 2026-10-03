@@ -36,7 +36,11 @@ for the next native batch with the widget); modal success plus system
 notification (rejected, two new surfaces for the same fact the snackbar
 already reports, and push stays a v2.0 track).
 
-Cost: no new native module. Speech privacy moves to the OS vendors: Data
-Safety states audio is processed by Google/Apple, our logs and Sentry scrub
-amounts and notes as in S3 (PRD 4.4). All copy goes through the central
-dictionary (ADR-0008), ID first.
+Cost: no new native module. Speech input stays with the OS vendors
+(keyboard microphone or typed text); dictated text sent to the
+`parse-voice` Edge Function is processed by Gemini as a temporary
+suggestion (prefill only, no transaction saved, logs carry codes only).
+Receipt photos sent to `scan-receipt` are processed by Gemini the same
+way. Data Safety lists Supabase (storage), Sentry (crash), and Gemini
+(temporary Phase 1 suggestion) as processors. All copy goes through the
+central dictionary (ADR-0008), ID first.
