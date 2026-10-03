@@ -57,8 +57,8 @@ email dukungan `support@cashtrix.my.id` (+ situs opsional). Penghapusan data: in
 | Ikon 1024 (`assets/icon.png`) | ✅ ada | Dipakai store + device |
 | Adaptive icon Android (foreground/background/mono) | ✅ ada | |
 | Splash (`assets/splash-icon.png`) | ✅ ada | |
-| Privacy Policy + Terms (EN, GitHub Pages) | ✅ live 200 | `https://callmerev95.github.io/Cashtrix/privacy.html` dan `.../terms.html`, URL yang sama dibuka in-app |
-| Screenshot HP (min 2 Play; set App Store 6.5"+5.5") | ❌ TODO pemilik | Ambil di HP: Dashboard, Add, Analytics, Budgets, Recurring, tanpa data asli |
+| Privacy Policy + Terms (EN + ID, GitHub Pages) | ✅ live 200 | `https://callmerev95.github.io/Cashtrix/privacy.html` dan `.../terms.html`, URL yang sama dibuka in-app |
+| Screenshot HP (min 2 Play; set App Store 6.5"+5.5") | ✅ diambil (RLS 2026-09-27) | Dashboard, Add, Analytics, Budgets, Recurring, tanpa data asli |
 | Feature graphic Play 1024×500 | ✅ ada (`docs/store/feature-graphic.png`, sumber vektor `feature-graphic.svg`) | Logo + tagline di atas, latar `#0A0A0A` + aksen gold `#D4AF37` (token `DESIGN.md` §1); raster via `qlmanage` + `sips` dari SVG (lihat SVG untuk rebuild) |
 
 ## 5. Data Safety Play (jawaban final, siap salin)
@@ -67,11 +67,14 @@ email dukungan `support@cashtrix.my.id` (+ situs opsional). Penghapusan data: in
 - Kebijakan privasi: URL §4. Penghapusan akun: **ya, in-app**.
 - Data dikumpulkan: email (login), info keuangan yang diketik user
   (transaksi, budget, aturan berulang), foto struk (hanya bila difoto),
-  teks dikte suara (hanya bila dipakai, maks 500 karakter), log crash.
+  teks dikte suara (hanya bila dipakai, maks 500 karakter), rekaman suara
+  (hanya bila menekan rekam, maks 15 detik, dihapus seketika pasca-transkrip,
+  retensi nol), log crash.
 - Dibagikan ke pihak ketiga: **tidak** (Supabase = prosesor penyimpanan,
-  Sentry = prosesor crash, Gemini = prosesor saran temporal Fase 1
-  (teks dikte via `parse-voice`, foto struk via `scan-receipt`;
-  tanpa simpan transaksi, tanpa file temp), bukan bagi-data).
+  Sentry = prosesor crash, Gemini = prosesor saran temporal Fase 1+2
+  (teks dikte via `parse-voice`, foto struk via `scan-receipt`, audio via
+  `transcribe-voice`; tanpa simpan transaksi, tanpa file temp, audio
+  dihapus instan), bukan bagi-data).
 - Iklan / penjualan data: **tidak ada**.
 - Enkripsi transit: **ya** (HTTPS/TLS ke Supabase + Sentry).
 - Target anak: **tidak**.

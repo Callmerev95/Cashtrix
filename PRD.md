@@ -413,8 +413,8 @@ Kode UI **wajib** mengonsumsi token berikut, dilarang hardcode hex di komponen:
 |---|---|---|
 | Unit, domain | Format uang, boundary budget (79.9/80/99.9/100%), boundary bulan tz (31 Des 23:59 WIB), validasi amount, dedup alert | Jest ≥90% coverage di folder domain |
 | Unit, RLS | Matriks akses antar-user, semua tabel | pgTAP / supabase test |
-| Integration | Flow auth→seed→tx→budget→alert (dedup fired) | Testcontainers / Supabase local |
-| E2E happy path | Register → input 3 tx → lihat dashboard & analytics → set budget → trigger alert | Maestro |
+| Integration | Flow auth→seed→tx→budget→alert (dedup fired) | Anon client + Admin API via `scripts/verify-*.mjs` (macOS tanpa Docker; `supabase test db` butuh container) |
+| E2E happy path | Login → input 3 tx → lihat dashboard & analytics → set budget → trigger alert (+ transfer, recurring, undo) | Maestro di device (akun e2e pre-konfirmasi via Admin API; register baru mendarat di Check Email by design) |
 | Visual smoke | Layout vs Stitch (referensi saja) | Manual checklist per rilis |
 
 ---
