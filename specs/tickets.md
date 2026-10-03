@@ -310,6 +310,7 @@ keyboard OS, nol modul native baru, OTA aman. Tanpa DDL baru.
 | AI1, Edge parse-voice teks-ke-JSON | #90 | — | `parse-voice` (JWT → rate-limit 5/mnt → quota seam 402 → konteks server → Gemini lite primer + 3.8-flash fallback → JSON strict); `verify-ai-voice.mjs` + matriks CI; aksi owner = secret `GEMINI_API_KEY` + deploy fungsi |
 | AI2, Golden set 40 kasus + gate 90 persen | #91 | #90 | `__tests__/ai-golden.test.ts` + 2 fixture (20 suara via replay validator + 20 struk via parser murni); gate 36/40 + liar nol; live drift tetap di `verify-ai-voice.mjs` |
 | AI3, scan-receipt Gemini 1-call | #92 | #90 | `scan-receipt` Gemini multimodal (gambar → JSON, `storage_path`-only, konteks expense + timezone server, validator strict, confidence fixed 0.42); `verify-s3.mjs` longgar + flood Rp0 via 404; tanpa DDL/native; aksi owner = deploy fungsi + live `verify-s3` |
+| AI4, Wiring form VoiceSheet + ReceiptAttachment | #93 | #90, #92 | `voice/api.ts` AI-first + `VoiceSheet` loading jujur + pulse ring + fallback lokal + `ReceiptAttachment` laser + gap-fill penuh + `applyVoicePrefill`/`runScanFor` no-overwrite + widget parity + `ai_prefill_ok` boolean-only; tanpa DDL/native |
 
 ```
 AI1 #90 ── AI2 #91 (kontrak beku dulu, baru benteng drift)
@@ -362,3 +363,13 @@ kontrak statis 111/10/3 hijau. Deploy + live 2026-10-03: 39/39 hijau
 Pelajaran: deploy hanya bundel direktori fungsi + `_shared/` —
 import `../parse-voice/*` = BOOT_ERROR 503; konstanta model disalin +
 paritas test. MERGED via PR #98.
+
+#93 (AI4) implementasi di working tree: `voice/api.ts`
+(`requestAiVoice` fail-open + `parseAiVoicePayload` defensif + MIN_DISPLAY
+900ms) + `VoiceSheet` AI-first (loading jujur + pulse ring + fallback lokal
+diam-diam + split lokal bila AI tunggal atas multi-klausa) + laser scan di
+thumb `ReceiptAttachment` + gap-fill penuh render-safe
+(`applyVoicePrefill`/`runScanFor`) + widget parity submit tunggal +
+`ai_prefill_ok` boolean-only. Gate working tree: lint + typecheck + Jest
+784/784 + kontrak statis 111/10/3 hijau. Tanpa DDL/native; live = existing
+`verify-ai-voice.mjs` (disiplin Rp 0).

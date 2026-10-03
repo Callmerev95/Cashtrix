@@ -17,6 +17,8 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
+  Easing,
   Image,
   Modal,
   Pressable,
@@ -28,7 +30,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
-import { Skeleton, SkeletonBlock } from '@/components';
+import { Skeleton, SkeletonBlock, useReducedMotion } from '@/components';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 import { pressedFeedback } from '@/components/pressed';
 
@@ -80,6 +82,33 @@ export function ReceiptAttachmentSection({
 
   const [uploading, setUploading] = useState(false);
   const autoCameraFired = useRef(false);
+  const reduceMotion = useReducedMotion();
+
+  const [laser] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    if (!scanning || reduceMotion) return;
+    const sweep = Animated.sequence([
+      Animated.timing(laser, {
+        toValue: 1,
+        duration: 1300,
+        easing: Easing.inOut(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(laser, {
+        toValue: 0,
+        duration: 1300,
+        easing: Easing.inOut(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]);
+    const loop = Animated.loop(sweep);
+    loop.start();
+    return () => loop.stop();
+  }, [laser, reduceMotion, scanning]);
+  const laserY = laser.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, THUMB - LASER_HEIGHT],
+  });
 
   async function addPhoto(source: 'camera' | 'gallery') {
     onSheetVisibleChange(false);
@@ -232,13 +261,23 @@ export function ReceiptAttachmentSection({
       </View>
       {scanning ? (
         <View testID="receipt-scanning" style={styles.scanning}>
-          <Skeleton>
-            <SkeletonBlock
-              width={THUMB}
-              height={THUMB}
-              borderRadius={radius.md}
-            />
-          </Skeleton>
+          <View style={styles.scanThumb}>
+            <Skeleton>
+              <SkeletonBlock
+                width={THUMB}
+                height={THUMB}
+                borderRadius={radius.md}
+              />
+            </Skeleton>
+            {!reduceMotion ? (
+              <Animated.View
+                pointerEvents="none"
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+                style={[styles.laser, { transform: [{ translateY: laserY }] }]}
+              />
+            ) : null}
+          </View>
           <Text style={[typography.bodySm, styles.scanningLabel]}>
             {t.scanning}
           </Text>
@@ -309,6 +348,7 @@ export function ReceiptAttachmentSection({
 }
 
 const THUMB = 72;
+const LASER_HEIGHT = 2;
 
 const styles = StyleSheet.create({
   row: {
@@ -361,6 +401,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  scanThumb: {
+    width: THUMB,
+    height: THUMB,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+  },
+  laser: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: LASER_HEIGHT,
+    backgroundColor: colors.accent,
+    shadowColor: colors.accent,
+    shadowOpacity: 0.8,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 0 },
   },
   scanningLabel: {
     color: colors.textSecondary,

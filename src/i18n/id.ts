@@ -767,6 +767,9 @@ export const id = {
     removeRow: 'Hapus baris ini',
     splitSavedTitle: '{count} transaksi tersimpan',
     splitSavedBody: 'Total {total}',
+    aiWorking: 'Memahami ucapan…',
+    aiRateLimited: 'Terlalu sering memakai suara AI. Coba lagi sebentar lagi.',
+    aiQuota: 'Kuota suara AI habis. Catat manual tetap bisa.',
   },
 };
 

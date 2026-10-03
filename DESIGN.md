@@ -261,3 +261,14 @@ like everything else). No other decorative animation.
   in once per process launch: opacity 0 → 1 plus a slight settle-up scale
   0.97 → 1, 400ms. Content is already mounted, so this masks the cut with
   zero added latency. Skipped when the OS reduce-motion setting is on.
+
+### AI loading (AI4, #93)
+
+- **Voice pulse:** one concentric ring around the mic pill while the AI call
+  is in flight, scale `1 → 1.8` + opacity `0.6 → 0`, 1400ms loop. Reason:
+  one final AI result is loading, replacing a generic spinner.
+- **Scan laser:** one 2px gold bar sweeping the receipt thumbnail top to
+  bottom, ping-pong 1300ms per leg. Reason: marks the OCR read position,
+  replacing a generic skeleton.
+- Both are `Animated` only (OTA-safe, no native module), dead under
+  reduce-motion like every other animation.

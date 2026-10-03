@@ -1,25 +1,8 @@
-/**
- * Voice entry sheet (VC2, issue #64 — Option A per pemilik: dikte keyboard
- * OS, karena tak ada modul STT di bundle Expo dan intent-launcher satu
- * arah).
- *
- * The mic button opens this panel with the text field focused; the user
- * speaks through the OS keyboard mic (Gboard / dikte iOS — STT tetap milik
- * Google/Apple) or types directly. The app only ever receives text, parses
- * it with the VC1 parser, and hands a prefill to the form — prefill-saja,
- * tanpa auto-save (ADR-0010). No audio is recorded, uploaded, or stored
- * anywhere (PRD §4.4); the utterance only survives as the form's note field
- * (user data, like anything typed) and never reaches analytics (the save
- * path sends a boolean `hasNote`, never text).
- *
- * Prefill fires from the text-change handler, never an effect, and only
- * when the parse outcome actually changes (result-key guard) — typing on
- * after a manual correction cannot re-stomp the corrected field. A refusal
- * touches nothing: the form stays fully usable for manual entry.
- */
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
+  Easing,
   Pressable,
   StyleSheet,
   Text,
@@ -34,6 +17,8 @@ import {
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 import { pressedFeedback } from '@/components/pressed';
+import { useReducedMotion } from '@/components/skeleton';
+import { aiPrefillEvent, trackEvent } from '@/features/observability';
 
 import {
   parseVoiceSplit,
@@ -44,22 +29,32 @@ import {
   type VoiceSplitOkRow,
   type VoiceWallet,
 } from '../domain';
+import {
+  aiVoiceDisplayDelay,
+  requestAiVoice,
+  type AiVoicePrefillPayload,
+} from '../api';
 
 type VoiceSheetProps = {
-  /** Controlled by the host: the Add form owns it so the save button can
-   * mirror it as `voice-save`, and seeds it open for the `cashtrix://voice`
-   * alias (VC3). */
   open: boolean;
   onOpenChange?: (open: boolean) => void;
   wallets: VoiceWallet[];
   onPrefill: (prefill: VoicePrefill) => void;
-  /**
-   * Split commit (WG2, ADR-0011): the sheet calls back with the surviving ok
-   * rows (after per-row removal) and the host saves them all in one tap.
-   * Absent = single-prefill only (legacy callers).
-   */
   onSplitSave?: (rows: VoiceSplitOkRow[]) => void;
 };
+
+function resolveWalletHint(
+  hint: string | null,
+  wallets: VoiceWallet[],
+): string | null {
+  if (!hint) return null;
+  const trimmed = hint.trim().toLowerCase();
+  if (trimmed === '') return null;
+  return (
+    wallets.find((wallet) => wallet.name.toLowerCase() === trimmed)?.id ??
+    null
+  );
+}
 
 export function VoiceSheet({
   open,
@@ -70,23 +65,24 @@ export function VoiceSheet({
 }: VoiceSheetProps) {
   const language = useLanguage();
   const t = dictionaryFor(language).voice;
+  const reduceMotion = useReducedMotion();
   const [text, setText] = useState('');
-  // Guards the prefill: identical parse outcomes never re-fire, so manual
-  // corrections survive further typing in this box.
   const appliedKey = useRef<string | null>(null);
-  // Split-row removal (WG2 story 3): indices into the current parse, reset
-  // on every keystroke so a re-parse never resurrects a removed row.
   const [removedIdx, setRemovedIdx] = useState<number[]>([]);
-
-  // Pure — recomputed during render, no effect involved.
-  const result = parseVoiceText(text, wallets);
-  const split = parseVoiceSplit(text, wallets);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiNote, setAiNote] = useState<
+    null | 'working' | 'fail' | 'rate_limited' | 'quota_exceeded'
+  >(null);
+  const [aiPrefill, setAiPrefill] = useState<{
+    payload: AiVoicePrefillPayload;
+    walletId: string | null;
+  } | null>(null);
+  const requestId = useRef(0);
 
   function setPanelOpen(next: boolean) {
     onOpenChange?.(next);
   }
 
-  /** One preview line: nominal · jenis · dompet · hint (misses dropped). */
   function previewFor(row: {
     amount: number;
     kind: 'expense' | 'income';
@@ -103,26 +99,91 @@ export function VoiceSheet({
       .join(' · ');
   }
 
-  function handleText(next: string) {
-    setText(next);
-    setRemovedIdx([]);
-    const parsed = parseVoiceText(next, wallets);
-    if (parsed.status !== 'ok') return;
+  function firePrefill(prefill: VoicePrefill) {
     const key = [
-      parsed.amount,
-      parsed.kind,
-      parsed.walletId ?? '',
-      parsed.categoryHint ?? '',
+      prefill.amount,
+      prefill.kind,
+      prefill.walletId ?? '',
+      prefill.categoryHint ?? '',
     ].join('|');
     if (appliedKey.current === key) return;
     appliedKey.current = key;
-    onPrefill({
-      amount: parsed.amount,
-      kind: parsed.kind,
-      walletId: parsed.walletId,
-      categoryHint: parsed.categoryHint,
-      note: parsed.note,
-    });
+    onPrefill(prefill);
+  }
+
+  function trackAi(ok: boolean) {
+    try {
+      trackEvent(aiPrefillEvent({ ok }));
+    } catch {
+      // Analytics never blocks input.
+    }
+  }
+
+  function handleText(next: string) {
+    setText(next);
+    setRemovedIdx([]);
+    setAiPrefill(null);
+    if (next.trim() === '') {
+      requestId.current += 1;
+      setAiLoading(false);
+      setAiNote(null);
+      return;
+    }
+    const current = requestId.current + 1;
+    requestId.current = current;
+    setAiLoading(true);
+    setAiNote('working');
+    void (async () => {
+      const [outcome] = await Promise.all([
+        requestAiVoice({ text: next }),
+        aiVoiceDisplayDelay(),
+      ]);
+      if (requestId.current !== current) return;
+      setAiLoading(false);
+      if (outcome.status === 'ok') {
+        const local = parseVoiceSplit(next, wallets);
+        if (local.status === 'ok' && local.rows.length > 1) {
+          setAiPrefill(null);
+          setAiNote(null);
+          trackAi(true);
+          return;
+        }
+        const walletId = resolveWalletHint(outcome.prefill.walletHint, wallets);
+        setAiPrefill({ payload: outcome.prefill, walletId });
+        setAiNote(null);
+        trackAi(true);
+        firePrefill({
+          amount: outcome.prefill.amount,
+          kind: outcome.prefill.kind,
+          walletId,
+          categoryHint: outcome.prefill.categoryHint,
+          note: outcome.prefill.note,
+        });
+        return;
+      }
+      if (outcome.status === 'rate_limited') {
+        setAiNote('rate_limited');
+        trackAi(false);
+        return;
+      }
+      if (outcome.status === 'quota_exceeded') {
+        setAiNote('quota_exceeded');
+        trackAi(false);
+        return;
+      }
+      setAiNote('fail');
+      trackAi(false);
+      const parsed = parseVoiceText(next, wallets);
+      if (parsed.status === 'ok') {
+        firePrefill({
+          amount: parsed.amount,
+          kind: parsed.kind,
+          walletId: parsed.walletId,
+          categoryHint: parsed.categoryHint,
+          note: parsed.note,
+        });
+      }
+    })();
   }
 
   function removeSplitRow(index: number) {
@@ -131,20 +192,32 @@ export function VoiceSheet({
     );
   }
 
-  const previewParts =
-    result.status === 'ok'
+  const localResult = parseVoiceText(text, wallets);
+  const localSplit = parseVoiceSplit(text, wallets);
+
+  const aiPreviewParts = aiPrefill
+    ? [
+        formatGrouped(aiPrefill.payload.amount, language),
+        transactionTypeLabel(aiPrefill.payload.kind, language),
+        wallets.find((wallet) => wallet.id === aiPrefill.walletId)?.name,
+        aiPrefill.payload.categoryHint,
+      ].filter((part): part is string => Boolean(part))
+    : [];
+
+  const localPreviewParts =
+    localResult.status === 'ok'
       ? [
-          formatGrouped(result.amount, language),
-          transactionTypeLabel(result.kind, language),
-          wallets.find((wallet) => wallet.id === result.walletId)?.name,
-          result.categoryHint,
+          formatGrouped(localResult.amount, language),
+          transactionTypeLabel(localResult.kind, language),
+          wallets.find((wallet) => wallet.id === localResult.walletId)?.name,
+          localResult.categoryHint,
         ].filter((part): part is string => Boolean(part))
       : [];
 
-  // Split preview (WG2): 2–3 clauses parse to 2–3 rows. Single-clause
-  // utterances keep the legacy single-prefill path above untouched.
   const splitRows =
-    split.status === 'ok' && split.rows.length > 1 ? split.rows : null;
+    localSplit.status === 'ok' && localSplit.rows.length > 1
+      ? localSplit.rows
+      : null;
   const visibleRows = splitRows
     ? splitRows.filter((_, index) => !removedIdx.includes(index))
     : [];
@@ -152,34 +225,74 @@ export function VoiceSheet({
     (row): row is VoiceSplitOkRow => row.ok,
   );
 
+  const showSplit = !aiPrefill && !aiLoading && splitRows !== null;
+  const showLocalSingle =
+    !aiPrefill && !aiLoading && !showSplit && text !== '';
+
+  const [pulse] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    if (!aiLoading || reduceMotion) return;
+    const loop = Animated.loop(
+      Animated.timing(pulse, {
+        toValue: 1,
+        duration: 1400,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [aiLoading, pulse, reduceMotion]);
+  const pulseScale = pulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.8],
+  });
+  const pulseOpacity = pulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.6, 0],
+  });
+
   return (
     <View>
-      <Pressable
-        testID="voice-mic"
-        accessibilityRole="button"
-        accessibilityLabel={t.micA11y}
-        onPress={() => setPanelOpen(!open)}
-        style={({ pressed }) => [
-          styles.mic,
-          open && styles.micActive,
-          pressed && pressedFeedback,
-        ]}
-      >
-        <MaterialIcons
-          name="mic"
-          size={18}
-          color={open ? colors.accent : colors.textSecondary}
-        />
-        <Text
-          style={[
-            typography.bodyMd,
-            styles.micLabel,
-            open && styles.micLabelActive,
+      <View style={styles.micWrap}>
+        {aiLoading && !reduceMotion ? (
+          <Animated.View
+            pointerEvents="none"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            style={[
+              styles.pulseRing,
+              { transform: [{ scale: pulseScale }], opacity: pulseOpacity },
+            ]}
+          />
+        ) : null}
+        <Pressable
+          testID="voice-mic"
+          accessibilityRole="button"
+          accessibilityLabel={t.micA11y}
+          onPress={() => setPanelOpen(!open)}
+          style={({ pressed }) => [
+            styles.mic,
+            open && styles.micActive,
+            pressed && pressedFeedback,
           ]}
         >
-          {t.mic}
-        </Text>
-      </Pressable>
+          <MaterialIcons
+            name="mic"
+            size={18}
+            color={open ? colors.accent : colors.textSecondary}
+          />
+          <Text
+            style={[
+              typography.bodyMd,
+              styles.micLabel,
+              open && styles.micLabelActive,
+            ]}
+          >
+            {t.mic}
+          </Text>
+        </Pressable>
+      </View>
 
       {open ? (
         <View testID="voice-sheet" style={styles.panel}>
@@ -197,7 +310,23 @@ export function VoiceSheet({
           <Text testID="voice-hint" style={[typography.bodySm, styles.hint]}>
             {t.inputHint}
           </Text>
-          {text === '' ? null : splitRows ? (
+          {text === '' ? null : aiLoading ? (
+            <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
+              {t.aiWorking}
+            </Text>
+          ) : aiNote === 'rate_limited' ? (
+            <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
+              {t.aiRateLimited}
+            </Text>
+          ) : aiNote === 'quota_exceeded' ? (
+            <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
+              {t.aiQuota}
+            </Text>
+          ) : aiPrefill ? (
+            <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
+              {aiPreviewParts.join(' · ')}
+            </Text>
+          ) : showSplit ? (
             <View testID="voice-split-preview" style={styles.splitList}>
               {splitRows.map((row, index) => {
                 if (removedIdx.includes(index)) return null;
@@ -254,13 +383,19 @@ export function VoiceSheet({
                 </Pressable>
               ) : null}
             </View>
-          ) : (
+          ) : showLocalSingle ? (
             <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
-              {result.status === 'ok'
-                ? previewParts.join(' · ')
-                : voiceRefusalMessage(result.status, language)}
+              {localResult.status === 'ok'
+                ? localPreviewParts.join(' · ')
+                : voiceRefusalMessage(localResult.status, language)}
             </Text>
-          )}
+          ) : aiNote === 'fail' ? (
+            <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
+              {localResult.status === 'ok'
+                ? localPreviewParts.join(' · ')
+                : voiceRefusalMessage(localResult.status, language)}
+            </Text>
+          ) : null}
           <Pressable
             testID="voice-close"
             accessibilityRole="button"
@@ -280,6 +415,20 @@ export function VoiceSheet({
 }
 
 const styles = StyleSheet.create({
+  micWrap: {
+    alignItems: 'stretch',
+    justifyContent: 'center',
+  },
+  pulseRing: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
   mic: {
     minHeight: layout.minTapTarget,
     paddingHorizontal: spacing.md,
