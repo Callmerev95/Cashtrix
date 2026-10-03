@@ -374,3 +374,11 @@ thumb `ReceiptAttachment` + gap-fill penuh render-safe
 `ai_prefill_ok` boolean-only. Gate working tree: lint + typecheck + Jest
 784/784 + kontrak statis 111/10/3 hijau. Tanpa DDL/native; live = existing
 `verify-ai-voice.mjs` (disiplin Rp 0). MERGED via PR #99.
+
+#94 (AI5) MERGED 2026-10-03 (PR #100; CI static pass): legal 4 file
+v2.0.0 (seksi AI Fase 1 EN/ID + hapus klaim basi) + `VOICE_CONSENT_KEY`
+terpisah + `VoiceSheet` consent-once via Alert + i18n `voice.consent*` +
+`verify-legal.mjs` 32/32 di CI static + store-submit/release-gate/spec/ADR
+koreksi. Gate working tree: lint + typecheck + Jest 787/787 + kontrak statis
+111/10/3 hijau (tanpa scan.yaml, putusan pemilik). Tanpa DDL/native; live
+matrix + device Redmi manual menyusul. MERGED via PR #100.

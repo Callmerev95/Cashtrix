@@ -432,7 +432,7 @@ Single-context layout — one `CONTEXT.md` + `docs/adr/` at the repo root. See `
 - Test: `__tests__/ai-voice-wiring.test.ts` (18 test: payload defensif + fail-open + floor + KPI) + `navigation.test.tsx` mock `voice/api` default `empty` (fallback lokal instan) lalu `findBy` async (AI-first pecah asersi sync lama, pola wajib tiap sheet async berikut); full Jest 784/784 + kontrak statis 111/10/3 hijau; live = existing `verify-ai-voice.mjs` (disiplin Rp 0, tanpa probe model baru).
 - `delete __tests__/.session-seed.json` sebelum Jest (sama). Tanpa DDL/native baru.
 
-### Legal + gate produksi Fase 1 (AI5 #94, working tree)
+### Legal + gate produksi Fase 1 (AI5 #94, MERGED via PR #100)
 
 - Legal 4 file `docs/legal/` bump `v2.0.0` 3 Okt 2026 (putusan pemilik: integrasi Gemini + temporal baru = Major): privacy EN/ID tambah seksi AI Fase 1 (teks dikte max 500 char ke `parse-voice`, `storage_path`-only ke `scan-receipt`, konteks server dompet aktif + kategori visible + timezone, temporal tanpa simpan, tanpa file temp, log kode saja, STT tetap OS, confidence 0.42 fixed jujur); terms EN/ID tambah voice = saran + Simpan manual wajib, tanpa auto-save. Klaim basi dihapus (audio diproses Google/Apple, file sementara dihapus).
 - Consent voice terpisah (putusan pemilik: mikrofon vs kamera = sensor beda, consent wajib pecah): `VOICE_CONSENT_KEY = 'cashtrix:voice-consent-v1'` di `voice/api.ts` pola `SCAN_CONSENT_KEY` (device-local, luar `LOCAL_STORAGE_KEYS`, luar purge); `VoiceSheet` consent-once via `Alert` (Batal = fallback parser lokal, Kirim = setuju lalu jalan AI); i18n `voice.consent*` ID/EN + `consentBody` scan sebut Gemini temporal.
