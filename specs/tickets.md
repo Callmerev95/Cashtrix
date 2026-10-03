@@ -344,6 +344,22 @@ bukan 400, kontrak diperbaiki + redeploy). Migrasi applied + fungsi
 ter-deploy. Sisa: rebuild preview (DITUNDA hemat kuota, digabung batch
 native berikut) + happy `--with-model` + device Redmi.
 
+### Batch B1 (satu rebuild: AI6 audio + haptics)
+
+Sumber: grill batch 2026-10-03 + ADR-0016. Satu kompilasi preview untuk
+`expo-audio` + `expo-haptics` (dua modul mungil, satu re-gate device).
+Scope terkunci: haptics wiring (simpan/urungkan/ambang/rekam/prefill/
+toggle) + Stack.Screen `search`/`notifications`/`voice` (c) + waveform
+placeholder + haptic prefill VoiceSheet (d). Ditolak eksplisit: svg
+sekarang (tunda 2.1.0 Analytics Overhaul), reanimated, kamera kustom,
+sqlite OB1. Backlog: recent search queries.
+
+| Ticket | Issue | Blocked by | Deliverable |
+|---|---|---|---|
+| B1, Batch haptics + polish (satu rebuild) | — | #95 | `expo-haptics` + Stack.Screen (c) + waveform + haptic-prefill (d); ADR-0016; rebuild tunggal dengan AI6 |
+
+Frontier: B1 terbuka; eksekusi sesi baru (konteks penuh).
+
 ```
 AI1 #90 ── AI2 #91 (kontrak beku dulu, baru benteng drift)
    └────── AI3 #92 (pola prompt + D5 + secret reuse dari AI1)

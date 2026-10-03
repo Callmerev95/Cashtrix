@@ -34,6 +34,15 @@ jest.mock(
   () => require('./mocks/expo-local-authentication'),
 );
 
+// B1 (ADR-0016): expo-haptics is a native module whose bridge is absent
+// in Jest (same shape as Expo Go before the single preview rebuild).
+// Default stand-in resolves every call; the absent-module path injects
+// its own throwing mock and never touches this file.
+jest.mock(
+  require.resolve('expo-haptics'),
+  () => require('./mocks/expo-haptics'),
+);
+
 // V1 (issue #30): the observability sink imports `@sentry/react-native`
 // statically and `app/_layout.tsx` calls `initSentry()` on mount, which the
 // navigation tests exercise. The native module cannot load in Jest, so it is

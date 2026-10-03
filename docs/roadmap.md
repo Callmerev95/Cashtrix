@@ -330,3 +330,9 @@ tanpa label AI, tanpa angka/statistik fiktif di widget maupun kartu.
 
 Berikutnya: OB1–OB3 outbox + read cache (rilis berikut, eksekusi setelah
 WG3 hijau; prasyarat terpenuhi).
+
+### 6.10 Batch B1 + AI6 (satu rebuild hemat kuota, grill 2026-10-03)
+
+`expo-audio` (AI6) + `expo-haptics` (B1) dikompilasi sekali (ADR-0016).
+`2.1.0` = Analytics Overhaul (svg yang ditangguhkan dari batch ini).
+Backlog: recent search queries.

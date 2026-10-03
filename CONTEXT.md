@@ -194,6 +194,12 @@ jalur validasi `parse-voice` yang sama lalu menjadi prefill. Tidak disimpan
 di mana pun; yang tercatat hanya KPI boolean `ai_prefill_ok`.
 _Avoid_: transcript tersimpan, log ucapan mentah
 
+**Umpan taktil**:
+Getar singkat perangkat saat aksi penting (Simpan, Urungkan, ambang
+budget, mulai/berhenti rekam, prefill AI mendarat). Best-effort, tak
+pernah memblokir; bukan suara, bukan animasi.
+_Avoid_: vibration pattern, suara notifikasi
+
 **Saran dompet**:
 Dompet yang terpilih awal di sheet konfirmasi karena namanya disebut di ucapan
 (misal "... pakai gopay"). Selalu bisa diganti lewat picker sebelum Simpan.

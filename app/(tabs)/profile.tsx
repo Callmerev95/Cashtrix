@@ -30,6 +30,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card, GhostButton, PrimaryButton, Screen, SkeletonList, TextField } from '@/components';
 import { signOut, useAuth } from '@/features/auth';
 import { exportAndShareTransactions } from '@/features/data-ownership';
+import { tapToggle } from '@/features/haptics';
 import { useLock } from '@/features/lock';
 import { useMfa } from '@/features/mfa';
 import {
@@ -215,6 +216,8 @@ export default function ProfileScreen() {
   // modal (cancel leaves the switch off — the provider is the truth, not
   // local state); off confirms, then unenrolls the verified factor.
   function onMfaToggle(value: boolean) {
+    // B1: the flip itself gets the tick, whichever branch follows.
+    void tapToggle();
     if (value) {
       router.push('/mfa-enroll');
       return;
@@ -463,7 +466,10 @@ export default function ProfileScreen() {
                   testID="profile-lock-toggle"
                   accessibilityLabel={t.lock.toggleA11y}
                   value={lockEnabled}
-                  onValueChange={(value) => void setEnabled(value)}
+                  onValueChange={(value) => {
+                    void tapToggle();
+                    void setEnabled(value);
+                  }}
                   disabled={!biometricsReady}
                   trackColor={{ false: colors.surfaceElevated, true: colors.accent }}
                   thumbColor={colors.textPrimary}

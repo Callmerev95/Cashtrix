@@ -34,6 +34,7 @@ import {
   budgetThresholdEvent,
   trackEvent,
 } from '@/features/observability';
+import { tapThreshold } from '@/features/haptics';
 import { useLanguage } from '@/i18n';
 import { formatGrouped } from '../transactions/domain';
 
@@ -194,6 +195,8 @@ export function BudgetsProvider({ children }: { children: ReactNode }) {
         }
 
         if (fired.length > 0) {
+          // B1: one buzz per crossing batch, not per alert.
+          void tapThreshold();
           if (mounted.current) {
             setRecentAlerts((current) => [...fired, ...current].slice(0, 5));
           }

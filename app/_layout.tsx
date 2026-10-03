@@ -184,6 +184,12 @@ function RootNavigator() {
             <Stack.Screen name="mfa-enroll" options={{ presentation: 'modal' }} />
             <Stack.Screen name="scan" />
             <Stack.Screen name="shortcuts" />
+            {/* B1 (ADR-0016, item c): routes deferred since D3 now pinned like
+                the rest — ordinary protected routes, parked by the AuthGate
+                above when the session is unconfirmed/locked/MFA-challenged. */}
+            <Stack.Screen name="search" />
+            <Stack.Screen name="notifications" />
+            <Stack.Screen name="voice" />
             <Stack.Screen name="delete-account" />
           </Stack>
         </View>
