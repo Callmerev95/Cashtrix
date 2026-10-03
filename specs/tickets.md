@@ -311,7 +311,38 @@ keyboard OS, nol modul native baru, OTA aman. Tanpa DDL baru.
 | AI2, Golden set 40 kasus + gate 90 persen | #91 | #90 | `__tests__/ai-golden.test.ts` + 2 fixture (20 suara via replay validator + 20 struk via parser murni); gate 36/40 + liar nol; live drift tetap di `verify-ai-voice.mjs` |
 | AI3, scan-receipt Gemini 1-call | #92 | #90 | `scan-receipt` Gemini multimodal (gambar → JSON, `storage_path`-only, konteks expense + timezone server, validator strict, confidence fixed 0.42); `verify-s3.mjs` longgar + flood Rp0 via 404; tanpa DDL/native; aksi owner = deploy fungsi + live `verify-s3` |
 | AI4, Wiring form VoiceSheet + ReceiptAttachment | #93 | #90, #92 | `voice/api.ts` AI-first + `VoiceSheet` loading jujur + pulse ring + fallback lokal + `ReceiptAttachment` laser + gap-fill penuh + `applyVoicePrefill`/`runScanFor` no-overwrite + widget parity + `ai_prefill_ok` boolean-only; tanpa DDL/native |
-| AI5, Legal + gate produksi Fase 1 | #94 | #93 | legal 4 file v2.0.0 (3 Okt 2026) + `VOICE_CONSENT_KEY` terpisah + `verify-legal.mjs` di CI static + kontrak 111/10/3 tetap (tanpa scan.yaml) + scan E2E di checklist device manual; tanpa DDL/native |
+| AI5, Legal + gate produksi Fase 1 | #94 | #93 | legal 4 file v2.0.0 (3 Okt 2026) + `VOICE_CONSENT_KEY`
+terpisah + `verify-legal.mjs` di CI static + kontrak 111/10/3 tetap (tanpa scan.yaml) + scan E2E di checklist device manual; tanpa DDL/native |
+| AI6, Audio Fase 2 via expo-audio + rebuild | #95 | #94 | ADR-0015 + bucket privat `voice_drafts/{userId}/` objek-only retensi-nol (tanpa tabel/cron) + Edge `transcribe-voice` (JWT → rate-limit 5/mnt → Gemini audio 1-call → validasi reuse AI1 → hapus service-role instan) + consent rekam terpisah + cap 15dtk/<1MB + evolusi fast-lane `/voice` + rebuild preview mandiri |
+
+```
+AI1 #90 ── AI2 #91 (kontrak beku dulu, baru benteng drift)
+   └────── AI3 #92 (pola prompt + D5 + secret reuse dari AI1)
+AI1 #90 ── AI4 #93 ── AI5 #94 ── AI6 #95 (audio Fase 2, objek-only)
+```
+
+### Frontier
+
+#95 (AI6) implementasi di working tree: ADR-0015 + glosarium (`Rekaman suara
+sementara`, `Transkrip sementara`) + migrasi bucket `voice_drafts` + Edge
+`transcribe-voice` (prompt/validate/gemini/index + deno.json per-direktori,
+tanpa import lintas-direktori) + `FUNCTION_RATE_LIMITS` 5 + klien
+(`expo-audio@~57.0.5`, `VOICE_RECORD_CONSENT_KEY` terpisah, cap 15dtk/<1MB,
+tombol `voice-record` evolusi `/voice`, prefill langsung tanpa transkrip
+perantara) + i18n `record*` ID/EN + Jest `ai-voice-transcribe.test.ts`
+(14 test) + `verify-ai6.mjs` (Rp0 default, happy via `--with-model`) +
+matriks CI setelah `verify-ai-voice`. Gate working tree: lint + typecheck +
+Jest 801/801 + kontrak statis 111/10/3 + export Android hijau.
+Aksi owner: apply migrasi + `npx supabase functions deploy transcribe-voice
+--use-api` + rebuild preview (modul native baru) + live `verify-ai6` (+
+`--with-model` 1 call) + device Redmi.
+
+Live 2026-10-03: **31/31 hijau run kedua** (bucket own upload/list/remove +
+0 residu, 404 asing, 400/405/anon-401/JWT-mati-401, flood Rp0 5x400 + 2x429,
+isolasi B, cleanup 0 residu; run pertama 28+3fail — body `{}` menjawab 404
+bukan 400, kontrak diperbaiki + redeploy). Migrasi applied + fungsi
+ter-deploy. Sisa: rebuild preview (DITUNDA hemat kuota, digabung batch
+native berikut) + happy `--with-model` + device Redmi.
 
 ```
 AI1 #90 ── AI2 #91 (kontrak beku dulu, baru benteng drift)

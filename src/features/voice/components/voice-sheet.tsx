@@ -32,11 +32,42 @@ import {
 } from '../domain';
 import {
   aiVoiceDisplayDelay,
+  hasRecordConsent,
   hasVoiceConsent,
+  requestAiTranscribe,
   requestAiVoice,
+  setRecordConsent,
   setVoiceConsent,
+  uploadVoiceRecording,
+  VOICE_RECORD_MAX_MS,
   type AiVoicePrefillPayload,
 } from '../api';
+
+/** Minimal structural shape of `expo-audio` (lazy-loaded, may be absent). */
+type AudioRecorderShape = {
+  prepareToRecordAsync(): Promise<void>;
+  record(): void;
+  stop(): Promise<void>;
+  uri: string | null;
+};
+
+type AudioModuleShape = {
+  AudioModule: {
+    requestRecordingPermissionsAsync(): Promise<{ granted: boolean }>;
+  };
+  RecordingPresets: { HIGH_QUALITY: unknown };
+  AudioRecorder: new (options: unknown) => AudioRecorderShape;
+};
+
+/** Lazy `expo-audio` loader (pola lock/api.ts): null when absent. */
+function loadAudioModule(): AudioModuleShape | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require('expo-audio') as AudioModuleShape;
+  } catch {
+    return null;
+  }
+}
 
 type VoiceSheetProps = {
   open: boolean;
@@ -44,6 +75,8 @@ type VoiceSheetProps = {
   wallets: VoiceWallet[];
   onPrefill: (prefill: VoicePrefill) => void;
   onSplitSave?: (rows: VoiceSplitOkRow[]) => void;
+  /** Supabase user id — record button hides when absent (degrade). */
+  userId?: string;
 };
 
 function resolveWalletHint(
@@ -65,6 +98,7 @@ export function VoiceSheet({
   wallets,
   onPrefill,
   onSplitSave,
+  userId,
 }: VoiceSheetProps) {
   const language = useLanguage();
   const t = dictionaryFor(language).voice;
@@ -82,6 +116,180 @@ export function VoiceSheet({
     walletId: string | null;
   } | null>(null);
   const requestId = useRef(0);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordSecs, setRecordSecs] = useState(0);
+  const [recordNote, setRecordNote] = useState<
+    | null
+    | 'uploading'
+    | 'transcribing'
+    | 'denied'
+    | 'unavailable'
+    | 'too_large'
+    | 'failed'
+  >(null);
+  const recorderRef = useRef<AudioRecorderShape | null>(null);
+  const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const recordStopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function clearRecordTimers() {
+    if (recordTimerRef.current !== null) {
+      clearInterval(recordTimerRef.current);
+      recordTimerRef.current = null;
+    }
+    if (recordStopRef.current !== null) {
+      clearTimeout(recordStopRef.current);
+      recordStopRef.current = null;
+    }
+  }
+
+  /** Transcript-free path: `transcribe-voice` returns the prefill directly. */
+  function applyTranscribePrefill(payload: AiVoicePrefillPayload) {
+    const walletId = resolveWalletHint(payload.walletHint, wallets);
+    setAiPrefill({ payload, walletId });
+    setRecordNote(null);
+    trackAi(true);
+    firePrefill({
+      amount: payload.amount,
+      kind: payload.kind,
+      walletId,
+      categoryHint: payload.categoryHint,
+      note: payload.note,
+    });
+  }
+
+  async function finishRecording() {
+    const recorder = recorderRef.current;
+    recorderRef.current = null;
+    clearRecordTimers();
+    setIsRecording(false);
+    if (!recorder) {
+      setRecordNote('failed');
+      return;
+    }
+    let uri: string | null = null;
+    try {
+      await recorder.stop();
+      uri = recorder.uri;
+    } catch {
+      setRecordNote('failed');
+      return;
+    }
+    if (!uri || !userId) {
+      setRecordNote('failed');
+      return;
+    }
+    setRecordNote('uploading');
+    let storagePath: string;
+    try {
+      storagePath = await uploadVoiceRecording({ userId, sourceUri: uri });
+    } catch (error) {
+      setRecordNote(
+        error instanceof Error && error.message === 'voice_too_large'
+          ? 'too_large'
+          : 'failed',
+      );
+      return;
+    }
+    setRecordNote('transcribing');
+    const [outcome] = await Promise.all([
+      requestAiTranscribe({ storagePath }),
+      aiVoiceDisplayDelay(),
+    ]);
+    if (outcome.status === 'ok') {
+      applyTranscribePrefill(outcome.prefill);
+      return;
+    }
+    if (outcome.status === 'rate_limited') {
+      setRecordNote(null);
+      setAiNote('rate_limited');
+      trackAi(false);
+      return;
+    }
+    if (outcome.status === 'quota_exceeded') {
+      setRecordNote(null);
+      setAiNote('quota_exceeded');
+      trackAi(false);
+      return;
+    }
+    // empty/offline: server deleted nothing to keep (object already removed
+    // server-side or never transcribed) — fall back to manual typing.
+    setRecordNote('failed');
+    trackAi(false);
+  }
+
+  async function beginRecording() {
+    const audio = loadAudioModule();
+    if (!audio) {
+      setRecordNote('unavailable');
+      return;
+    }
+    let permission: { granted: boolean };
+    try {
+      permission = await audio.AudioModule.requestRecordingPermissionsAsync();
+    } catch {
+      setRecordNote('unavailable');
+      return;
+    }
+    if (!permission.granted) {
+      setRecordNote('denied');
+      return;
+    }
+    const recorder = new audio.AudioRecorder(
+      audio.RecordingPresets.HIGH_QUALITY,
+    );
+    try {
+      await recorder.prepareToRecordAsync();
+    } catch {
+      setRecordNote('unavailable');
+      return;
+    }
+    recorderRef.current = recorder;
+    setRecordSecs(0);
+    setRecordNote(null);
+    setIsRecording(true);
+    try {
+      recorder.record();
+    } catch {
+      recorderRef.current = null;
+      setIsRecording(false);
+      setRecordNote('unavailable');
+      return;
+    }
+    recordTimerRef.current = setInterval(() => {
+      setRecordSecs((secs) => secs + 1);
+    }, 1000);
+    // Hard cap (ADR-0015): auto-stop at 15 s so no recording can bloat
+    // tokens or hit the 1 MB bucket cap.
+    recordStopRef.current = setTimeout(() => {
+      void finishRecording();
+    }, VOICE_RECORD_MAX_MS);
+  }
+
+  function handleRecordPress() {
+    if (isRecording) {
+      void finishRecording();
+      return;
+    }
+    if (recordNote === 'uploading' || recordNote === 'transcribing') return;
+    void (async () => {
+      if (!(await hasRecordConsent())) {
+        Alert.alert(t.recordConsentTitle, t.recordConsentBody, [
+          { text: commonCancel, style: 'cancel' },
+          {
+            text: t.consentSend,
+            onPress: () => {
+              void (async () => {
+                await setRecordConsent();
+                await beginRecording();
+              })();
+            },
+          },
+        ]);
+        return;
+      }
+      await beginRecording();
+    })();
+  }
 
   function setPanelOpen(next: boolean) {
     onOpenChange?.(next);
@@ -345,6 +553,57 @@ export function VoiceSheet({
 
       {open ? (
         <View testID="voice-sheet" style={styles.panel}>
+          {userId ? (
+            <Pressable
+              testID="voice-record"
+              accessibilityRole="button"
+              accessibilityLabel={t.recordA11y}
+              onPress={handleRecordPress}
+              style={({ pressed }) => [
+                styles.record,
+                isRecording && styles.recordActive,
+                pressed && pressedFeedback,
+              ]}
+            >
+              <MaterialIcons
+                name={isRecording ? 'stop' : 'fiber-manual-record'}
+                size={18}
+                color={isRecording ? colors.background : colors.accent}
+              />
+              <Text
+                style={[
+                  typography.bodyMd,
+                  styles.recordLabel,
+                  isRecording && styles.recordLabelActive,
+                ]}
+              >
+                {isRecording
+                  ? fill(t.recording, { secs: recordSecs })
+                  : t.record}
+              </Text>
+            </Pressable>
+          ) : null}
+          {recordNote === 'uploading' ? (
+            <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
+              {t.recordUploading}
+            </Text>
+          ) : recordNote === 'transcribing' ? (
+            <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
+              {t.recordTranscribing}
+            </Text>
+          ) : recordNote === 'denied' ? (
+            <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
+              {t.recordDenied}
+            </Text>
+          ) : recordNote === 'unavailable' ? (
+            <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
+              {t.recordUnavailable}
+            </Text>
+          ) : recordNote === 'too_large' ? (
+            <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
+              {t.recordTooLarge}
+            </Text>
+          ) : null}
           <TextInput
             testID="voice-input"
             style={styles.input}
@@ -502,6 +761,28 @@ const styles = StyleSheet.create({
   },
   micLabelActive: {
     color: colors.accent,
+  },
+  record: {
+    minHeight: layout.minTapTarget,
+    paddingHorizontal: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
+  },
+  recordActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  recordLabel: {
+    color: colors.accent,
+  },
+  recordLabelActive: {
+    color: colors.background,
   },
   panel: {
     marginTop: spacing.sm,

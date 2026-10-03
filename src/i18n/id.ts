@@ -775,6 +775,17 @@ export const id = {
       'Teks dikte dikirim ke server untuk dibaca Gemini dan hanya mengisi form ini. Proses sementara, tidak menyimpan apa pun. Anda tetap menekan Simpan manual.',
     consentPersistNote: 'Berlaku di perangkat ini.',
     consentSend: 'Kirim',
+    record: 'Rekam',
+    recordA11y: 'Rekam ucapan maksimal 15 detik',
+    recording: 'Merekam… {secs} dtk',
+    recordUploading: 'Mengirim rekaman…',
+    recordTranscribing: 'Memahami rekaman…',
+    recordDenied: 'Izin mikrofon ditolak. Ketik manual tetap bisa.',
+    recordUnavailable: 'Perekam tak tersedia di perangkat ini. Ketik manual tetap bisa.',
+    recordTooLarge: 'Rekaman melebihi 1 MB. Coba ucapkan lebih singkat.',
+    recordConsentTitle: 'Rekam dan kirim suara?',
+    recordConsentBody:
+      'Rekaman maksimal 15 detik dikirim ke server untuk dibaca Gemini dan hanya mengisi form ini. Audio dihapus seketika setelah dibaca, tidak menyimpan apa pun. Anda tetap menekan Simpan manual.',
   },
 };
 

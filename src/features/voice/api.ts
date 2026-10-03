@@ -5,7 +5,13 @@
  * `{ text }` only (max 500 char); context is injected server-side from
  * `user_id`. Never logs text or amounts (PRD §4.4); KPI is boolean-only
  * (`ai_prefill_ok`) emitted by the caller.
+ *
+ * AI6 (issue #95): audio Fase 2. Same contract, different door — the device
+ * records (max 15 s, <1 MB), uploads the object to `voice_drafts/{userId}/`,
+ * and `transcribe-voice` returns the SAME prefill shape before deleting the
+ * object (zero-day retention). No new table, no cron.
  */
+import { File } from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { supabase } from '@/supabase';
@@ -107,6 +113,100 @@ export async function setVoiceConsent(): Promise<void> {
 
 export function aiVoiceDisplayDelay(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, AI_VOICE_MIN_DISPLAY_MS));
+}
+
+/**
+ * Record consent, separate key (AI6, issue #95): the microphone is a
+ * different sensor with a different risk (biometric audio upload) than the
+ * keyboard-dictation text of `VOICE_CONSENT_KEY` — same split precedent as
+ * AI5 (voice vs scan). Device-local, outside sign-out purge. Only `'1'`
+ * counts.
+ */
+export const VOICE_RECORD_CONSENT_KEY = 'cashtrix:voice-record-consent-v1';
+
+/** Client recording cap (ADR-0015): 15 seconds, mirrors the prompt. */
+export const VOICE_RECORD_MAX_MS = 15_000;
+
+/** Bucket-side twin of the cap: objects must stay under 1 MB. */
+export const VOICE_RECORD_MAX_BYTES = 1_048_576;
+
+export async function hasRecordConsent(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(VOICE_RECORD_CONSENT_KEY)) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export async function setRecordConsent(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(VOICE_RECORD_CONSENT_KEY, '1');
+  } catch {
+    // Best-effort: a failed write just means the next record asks again.
+  }
+}
+
+function newRecordingId(): string {
+  const cryptoApi = (
+    globalThis as { crypto?: { randomUUID?: () => string } }
+  ).crypto;
+  if (typeof cryptoApi?.randomUUID === 'function') {
+    return cryptoApi.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
+    const random = (Math.random() * 16) | 0;
+    const value = char === 'x' ? random : (random & 0x3) | 0x8;
+    return value.toString(16);
+  });
+}
+
+/**
+ * Uploads a finished recording to the private drafts bucket (object-only,
+ * no DB row — ADR-0015). Throws when the file still exceeds the 1 MB cap.
+ * Returns the `storage_path` the Edge Function expects.
+ */
+export async function uploadVoiceRecording(input: {
+  userId: string;
+  sourceUri: string;
+}): Promise<string> {
+  // Native file read, never `fetch(file://)` (pelajaran avatar T8).
+  const buffer = await new File(input.sourceUri).arrayBuffer();
+  if (buffer.byteLength > VOICE_RECORD_MAX_BYTES) {
+    throw new Error('voice_too_large');
+  }
+  const path = `${input.userId}/${newRecordingId()}.m4a`;
+  const { error: uploadError } = await supabase.storage
+    .from('voice_drafts')
+    .upload(path, buffer, { contentType: 'audio/mp4' });
+  if (uploadError) throw uploadError;
+  return path;
+}
+
+export async function requestAiTranscribe(input: {
+  storagePath: string;
+}): Promise<AiVoiceOutcome> {
+  if (input.storagePath.trim() === '') return { status: 'empty' };
+  let data: unknown;
+  let error: unknown;
+  try {
+    const res = await supabase.functions.invoke('transcribe-voice', {
+      method: 'POST',
+      body: { storage_path: input.storagePath },
+    });
+    data = res.data;
+    error = res.error;
+  } catch {
+    return { status: 'offline' };
+  }
+  if (error) {
+    const status = invokeStatus(error);
+    if (status === 429) return { status: 'rate_limited' };
+    if (status === 402) return { status: 'quota_exceeded' };
+    return { status: 'offline' };
+  }
+  const prefill = parseAiVoicePayload(data);
+  if (!prefill) return { status: 'empty' };
+  return { status: 'ok', prefill };
 }
 
 export async function requestAiVoice(input: {
