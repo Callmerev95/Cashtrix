@@ -364,7 +364,7 @@ Pelajaran: deploy hanya bundel direktori fungsi + `_shared/` —
 import `../parse-voice/*` = BOOT_ERROR 503; konstanta model disalin +
 paritas test. MERGED via PR #98.
 
-#93 (AI4) implementasi di working tree: `voice/api.ts`
+#93 (AI4) MERGED 2026-10-03 (PR #99; CI static pass): `voice/api.ts`
 (`requestAiVoice` fail-open + `parseAiVoicePayload` defensif + MIN_DISPLAY
 900ms) + `VoiceSheet` AI-first (loading jujur + pulse ring + fallback lokal
 diam-diam + split lokal bila AI tunggal atas multi-klausa) + laser scan di
@@ -372,4 +372,4 @@ thumb `ReceiptAttachment` + gap-fill penuh render-safe
 (`applyVoicePrefill`/`runScanFor`) + widget parity submit tunggal +
 `ai_prefill_ok` boolean-only. Gate working tree: lint + typecheck + Jest
 784/784 + kontrak statis 111/10/3 hijau. Tanpa DDL/native; live = existing
-`verify-ai-voice.mjs` (disiplin Rp 0).
+`verify-ai-voice.mjs` (disiplin Rp 0). MERGED via PR #99.
