@@ -16,6 +16,7 @@ export { PrimaryButton, GhostButton } from './button';
 export { GoogleButton } from './google-button';
 export { OrDivider } from './or-divider';
 export { Card } from './card';
+export { AiPrefillBanner, AI_BANNER_STAGGER_MS } from './ai-prefill-banner';
 export { LogoMark } from './logo-mark';
 export { AppHeader } from './app-header';
 export { SectionHeader } from './section-header';

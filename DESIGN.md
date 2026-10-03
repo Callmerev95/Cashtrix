@@ -279,5 +279,9 @@ like everything else). No other decorative animation.
 - **Scan laser:** one 2px gold bar sweeping the receipt thumbnail top to
   bottom, ping-pong 1300ms per leg. Reason: marks the OCR read position,
   replacing a generic skeleton.
+- **Prefill entrance (approved exception to the loading-only rule):** when an
+  AI prefill lands, the `AiPrefillBanner` eases in once — opacity 0 → 1 plus
+  a settle-up `translateY` 20 → 0, consecutive rows staggered 60ms. Same
+  `Animated`-only, reduce-motion-dead discipline as everything above.
 - All are `Animated` only (OTA-safe, no native module), dead under
   reduce-motion like every other animation.

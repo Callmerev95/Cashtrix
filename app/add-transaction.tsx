@@ -39,7 +39,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { GhostButton, Card, LogoMark, PrimaryButton, Screen, SectionHeader } from '@/components';
+import { GhostButton, Card, LogoMark, PrimaryButton, Screen, SectionHeader, AiPrefillBanner } from '@/components';
 import { useAnalytics } from '@/features/analytics';
 import { useAuth } from '@/features/auth';
 import { requestPushPermission, sendBudgetAlert, useBudgets } from '@/features/budgets';
@@ -1012,12 +1012,14 @@ export default function AddTransactionScreen() {
               onUploadError={handleUploadError}
             />
             {scanNote ? (
-              <Text
-                testID="receipt-scan-note"
-                style={[typography.bodySm, styles.hint]}
-              >
-                {scanNote}
-              </Text>
+              <AiPrefillBanner key={scanNote}>
+                <Text
+                  testID="receipt-scan-note"
+                  style={[typography.bodySm, scanOk ? styles.scanLabel : styles.hint]}
+                >
+                  {scanNote}
+                </Text>
+              </AiPrefillBanner>
             ) : null}
             {scanNote && !scanOk && !scanning ? (
               <View style={styles.scanActions}>

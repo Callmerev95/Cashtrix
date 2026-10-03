@@ -17,6 +17,7 @@ import {
 } from '@/features/transactions';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
+import { AI_BANNER_STAGGER_MS, AiPrefillBanner } from '@/components';
 import { pressedFeedback } from '@/components/pressed';
 import { useReducedMotion } from '@/components/skeleton';
 import { tapPrefill, tapRecord } from '@/features/haptics';
@@ -647,31 +648,38 @@ export function VoiceSheet({
               {t.aiQuota}
             </Text>
           ) : aiPrefill ? (
-            <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
-              {aiPreviewParts.join(' · ')}
-            </Text>
+            <AiPrefillBanner>
+              <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
+                {aiPreviewParts.join(' · ')}
+              </Text>
+            </AiPrefillBanner>
           ) : showSplit ? (
             <View testID="voice-split-preview" style={styles.splitList}>
               {splitRows.map((row, index) => {
                 if (removedIdx.includes(index)) return null;
                 return (
                   <View key={index} style={styles.splitRow}>
-                    <Text
-                      testID="voice-split-row"
-                      style={[typography.bodyMd, styles.status]}
+                    <AiPrefillBanner
+                      delay={index * AI_BANNER_STAGGER_MS}
+                      style={styles.splitBanner}
                     >
-                      {row.ok
-                        ? previewFor(row)
-                        : voiceSplitRefusalMessage(row.reason, language)}
-                    </Text>
-                    {!row.ok ? (
                       <Text
-                        style={[typography.bodySm, styles.hint]}
-                        selectable
+                        testID="voice-split-row"
+                        style={[typography.bodyMd, styles.status]}
                       >
-                        {row.text}
+                        {row.ok
+                          ? previewFor(row)
+                          : voiceSplitRefusalMessage(row.reason, language)}
                       </Text>
-                    ) : null}
+                      {!row.ok ? (
+                        <Text
+                          style={[typography.bodySm, styles.hint]}
+                          selectable
+                        >
+                          {row.text}
+                        </Text>
+                      ) : null}
+                    </AiPrefillBanner>
                     <Pressable
                       testID="voice-row-remove"
                       accessibilityRole="button"
@@ -831,6 +839,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
+  },
+  splitBanner: {
+    flex: 1,
   },
   remove: {
     minHeight: layout.minTapTarget,
