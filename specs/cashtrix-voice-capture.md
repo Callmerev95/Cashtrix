@@ -124,6 +124,16 @@ tunggal tersimpan, bukan dari struktur internal.
 transaksi; tolak multi-item → pesan); `expo export`; Sentry tanpa
 `amount`/`note`/teks ucapan mentah.
 
+## Addendum Fase 1 AI (AI1-AI5, Oktober 2026)
+
+STT tetap milik OS (mic keyboard atau ketik); teks dikte kini dikirim ke
+Edge `parse-voice` (maks 500 karakter) dengan consent-once terpisah
+(`cashtrix:voice-consent-v1`, device-local, di luar purge sign-out).
+Konteks disuntik server dari `user_id` (dompet aktif, kategori visible,
+timezone). Hasil = prefill saja, Simpan manual wajib, tanpa auto-save.
+Gagal model = `{ ok: false }` lalu fallback parser lokal diam-diam.
+Dokumen legal v2.0.0 (3 Oktober 2026) + `verify-legal.mjs` jadi syarat gate.
+
 ## Out of Scope
 
 - Widget home-screen, item long-press launcher (antre batch native).

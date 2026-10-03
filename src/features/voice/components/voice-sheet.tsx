@@ -1,6 +1,7 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   Animated,
   Easing,
   Pressable,
@@ -31,7 +32,9 @@ import {
 } from '../domain';
 import {
   aiVoiceDisplayDelay,
+  hasVoiceConsent,
   requestAiVoice,
+  setVoiceConsent,
   type AiVoicePrefillPayload,
 } from '../api';
 
@@ -65,6 +68,7 @@ export function VoiceSheet({
 }: VoiceSheetProps) {
   const language = useLanguage();
   const t = dictionaryFor(language).voice;
+  const commonCancel = dictionaryFor(language).common.cancel;
   const reduceMotion = useReducedMotion();
   const [text, setText] = useState('');
   const appliedKey = useRef<string | null>(null);
@@ -134,56 +138,101 @@ export function VoiceSheet({
     setAiLoading(true);
     setAiNote('working');
     void (async () => {
-      const [outcome] = await Promise.all([
-        requestAiVoice({ text: next }),
-        aiVoiceDisplayDelay(),
-      ]);
-      if (requestId.current !== current) return;
-      setAiLoading(false);
-      if (outcome.status === 'ok') {
-        const local = parseVoiceSplit(next, wallets);
-        if (local.status === 'ok' && local.rows.length > 1) {
-          setAiPrefill(null);
-          setAiNote(null);
-          trackAi(true);
-          return;
-        }
-        const walletId = resolveWalletHint(outcome.prefill.walletHint, wallets);
-        setAiPrefill({ payload: outcome.prefill, walletId });
+      if (!(await hasVoiceConsent())) {
+        if (requestId.current !== current) return;
+        setAiLoading(false);
+        Alert.alert(
+          t.consentTitle,
+          `${t.consentBody} ${t.consentPersistNote}`,
+          [
+            {
+              text: commonCancel,
+              style: 'cancel',
+              onPress: () => {
+                if (requestId.current !== current) return;
+                setAiNote(null);
+                const parsed = parseVoiceText(next, wallets);
+                if (parsed.status === 'ok') {
+                  firePrefill({
+                    amount: parsed.amount,
+                    kind: parsed.kind,
+                    walletId: parsed.walletId,
+                    categoryHint: parsed.categoryHint,
+                    note: parsed.note,
+                  });
+                }
+              },
+            },
+            {
+              text: t.consentSend,
+              onPress: () => {
+                void (async () => {
+                  await setVoiceConsent();
+                  if (requestId.current !== current) return;
+                  setAiLoading(true);
+                  setAiNote('working');
+                  await runAiFor(next, current);
+                })();
+              },
+            },
+          ],
+        );
+        return;
+      }
+      await runAiFor(next, current);
+    })();
+  }
+
+  async function runAiFor(next: string, current: number) {
+    const [outcome] = await Promise.all([
+      requestAiVoice({ text: next }),
+      aiVoiceDisplayDelay(),
+    ]);
+    if (requestId.current !== current) return;
+    setAiLoading(false);
+    if (outcome.status === 'ok') {
+      const local = parseVoiceSplit(next, wallets);
+      if (local.status === 'ok' && local.rows.length > 1) {
+        setAiPrefill(null);
         setAiNote(null);
         trackAi(true);
-        firePrefill({
-          amount: outcome.prefill.amount,
-          kind: outcome.prefill.kind,
-          walletId,
-          categoryHint: outcome.prefill.categoryHint,
-          note: outcome.prefill.note,
-        });
         return;
       }
-      if (outcome.status === 'rate_limited') {
-        setAiNote('rate_limited');
-        trackAi(false);
-        return;
-      }
-      if (outcome.status === 'quota_exceeded') {
-        setAiNote('quota_exceeded');
-        trackAi(false);
-        return;
-      }
-      setAiNote('fail');
+      const walletId = resolveWalletHint(outcome.prefill.walletHint, wallets);
+      setAiPrefill({ payload: outcome.prefill, walletId });
+      setAiNote(null);
+      trackAi(true);
+      firePrefill({
+        amount: outcome.prefill.amount,
+        kind: outcome.prefill.kind,
+        walletId,
+        categoryHint: outcome.prefill.categoryHint,
+        note: outcome.prefill.note,
+      });
+      return;
+    }
+    if (outcome.status === 'rate_limited') {
+      setAiNote('rate_limited');
       trackAi(false);
-      const parsed = parseVoiceText(next, wallets);
-      if (parsed.status === 'ok') {
-        firePrefill({
-          amount: parsed.amount,
-          kind: parsed.kind,
-          walletId: parsed.walletId,
-          categoryHint: parsed.categoryHint,
-          note: parsed.note,
-        });
-      }
-    })();
+      return;
+    }
+    if (outcome.status === 'quota_exceeded') {
+      setAiNote('quota_exceeded');
+      trackAi(false);
+      return;
+    }
+    setAiNote('fail');
+    trackAi(false);
+    const parsed = parseVoiceText(next, wallets);
+    if (parsed.status === 'ok') {
+      firePrefill({
+        amount: parsed.amount,
+        kind: parsed.kind,
+        walletId: parsed.walletId,
+        categoryHint: parsed.categoryHint,
+        note: parsed.note,
+      });
+    }
   }
 
   function removeSplitRow(index: number) {

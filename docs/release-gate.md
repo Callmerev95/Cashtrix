@@ -141,8 +141,8 @@ tetap boleh Expo Go, tanpa DSN (lihat §7.2) app memakai buffer lokal T10.
 
 | Pertanyaan | Jawaban draf |
 |---|---|
-| Data dikumpulkan | Email (login), info keuangan yang diketik user (transaksi, budget), log crash |
-| Dibagikan ke pihak ketiga | Tidak (Supabase = prosesor penyimpanan, Sentry = prosesor crash, bukan bagi-data) |
+| Data dikumpulkan | Email (login), info keuangan yang diketik user (transaksi, budget), foto struk (hanya bila difoto), teks dikte suara (hanya bila dipakai, maks 500 karakter), log crash |
+| Dibagikan ke pihak ketiga | Tidak (Supabase = prosesor penyimpanan, Sentry = prosesor crash, Gemini = prosesor saran temporal Fase 1 via `parse-voice`/`scan-receipt`, bukan bagi-data) |
 | Iklan / penjualan data | Tidak ada iklan, tidak ada penjualan |
 | Enkripsi transit | Ya (HTTPS/TLS ke Supabase + Sentry) |
 | Penghapusan akun | Ya, in-app (`delete-account` → cascade) |

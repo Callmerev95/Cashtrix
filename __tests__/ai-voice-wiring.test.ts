@@ -1,9 +1,13 @@
 import {
   AI_VOICE_MAX_TEXT_LENGTH,
   AI_VOICE_MIN_DISPLAY_MS,
+  hasVoiceConsent,
   parseAiVoicePayload,
   requestAiVoice,
+  setVoiceConsent,
+  VOICE_CONSENT_KEY,
 } from '@/features/voice/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { aiPrefillEvent } from '@/features/observability/domain';
 import { supabase } from '@/supabase';
 
@@ -143,5 +147,26 @@ describe('AI4 honesty floor + KPI boolean-only', () => {
       name: 'ai_prefill_ok',
       params: { ok: false },
     });
+  });
+});
+
+describe('consent-once voice (AI5: kunci terpisah dari scan)', () => {
+  beforeEach(async () => {
+    await AsyncStorage.removeItem(VOICE_CONSENT_KEY);
+  });
+
+  it('kunci voice berbeda dari kunci scan', () => {
+    expect(VOICE_CONSENT_KEY).toBe('cashtrix:voice-consent-v1');
+    expect(VOICE_CONSENT_KEY).not.toBe('cashtrix:scan-consent-v1');
+  });
+
+  it('baru → belum setuju (tanya sekali)', async () => {
+    await expect(hasVoiceConsent()).resolves.toBe(false);
+  });
+
+  it('setuju → menetap', async () => {
+    await setVoiceConsent();
+    await expect(hasVoiceConsent()).resolves.toBe(true);
+    expect(await AsyncStorage.getItem(VOICE_CONSENT_KEY)).toBe('1');
   });
 });

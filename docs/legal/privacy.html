@@ -12,7 +12,7 @@
 </head>
 <body>
   <h1>Privacy Policy | Cashtrix</h1>
-  <p><strong>Effective date:</strong> 27 September 2026</p>
+  <p><strong>Effective date:</strong> 3 October 2026</p>
 
   <p>Cashtrix ("we", "us", "our") is a personal finance tracker. This policy
   explains what data the Cashtrix mobile app collects, how it is used, and the
@@ -33,8 +33,20 @@
     30 days after capture. If you ask the app to read a receipt, the photo is
     sent to our server for automated reading only after your explicit consent;
     the result only pre-fills the form, and nothing is saved until you press
-    Save yourself. Temporary processing files are deleted after the
-    response.</li>
+    Save yourself.</li>
+    <li><strong>AI prefill (Phase 1):</strong> if you use voice entry or receipt
+    scan, the app sends only dictated text (max 500 characters) to the
+    <code>parse-voice</code> function, or only the stored photo reference
+    (<code>storage_path</code>, never bytes) to the <code>scan-receipt</code>
+    function. The server adds your active wallets, visible categories, and
+    timezone as context, then asks Gemini to return a suggestion
+    (amount, kind, wallet and category hints, note; or amount, merchant,
+    category hint for receipts). Processing is temporary: nothing is saved
+    until you press Save yourself, no temporary files are created, and server
+    logs record codes only, never text or amounts. Speech itself stays with
+    your OS (keyboard microphone or typed text); no audio is recorded or
+    uploaded by the app. The confidence value shown is a fixed honest marker
+    (0.42), not a measured accuracy score.</li>
     <li><strong>Two-factor authentication (optional):</strong> if you turn it
     on, a one-time-code factor is registered with Supabase Auth; recovery is
     the email password reset.</li>
@@ -51,6 +63,8 @@
     <li>To provide the app: sign-in, balances, history, budgets, analytics.</li>
     <li>To read the receipts you choose to scan, only to pre-fill the
     form.</li>
+    <li>To turn your dictated text into a form suggestion, only to pre-fill
+    the form.</li>
     <li>To keep your account secure and to send account-related email
     (verification, password reset).</li>
     <li>To fix crashes and improve stability using aggregated diagnostics.</li>
@@ -90,6 +104,6 @@
   <p>Questions about this policy:
   <a href="https://github.com/Callmerev95/Cashtrix">github.com/Callmerev95/Cashtrix</a>.</p>
 
-  <footer>Cashtrix · Privacy Policy v1.2 (English). Indonesian version: <a href="privacy-id.html">privacy-id.html</a>.</footer>
+  <footer>Cashtrix · Privacy Policy v2.0.0 (English, effective 3 October 2026). Indonesian version: <a href="privacy-id.html">privacy-id.html</a>.</footer>
 </body>
 </html>

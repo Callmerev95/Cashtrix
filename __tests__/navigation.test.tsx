@@ -58,6 +58,8 @@ jest.mock('@/features/voice/api', () => {
     ...actual,
     requestAiVoice: jest.fn(async () => ({ status: 'empty' })),
     aiVoiceDisplayDelay: jest.fn(async () => undefined),
+    hasVoiceConsent: jest.fn(async () => true),
+    setVoiceConsent: jest.fn(async () => undefined),
   };
 });
 // C2: provider reads hit the network with the inert test key, so the Profile

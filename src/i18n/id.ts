@@ -535,7 +535,7 @@ export const id = {
       scanQuota: 'Kuota pindaian habis. Catat manual tetap bisa.',
       consentTitle: 'Kirim foto untuk dibaca otomatis?',
       consentBody:
-        'Foto struk dikirim untuk dibaca dan hanya mengisi form ini. Tidak menyimpan apa pun. Anda tetap menekan Simpan manual.',
+        'Foto struk dikirim ke server untuk dibaca Gemini dan hanya mengisi form ini. Proses sementara, tidak menyimpan apa pun. Anda tetap menekan Simpan manual.',
       consentPersistNote: 'Berlaku di perangkat ini.',
       consentSend: 'Kirim',
     },
@@ -770,6 +770,11 @@ export const id = {
     aiWorking: 'Memahami ucapan…',
     aiRateLimited: 'Terlalu sering memakai suara AI. Coba lagi sebentar lagi.',
     aiQuota: 'Kuota suara AI habis. Catat manual tetap bisa.',
+    consentTitle: 'Kirim teks untuk dibaca otomatis?',
+    consentBody:
+      'Teks dikte dikirim ke server untuk dibaca Gemini dan hanya mengisi form ini. Proses sementara, tidak menyimpan apa pun. Anda tetap menekan Simpan manual.',
+    consentPersistNote: 'Berlaku di perangkat ini.',
+    consentSend: 'Kirim',
   },
 };
 

@@ -28,6 +28,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run test
       - run: node scripts/verify-t11.mjs --static-only
+      - run: node scripts/verify-legal.mjs
       - run: npx expo export --platform android --output-dir /tmp/cashtrix-export
 
   live:

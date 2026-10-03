@@ -66,9 +66,12 @@ email dukungan `support@cashtrix.my.id` (+ situs opsional). Penghapusan data: in
 - Email developer: **support@cashtrix.my.id**
 - Kebijakan privasi: URL §4. Penghapusan akun: **ya, in-app**.
 - Data dikumpulkan: email (login), info keuangan yang diketik user
-  (transaksi, budget, aturan berulang), log crash.
+  (transaksi, budget, aturan berulang), foto struk (hanya bila difoto),
+  teks dikte suara (hanya bila dipakai, maks 500 karakter), log crash.
 - Dibagikan ke pihak ketiga: **tidak** (Supabase = prosesor penyimpanan,
-  Sentry = prosesor crash, bukan bagi-data).
+  Sentry = prosesor crash, Gemini = prosesor saran temporal Fase 1
+  (teks dikte via `parse-voice`, foto struk via `scan-receipt`;
+  tanpa simpan transaksi, tanpa file temp), bukan bagi-data).
 - Iklan / penjualan data: **tidak ada**.
 - Enkripsi transit: **ya** (HTTPS/TLS ke Supabase + Sentry).
 - Target anak: **tidak**.

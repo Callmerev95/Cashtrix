@@ -311,6 +311,7 @@ keyboard OS, nol modul native baru, OTA aman. Tanpa DDL baru.
 | AI2, Golden set 40 kasus + gate 90 persen | #91 | #90 | `__tests__/ai-golden.test.ts` + 2 fixture (20 suara via replay validator + 20 struk via parser murni); gate 36/40 + liar nol; live drift tetap di `verify-ai-voice.mjs` |
 | AI3, scan-receipt Gemini 1-call | #92 | #90 | `scan-receipt` Gemini multimodal (gambar → JSON, `storage_path`-only, konteks expense + timezone server, validator strict, confidence fixed 0.42); `verify-s3.mjs` longgar + flood Rp0 via 404; tanpa DDL/native; aksi owner = deploy fungsi + live `verify-s3` |
 | AI4, Wiring form VoiceSheet + ReceiptAttachment | #93 | #90, #92 | `voice/api.ts` AI-first + `VoiceSheet` loading jujur + pulse ring + fallback lokal + `ReceiptAttachment` laser + gap-fill penuh + `applyVoicePrefill`/`runScanFor` no-overwrite + widget parity + `ai_prefill_ok` boolean-only; tanpa DDL/native |
+| AI5, Legal + gate produksi Fase 1 | #94 | #93 | legal 4 file v2.0.0 (3 Okt 2026) + `VOICE_CONSENT_KEY` terpisah + `verify-legal.mjs` di CI static + kontrak 111/10/3 tetap (tanpa scan.yaml) + scan E2E di checklist device manual; tanpa DDL/native |
 
 ```
 AI1 #90 ── AI2 #91 (kontrak beku dulu, baru benteng drift)
