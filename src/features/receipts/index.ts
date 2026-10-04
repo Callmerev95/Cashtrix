@@ -8,6 +8,11 @@ export {
 } from './api';
 export type { ReceiptAttachment } from './api';
 export { ReceiptAttachmentSection } from './components/receipt-attachment';
+export { ScanReview } from './components/scan-review';
+export {
+  isScanViewfinderAvailable,
+  ScanViewfinder,
+} from './components/scan-viewfinder';
 export {
   hasScanConsent,
   parseScanPayload,

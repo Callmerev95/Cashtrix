@@ -43,7 +43,7 @@ import { GhostButton, Card, LogoMark, PrimaryButton, Screen, SectionHeader, AiPr
 import { useAnalytics } from '@/features/analytics';
 import { useAuth } from '@/features/auth';
 import { requestPushPermission, sendBudgetAlert, useBudgets } from '@/features/budgets';
-import { tapSave } from '@/features/haptics';
+import { tapPrefill, tapSave } from '@/features/haptics';
 import { trackEvent, txCreatedEvent } from '@/features/observability';
 import {
   hasScanConsent,
@@ -52,8 +52,10 @@ import {
   resolveCategorySuggestion,
   scanDisplayDelay,
   scanReceipt,
+  ScanReview,
   setScanConsent,
   type ReceiptAttachment,
+  type ScanPrefill,
 } from '@/features/receipts';
 import { useWallets } from '@/features/wallets';
 import { VoiceSheet, parseVoiceFlag, widgetSaveCopy, type VoicePrefill, type VoiceSplitOkRow, type VoiceTransactionKind } from '@/features/voice';
@@ -206,6 +208,9 @@ export default function AddTransactionScreen() {
   const [scanOk, setScanOk] = useState(false);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [captureRequest, setCaptureRequest] = useState(0);
+  const [reviewVisible, setReviewVisible] = useState(false);
+  const [reviewPrefill, setReviewPrefill] = useState<ScanPrefill | null>(null);
+  const [reviewPreviewUri, setReviewPreviewUri] = useState('');
   const tr = t.transactions.receipt;
 
   // Wallet: explicit choice > the row being edited > the remembered last-used
@@ -444,6 +449,10 @@ export default function AddTransactionScreen() {
         }
         setScanNote(tr.scanApplied);
         setScanOk(true);
+        setReviewPrefill(prefill);
+        setReviewPreviewUri(attachment.previewUrl);
+        setReviewVisible(true);
+        void tapPrefill();
       } else if (outcome.status === 'rate_limited') {
         setScanNote(tr.scanRateLimited);
       } else if (outcome.status === 'quota_exceeded') {
@@ -834,6 +843,8 @@ export default function AddTransactionScreen() {
                 open={voiceOpen}
                 onOpenChange={setVoiceOpen}
                 wallets={wallets}
+                categories={categories}
+                saving={busy}
                 onPrefill={applyVoicePrefill}
                 onSplitSave={submitSplit}
                 userId={session?.user.id}
@@ -1106,6 +1117,20 @@ export default function AddTransactionScreen() {
         closeLabel={t.transactions.sheet.close}
         onCancel={() => setConfirmingDelete(false)}
         onConfirm={confirmDelete}
+      />
+      <ScanReview
+        visible={reviewVisible && reviewPrefill !== null}
+        prefill={reviewPrefill}
+        previewUri={reviewPreviewUri}
+        categoryName={
+          categories.find((category) => category.id === categoryId)?.name ??
+          null
+        }
+        onContinue={() => setReviewVisible(false)}
+        onRetake={() => {
+          setReviewVisible(false);
+          retakePhoto();
+        }}
       />
     </Screen>
   );

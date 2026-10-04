@@ -42,4 +42,8 @@ export {
   VOICE_RECORD_MAX_MS,
 } from './api';
 export type { AiVoiceOutcome, AiVoicePrefillPayload } from './api';
+export { VoiceBottomSheet } from './components/voice-bottom-sheet';
+export { VoiceConfirmCard } from './components/voice-confirm-card';
+export { VoiceListeningView } from './components/voice-listening-view';
+export { VoiceProcessingView } from './components/voice-processing-view';
 export { VoiceSheet } from './components/voice-sheet';

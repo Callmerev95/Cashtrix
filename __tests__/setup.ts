@@ -43,6 +43,15 @@ jest.mock(
   () => require('./mocks/expo-haptics'),
 );
 
+// Scan viewfinder: expo-camera is a native module absent in Jest (same
+// shape Expo Go sees before the preview rebuild). Default stand-in has
+// no CameraView so the app degrades to expo-image-picker; viewfinder
+// tests inject their own mock and never touch this file.
+jest.mock(
+  require.resolve('expo-camera'),
+  () => require('./mocks/expo-camera'),
+);
+
 // V1 (issue #30): the observability sink imports `@sentry/react-native`
 // statically and `app/_layout.tsx` calls `initSentry()` on mount, which the
 // navigation tests exercise. The native module cannot load in Jest, so it is

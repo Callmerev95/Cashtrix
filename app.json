@@ -51,6 +51,12 @@
         {
           "microphonePermission": "Izinkan $(PRODUCT_NAME) merekam suara untuk mencatat transaksi."
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Izinkan $(PRODUCT_NAME) mengakses kamera untuk memindai struk."
+        }
       ]
     ],
     "experiments": {

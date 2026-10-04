@@ -61,6 +61,19 @@ export const colors = {
   accentBorderSoft: 'rgba(212, 175, 55, 0.15)',
   /** Ambience blob fill — radial gold at 10% opacity. */
   accentAmbience: 'rgba(212, 175, 55, 0.10)',
+  /**
+   * Scan viewfinder corner brackets. Gold accent, never income-green:
+   * green would collide with the income meaning (DESIGN.md §1).
+   */
+  scanBracket: palette.accent,
+  /**
+   * AI-prefill field fill — gold at 12% over the canvas. Reads as
+   * "highlighted", not income, and survives dark mode (a light pastel
+   * like `#E8F5E9` would blow out on `#0A0A0A`).
+   */
+  aiFilledSurface: 'rgba(212, 175, 55, 0.12)',
+  /** AI-prefill field border — gold at 35% for definition. */
+  aiFilledBorder: 'rgba(212, 175, 55, 0.35)',
 } as const;
 
 // Typography — DESIGN.md §2

@@ -40,6 +40,7 @@ import {
   uploadReceiptPhoto,
   type ReceiptAttachment,
 } from '../api';
+import { ScanViewfinder, isScanViewfinderAvailable } from './scan-viewfinder';
 
 export type { ReceiptAttachment };
 
@@ -82,6 +83,7 @@ export function ReceiptAttachmentSection({
   const commonCancel = dictionaryFor(language).common.cancel;
 
   const [uploading, setUploading] = useState(false);
+  const [viewfinderVisible, setViewfinderVisible] = useState(false);
   const autoCameraFired = useRef(false);
   const reduceMotion = useReducedMotion();
 
@@ -111,6 +113,42 @@ export function ReceiptAttachmentSection({
     outputRange: [0, THUMB - LASER_HEIGHT],
   });
 
+  async function uploadUri(uri: string, mime: string | null) {
+    if (!userId || uploading) return;
+    setUploading(true);
+    try {
+      const attachment = await uploadReceiptPhoto({
+        userId,
+        sourceUri: uri,
+        mime,
+        lang: language,
+      });
+      onAttachmentsChange([...attachments, attachment]);
+      onPhotoUploaded?.(attachment);
+    } catch {
+      // Friendly copy + Foto ulang / Isi manual live in the parent (failure
+      // package); the raw error stays here (see `onUploadError` contract).
+      onUploadError?.();
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function openCamera() {
+    onSheetVisibleChange(false);
+    if (!userId || uploading) return;
+    if (isScanViewfinderAvailable()) {
+      setViewfinderVisible(true);
+      return;
+    }
+    void addPhoto('camera');
+  }
+
+  async function handleViewfinderCaptured(uri: string) {
+    setViewfinderVisible(false);
+    await uploadUri(uri, null);
+  }
+
   async function addPhoto(source: 'camera' | 'gallery') {
     onSheetVisibleChange(false);
     if (!userId || uploading) return;
@@ -135,23 +173,7 @@ export function ReceiptAttachmentSection({
     const asset = picked.assets[0];
     if (!asset) return;
 
-    setUploading(true);
-    try {
-      const attachment = await uploadReceiptPhoto({
-        userId,
-        sourceUri: asset.uri,
-        mime: asset.mimeType ?? null,
-        lang: language,
-      });
-      onAttachmentsChange([...attachments, attachment]);
-      onPhotoUploaded?.(attachment);
-    } catch {
-      // Friendly copy + Foto ulang / Isi manual live in the parent (failure
-      // package); the raw error stays here (see `onUploadError` contract).
-      onUploadError?.();
-    } finally {
-      setUploading(false);
-    }
+    await uploadUri(asset.uri, asset.mimeType ?? null);
   }
 
   async function removePhoto(attachment: ReceiptAttachment) {
@@ -184,7 +206,7 @@ export function ReceiptAttachmentSection({
         onSheetVisibleChange(true);
         return;
       }
-      void addPhoto('camera');
+      openCamera();
     }, 0);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -199,7 +221,7 @@ export function ReceiptAttachmentSection({
     }
     lastCaptureRequest.current = captureRequest;
     const timer = setTimeout(() => {
-      void addPhoto('camera');
+      openCamera();
     }, 0);
     return () => clearTimeout(timer);
   });
@@ -326,7 +348,7 @@ export function ReceiptAttachmentSection({
               testID="receipt-option-camera"
               accessibilityRole="button"
               accessibilityLabel={t.camera}
-              onPress={() => void addPhoto('camera')}
+              onPress={openCamera}
               style={({ pressed }) => [
                 styles.option,
                 pressed && pressedFeedback,
@@ -363,6 +385,11 @@ export function ReceiptAttachmentSection({
           </View>
         </Pressable>
       </Modal>
+      <ScanViewfinder
+        visible={viewfinderVisible}
+        onClose={() => setViewfinderVisible(false)}
+        onCaptured={(uri) => void handleViewfinderCaptured(uri)}
+      />
     </View>
   );
 }

@@ -45,6 +45,10 @@ import {
   type AiVoicePrefillPayload,
 } from '../api';
 import { VoiceWaveform } from './voice-waveform';
+import { VoiceBottomSheet } from './voice-bottom-sheet';
+import { VoiceConfirmCard } from './voice-confirm-card';
+import { VoiceListeningView } from './voice-listening-view';
+import { VoiceProcessingView } from './voice-processing-view';
 
 /** Minimal structural shape of `expo-audio` (lazy-loaded, may be absent). */
 type AudioRecorderShape = {
@@ -80,6 +84,10 @@ type VoiceSheetProps = {
   onSplitSave?: (rows: VoiceSplitOkRow[]) => void;
   /** Supabase user id — record button hides when absent (degrade). */
   userId?: string;
+  /** Visible categories for the in-sheet confirm card (kind-aware resolve). */
+  categories?: { id: string; name: string; kind: 'expense' | 'income' }[];
+  /** Form busy flag — disables the confirm card's save while committing. */
+  saving?: boolean;
 };
 
 function resolveWalletHint(
@@ -114,6 +122,8 @@ export function VoiceSheet({
   onPrefill,
   onSplitSave,
   userId,
+  categories = [],
+  saving = false,
 }: VoiceSheetProps) {
   const language = useLanguage();
   const t = dictionaryFor(language).voice;
@@ -585,6 +595,7 @@ export function VoiceSheet({
       </View>
 
       {open ? (
+        <VoiceBottomSheet open={open} onClose={() => setPanelOpen(false)}>
         <View testID="voice-sheet" style={styles.panel}>
           <View testID="voice-phase" style={styles.phaseRow}>
             <View
@@ -629,12 +640,10 @@ export function VoiceSheet({
             </View>
           </View>
           {recordingActive ? (
-            <Text
-              testID="voice-timer"
-              style={[typography.currencyDisplay, styles.timer]}
-            >
-              {formatRecordTimer(recordSecs)}
-            </Text>
+            <VoiceListeningView
+              timerLabel={formatRecordTimer(recordSecs)}
+              title={t.listeningTitle}
+            />
           ) : null}
           {userId ? (
             <Pressable
@@ -666,14 +675,8 @@ export function VoiceSheet({
               </Text>
             </Pressable>
           ) : null}
-          {recordNote === 'uploading' ? (
-            <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
-              {t.recordUploading}
-            </Text>
-          ) : recordNote === 'transcribing' ? (
-            <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
-              {t.recordTranscribing}
-            </Text>
+          {recordNote === 'uploading' || recordNote === 'transcribing' ? (
+            <VoiceProcessingView message={t.processing} />
           ) : recordNote === 'denied' ? (
             <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
               {t.recordDenied}
@@ -695,7 +698,6 @@ export function VoiceSheet({
             placeholder={t.inputPlaceholder}
             placeholderTextColor={colors.textSecondary}
             selectionColor={colors.accent}
-            autoFocus
             multiline
           />
           <Text testID="voice-hint" style={[typography.bodySm, styles.hint]}>
@@ -717,11 +719,33 @@ export function VoiceSheet({
               {t.aiQuota}
             </Text>
           ) : aiPrefill ? (
+            <>
             <AiPrefillBanner>
               <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
                 {aiPreviewParts.join(' · ')}
               </Text>
             </AiPrefillBanner>
+            <VoiceConfirmCard
+              prefill={{
+                amount: aiPrefill.payload.amount,
+                kind: aiPrefill.payload.kind,
+                walletId: aiPrefill.walletId,
+                categoryHint: aiPrefill.payload.categoryHint,
+                note: aiPrefill.payload.note,
+                walletHint: aiPrefill.payload.walletHint,
+              }}
+              wallets={wallets}
+              categories={categories}
+              busy={saving}
+              onConfirm={(next) => {
+                onSplitSave?.([{ ...next, ok: true }]);
+              }}
+              onCancel={() => {
+                setAiPrefill(null);
+                setAiNote(null);
+              }}
+            />
+            </>
           ) : showSplit ? (
             <View testID="voice-split-preview" style={styles.splitList}>
               {splitRows.map((row, index) => {
@@ -811,6 +835,7 @@ export function VoiceSheet({
             <Text style={[typography.bodyMd, styles.hint]}>{t.close}</Text>
           </Pressable>
         </View>
+        </VoiceBottomSheet>
       ) : null}
     </View>
   );
