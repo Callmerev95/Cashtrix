@@ -537,7 +537,7 @@ export const id = {
       scanQuota: 'Kuota pindaian habis. Catat manual tetap bisa.',
       consentTitle: 'Kirim foto untuk dibaca otomatis?',
       consentBody:
-        'Foto struk dikirim ke server untuk dibaca Gemini dan hanya mengisi form ini. Proses sementara, tidak menyimpan apa pun. Anda tetap menekan Simpan manual.',
+        'Foto struk dikirim ke server untuk dibaca Asisten AI dan hanya mengisi form ini. Proses sementara, tidak menyimpan apa pun. Anda tetap menekan Simpan manual.',
       consentPersistNote: 'Berlaku di perangkat ini.',
       consentSend: 'Kirim',
       viewfinderHint: 'Posisikan Struk di Dalam Kotak',
@@ -789,7 +789,7 @@ export const id = {
     aiQuota: 'Kuota suara AI habis. Catat manual tetap bisa.',
     consentTitle: 'Kirim teks untuk dibaca otomatis?',
     consentBody:
-      'Teks dikte dikirim ke server untuk dibaca Gemini dan hanya mengisi form ini. Proses sementara, tidak menyimpan apa pun. Anda tetap menekan Simpan manual.',
+      'Teks dikte dikirim ke server untuk dibaca Asisten AI dan hanya mengisi form ini. Proses sementara, tidak menyimpan apa pun. Anda tetap menekan Simpan manual.',
     consentPersistNote: 'Berlaku di perangkat ini.',
     consentSend: 'Kirim',
     record: 'Rekam',
@@ -803,9 +803,9 @@ export const id = {
     recordFailed: 'Rekaman gagal diproses. Ketik manual tetap bisa.',
     recordConsentTitle: 'Rekam dan kirim suara?',
     recordConsentBody:
-      'Rekaman maksimal 15 detik dikirim ke server untuk dibaca Gemini dan hanya mengisi form ini. Audio dihapus seketika setelah dibaca, tidak menyimpan apa pun. Anda tetap menekan Simpan manual.',
+      'Rekaman maksimal 15 detik dikirim ke server untuk dibaca Asisten AI dan hanya mengisi form ini. Audio dihapus seketika setelah dibaca, tidak menyimpan apa pun. Anda tetap menekan Simpan manual.',
     listeningTitle: 'Mendengarkan...',
-    processing: 'Gemini sedang mencatat transaksimu...',
+    processing: 'Asisten AI sedang mencatat transaksimu...',
     confirmTitle: 'Periksa catatan',
     confirmName: 'Nama',
     confirmAmount: 'Nominal',

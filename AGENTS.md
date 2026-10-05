@@ -491,3 +491,18 @@ Single-context layout — one `CONTEXT.md` + `docs/adr/` at the repo root. See `
 - X pindah dari absolute zona-bawah (melayang mid-screen) ke bar atas overlay-root (torch kiri, X kanan, safe-area inset). Torch = prop `enableTorch` CameraView (sudah ada di expo-camera; tanpa izin/manifest baru → tanpa rebuild); state reset saat viewfinder tutup; sembunyi saat scanning; ikon `flashlight-on/off` + kunci `viewfinderTorchA11y` ID/EN + `testID="scan-torch"` (aman untuk kontrak: hanya id yang dipakai flow yang wajib ada).
 - Kunci: `scan-viewfinder-scanning.test.tsx` (+ maju-timer baca `__getValue()` — nilai Animated di style adalah objek, bukan angka).
 - Verifikasi device: 2 screenshot selang 2 detik = laser di posisi beda (bukti gerak); torch emas/putih; jepret → overlay → review → thumbnail.
+
+### Polish viewfinder Fintech-Pro (tanpa ticket, Okt 2026)
+
+- Glow corner: `shadowColor scanBracket + offset 0/0 + opacity 0.5 + radius 6` di 4 corner + `elevation: 4` (Android best-effort); hint jadi kapsul (`paddingH 16/V 6`, token baru `colors.scrimSoft` rgba 0.5 — literal hanya di `theme.ts`); bar atas (torch+X) dapat `backgroundColor: colors.scrim` agar zona header gelap menyatu, hanya lubang bingkai yang terang.
+- Pulse corners via `react-native-reanimated` (`useSharedValue` + `withRepeat(withSequence(0.8↔1.0, 1500ms))`, hormat reduce-motion, cancel saat unmount). Reanimated 4.5.1 = dep langsung (native sudah di build → tanpa rebuild; worklet dikompilasi babel-preset-expo default).
+- Gotcha Jest: native worklets crash saat import — dan `jest.mock()`/moduleNameMapper tak menjangkau semua resolusi paket ini. Pola final: pulse diisolasi ke `scan-corners.tsx` yang di-`require` lazy dalam try/catch (pola lock/api); tanpa bridge → kembaran statis. Tanpa mock global, tanpa ubah config.
+- `testID="scan-corner"` ×4 (+ `scan-torch`, `scan-laser`): aman untuk kontrak (hanya id yang dipakai flow yang wajib ada).
+- Verifikasi device: glow + kapsul + header gelap di screenshot; pulse halus (bukti gerak = sheet modal terpisah, bukan kriteria gate).
+
+### Samarkan vendor AI (tanpa ticket, Okt 2026)
+
+- Copy user-visible `Gemini` → `Asisten AI` (8 string i18n ID/EN: 3 consent + 1 status proses; konsisten dengan banner "Terisi otomatis via Asisten AI" yang sudah ada) + 2 file legal (`privacy.html`, `privacy-id.html`). Nama model/API di Edge, komentar kode, test server-seam, ADR/PRD/spec SENGAJA tetap (tak terlihat user; ganti = dusta maintainer + risiko deploy).
+- Gotcha: `scripts/verify-legal.mjs` mewajibkan keyword `Gemini` di privacy (CI merah bila hilang) — daftar keyword ikut diganti. Selalu cek script gate sebelum rename kata yang diawasi.
+- Pelajaran OTA: `clearState` Maestro me-wipe update OTA yang sudah terunduh (app kembali ke bundle embedded lawas — mic hero + sheet Gorhom mati). Pola aman: launch-unduh → force-stop → launch-teraplikasi; `clearState` hanya bila sadar konsekuensinya (sesi + consent + OTA ikut hilang).
+- `delete __tests__/.session-seed.json` sebelum Jest (sama). Tanpa DDL/native baru.

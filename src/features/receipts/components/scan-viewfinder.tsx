@@ -16,7 +16,7 @@
  * lives where the action happened, not in a separate card below the form.
  */
 import type { ComponentType, Ref } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -26,6 +26,8 @@ import {
   Text,
   View,
   useWindowDimensions,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -55,8 +57,33 @@ type CameraModule = {
   requestCameraPermissionsAsync?: () => Promise<{ granted?: boolean }>;
 };
 
-function loadCameraModule(): CameraModule | null {
+type ScanCornersProps = {
+  corner: {
+    tl: StyleProp<ViewStyle>;
+    tr: StyleProp<ViewStyle>;
+    bl: StyleProp<ViewStyle>;
+    br: StyleProp<ViewStyle>;
+  };
+  glow: StyleProp<ViewStyle>;
+};
+
+function loadScanCorners(): ComponentType<ScanCornersProps> | null {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require('./scan-corners') as {
+      ScanCorners?: ComponentType<ScanCornersProps>;
+    };
+    return typeof mod?.ScanCorners === 'function' ? mod.ScanCorners : null;
+  } catch {
+    return null;
+  }
+}
+
+// Module scope (not render): the animated corners module either loads once
+// or degrades to the static twin for the session (Jest, Expo Go).
+const ScanCornersAnimated = loadScanCorners();
+
+function loadCameraModule(): CameraModule | null {  try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require('expo-camera') as CameraModule;
   } catch {
@@ -126,6 +153,19 @@ export function ScanViewfinder({
   const frameWidth = Math.min(FRAME_W, windowWidth * 0.7);
   const frameHeight = frameWidth * (FRAME_H / FRAME_W);
   const reduceMotion = useReducedMotion();
+
+  // Breathing corners live in `scan-corners`, loaded once at module scope:
+  // reanimated crashes at import without the native bridge (Jest, Expo Go),
+  // so a static twin renders there instead. Same pattern as expo-camera.
+  const cornerStyles = useMemo(
+    () => ({
+      tl: styles.cornerTl,
+      tr: styles.cornerTr,
+      bl: styles.cornerBl,
+      br: styles.cornerBr,
+    }),
+    [],
+  );
 
   // Sweep driver: plain interval state, not Animated. The Animated loop
   // (native AND JS driver) provably never advances on this device family —
@@ -238,10 +278,35 @@ export function ScanViewfinder({
               testID="scan-frame"
               style={[styles.frame, { width: frameWidth, height: frameHeight }]}
             >
-              <View style={styles.cornerTl} pointerEvents="none" />
-              <View style={styles.cornerTr} pointerEvents="none" />
-              <View style={styles.cornerBl} pointerEvents="none" />
-              <View style={styles.cornerBr} pointerEvents="none" />
+              {ScanCornersAnimated !== null ? (
+                <ScanCornersAnimated
+                  corner={cornerStyles}
+                  glow={styles.cornerGlow}
+                />
+              ) : (
+                <>
+                  <View
+                    testID="scan-corner"
+                    style={[styles.cornerTl, styles.cornerGlow]}
+                    pointerEvents="none"
+                  />
+                  <View
+                    testID="scan-corner"
+                    style={[styles.cornerTr, styles.cornerGlow]}
+                    pointerEvents="none"
+                  />
+                  <View
+                    testID="scan-corner"
+                    style={[styles.cornerBl, styles.cornerGlow]}
+                    pointerEvents="none"
+                  />
+                  <View
+                    testID="scan-corner"
+                    style={[styles.cornerBr, styles.cornerGlow]}
+                    pointerEvents="none"
+                  />
+                </>
+              )}
               {scanning ? (
                 <View
                   testID="receipt-scanning"
@@ -275,9 +340,11 @@ export function ScanViewfinder({
                   </Text>
                 </View>
               ) : (
-                <Text style={[typography.bodySm, styles.hint]}>
-                  {tr.viewfinderHint}
-                </Text>
+                <View style={styles.hintCapsule}>
+                  <Text style={[typography.bodySm, styles.hint]}>
+                    {tr.viewfinderHint}
+                  </Text>
+                </View>
               )}
             </View>
             <View style={styles.scrimSide} />
@@ -335,6 +402,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
+    // Dark backdrop behind flash + close: only the frame hole stays bright.
+    backgroundColor: colors.scrim,
   },
   topBtn: {
     width: layout.minTapTarget,
@@ -400,6 +469,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: CORNER_THICK,
     borderRightWidth: CORNER_THICK,
     borderColor: colors.scanBracket,
+  },
+  /** Soft gold glow shared by all four brackets (elevation ≈ Android). */
+  cornerGlow: {
+    shadowColor: colors.scanBracket,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  hintCapsule: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    backgroundColor: colors.scrimSoft,
+    borderRadius: 16,
   },
   hint: {
     color: colors.textPrimary,

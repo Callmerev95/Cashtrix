@@ -36,6 +36,7 @@ test('capture mode shows frame + capture, no scan state', () => {
   expect(screen.getByTestId('scan-viewfinder')).toBeTruthy();
   expect(screen.getByTestId('scan-frame')).toBeTruthy();
   expect(screen.getByTestId('scan-capture')).toBeTruthy();
+  expect(screen.getAllByTestId('scan-corner')).toHaveLength(4);
   expect(screen.queryByTestId('receipt-scanning')).toBeNull();
   expect(screen.queryByTestId('receipt-scan-state')).toBeNull();
 });
@@ -46,6 +47,7 @@ test('scanning mode shows overlay state in the frame, capture hidden', () => {
   expect(screen.getByTestId('scan-frame')).toBeTruthy();
   expect(screen.getByTestId('receipt-scanning')).toBeTruthy();
   expect(screen.getByTestId('receipt-scan-state')).toBeTruthy();
+  expect(screen.getAllByTestId('scan-corner')).toHaveLength(4);
   expect(screen.queryByTestId('scan-capture')).toBeNull();
 });
 

@@ -536,7 +536,7 @@ export const en: Dictionary = {
       scanQuota: 'Scan quota used up. Manual entry still works.',
       consentTitle: 'Send the photo for automatic reading?',
       consentBody:
-        'The receipt photo is sent to the server for Gemini reading and only fills this form. Temporary processing, nothing is saved. You still press Save manually.',
+        'The receipt photo is sent to the server for AI Assistant reading and only fills this form. Temporary processing, nothing is saved. You still press Save manually.',
       consentPersistNote: 'Applies on this device.',
       consentSend: 'Send',
       viewfinderHint: 'Position the receipt inside the box',
@@ -785,7 +785,7 @@ export const en: Dictionary = {
     aiQuota: 'Voice AI quota used up. Manual entry still works.',
     consentTitle: 'Send text for automatic reading?',
     consentBody:
-      'Dictated text is sent to the server for Gemini reading and only fills this form. Temporary processing, nothing is saved. You still press Save manually.',
+      'Dictated text is sent to the server for AI Assistant reading and only fills this form. Temporary processing, nothing is saved. You still press Save manually.',
     consentPersistNote: 'Applies on this device.',
     consentSend: 'Send',
     record: 'Record',
@@ -799,9 +799,9 @@ export const en: Dictionary = {
     recordFailed: 'Recording failed to process. Manual typing still works.',
     recordConsentTitle: 'Record and send voice?',
     recordConsentBody:
-      'A recording up to 15 seconds is sent to the server for Gemini reading and only fills this form. Audio is deleted the moment it is read, nothing is saved. You still press Save manually.',
+      'A recording up to 15 seconds is sent to the server for AI Assistant reading and only fills this form. Audio is deleted the moment it is read, nothing is saved. You still press Save manually.',
     listeningTitle: 'Listening...',
-    processing: 'Gemini is recording your transaction...',
+    processing: 'AI Assistant is recording your transaction...',
     confirmTitle: 'Review the entry',
     confirmName: 'Name',
     confirmAmount: 'Amount',

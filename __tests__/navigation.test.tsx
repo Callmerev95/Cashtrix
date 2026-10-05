@@ -18,6 +18,11 @@ import { act } from '@testing-library/react-native';
 
 import { AI_VOICE_DEBOUNCE_MS } from '@/features/voice/api';
 
+// Scan polish: the viewfinder imports reanimated (native worklets crash in
+// Jest). File-local stand-in like the scan suites — the global mapper does
+// not cover this file's registry for this package.
+jest.mock('react-native-reanimated', () => require('./mocks/reanimated'));
+
 // Router integration tests mount the whole tree (providers attempt their
 // reads on mount); on shared CI runners the first mount can exceed the
 // default 5 s timeout even when nothing is wrong — flaked identically on

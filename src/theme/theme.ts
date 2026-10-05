@@ -57,6 +57,8 @@ export const colors = {
   net: palette.accent,
   /** Backdrop scrim for modals/sheets. */
   scrim: 'rgba(0, 0, 0, 0.6)',
+  /** Hint capsule over live camera (scan viewfinder): dimmer than scrim. */
+  scrimSoft: 'rgba(0, 0, 0, 0.5)',
   /** Gold at 15% opacity for highlighted card borders. */
   accentBorderSoft: 'rgba(212, 175, 55, 0.15)',
   /** Ambience blob fill — radial gold at 10% opacity. */

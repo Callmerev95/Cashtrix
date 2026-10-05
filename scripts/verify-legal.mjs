@@ -44,8 +44,8 @@ for (const file of FILES) {
 }
 
 const REQUIRED = {
-  'docs/legal/privacy.html': ['parse-voice', 'scan-receipt', 'Gemini', 'Save'],
-  'docs/legal/privacy-id.html': ['parse-voice', 'scan-receipt', 'Gemini', 'Simpan'],
+  'docs/legal/privacy.html': ['parse-voice', 'scan-receipt', 'AI assistant', 'Save'],
+  'docs/legal/privacy-id.html': ['parse-voice', 'scan-receipt', 'Asisten AI', 'Simpan'],
   'docs/legal/terms.html': ['receipt scan', 'voice entry', 'save manually', 'wrong'],
   'docs/legal/terms-id.html': ['Pindai struk', 'entri suara', 'simpan manual', 'salah'],
 };
