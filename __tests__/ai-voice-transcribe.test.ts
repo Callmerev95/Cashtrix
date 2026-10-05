@@ -95,6 +95,18 @@ describe('kontrak AI6: prompt menyuntik konteks pemanggil', () => {
     expect(typeof prompt).toBe('string');
     expect(prompt.length).toBeGreaterThan(0);
   });
+
+  it('mengajarkan pemetaan makna ke nama resmi (kata-makanan → Makanan)', () => {
+    const prompt = buildTranscribePrompt({
+      categories: CATEGORIES,
+      wallets: ['GoPay', 'Cash'],
+      timezone: 'Asia/Jakarta',
+    });
+    // Tanpa aturan ini model mengembalikan kata mentah ("nasi goreng") yang
+    // divalidator tolak → kategori jalur Rekam selalu kosong.
+    expect(prompt).toContain('nasi goreng');
+    expect(prompt).toMatch(/Makanan/);
+  });
 });
 
 describe('kontrak AI6: validasi strict warisan AI1', () => {

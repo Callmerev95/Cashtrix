@@ -1,7 +1,13 @@
-import { useEffect, useMemo, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 
 import { colors, radius, spacing } from '@/theme';
 
@@ -12,33 +18,20 @@ type VoiceBottomSheetProps = {
   testID?: string;
 };
 
-type SheetModule = {
-  BottomSheetModal: React.ComponentType<Record<string, unknown>>;
-  BottomSheetView: React.ComponentType<Record<string, unknown>>;
-  BottomSheetModalProvider: React.ComponentType<{ children?: ReactNode }>;
-  BottomSheetBackdrop: React.ComponentType<Record<string, unknown>>;
-};
-
-function loadSheetModule(): SheetModule | null {
-  if (
-    typeof process !== 'undefined' &&
-    process.env &&
-    process.env.JEST_WORKER_ID !== undefined
-  ) {
-    return null;
-  }
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require('@gorhom/bottom-sheet') as SheetModule;
-  } catch {
-    return null;
-  }
-}
-
 /**
- * Premium 1-tap sheet shell: Gorhom `BottomSheetModal` + dimmed backdrop on
- * device, plain `View` fallback in Jest / pre-rebuild Expo Go so the
- * `voice-sheet` contract stays synchronous without the native bridge.
+ * 1-tap sheet shell over React Native's core `Modal` (separate window:
+ * always bounded, always on top) with a dimmed tap-to-close backdrop and a
+ * bottom card. Declarative `visible` only — no imperative present/dismiss.
+ *
+ * History (Oct 2026 voice gate bug): this shell previously drove Gorhom's
+ * `BottomSheetModal` (`present()` in an effect). On device the modal subtree
+ * never appeared in the hierarchy (mic gold, nothing opens) across three
+ * OTA-proven variants — mount-fresh, persistent-mount, hoisted-bound —
+ * with zero JS errors: the portal host collapses inside this tree and the
+ * sheet presents into nothing. The plain-`View` fallback proved the
+ * trigger/state/content chain healthy on the same device, so the shell
+ * moved to the core `Modal`, which cannot fail that way (no portal, no
+ * host measurement, no native bridge beyond core).
  */
 export function VoiceBottomSheet({
   open,
@@ -46,87 +39,49 @@ export function VoiceBottomSheet({
   children,
   testID = 'voice-bottom-sheet',
 }: VoiceBottomSheetProps) {
-  const sheet = useMemo(() => loadSheetModule(), []);
-  const modalRef = useRef<{ present(): void; dismiss(): void } | null>(null);
-  const snapPoints = useMemo(() => ['55%', '85%'], []);
-
-  useEffect(() => {
-    if (open) modalRef.current?.present();
-    else modalRef.current?.dismiss();
-  }, [open]);
-
-  if (!open) return null;
-
-  if (!sheet) {
-    return (
-      <View testID={testID} style={fallbackStyles.sheet}>
-        <View
-          testID="voice-sheet-scrim"
-          pointerEvents="none"
-          style={fallbackStyles.scrim}
-        />
-        <View style={fallbackStyles.card}>{children}</View>
-      </View>
-    );
-  }
-
-  const {
-    BottomSheetModal,
-    BottomSheetView,
-    BottomSheetModalProvider,
-    BottomSheetBackdrop,
-  } = sheet;
-
   return (
-    <GestureHandlerRootView style={fallbackStyles.gestureRoot}>
-      <BottomSheetModalProvider>
-        <BottomSheetModal
-          ref={modalRef}
-          index={0}
-          snapPoints={snapPoints}
-          onDismiss={onClose}
-          backgroundStyle={styles.background}
-          handleIndicatorStyle={styles.handle}
-          backdropComponent={(props: Record<string, unknown>) => (
-            <BottomSheetBackdrop
-              {...props}
-              opacity={0.6}
-              appearsOnIndex={0}
-              disappearsOnIndex={-1}
-              pressBehavior="close"
-            />
-          )}
+    <View testID={testID} collapsable={false} style={styles.slot}>
+      <Modal
+        visible={open}
+        transparent
+        animationType="slide"
+        statusBarTranslucent
+        onRequestClose={onClose}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.overlay}
         >
-          <BottomSheetView style={styles.content}>
-            <View testID={testID}>{children}</View>
-          </BottomSheetView>
-        </BottomSheetModal>
-      </BottomSheetModalProvider>
-    </GestureHandlerRootView>
+          <Pressable
+            testID="voice-sheet-scrim"
+            accessibilityRole="button"
+            accessibilityLabel="Close voice panel"
+            onPress={onClose}
+            style={styles.scrim}
+          />
+          <View style={styles.card}>
+            <View style={styles.handle} />
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {children}
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  background: {
-    backgroundColor: colors.surfaceCard,
+  // Zero-size when closed; the Modal carries the open UI in its own window.
+  slot: {
+    flex: 0,
   },
-  handle: {
-    backgroundColor: colors.borderStrong,
-  },
-  content: {
+  overlay: {
     flex: 1,
-    paddingHorizontal: spacing.margin,
-    paddingBottom: spacing.margin,
-  },
-});
-
-const fallbackStyles = StyleSheet.create({
-  gestureRoot: {
-    flex: 1,
-  },
-  sheet: {
-    marginTop: spacing.sm,
-    gap: spacing.sm,
+    justifyContent: 'flex-end',
   },
   scrim: {
     position: 'absolute',
@@ -138,9 +93,19 @@ const fallbackStyles = StyleSheet.create({
     opacity: 0.6,
   },
   card: {
-    borderRadius: radius.xl,
+    maxHeight: '85%',
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
     backgroundColor: colors.surfaceCard,
-    padding: spacing.md,
-    gap: spacing.sm,
+    paddingHorizontal: spacing.margin,
+    paddingBottom: spacing.margin,
+  },
+  handle: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.borderStrong,
+    marginVertical: spacing.sm,
   },
 });

@@ -7,8 +7,10 @@
  * laser + AUTO-ALIGN pill, and the `✨ Terisi otomatis` banner header all
  * render without touching the Fase 1 data contracts or testIDs.
  */
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
+
+import { AI_VOICE_DEBOUNCE_MS } from '@/features/voice/api';
 
 import { AiPrefillBanner } from '@/components/ai-prefill-banner';
 import { VoiceSheet } from '@/features/voice/components/voice-sheet';
@@ -41,12 +43,30 @@ test('phase tabs default idle; timer hidden before recording', () => {
 });
 
 test('typing shows Mengolah phase + stagger waveform + working copy', async () => {
+  const api = jest.requireMock('@/features/voice/api');
+  let resolveAi: ((outcome: { status: 'empty' }) => void) | null = null;
+  api.requestAiVoice.mockImplementationOnce(
+    () =>
+      new Promise<{ status: 'empty' }>((resolve) => {
+        resolveAi = resolve;
+      }),
+  );
   renderOpenSheet();
   fireEvent.changeText(screen.getByTestId('voice-input'), 'soto 25rb');
+  // Debounce guard: the AI flight below only starts after typing settles;
+  // the deferred mock holds it open so the flight UI is observable.
+  await act(async () => {
+    await new Promise((resolve) =>
+      setTimeout(resolve, AI_VOICE_DEBOUNCE_MS + 150),
+    );
+  });
   expect(
-    await screen.findByTestId('voice-waveform', { includeHiddenElements: true }),
+    screen.getByTestId('voice-waveform', { includeHiddenElements: true }),
   ).toBeTruthy();
   expect(screen.getByTestId('voice-status')).toBeTruthy();
+  await act(async () => {
+    resolveAi?.({ status: 'empty' });
+  });
 });
 
 test('waveform stagger constant matches the banner rhythm family', () => {
@@ -79,5 +99,12 @@ test('split rows render bare banners (one header per preview)', async () => {
     />,
   );
   fireEvent.changeText(screen.getByTestId('voice-input'), 'nasi padang 30rb dan kopi 12rb');
+  // Debounce guard: the empty-AI round-trip (local split fallback) only
+  // starts after typing settles.
+  await act(async () => {
+    await new Promise((resolve) =>
+      setTimeout(resolve, AI_VOICE_DEBOUNCE_MS + 150),
+    );
+  });
   expect(await screen.findByTestId('voice-split-preview')).toBeTruthy();
 });

@@ -837,6 +837,9 @@ export default function AddTransactionScreen() {
             onChange={onToggleType}
           />
 
+          {/* Voice entry (P1): slim 48px row at the choice point. The sheet
+          itself is an RN Modal (separate window), so in-flow placement is
+          safe — the ScrollView-nesting constraint died with Gorhom. */}
           {isEdit ? null : (
             <View style={styles.gap}>
               <VoiceSheet

@@ -11,6 +11,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import { tapPrefill } from '@/features/haptics';
 import { VoiceSheet } from '@/features/voice/components/voice-sheet';
+import { AI_VOICE_DEBOUNCE_MS } from '@/features/voice/api';
 import type { AiVoiceOutcome } from '@/features/voice/api';
 
 jest.mock('@/features/voice/api', () => {
@@ -69,6 +70,12 @@ test('waveform shows during AI flight; one tapPrefill + prefill on landing', asy
   const { onPrefill } = renderSheet();
 
   fireEvent.changeText(screen.getByTestId('voice-input'), 'soto 25rb');
+  // Debounce guard: the AI flight below only starts after typing settles.
+  await act(async () => {
+    await new Promise((resolve) =>
+      setTimeout(resolve, AI_VOICE_DEBOUNCE_MS + 150),
+    );
+  });
   // Decorative (hidden from accessibility services, like the AI pulse
   // ring), so the query opts into hidden elements.
   expect(

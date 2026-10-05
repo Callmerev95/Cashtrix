@@ -88,6 +88,19 @@ export const AI_VOICE_MAX_TEXT_LENGTH = 500;
 export const AI_VOICE_MIN_DISPLAY_MS = 900;
 
 /**
+ * Debounce penjadwalan AI (rate-limit guard, Okt 2026): `handleText`
+ * menembak sekali per keystroke/commit, dan dikte Gboard mengirim kata per
+ * kata — tanpa jeda, satu ucapan 6 kata = 6 panggilan `parse-voice` dalam
+ * detik dan limit 5/mnt langsung jebol. AI baru jalan setelah teks hening
+ * selama ini. Hasil lokal (parser murni saat render) tetap instan karena
+ * tidak lewat timer ini.
+ */
+export const AI_VOICE_DEBOUNCE_MS = 1000;
+
+/** Timeout izin mic OS (catat suara): janji yang tak pernah kembali = sunyi. */
+export const VOICE_PERMISSION_TIMEOUT_MS = 5_000;
+
+/**
  * Consent-once flag (AI5, issue #94): separate from scan consent because
  * voice and receipt scan use different device sensors (microphone vs
  * camera). Same device-local pattern as `SCAN_CONSENT_KEY`: sticks to the

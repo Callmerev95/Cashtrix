@@ -13,13 +13,10 @@
  * the parent auto-scan each new photo (event-driven, never an effect).
  */
 import * as ImagePicker from 'expo-image-picker';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Animated,
-  Easing,
   Image,
   Modal,
   Pressable,
@@ -31,7 +28,6 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
-import { Skeleton, SkeletonBlock, useReducedMotion } from '@/components';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 import { pressedFeedback } from '@/components/pressed';
 
@@ -84,33 +80,24 @@ export function ReceiptAttachmentSection({
 
   const [uploading, setUploading] = useState(false);
   const [viewfinderVisible, setViewfinderVisible] = useState(false);
+  // Captured photo shown frozen in the viewfinder while the parent scans;
+  // the scan feedback lives on the camera overlay, not in a card below.
+  const [capturedUri, setCapturedUri] = useState<string | null>(null);
   const autoCameraFired = useRef(false);
-  const reduceMotion = useReducedMotion();
+  const wasScanningRef = useRef(false);
 
-  const [laser] = useState(() => new Animated.Value(0));
+  // Viewfinder closes when the parent scan settles (captured photo scanned).
+  // Deferred past the effect body so no setState runs synchronously in an
+  // effect — the same pattern as autoCamera below.
   useEffect(() => {
-    if (!scanning || reduceMotion) return;
-    const sweep = Animated.sequence([
-      Animated.timing(laser, {
-        toValue: 1,
-        duration: 1300,
-        easing: Easing.inOut(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(laser, {
-        toValue: 0,
-        duration: 1300,
-        easing: Easing.inOut(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]);
-    const loop = Animated.loop(sweep);
-    loop.start();
-    return () => loop.stop();
-  }, [laser, reduceMotion, scanning]);
-  const laserY = laser.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, THUMB - LASER_HEIGHT],
+    const wasScanning = wasScanningRef.current;
+    wasScanningRef.current = scanning;
+    if (capturedUri === null || !wasScanning || scanning) return;
+    const timer = setTimeout(() => {
+      setCapturedUri(null);
+      setViewfinderVisible(false);
+    }, 0);
+    return () => clearTimeout(timer);
   });
 
   async function uploadUri(uri: string, mime: string | null) {
@@ -145,7 +132,9 @@ export function ReceiptAttachmentSection({
   }
 
   async function handleViewfinderCaptured(uri: string) {
-    setViewfinderVisible(false);
+    // Stay open: the viewfinder shows the frozen capture + laser while the
+    // parent scans; it closes when the run settles (effect below).
+    setCapturedUri(uri);
     await uploadUri(uri, null);
   }
 
@@ -268,7 +257,7 @@ export function ReceiptAttachmentSection({
           accessibilityLabel={t.attachA11y}
           onPress={() => onSheetVisibleChange(true)}
           style={({ pressed }) => [
-            styles.attach,
+            styles.attachRow,
             pressed && pressedFeedback,
           ]}
         >
@@ -277,52 +266,39 @@ export function ReceiptAttachmentSection({
           ) : (
             <MaterialIcons
               name="add-a-photo"
-              size={24}
+              size={20}
               color={colors.accent}
             />
           )}
-          <Text style={[typography.bodySm, styles.attachLabel]}>
+          <Text style={[typography.bodyMd, styles.attachLabel]}>
             {t.attach}
           </Text>
-        </Pressable>
-      </View>
-      {scanning ? (
-        <View testID="receipt-scanning" style={styles.scanning}>
-          <View style={styles.scanThumb}>
-            <Skeleton>
-              <SkeletonBlock
-                width={THUMB}
-                height={THUMB}
-                borderRadius={radius.md}
-              />
-            </Skeleton>
-            {!reduceMotion ? (
-              <>
-                <LinearGradient
-                  colors={['transparent', colors.accent, 'transparent']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  pointerEvents="none"
-                  style={[styles.laser, { transform: [{ translateY: laserY }] }]}
-                />
-                <View style={styles.scanGlow} pointerEvents="none" />
-              </>
-            ) : null}
-          </View>
-          <View style={styles.scanCopy}>
-            <View style={styles.alignPill}>
-              <View style={styles.alignDot} />
-              <Text style={[typography.bodySm, styles.alignLabel]}>
-                AUTO-ALIGN
+          {attachments.length > 0 ? (
+            <View style={styles.attachCount}>
+              <Text style={[typography.bodySm, styles.attachCountLabel]}>
+                {attachments.length}
               </Text>
             </View>
-            <Text
-              testID="receipt-scan-state"
-              style={[typography.bodySm, styles.scanningLabel]}
-            >
-              {t.scanning}
-            </Text>
-          </View>
+          ) : null}
+          <MaterialIcons
+            name="chevron-right"
+            size={20}
+            color={colors.textSecondary}
+          />
+        </Pressable>
+      </View>
+      {/* Slim gallery progress only: camera captures scan inside the
+      viewfinder overlay, so the big card below is gone. testIDs stay for
+      the static contract. */}
+      {scanning && capturedUri === null ? (
+        <View testID="receipt-scanning" style={styles.scanningSlim}>
+          <ActivityIndicator size="small" color={colors.accent} />
+          <Text
+            testID="receipt-scan-state"
+            style={[typography.bodySm, styles.scanningLabel]}
+          >
+            {t.scanning}
+          </Text>
         </View>
       ) : null}
       <Text style={[typography.bodySm, styles.note]}>{t.retentionNote}</Text>
@@ -387,6 +363,8 @@ export function ReceiptAttachmentSection({
       </Modal>
       <ScanViewfinder
         visible={viewfinderVisible}
+        scanning={scanning}
+        previewUri={capturedUri}
         onClose={() => setViewfinderVisible(false)}
         onCaptured={(uri) => void handleViewfinderCaptured(uri)}
       />
@@ -395,7 +373,6 @@ export function ReceiptAttachmentSection({
 }
 
 const THUMB = 72;
-const LASER_HEIGHT = 2;
 /** Gold viewfinder corner length (Stitch: 7px-scale corners). */
 const CORNER = 14;
 
@@ -469,82 +446,36 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.textSecondary,
   },
-  attach: {
-    width: THUMB,
-    height: THUMB,
-    borderRadius: radius.md,
+  attachRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: layout.minTapTarget + 4,
+    paddingVertical: spacing.xs,
+  },
+  attachCount: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.xs / 2,
+    paddingHorizontal: spacing.xs / 2,
     backgroundColor: colors.surfaceElevated,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.borderStrong,
-    borderStyle: 'dashed',
-    minHeight: layout.minTapTarget,
+    borderColor: colors.accent,
+  },
+  attachCountLabel: {
+    color: colors.accent,
   },
   attachLabel: {
     color: colors.accent,
   },
-  scanning: {
+  scanningSlim: {
     marginTop: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-  },
-  scanThumb: {
-    width: THUMB,
-    height: THUMB,
-    borderRadius: radius.md,
-    overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.accent,
-    shadowColor: colors.accent,
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  laser: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: LASER_HEIGHT,
-    shadowColor: colors.accent,
-    shadowOpacity: 0.8,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  scanGlow: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    backgroundColor: colors.accentAmbience,
-  },
-  scanCopy: {
-    flex: 1,
-    gap: spacing.xs / 2,
-  },
-  alignPill: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs / 2,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs / 2,
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceCard,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-  alignDot: {
-    width: 6,
-    height: 6,
-    borderRadius: radius.full,
-    backgroundColor: colors.gain,
-  },
-  alignLabel: {
-    color: colors.textPrimary,
   },
   scanningLabel: {
     color: colors.textSecondary,

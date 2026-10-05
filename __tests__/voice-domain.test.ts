@@ -243,6 +243,11 @@ describe('hintVoiceCategory + copy penolakan', () => {
     expect(hintVoiceCategory('zqx 30rb')).toBeNull();
   });
 
+  it('kata-makanan mentah ikut terpetakan (jaring rekam)', () => {
+    expect(hintVoiceCategory('beli nasi goreng 15000')).toBe('Makanan');
+    expect(hintVoiceCategory('sate ayam 20000')).toBe('Makanan');
+  });
+
   it('voiceMessages mirror kamus id', () => {
     expect(voiceMessages.multiAmount).toBe(id.voice.multiAmount);
     expect(voiceMessages.transferRefused).toBe(id.voice.transferRefused);

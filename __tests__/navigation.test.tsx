@@ -14,6 +14,9 @@
  * the inert test key, so the D4 error cards render without network timing).
  */
 import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
+import { act } from '@testing-library/react-native';
+
+import { AI_VOICE_DEBOUNCE_MS } from '@/features/voice/api';
 
 // Router integration tests mount the whole tree (providers attempt their
 // reads on mount); on shared CI runners the first mount can exceed the
@@ -517,6 +520,11 @@ describe('voice entry (VC2)', () => {
 
     // AI4: the sheet is AI-first, so the mock resolves `empty` and the local
     // rule fallback lands after the honesty floor, not synchronously.
+    // Debounce guard: the status line above is local (instant), but the form
+    // prefill below needs the settled round-trip (fake timers: advance).
+    await act(async () => {
+      jest.advanceTimersByTime(AI_VOICE_DEBOUNCE_MS + 150);
+    });
     await screen.findByText(/25\.000.*GoPay.*Makanan/);
     expect(screen.getByTestId('amount-input').props.value).toBe('25.000');
     expect(
@@ -623,6 +631,13 @@ describe('voice entry (VC2)', () => {
       screen.getByTestId('voice-input'),
       'soto mie 25rb pakai gopay',
     );
+    // Debounce guard: the AI (mocked empty → local fallback) only fires
+    // after the typing settles; the prefill below needs that round-trip.
+    // renderRouter enables fake timers globally, so advance them (a real
+    // sleep would hang here forever).
+    await act(async () => {
+      jest.advanceTimersByTime(AI_VOICE_DEBOUNCE_MS + 150);
+    });
     await screen.findByText(/25\.000.*GoPay.*Makanan/);
     fireEvent.press(screen.getByTestId('voice-save'));
 
@@ -631,7 +646,7 @@ describe('voice entry (VC2)', () => {
       screen.getByText('Makanan · Rp 25.000 tersimpan'),
     ).toBeTruthy();
     expect(getPathname()).toBe('/');
-  });
+  }, 25_000);
 
   it('edit mode has no mic (voice is create-only)', async () => {
     seedSession('2026-09-17T00:00:00Z');

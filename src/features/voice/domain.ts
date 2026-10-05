@@ -184,7 +184,7 @@ const NUMBER_WORDS =
  * resolves OCR hints.
  */
 const HINT_TABLE: { hint: string; match: RegExp }[] = [
-  { hint: 'Makanan', match: /kopi|coffee|starbucks|americano|latte|espresso|kafe|cafe|makan|resto|restoran|warung|ayam|bakso|soto|mie|noodle|burger|pizza|sushi|padang|kuliner|minum|jus|boba|teh/ },
+  { hint: 'Makanan', match: /kopi|coffee|starbucks|americano|latte|espresso|kafe|cafe|makan|resto|restoran|warung|ayam|bakso|soto|mie|noodle|burger|pizza|sushi|padang|kuliner|minum|jus|boba|teh|nasi|goreng|sate|lalapan|pecel|rendang|gudeg|martabak|siomay|ketoprak|geprek|penyet|seafood|dimsum|steak|spaghetti|ramen|udon|coklat|roti|cake|donat|martabak/ },
   { hint: 'Belanja', match: /mart|market|toko|store|shop|mall|swalayan|belanja|retail|grosir/ },
   { hint: 'Transportasi', match: /bensin|shell|pertamina|parkir|tol|gojek|grab|taksi|taxi|kereta|bus\b|tiket|pesawat|lion|garuda|mrt|lrt/ },
   { hint: 'Kesehatan', match: /apotek|klinik|dokter|sehat|rs\b|puskesmas|lab\b/ },

@@ -543,6 +543,7 @@ export const id = {
       viewfinderHint: 'Posisikan Struk di Dalam Kotak',
       viewfinderCaptureA11y: 'Jepret foto struk',
       viewfinderCloseA11y: 'Tutup kamera',
+      viewfinderTorchA11y: 'Nyalakan atau matikan lampu kilat',
       reviewTitle: 'Periksa hasil pindaian',
       reviewImageA11y: 'Pratinjau foto struk',
       reviewMerchant: 'Toko',
@@ -799,6 +800,7 @@ export const id = {
     recordDenied: 'Izin mikrofon ditolak. Ketik manual tetap bisa.',
     recordUnavailable: 'Perekam tak tersedia di perangkat ini. Ketik manual tetap bisa.',
     recordTooLarge: 'Rekaman melebihi 1 MB. Coba ucapkan lebih singkat.',
+    recordFailed: 'Rekaman gagal diproses. Ketik manual tetap bisa.',
     recordConsentTitle: 'Rekam dan kirim suara?',
     recordConsentBody:
       'Rekaman maksimal 15 detik dikirim ke server untuk dibaca Gemini dan hanya mengisi form ini. Audio dihapus seketika setelah dibaca, tidak menyimpan apa pun. Anda tetap menekan Simpan manual.',

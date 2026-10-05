@@ -52,7 +52,24 @@ appId: com.callmerev95.cashtrix
     id: "voice-input"
 - inputText: "soto mie 25rb"
 - hideKeyboard
-# Prefill proof: the form now carries the spoken amount on the expense rail.
+# First-run AI consent-once Alert (device-local, persists after granting).
+- runFlow:
+    when:
+      visible: "KIRIM"
+    commands:
+      - tapOn: "KIRIM"
+# The sheet is a modal now (Oct 2026): it covers the form, so the parse
+# proof is in-sheet. Wait out the AI round-trip first (loading text gone),
+# otherwise the result assert races firePrefill.
+- extendedWaitUntil:
+    notVisible: "Memahami ucapan…"
+    timeout: 40000
+- assertVisible:
+    id: "voice-status"
+# Close the modal to reach the prefilled form underneath. Closing ends the
+# voice session, so the save button below is transaction-save, not voice-save.
+- tapOn:
+    id: "voice-close"
 - assertVisible:
     id: "amount-input"
 # The voice panel adds height above the grid — scroll the category into view.
@@ -62,10 +79,15 @@ appId: com.callmerev95.cashtrix
     direction: DOWN
     timeout: 15000
 - tapOn: "Makanan"
-# Tap 1 (Dompet, keeps the suggestion) + tap 2 (Simpan via voice-save).
+# Tap 1 (Dompet, keeps the suggestion) + tap 2 (Simpan).
+- scrollUntilVisible:
+    element:
+      text: "Cash"
+    direction: DOWN
+    timeout: 15000
 - tapOn: "Cash"
 - tapOn:
-    id: "voice-save"
+    id: "transaction-save"
 - scrollUntilVisible:
     element:
       id: "dashboard-history"
@@ -90,6 +112,14 @@ appId: com.callmerev95.cashtrix
     id: "voice-input"
 - inputText: "nasi padang 30rb dan kopi 12rb"
 - hideKeyboard
+- runFlow:
+    when:
+      visible: "KIRIM"
+    commands:
+      - tapOn: "KIRIM"
+- extendedWaitUntil:
+    notVisible: "Memahami ucapan…"
+    timeout: 40000
 - assertVisible:
     id: "voice-split-preview"
 - tapOn:
@@ -105,9 +135,17 @@ appId: com.callmerev95.cashtrix
 # Back out clean.
 - tapOn:
     id: "fab-add-transaction"
-- assertVisible:
-    id: "transaction-save"
+- extendedWaitUntil:
+    visible:
+      id: "transaction-save"
+    timeout: 15000
 - tapOn:
     id: "add-transaction-close"
+- scrollUntilVisible:
+    element:
+      id: "dashboard-history"
+    direction: DOWN
+    centerElement: true
+    timeout: 15000
 - assertVisible:
     id: "dashboard-history"

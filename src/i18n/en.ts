@@ -542,6 +542,7 @@ export const en: Dictionary = {
       viewfinderHint: 'Position the receipt inside the box',
       viewfinderCaptureA11y: 'Capture receipt photo',
       viewfinderCloseA11y: 'Close camera',
+      viewfinderTorchA11y: 'Toggle flashlight',
       reviewTitle: 'Check the scan result',
       reviewImageA11y: 'Receipt photo preview',
       reviewMerchant: 'Store',
@@ -795,6 +796,7 @@ export const en: Dictionary = {
     recordDenied: 'Microphone permission denied. Manual typing still works.',
     recordUnavailable: 'Recorder unavailable on this device. Manual typing still works.',
     recordTooLarge: 'Recording exceeds 1 MB. Try a shorter utterance.',
+    recordFailed: 'Recording failed to process. Manual typing still works.',
     recordConsentTitle: 'Record and send voice?',
     recordConsentBody:
       'A recording up to 15 seconds is sent to the server for Gemini reading and only fills this form. Audio is deleted the moment it is read, nothing is saved. You still press Save manually.',

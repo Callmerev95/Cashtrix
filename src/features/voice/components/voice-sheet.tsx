@@ -2,8 +2,6 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
-  Animated,
-  Easing,
   Pressable,
   StyleSheet,
   Text,
@@ -19,11 +17,11 @@ import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 import { AI_BANNER_STAGGER_MS, AiPrefillBanner } from '@/components';
 import { pressedFeedback } from '@/components/pressed';
-import { useReducedMotion } from '@/components/skeleton';
 import { tapPrefill, tapRecord } from '@/features/haptics';
 import { aiPrefillEvent, trackEvent } from '@/features/observability';
 
 import {
+  hintVoiceCategory,
   parseVoiceSplit,
   parseVoiceText,
   voiceRefusalMessage,
@@ -34,6 +32,7 @@ import {
 } from '../domain';
 import {
   aiVoiceDisplayDelay,
+  AI_VOICE_DEBOUNCE_MS,
   hasRecordConsent,
   hasVoiceConsent,
   requestAiTranscribe,
@@ -41,6 +40,7 @@ import {
   setRecordConsent,
   setVoiceConsent,
   uploadVoiceRecording,
+  VOICE_PERMISSION_TIMEOUT_MS,
   VOICE_RECORD_MAX_MS,
   type AiVoicePrefillPayload,
 } from '../api';
@@ -59,18 +59,51 @@ type AudioRecorderShape = {
 };
 
 type AudioModuleShape = {
-  AudioModule: {
-    requestRecordingPermissionsAsync(): Promise<{ granted: boolean }>;
-  };
+  requestRecordingPermissionsAsync(): Promise<{ granted: boolean }>;
   RecordingPresets: { HIGH_QUALITY: unknown };
   AudioRecorder: new (options: unknown) => AudioRecorderShape;
 };
 
-/** Lazy `expo-audio` loader (pola lock/api.ts): null when absent. */
+/**
+ * Lazy `expo-audio` loader (pola lock/api.ts): null when absent.
+ *
+ * Shape note (Okt 2026): only the package ROOT is public API —
+ * `requestRecordingPermissionsAsync` + `RecordingPresets` live there, while
+ * the recorder class lives on the internal native module
+ * (`expo-audio/build/AudioModule`, what the lib's own `useAudioRecorder`
+ * news up). There is NO public `AudioModule` export; reaching for
+ * `root.AudioModule.*` throws on every device and the record button dies
+ * silent with `unavailable`. Both requires stay inside try/catch so Expo Go
+ * (no native module) keeps degrading to typing.
+ */
 function loadAudioModule(): AudioModuleShape | null {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require('expo-audio') as AudioModuleShape;
+    const root = require('expo-audio') as {
+      requestRecordingPermissionsAsync?: unknown;
+      RecordingPresets?: unknown;
+    };
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const nativeModule = require('expo-audio/build/AudioModule') as {
+      default?: { AudioRecorder?: unknown };
+      AudioRecorder?: unknown;
+    };
+    const AudioRecorder =
+      nativeModule?.default?.AudioRecorder ?? nativeModule?.AudioRecorder;
+    if (
+      typeof root.requestRecordingPermissionsAsync !== 'function' ||
+      root.RecordingPresets == null ||
+      typeof AudioRecorder !== 'function'
+    ) {
+      return null;
+    }
+    return {
+      requestRecordingPermissionsAsync:
+        root.requestRecordingPermissionsAsync as AudioModuleShape['requestRecordingPermissionsAsync'],
+      RecordingPresets:
+        root.RecordingPresets as AudioModuleShape['RecordingPresets'],
+      AudioRecorder: AudioRecorder as AudioModuleShape['AudioRecorder'],
+    };
   } catch {
     return null;
   }
@@ -103,9 +136,6 @@ function resolveWalletHint(
   );
 }
 
-/** Hero mic diameter (Stitch: 84px record button). */
-const MIC_SIZE = 84;
-
 /** Hero record timer `00:SS / 00:15` — real seconds, cap from the API. */
 function formatRecordTimer(secs: number): string {
   const max = VOICE_RECORD_MAX_MS / 1000;
@@ -128,7 +158,6 @@ export function VoiceSheet({
   const language = useLanguage();
   const t = dictionaryFor(language).voice;
   const commonCancel = dictionaryFor(language).common.cancel;
-  const reduceMotion = useReducedMotion();
   const [text, setText] = useState('');
   const appliedKey = useRef<string | null>(null);
   const [removedIdx, setRemovedIdx] = useState<number[]>([]);
@@ -141,6 +170,19 @@ export function VoiceSheet({
     walletId: string | null;
   } | null>(null);
   const requestId = useRef(0);
+  // Debounce penjadwalan AI (rate-limit guard): tiap keystroke/commit
+  // menjadwal ulang; AI baru jalan setelah teks hening AI_VOICE_DEBOUNCE_MS.
+  const aiDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Timer debounce tidak boleh menembak sesudah unmount (kerja hantu).
+  useEffect(() => {
+    return () => {
+      if (aiDebounceRef.current !== null) {
+        clearTimeout(aiDebounceRef.current);
+        aiDebounceRef.current = null;
+      }
+    };
+  }, []);
   const [isRecording, setIsRecording] = useState(false);
   const [recordSecs, setRecordSecs] = useState(0);
   const [recordNote, setRecordNote] = useState<
@@ -170,14 +212,21 @@ export function VoiceSheet({
   /** Transcript-free path: `transcribe-voice` returns the prefill directly. */
   function applyTranscribePrefill(payload: AiVoicePrefillPayload) {
     const walletId = resolveWalletHint(payload.walletHint, wallets);
-    setAiPrefill({ payload, walletId });
+    // Jaring pengaman kategori (jalur Rekam): bila model tak berani memberi
+    // nama (hint null — mis. kata-makanan mentah yang divalidator tolak),
+    // turun ke tabel lokal dari transkrip, pengetahuan yang sama dengan
+    // jalur dikte. Kartu + form diisi dari hasil gabungan ini.
+    const categoryHint =
+      payload.categoryHint ?? hintVoiceCategory(payload.note);
+    setAiPrefill({ payload: { ...payload, categoryHint }, walletId });
+    setAiNote(null);
     setRecordNote(null);
     trackAi(true);
     firePrefill({
       amount: payload.amount,
       kind: payload.kind,
       walletId,
-      categoryHint: payload.categoryHint,
+      categoryHint,
       note: payload.note,
     });
   }
@@ -250,9 +299,19 @@ export function VoiceSheet({
       setRecordNote('unavailable');
       return;
     }
+    // Izin mic OS yang tak pernah kembali (dialog ditekan/ditahan sistem)
+    // tidak boleh jadi tombol mati: batas tegas lalu status terlihat.
     let permission: { granted: boolean };
     try {
-      permission = await audio.AudioModule.requestRecordingPermissionsAsync();
+      permission = await Promise.race([
+        audio.requestRecordingPermissionsAsync(),
+        new Promise<never>((_, reject) => {
+          setTimeout(
+            () => reject(new Error('voice_permission_timeout')),
+            VOICE_PERMISSION_TIMEOUT_MS,
+          );
+        }),
+      ]);
     } catch {
       setRecordNote('unavailable');
       return;
@@ -261,9 +320,13 @@ export function VoiceSheet({
       setRecordNote('denied');
       return;
     }
-    const recorder = new audio.AudioRecorder(
-      audio.RecordingPresets.HIGH_QUALITY,
-    );
+    let recorder: AudioRecorderShape;
+    try {
+      recorder = new audio.AudioRecorder(audio.RecordingPresets.HIGH_QUALITY);
+    } catch {
+      setRecordNote('unavailable');
+      return;
+    }
     try {
       await recorder.prepareToRecordAsync();
     } catch {
@@ -340,8 +403,96 @@ export function VoiceSheet({
       .join(' · ');
   }
 
-  function firePrefill(prefill: VoicePrefill): boolean {
-    const key = [
+  /**
+   * C-ringan render helpers: hasil parser lokal (split bila baris > 1,
+   * tunggal bila bukan) — dipakai jalur showSplit/showLocalSingle/fail
+   * seperti dulu, PLUS di bawah catatan rate/quota agar sheet tak pernah
+   * buntu total. testID identik, tanpa literal baru.
+   */
+  function renderLocalSingleText() {
+    return (
+      <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
+        {localResult.status === 'ok'
+          ? localPreviewParts.join(' · ')
+          : voiceRefusalMessage(localResult.status, language)}
+      </Text>
+    );
+  }
+
+  function renderSplitPreview() {
+    return (
+      <View testID="voice-split-preview" style={styles.splitList}>
+        {splitRows?.map((row, index) => {
+          if (removedIdx.includes(index)) return null;
+          return (
+            <View key={index} style={styles.splitRow}>
+              <AiPrefillBanner
+                header={null}
+                delay={index * AI_BANNER_STAGGER_MS}
+                style={styles.splitBanner}
+              >
+                <Text
+                  testID="voice-split-row"
+                  style={[typography.bodyMd, styles.status]}
+                >
+                  {row.ok
+                    ? previewFor(row)
+                    : voiceSplitRefusalMessage(row.reason, language)}
+                </Text>
+                {!row.ok ? (
+                  <Text
+                    style={[typography.bodySm, styles.hint]}
+                    selectable
+                  >
+                    {row.text}
+                  </Text>
+                ) : null}
+              </AiPrefillBanner>
+              <Pressable
+                testID="voice-row-remove"
+                accessibilityRole="button"
+                accessibilityLabel={`${t.removeRow}: ${row.ok ? row.note : row.text}`}
+                onPress={() => removeSplitRow(index)}
+                style={({ pressed }) => [
+                  styles.remove,
+                  pressed && pressedFeedback,
+                ]}
+              >
+                <MaterialIcons
+                  name="close"
+                  size={18}
+                  color={colors.textSecondary}
+                />
+              </Pressable>
+            </View>
+          );
+        })}
+        {savableRows.length > 0 ? (
+          <Pressable
+            testID="voice-split-save"
+            accessibilityRole="button"
+            onPress={() => onSplitSave?.(savableRows)}
+            style={({ pressed }) => [
+              styles.splitSave,
+              pressed && pressedFeedback,
+            ]}
+          >
+            <Text style={[typography.bodyMd, styles.splitSaveLabel]}>
+              {fill(t.splitSave, { count: savableRows.length })}
+            </Text>
+          </Pressable>
+        ) : null}
+      </View>
+    );
+  }
+
+  /** Hasil lokal apa pun yang tersedia (split diutamakan, seperti rantai). */
+  function renderLocalFallback() {
+    if (splitRows !== null) return renderSplitPreview();
+    return renderLocalSingleText();
+  }
+
+  function firePrefill(prefill: VoicePrefill): boolean {    const key = [
       prefill.amount,
       prefill.kind,
       prefill.walletId ?? '',
@@ -365,60 +516,68 @@ export function VoiceSheet({
     setText(next);
     setRemovedIdx([]);
     setAiPrefill(null);
+    if (aiDebounceRef.current !== null) {
+      clearTimeout(aiDebounceRef.current);
+      aiDebounceRef.current = null;
+    }
     if (next.trim() === '') {
       requestId.current += 1;
       setAiLoading(false);
       setAiNote(null);
       return;
     }
+    // Debounce: AI baru jalan setelah teks hening — satu ucapan yang masuk
+    // kata-per-kata (dikte Gboard) hanya menembak sekali, bukan sekali per
+    // kata. Hasil lokal (parser murni saat render) tetap tampil instan.
+    aiDebounceRef.current = setTimeout(() => {
+      aiDebounceRef.current = null;
+      void runDebouncedAi(next);
+    }, AI_VOICE_DEBOUNCE_MS);
+  }
+
+  async function runDebouncedAi(next: string) {
     const current = requestId.current + 1;
     requestId.current = current;
     setAiLoading(true);
     setAiNote('working');
-    void (async () => {
-      if (!(await hasVoiceConsent())) {
-        if (requestId.current !== current) return;
-        setAiLoading(false);
-        Alert.alert(
-          t.consentTitle,
-          `${t.consentBody} ${t.consentPersistNote}`,
-          [
-            {
-              text: commonCancel,
-              style: 'cancel',
-              onPress: () => {
-                if (requestId.current !== current) return;
-                setAiNote(null);
-                const parsed = parseVoiceText(next, wallets);
-                if (parsed.status === 'ok') {
-                  firePrefill({
-                    amount: parsed.amount,
-                    kind: parsed.kind,
-                    walletId: parsed.walletId,
-                    categoryHint: parsed.categoryHint,
-                    note: parsed.note,
-                  });
-                }
-              },
-            },
-            {
-              text: t.consentSend,
-              onPress: () => {
-                void (async () => {
-                  await setVoiceConsent();
-                  if (requestId.current !== current) return;
-                  setAiLoading(true);
-                  setAiNote('working');
-                  await runAiFor(next, current);
-                })();
-              },
-            },
-          ],
-        );
-        return;
-      }
-      await runAiFor(next, current);
-    })();
+    if (!(await hasVoiceConsent())) {
+      if (requestId.current !== current) return;
+      setAiLoading(false);
+      Alert.alert(t.consentTitle, `${t.consentBody} ${t.consentPersistNote}`, [
+        {
+          text: commonCancel,
+          style: 'cancel',
+          onPress: () => {
+            if (requestId.current !== current) return;
+            setAiNote(null);
+            const parsed = parseVoiceText(next, wallets);
+            if (parsed.status === 'ok') {
+              firePrefill({
+                amount: parsed.amount,
+                kind: parsed.kind,
+                walletId: parsed.walletId,
+                categoryHint: parsed.categoryHint,
+                note: parsed.note,
+              });
+            }
+          },
+        },
+        {
+          text: t.consentSend,
+          onPress: () => {
+            void (async () => {
+              await setVoiceConsent();
+              if (requestId.current !== current) return;
+              setAiLoading(true);
+              setAiNote('working');
+              await runAiFor(next, current);
+            })();
+          },
+        },
+      ]);
+      return;
+    }
+    await runAiFor(next, current);
   }
 
   async function runAiFor(next: string, current: number) {
@@ -458,15 +617,26 @@ export function VoiceSheet({
     if (outcome.status === 'rate_limited') {
       setAiNote('rate_limited');
       trackAi(false);
+      applyLocalFallback(next);
       return;
     }
     if (outcome.status === 'quota_exceeded') {
       setAiNote('quota_exceeded');
       trackAi(false);
+      applyLocalFallback(next);
       return;
     }
     setAiNote('fail');
     trackAi(false);
+    applyLocalFallback(next);
+  }
+
+  /**
+   * C-ringan: saat AI memberi hasil distinct (rate/quota/gagal), parser
+   * lokal tetap mengisi form — sheet tak pernah buntu total di balik
+   * catatan. Sama persis dengan jalur gagal lama (dipindah ke sini).
+   */
+  function applyLocalFallback(next: string) {
     const parsed = parseVoiceText(next, wallets);
     if (parsed.status === 'ok') {
       firePrefill({
@@ -522,29 +692,6 @@ export function VoiceSheet({
   const showLocalSingle =
     !aiPrefill && !aiLoading && !showSplit && text !== '';
 
-  const [pulse] = useState(() => new Animated.Value(0));
-  useEffect(() => {
-    if (!(aiLoading || isRecording) || reduceMotion) return;
-    const loop = Animated.loop(
-      Animated.timing(pulse, {
-        toValue: 1,
-        duration: 1400,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [aiLoading, isRecording, pulse, reduceMotion]);
-  const pulseScale = pulse.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 1.8],
-  });
-  const pulseOpacity = pulse.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.6, 0],
-  });
-
   const recordingActive =
     isRecording ||
     recordNote === 'uploading' ||
@@ -553,33 +700,29 @@ export function VoiceSheet({
 
   return (
     <View>
-      <View style={styles.micWrap}>
-        {(aiLoading || isRecording) && !reduceMotion ? (
-          <Animated.View
-            pointerEvents="none"
-            accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants"
-            style={[
-              styles.pulseRing,
-              { transform: [{ scale: pulseScale }], opacity: pulseOpacity },
-            ]}
-          />
-        ) : null}
-        <Pressable
-          testID="voice-mic"
-          accessibilityRole="button"
-          accessibilityLabel={t.micA11y}
-          onPress={() => setPanelOpen(!open)}
-          style={({ pressed }) => [
-            styles.mic,
+      {/* Slim voice entry (P1): one 48px row — 44px mic action + label —
+      instead of the former 84px hero block. The whole row toggles the
+      panel; `voice-mic` stays the stable contract. */}
+      <Pressable
+        testID="voice-mic"
+        accessibilityRole="button"
+        accessibilityLabel={t.micA11y}
+        onPress={() => setPanelOpen(!open)}
+        style={({ pressed }) => [
+          styles.micRow,
+          pressed && pressedFeedback,
+        ]}
+      >
+        <View
+          style={[
+            styles.micIcon,
             open && styles.micActive,
             isRecording && styles.micRecording,
-            pressed && pressedFeedback,
           ]}
         >
           <MaterialIcons
             name="mic"
-            size={36}
+            size={22}
             color={
               isRecording
                 ? colors.textPrimary
@@ -588,14 +731,16 @@ export function VoiceSheet({
                   : colors.textSecondary
             }
           />
-        </Pressable>
+        </View>
         <Text style={[typography.bodyMd, styles.micLabel]}>
           {t.mic}
         </Text>
-      </View>
+      </Pressable>
 
-      {open ? (
-        <VoiceBottomSheet open={open} onClose={() => setPanelOpen(false)}>
+      {/* The sheet stays mounted (canonical Gorhom pattern): `open` drives
+      present()/dismiss() inside VoiceBottomSheet. Conditional mounting raced
+      the modal ref on device (mic gold, no sheet — Oct 2026). */}
+      <VoiceBottomSheet open={open} onClose={() => setPanelOpen(false)}>
         <View testID="voice-sheet" style={styles.panel}>
           <View testID="voice-phase" style={styles.phaseRow}>
             <View
@@ -689,6 +834,10 @@ export function VoiceSheet({
             <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
               {t.recordTooLarge}
             </Text>
+          ) : recordNote === 'failed' ? (
+            <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
+              {t.recordFailed}
+            </Text>
           ) : null}
           <TextInput
             testID="voice-input"
@@ -703,7 +852,11 @@ export function VoiceSheet({
           <Text testID="voice-hint" style={[typography.bodySm, styles.hint]}>
             {t.inputHint}
           </Text>
-          {text === '' ? null : aiLoading ? (
+          {/* Hasil AI boleh tampil tanpa teks ketikan: jalur Rekam tak pernah
+          mengetik (transkrip langsung jadi prefill), jadi gerbang teks kosong
+          harus meloloskan aiPrefill — tanpanya kartu preview tak pernah
+          muncul dan form terisi diam-diam di belakang. */}
+          {text === '' && aiPrefill === null ? null : aiLoading ? (
             <>
               <VoiceWaveform />
               <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
@@ -711,13 +864,19 @@ export function VoiceSheet({
               </Text>
             </>
           ) : aiNote === 'rate_limited' ? (
-            <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
-              {t.aiRateLimited}
-            </Text>
+            <>
+              <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
+                {t.aiRateLimited}
+              </Text>
+              {renderLocalFallback()}
+            </>
           ) : aiNote === 'quota_exceeded' ? (
-            <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
-              {t.aiQuota}
-            </Text>
+            <>
+              <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
+                {t.aiQuota}
+              </Text>
+              {renderLocalFallback()}
+            </>
           ) : aiPrefill ? (
             <>
             <AiPrefillBanner>
@@ -747,80 +906,11 @@ export function VoiceSheet({
             />
             </>
           ) : showSplit ? (
-            <View testID="voice-split-preview" style={styles.splitList}>
-              {splitRows.map((row, index) => {
-                if (removedIdx.includes(index)) return null;
-                return (
-                  <View key={index} style={styles.splitRow}>
-                    <AiPrefillBanner
-                      header={null}
-                      delay={index * AI_BANNER_STAGGER_MS}
-                      style={styles.splitBanner}
-                    >
-                      <Text
-                        testID="voice-split-row"
-                        style={[typography.bodyMd, styles.status]}
-                      >
-                        {row.ok
-                          ? previewFor(row)
-                          : voiceSplitRefusalMessage(row.reason, language)}
-                      </Text>
-                      {!row.ok ? (
-                        <Text
-                          style={[typography.bodySm, styles.hint]}
-                          selectable
-                        >
-                          {row.text}
-                        </Text>
-                      ) : null}
-                    </AiPrefillBanner>
-                    <Pressable
-                      testID="voice-row-remove"
-                      accessibilityRole="button"
-                      accessibilityLabel={`${t.removeRow}: ${row.ok ? row.note : row.text}`}
-                      onPress={() => removeSplitRow(index)}
-                      style={({ pressed }) => [
-                        styles.remove,
-                        pressed && pressedFeedback,
-                      ]}
-                    >
-                      <MaterialIcons
-                        name="close"
-                        size={18}
-                        color={colors.textSecondary}
-                      />
-                    </Pressable>
-                  </View>
-                );
-              })}
-              {savableRows.length > 0 ? (
-                <Pressable
-                  testID="voice-split-save"
-                  accessibilityRole="button"
-                  onPress={() => onSplitSave?.(savableRows)}
-                  style={({ pressed }) => [
-                    styles.splitSave,
-                    pressed && pressedFeedback,
-                  ]}
-                >
-                  <Text style={[typography.bodyMd, styles.splitSaveLabel]}>
-                    {fill(t.splitSave, { count: savableRows.length })}
-                  </Text>
-                </Pressable>
-              ) : null}
-            </View>
+            renderSplitPreview()
           ) : showLocalSingle ? (
-            <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
-              {localResult.status === 'ok'
-                ? localPreviewParts.join(' · ')
-                : voiceRefusalMessage(localResult.status, language)}
-            </Text>
+            renderLocalSingleText()
           ) : aiNote === 'fail' ? (
-            <Text testID="voice-status" style={[typography.bodyMd, styles.status]}>
-              {localResult.status === 'ok'
-                ? localPreviewParts.join(' · ')
-                : voiceRefusalMessage(localResult.status, language)}
-            </Text>
+            renderLocalSingleText()
           ) : null}
           <Pressable
             testID="voice-close"
@@ -835,31 +925,22 @@ export function VoiceSheet({
             <Text style={[typography.bodyMd, styles.hint]}>{t.close}</Text>
           </Pressable>
         </View>
-        </VoiceBottomSheet>
-      ) : null}
+      </VoiceBottomSheet>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  micWrap: {
+  micRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.lg,
     gap: spacing.sm,
+    minHeight: layout.minTapTarget + 4,
+    paddingVertical: spacing.xs,
   },
-  pulseRing: {
-    position: 'absolute',
-    top: spacing.lg,
-    width: MIC_SIZE,
-    height: MIC_SIZE,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.accent,
-  },
-  mic: {
-    width: MIC_SIZE,
-    height: MIC_SIZE,
+  micIcon: {
+    width: layout.minTapTarget,
+    height: layout.minTapTarget,
     borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
