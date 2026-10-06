@@ -437,3 +437,47 @@ terpisah + `VoiceSheet` consent-once via Alert + i18n `voice.consent*` +
 koreksi. Gate working tree: lint + typecheck + Jest 787/787 + kontrak statis
 111/10/3 hijau (tanpa scan.yaml, putusan pemilik). Tanpa DDL/native; live
 matrix + device Redmi manual menyusul. MERGED via PR #100.
+
+---
+
+## 2.1.0 Analytics Overhaul (rilis `2.1.0`)
+
+Sumber: grill Analytics 2026-10-06 + ADR-0017. Keputusan terkunci: fondasi
+visual svg dulu (Opsi A) + fungsional/LLM menyusul; satu rebuild preview;
+fondasi nol DDL; ejaan kanonis `Analytics` + glosarium `CONTEXT.md`.
+Urutan mengikat: PR1 → rebuild → PR2 → gate → tag.
+
+| Ticket | Deliverable |
+|---|---|
+| PR1, svg ×3 + widget XML-only (satu rebuild) | `react-native-svg@15.15.4` + donut/bar/ring svg (parity statis, testID sama) + mock Jest `__tests__/mocks/react-native-svg.js` + kunci `analytics-charts-svg.test.tsx` + widget cincin-ikon/chevron/hierarki-emas/ring-header (tanpa bitmap, tanpa data) + prebuild-verify + revert `android/` |
+| PR2, interaksi-minimal + deterministik (OTA) | Tap-select slice/bar + a11y label + i18n-sweep (`Pengeluaran`, bar-empty, `Other`, prefix `Rp`) + tz profile (bukan hardcode `Asia/Jakarta`) + insight deterministik #1 (`toInsightSummary`, tanpa Edge/model/consent) |
+| Gate 2.1.0 | lint/typecheck/Jest + kontrak statis + export Android + rebuild + fresh-install + device Redmi (chart before/after + widget hapus-pasang-ulang) + bump → `2.1.0` + tag seizin pemilik |
+
+### L-ledger (tidak ada yang hilang — pemicu per baris)
+
+| ID | Isi | Pemicu |
+|---|---|---|
+| L1 | LLM insight #1 (Edge `insight-summary` + consent terpisah + legal + golden + Rp 0) | setelah 2.1.0 hijau |
+| L2 | Insight #2 pendorong+anomali (perluasan prev-breakdown = DDL + pgTAP + verify) | setelah L1 |
+| L3 | Insight #3 run-rate + join `v_budget_status` + tap → Budgets | setelah L2 |
+| L4 | Interaksi penuh (drill-down → `/search`, multi-wallet compare, custom range) | setelah L3 |
+| L5 | QR svg opsional (default tetap link+secret) | bila ada alasan baru |
+| LW | Widget bitmap (waveform/watermark/grafik struk/glow) + density + gate launcher | bila diminta |
+| OB1–OB3 | Outbox + read cache (urutan roadmap tidak berubah) | setelah trek Analytics |
+
+### Frontier
+
+PR1 implementasi di working tree (grill 2026-10-06): svg ×3 parity +
+mock + kunci Jest + widget XML-only + prebuild-verify hijau
+(`xmllint` 5 file) + revert `android/` + docs (glosarium + ADR-0017 +
+L-ledger). Sisa PR1: full Jest + kontrak statis + export Android, lalu
+rebuild preview + device Redmi (aksi owner).
+
+Status 2026-10-06 sore: PR1 + 3 ronde fix device (halo inset →
+containment → crisp-edge) + PR2 (tap-select, a11y, i18n-sweep, tz
+profile, insight deterministik #1) + polish italic — SEMUA via OTA
+(`9fee2405` → `25611b36` → `bc91a09f` → `0db7d93c`), device gate lolos
+tiap ronde. Bump `app.json`/`package.json` → `2.1.0` + gate
+(lint/typecheck/Jest 848/848/kontrak 112/10/3) + rebuild preview final
+`d4d43852` (runtime 2.1.0, fp `75b6c46`) + smoke lolos. Sisa: tag
+`v2.1.0` (seizin pemilik) + tutup tiket.

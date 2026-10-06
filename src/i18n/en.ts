@@ -637,6 +637,12 @@ export const en: Dictionary = {
     },
     rangeA11y: '{label} range',
     walletAll: 'All',
+    other: 'Other',
+    donutCenter: 'Expenses',
+    barsEmpty: 'No expenses in this range.',
+    currencyPrefix: 'Rp',
+    sliceA11y: '{label}, {share} percent',
+    barA11y: '{label}, {amount}',
     kpi: {
       expense: 'Expenses',
       income: 'Income',
@@ -663,6 +669,17 @@ export const en: Dictionary = {
       invite: 'No transactions this month yet. Record the first with the + button.',
     },
     loadError: 'Failed to load analytics',
+    insight: {
+      title: 'Summary',
+      momUp: '{month} spending up {delta} vs {prev}.',
+      momDown: '{month} spending down {delta} vs {prev}.',
+      momFlat: '{month} spending matches {prev}.',
+      momNew: '{month} is the first recorded month.',
+      topSingle: '{name} dominates: {share} of spending.',
+      topPair: '{a} and {b} take {share} of spending.',
+      surplus: 'Income covers spending, {amount} left over.',
+      deficit: 'Spending exceeds income by {amount}.',
+    },
   },
   recurring: {
     status: {

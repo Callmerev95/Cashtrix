@@ -75,6 +75,7 @@ function Kpi({
   language: Language;
 }) {
   const direction = deltaTone(delta);
+  const t = dictionaryFor(language).analytics;
   return (
     <View testID={testID} style={styles.kpi}>
       <Text
@@ -92,7 +93,7 @@ function Kpi({
         adjustsFontSizeToFit
         minimumFontScale={0.75}
       >
-        Rp {formatGrouped(value, language)}
+        {t.currencyPrefix} {formatGrouped(value, language)}
       </Text>
       <Text
         testID={`${testID}-delta`}

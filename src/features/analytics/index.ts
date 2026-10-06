@@ -33,6 +33,7 @@ export {
   toArcOffsets,
   toBars,
   toDonutSlices,
+  toInsightSummary,
   toMonthlyComparison,
 } from './domain';
 export type {
@@ -42,6 +43,8 @@ export type {
   DateRange,
   DeltaTone,
   DonutSlice,
+  InsightInput,
+  InsightSummary,
   MoneyDelta,
   MoneyTotals,
   MonthlyComparison,
@@ -51,6 +54,7 @@ export type {
 } from './domain';
 export { DonutChart } from './components/donut-chart';
 export { BarChart } from './components/bar-chart';
+export { InsightCard } from './components/insight-card';
 export { KpiHeader } from './components/kpi-header';
 export { MonthlySummaryCard } from './components/monthly-summary-card';
 export { BreakdownList } from './components/breakdown-list';

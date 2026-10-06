@@ -229,6 +229,7 @@ Depth = tonal layering + hairline edges + diffuse gold glow (never heavy drop sh
 ### Progress
 - Track: `#2C2C2E`, rounded caps.
 - Fill: gradient `#D4AF37` → `#F3E5AB` with `0 0 12px rgba(242,202,80,0.5)` glow; ring variant adds `rgba(212,175,55,0.25)` blur ring.
+- **Revisi 2.1.0 (crisp-edge):** svg arcs (donut Analytics + ring Budget) tanpa glow underlay — paint di luar band terbaca sebagai kebocoran di device, jadi arc flat satu warna; rank-0 dibedakan warna ramp paling terang. Bar glow + blur ring exceeded tetap (shadow View asli, bukan pita svg).
 
 ### Navigation
 - Floating bar: frosted `#1C1C1E`/75 + blur, icon 24px `#8E8E93` inactive / gold active, central gradient-gold FAB.

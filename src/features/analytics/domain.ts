@@ -3,9 +3,11 @@
  * pre-aggregated from `analytics_overview` (PRD §4.2) — never summed here.
  */
 
-import { dictionaryFor, localeTagFor } from '@/i18n/dictionaries';
+import { dictionaryFor, fill, localeTagFor } from '@/i18n/dictionaries';
 import { id } from '@/i18n/id';
 import type { Language } from '@/i18n/locale';
+
+import { formatGrouped } from '../transactions/domain';
 
 // Types (mirror the `analytics_overview` JSON payload)
 
@@ -151,15 +153,22 @@ export type DonutSlice = {
 
 /**
  * Folds a full breakdown into the wheel's slices: the top `DONUT_TOP_N`
- * categories, plus a single "Other" slice for the tail. Slices thinner than
- * `MIN_ARC_SHARE` are filtered out of the *rendered* wheel; "Other" is kept as
- * long as its value is non-zero so the legend stays honest.
+ * categories, plus a single tail slice for the rest. Slices thinner than
+ * `MIN_ARC_SHARE` are filtered out of the *rendered* wheel; the tail is kept
+ * as long as its value is non-zero so the legend stays honest.
+ *
+ * The tail label comes from the caller (2.1.0 i18n-sweep: `Lainnya`/`Other`
+ * via `dictionaryFor(language).analytics.other`); the default keeps the
+ * historic English label so the pure seam stays stable.
  *
  * The DB already returns the breakdown sorted by expense desc, so this only
  * splits and sums — it never re-sorts, which would make the wheel and the
  * breakdown rows disagree.
  */
-export function toDonutSlices(breakdown: CategoryBreakdown[]): DonutSlice[] {
+export function toDonutSlices(
+  breakdown: CategoryBreakdown[],
+  otherLabel: string = OTHER_LABEL,
+): DonutSlice[] {
   const head = breakdown.slice(0, DONUT_TOP_N).map((item) => ({
     id: item.categoryId,
     label: item.categoryName,
@@ -174,7 +183,7 @@ export function toDonutSlices(breakdown: CategoryBreakdown[]): DonutSlice[] {
     const otherShare = tail.reduce((sum, item) => sum + item.share, 0);
     head.push({
       id: '__other__',
-      label: OTHER_LABEL,
+      label: otherLabel,
       icon: OTHER_ICON,
       value: otherValue,
       share: otherShare,
@@ -522,4 +531,95 @@ export function isEmptyMonthly(comparison: MonthlyComparison | null): boolean {
     previous.income === 0 &&
     previous.expense === 0
   );
+}
+
+// Deterministic insight (PR2 — no model, no Edge, no consent)
+
+/** Input for the deterministic summary card (all server-aggregated). */
+export type InsightInput = {
+  totals: MoneyTotals;
+  monthly: MonthlyComparison | null;
+  slices: DonutSlice[];
+  lang?: Language;
+};
+
+export type InsightSummary = {
+  title: string;
+  lines: string[];
+};
+
+/**
+ * Builds the 2–3 sentence summary from numbers the payload already carries:
+ * month-over-month movement (`v_monthly_summary` pair), concentration
+ * (top-1 ≥50% or top-2 ≥50% of the donut), and income coverage. Numbers are
+ * templated deterministically — a future LLM may only rephrase the lines,
+ * never invent the figures (Opsi A).
+ */
+export function toInsightSummary(input: InsightInput): InsightSummary {
+  const { totals, monthly, slices, lang = 'id' } = input;
+  const t = dictionaryFor(lang).analytics;
+  const lines: string[] = [];
+
+  if (monthly && !isEmptyMonthly(monthly)) {
+    const currentTitle = formatMonthTitle(monthly.current.month, lang);
+    const previousTitle = formatMonthTitle(monthly.previous.month, lang);
+    const delta = monthlyDelta(monthly.current.expense, monthly.previous.expense);
+    if (delta === null) {
+      lines.push(fill(t.insight.momNew, { month: currentTitle }));
+    } else if (delta > 0) {
+      lines.push(
+        fill(t.insight.momUp, {
+          month: currentTitle,
+          delta: formatDelta(delta, lang),
+          prev: previousTitle,
+        }),
+      );
+    } else if (delta < 0) {
+      lines.push(
+        fill(t.insight.momDown, {
+          month: currentTitle,
+          delta: formatDelta(delta, lang),
+          prev: previousTitle,
+        }),
+      );
+    } else {
+      lines.push(
+        fill(t.insight.momFlat, {
+          month: currentTitle,
+          prev: previousTitle,
+        }),
+      );
+    }
+  }
+
+  const [first, second] = slices;
+  if (first && first.share >= 0.5) {
+    lines.push(
+      fill(t.insight.topSingle, {
+        name: first.label,
+        share: wholePercent(first.share),
+      }),
+    );
+  } else if (first && second && first.share + second.share >= 0.5) {
+    lines.push(
+      fill(t.insight.topPair, {
+        a: first.label,
+        b: second.label,
+        share: wholePercent(first.share + second.share),
+      }),
+    );
+  }
+
+  if (totals.income > 0 || totals.expense > 0) {
+    const diff = totals.income - totals.expense;
+    const amount = `${t.currencyPrefix} ${formatGrouped(Math.abs(diff), lang)}`;
+    lines.push(fill(diff >= 0 ? t.insight.surplus : t.insight.deficit, { amount }));
+  }
+
+  return { title: t.insight.title, lines };
+}
+
+/** `0.413` → `"41%"` for insight copy (rows keep their own formatting). */
+function wholePercent(share: number): string {
+  return `${Math.round(share * 100)}%`;
 }

@@ -638,6 +638,12 @@ export const id = {
     },
     rangeA11y: 'Rentang {label}',
     walletAll: 'Semua',
+    other: 'Lainnya',
+    donutCenter: 'Pengeluaran',
+    barsEmpty: 'Tidak ada pengeluaran pada rentang ini.',
+    currencyPrefix: 'Rp',
+    sliceA11y: '{label}, {share} persen',
+    barA11y: '{label}, {amount}',
     kpi: {
       expense: 'Pengeluaran',
       income: 'Pemasukan',
@@ -665,6 +671,17 @@ export const id = {
         'Belum ada transaksi bulan ini. Catat yang pertama lewat tombol +.',
     },
     loadError: 'Gagal memuat analytics',
+    insight: {
+      title: 'Ringkasan',
+      momUp: 'Pengeluaran {month} naik {delta} vs {prev}.',
+      momDown: 'Pengeluaran {month} turun {delta} vs {prev}.',
+      momFlat: 'Pengeluaran {month} sama dengan {prev}.',
+      momNew: '{month} bulan pertama yang tercatat.',
+      topSingle: '{name} mendominasi: {share} dari pengeluaran.',
+      topPair: '{a} dan {b} menghabiskan {share} dari pengeluaran.',
+      surplus: 'Pemasukan menutup pengeluaran, sisa {amount}.',
+      deficit: 'Pengeluaran melebihi pemasukan sebesar {amount}.',
+    },
   },
   recurring: {
     status: {

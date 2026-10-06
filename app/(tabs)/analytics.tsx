@@ -10,6 +10,7 @@
  * (AC #7), so a new account never sees a NaN/Infinity axis.
  */
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
@@ -20,6 +21,7 @@ import {
   BarChart,
   BreakdownList,
   DonutChart,
+  InsightCard,
   KpiHeader,
   RangeSegmentedControl,
   WalletFilterChips,
@@ -27,6 +29,7 @@ import {
   resolveRange,
   toBars,
   toDonutSlices,
+  toInsightSummary,
   useAnalytics,
 } from '@/features/analytics';
 import { Screen, AppHeader, ErrorStateCard, Skeleton, SkeletonBlock } from '@/components';
@@ -46,19 +49,49 @@ export default function AnalyticsScreen() {
     loading,
     error,
     isEmpty,
+    monthly,
     refresh,
   } = useAnalytics();
-  const { avatarSignedUrl } = useProfile();
+  const { avatarSignedUrl, profile } = useProfile();
   const { unreadCount } = useBudgets();
   const insets = useSafeAreaInsets();
   // C6: section copy + bar labels follow the OS language (ADR-0008, R10).
   const language = useLanguage();
   const t = dictionaryFor(language);
+  // Timezone follows the profile (not a hardcoded default) so client
+  // gap-filling agrees with the server's tz-aware bucketing.
+  const tz = profile?.timezone ?? 'Asia/Jakarta';
+
+  // 2.1.0 PR2: shared tap-selection (donut ↔ breakdown rows, bars stand
+  // alone). Reset on filter change via render-adjust (V5 calendar pattern —
+  // never setState synchronously in an effect).
+  const filterKey = `${range}:${walletId ?? 'all'}`;
+  const [filterKeySeen, setFilterKeySeen] = useState(filterKey);
+  const [selectedSliceId, setSelectedSliceId] = useState<string | null>(null);
+  const [selectedBucket, setSelectedBucket] = useState<string | null>(null);
+  if (filterKeySeen !== filterKey) {
+    setFilterKeySeen(filterKey);
+    setSelectedSliceId(null);
+    setSelectedBucket(null);
+  }
 
   const window = resolveRange(range);
   const daily = isDailyRange(range);
-  const slices = overview ? toDonutSlices(overview.breakdown) : [];
-  const bars = overview ? toBars(overview.series, window, daily, 'Asia/Jakarta', language) : [];
+  const slices = overview
+    ? toDonutSlices(overview.breakdown, t.analytics.other)
+    : [];
+  const bars = overview
+    ? toBars(overview.series, window, daily, tz, language)
+    : [];
+  const insight =
+    overview && monthly
+      ? toInsightSummary({
+          totals: overview.totals,
+          monthly,
+          slices,
+          lang: language,
+        })
+      : null;
 
   return (
     <Screen
@@ -129,6 +162,10 @@ export default function AnalyticsScreen() {
           <>
             <KpiHeader totals={overview.totals} delta={overview.delta} />
 
+            {insight && insight.lines.length > 0 ? (
+              <InsightCard summary={insight} />
+            ) : null}
+
             <LinearGradient
               colors={[...gradients.cardFill]}
               style={styles.card}
@@ -136,9 +173,18 @@ export default function AnalyticsScreen() {
               <Text style={[typography.labelUppercase, styles.cardKicker]}>
                 {t.analytics.section.distribution}
               </Text>
-              <DonutChart slices={slices} total={overview.totals.expense} />
+              <DonutChart
+                slices={slices}
+                total={overview.totals.expense}
+                selectedId={selectedSliceId}
+                onSelect={setSelectedSliceId}
+              />
               <View style={styles.legendDivider} />
-              <BreakdownList slices={slices} />
+              <BreakdownList
+                slices={slices}
+                selectedId={selectedSliceId}
+                onSelect={setSelectedSliceId}
+              />
             </LinearGradient>
 
             <LinearGradient
@@ -150,7 +196,11 @@ export default function AnalyticsScreen() {
                   ? t.analytics.section.trendDaily
                   : t.analytics.section.trendMonthly}
               </Text>
-              <BarChart bars={bars} />
+              <BarChart
+                bars={bars}
+                selectedBucket={selectedBucket}
+                onSelect={setSelectedBucket}
+              />
             </LinearGradient>
           </>
         )}

@@ -249,6 +249,43 @@ berasal dari widget (snackbar in-app tidak terlihat dari home screen). Isinya
 hanya jumlah transaksi dan totalnya.
 _Avoid_: push notification, server push
 
+### Analytics
+
+**Analytics**:
+Layar wawasan keuangan: KPI + Donut + tren Bar + kartu ringkasan bulanan.
+Semua angka agregat-server, klien hanya presentation-math.
+_Avoid_: Analythics (typo), report, stats
+
+**Donut**:
+Distribusi expense per Category: 8 teratas + "Other", arc <0,5% tidak
+dirender. Tengah = total expense range.
+_Avoid_: pie (itu penuh, donut berlubang), chart generik
+
+**KPI header**:
+Tiga angka range aktif: Total Expense, Total Income, Net, masing-masing
+dengan Delta vs periode sebelumnya yang sama panjang.
+_Avoid_: summary, overview
+
+**Delta**:
+Selisih persen vs periode sebelumnya; `null` (periode lalu nol) tampil `—`,
+tidak pernah NaN/Infinity. Naik = emas, turun = abu-abu, tidak pernah merah.
+_Avoid_: growth, change rate
+
+**Breakdown**:
+Daftar baris per Category sejajar slice Donut: swatch + nama + share +
+nominal. Baris dan slice selalu sepadan satu-satu.
+_Avoid_: legend saja (baris ini bukan sekadar legenda), list generik
+
+**Series/bucket**:
+Deret agregat per ember waktu: harian bila range 1M, bulanan bila lebih.
+Bucket kosong = nol (gap-fill), bukan lubang sumbu.
+_Avoid_: data points, history series
+
+**Range preset**:
+`1M` (bulan berjalan, bukan 30 hari gelinding) / `3M` / `6M` / `1Y` / `ALL`
+(delta ALL selalu `—` karena tidak ada periode sebelumnya).
+_Avoid_: period, timeframe, filter tanggal
+
 ### Outbox
 
 **Outbox**:

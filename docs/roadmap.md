@@ -345,3 +345,11 @@ ke `main` (`eb2b3b6`, `96796e6`); preview build `0c8b2fc2` FINISHED (app
 
 Device re-gate build gabungan → 2.1.0 Analytics Overhaul → OB1–OB3
 outbox + read cache. Gate hijau per rilis (pola Q10).
+
+Status 2026-10-06 (grill Analytics, ADR-0017): PR1 di working tree —
+svg ×3 parity (`react-native-svg@15.15.4`, satu rebuild) + widget
+XML-only (cincin ikon, chevron, hierarki emas, ring header; bitmap = LW)
++ mock Jest + kunci `analytics-charts-svg` + glosarium `CONTEXT.md` +
+L-ledger L1–L5/LW/OB di `specs/tickets.md`. Lanjut: full Jest + kontrak
+statis + export Android → rebuild preview → PR2 (interaksi-minimal +
+deterministik, OTA) → gate device → tag `v2.1.0`.

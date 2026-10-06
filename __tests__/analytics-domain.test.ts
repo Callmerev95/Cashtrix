@@ -24,6 +24,7 @@ import {
   toArcOffsets,
   toBars,
   toDonutSlices,
+  toInsightSummary,
   type AnalyticsOverview,
   type CategoryBreakdown,
   type DateRange,
@@ -402,5 +403,73 @@ describe('isEmptyRange', () => {
     expect(
       isEmptyRange({ ...base, series: [bucket({ totalExpense: 1 })] }),
     ).toBe(false);
+  });
+});
+
+describe('toInsightSummary (2.1.0 deterministic insight)', () => {
+  const monthlyOf = (current: number, previous: number) => ({
+    current: { month: '2026-10-01', income: 0, expense: current, net: -current },
+    previous: { month: '2026-09-01', income: 0, expense: previous, net: -previous },
+  });
+  const slicesOf = (shares: number[]) =>
+    shares.map((share, i) => ({
+      id: `c${i}`,
+      label: `Cat${i}`,
+      icon: 'restaurant',
+      value: share * 1000,
+      share,
+    }));
+
+  it('narrates a month-over-month rise with delta + concentration + surplus', () => {
+    const summary = toInsightSummary({
+      totals: { expense: 300000, income: 500000, net: 200000 },
+      monthly: monthlyOf(300000, 200000),
+      slices: slicesOf([0.6, 0.3]),
+    });
+    expect(summary.title).toBe('Ringkasan');
+    expect(summary.lines).toHaveLength(3);
+    expect(summary.lines[0]).toContain('naik');
+    expect(summary.lines[0]).toContain('+50,0%');
+    expect(summary.lines[1]).toContain('Cat0');
+    expect(summary.lines[2]).toContain('sisa');
+  });
+
+  it('narrates a fall and a top-pair when no single slice dominates', () => {
+    const summary = toInsightSummary({
+      totals: { expense: 300000, income: 100000, net: -200000 },
+      monthly: monthlyOf(150000, 300000),
+      slices: slicesOf([0.3, 0.25, 0.2]),
+    });
+    expect(summary.lines[0]).toContain('turun');
+    expect(summary.lines[1]).toContain('Cat0');
+    expect(summary.lines[1]).toContain('Cat1');
+    expect(summary.lines[2]).toContain('melebihi');
+  });
+
+  it('welcomes the first recorded month and skips empty months entirely', () => {
+    const first = toInsightSummary({
+      totals: { expense: 50000, income: 0, net: -50000 },
+      monthly: monthlyOf(50000, 0),
+      slices: slicesOf([0.4, 0.3]),
+    });
+    expect(first.lines[0]).toContain('pertama');
+
+    const empty = toInsightSummary({
+      totals: { expense: 0, income: 0, net: 0 },
+      monthly: monthlyOf(0, 0),
+      slices: [],
+    });
+    expect(empty.lines).toEqual([]);
+  });
+
+  it('renders English copy when asked', () => {
+    const summary = toInsightSummary({
+      totals: { expense: 100000, income: 100000, net: 0 },
+      monthly: monthlyOf(100000, 100000),
+      slices: slicesOf([0.9]),
+      lang: 'en',
+    });
+    expect(summary.title).toBe('Summary');
+    expect(summary.lines[0]).toContain('matches');
   });
 });

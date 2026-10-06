@@ -62,6 +62,15 @@ jest.mock(
   () => require('./mocks/sentry'),
 );
 
+// 2.1.0 Analytics Overhaul: react-native-svg is a native module whose
+// bridge is absent in Jest (same shape as Expo Go before the preview
+// rebuild). Default stand-in renders every element as a host View that
+// passes children and testID through.
+jest.mock(
+  require.resolve('react-native-svg'),
+  () => require('./mocks/react-native-svg'),
+);
+
 // Expo injects EXPO_PUBLIC_* at build time; Jest does not, and supabase-js
 // throws on an empty key before a test can even mount.
 process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ??= 'test-anon-key';

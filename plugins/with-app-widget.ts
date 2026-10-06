@@ -44,6 +44,8 @@ const WIDGET_COLORS = {
   textSecondary: '#8E8E93',
   onGold: '#0A0A0A',
   goldShade: '#4A3F0B',
+  /** Chevron disc on dark cards (mirrors `surfaceElevated`). */
+  chev: '#2C2C2E',
 } as const;
 /* eslint-enable no-restricted-syntax */
 
@@ -129,42 +131,71 @@ function widgetCardXml(button: WidgetButton): string {
   const subColor = button.gold
     ? WIDGET_COLORS.goldShade
     : WIDGET_COLORS.textSecondary;
-  return `  <LinearLayout
+  // 2.1.0 polish (XML-only, reference `stitch_cashtrix/widget-polish.png`):
+  // icon ring + top-end chevron + a taller gold middle card. Waveform /
+  // watermark / receipt artwork stays out — RemoteViews cannot blur or draw
+  // it, so that is a bitmap-asset ticket (LW), not this rebuild.
+  const chevBg = button.gold
+    ? '@drawable/cashtrix_widget_chev_gold'
+    : '@drawable/cashtrix_widget_chev';
+  const height = button.gold ? '144dp' : '132dp';
+  return `  <FrameLayout
     android:id="@+id/${button.viewId}"
     android:layout_width="0dp"
-    android:layout_height="120dp"
+    android:layout_height="${height}"
     android:layout_weight="1"
     android:layout_margin="4dp"
-    android:orientation="vertical"
-    android:gravity="center"
     android:padding="8dp"
     android:background="${cardBg}"
     android:contentDescription="${button.description}">
-    <ImageView
-      android:layout_width="32dp"
-      android:layout_height="32dp"
-      android:src="@android:drawable/${button.icon}"
-      android:tint="${accent}"
-      android:contentDescription="${button.description}" />
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:orientation="vertical"
+      android:gravity="center">
+      <FrameLayout
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/cashtrix_widget_ring">
+        <ImageView
+          android:layout_width="28dp"
+          android:layout_height="28dp"
+          android:layout_gravity="center"
+          android:src="@android:drawable/${button.icon}"
+          android:tint="${accent}"
+          android:contentDescription="${button.description}" />
+      </FrameLayout>
+      <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="@string/${button.labelKey}"
+        android:textColor="${titleColor}"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:maxLines="2" />
+      <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="@string/${button.subKey}"
+        android:textColor="${subColor}"
+        android:textSize="10sp"
+        android:gravity="center" />
+    </LinearLayout>
     <TextView
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="6dp"
-      android:text="@string/${button.labelKey}"
-      android:textColor="${titleColor}"
-      android:textSize="13sp"
-      android:textStyle="bold"
+      android:layout_width="20dp"
+      android:layout_height="20dp"
+      android:layout_gravity="top|end"
+      android:layout_margin="6dp"
       android:gravity="center"
-      android:maxLines="2" />
-    <TextView
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="2dp"
-      android:text="@string/${button.subKey}"
-      android:textColor="${subColor}"
-      android:textSize="10sp"
-      android:gravity="center" />
-  </LinearLayout>`;
+      android:text="›"
+      android:textColor="${WIDGET_COLORS.gold}"
+      android:textSize="14sp"
+      android:textStyle="bold"
+      android:background="${chevBg}" />
+  </FrameLayout>`;
 }
 
 function widgetLayoutXml(): string {
@@ -181,11 +212,17 @@ function widgetLayoutXml(): string {
     android:orientation="horizontal"
     android:gravity="center_vertical"
     android:paddingBottom="8dp">
-    <ImageView
-      android:layout_width="32dp"
-      android:layout_height="32dp"
-      android:src="@mipmap/ic_launcher"
-      android:contentDescription="@string/app_name" />
+    <FrameLayout
+      android:layout_width="40dp"
+      android:layout_height="40dp"
+      android:background="@drawable/cashtrix_widget_ring">
+      <ImageView
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_gravity="center"
+        android:src="@mipmap/ic_launcher"
+        android:contentDescription="@string/app_name" />
+    </FrameLayout>
     <TextView
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
@@ -235,6 +272,26 @@ function widgetPillXml(): string {
   android:shape="rectangle">
   <stroke android:width="1dp" android:color="${WIDGET_COLORS.gold}" />
   <corners android:radius="12dp" />
+</shape>
+`;
+}
+
+/** 2.1.0 polish: gold icon ring (oval stroke, transparent fill). */
+function widgetRingXml(): string {
+  return `<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+  android:shape="oval">
+  <stroke android:width="1dp" android:color="${WIDGET_COLORS.gold}" />
+</shape>
+`;
+}
+
+/** 2.1.0 polish: chevron disc (solid oval, no stroke). */
+function widgetChevXml(color: string): string {
+  return `<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+  android:shape="oval">
+  <solid android:color="${color}" />
 </shape>
 `;
 }
@@ -392,6 +449,18 @@ const withCashtrixAppWidget: ConfigPlugin = (config) => {
       writeFileSync(
         join(drawableDir, 'cashtrix_widget_pill.xml'),
         widgetPillXml(),
+      );
+      writeFileSync(
+        join(drawableDir, 'cashtrix_widget_ring.xml'),
+        widgetRingXml(),
+      );
+      writeFileSync(
+        join(drawableDir, 'cashtrix_widget_chev.xml'),
+        widgetChevXml(WIDGET_COLORS.chev),
+      );
+      writeFileSync(
+        join(drawableDir, 'cashtrix_widget_chev_gold.xml'),
+        widgetChevXml(WIDGET_COLORS.onGold),
       );
       const javaDir = join(
         config.modRequest.platformProjectRoot,
