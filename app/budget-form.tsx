@@ -221,12 +221,23 @@ export default function BudgetFormScreen() {
               </Text>
               <View style={styles.sheetActions}>
                 <GhostButton testID="budget-delete-cancel" label={t.common.cancel} onPress={() => setConfirmingDelete(false)} style={styles.sheetAction} />
-                <PrimaryButton
+                <Pressable
                   testID="budget-delete-confirm"
-                  label={busy ? tb.form.deleting : t.common.delete}
+                  accessibilityRole="button"
+                  accessibilityState={{ busy }}
+                  accessibilityLabel={t.common.delete}
+                  disabled={busy}
                   onPress={() => void handleDelete()}
-                  style={styles.sheetAction}
-                />
+                  style={({ pressed }) => [
+                    styles.destructive,
+                    pressed && pressedFeedback,
+                    busy && styles.destructiveBusy,
+                  ]}
+                >
+                  <Text style={[typography.bodyLg, styles.destructiveLabel]}>
+                    {busy ? tb.form.deleting : t.common.delete}
+                  </Text>
+                </Pressable>
               </View>
             </View>
           </View>
@@ -295,5 +306,23 @@ const styles = StyleSheet.create({
   },
   sheetAction: {
     flex: 1,
+  },
+  // Destructive confirm mirrors the transaction delete sheet (B1): error
+  // tokens only — never the gold PrimaryButton for a delete.
+  destructive: {
+    flex: 1,
+    height: layout.buttonHeight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.error,
+    backgroundColor: colors.errorContainer,
+  },
+  destructiveLabel: {
+    color: colors.error,
+  },
+  destructiveBusy: {
+    opacity: 0.6,
   },
 });

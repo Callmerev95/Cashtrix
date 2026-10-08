@@ -229,6 +229,8 @@ export default function WalletsScreen() {
                       disabled={busy}
                       hitSlop={spacing.sm}
                       onPress={() =>
+                        // Deliberately NOT destructive-styled: archiving is
+                        // reversible (unarchive restores), unlike delete.
                         Alert.alert(
                           tw.list.archiveTitle,
                           fill(tw.list.archiveBody, { name: wallet.name }),

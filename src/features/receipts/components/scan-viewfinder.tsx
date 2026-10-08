@@ -19,6 +19,7 @@ import type { ComponentType, Ref } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Modal,
   Pressable,
@@ -52,10 +53,43 @@ type CameraViewProps = {
   onCameraReady?: () => void;
 };
 
-type CameraModule = {
-  CameraView?: ComponentType<CameraViewProps>;
+type CameraPermissionResult = {
+  granted?: boolean;
+  canAskAgain?: boolean;
+  status?: string;
+} | null;
+
+type CameraPermissionApi = {
+  getCameraPermissionsAsync?: () => Promise<CameraPermissionResult>;
   requestCameraPermissionsAsync?: () => Promise<{ granted?: boolean }>;
 };
+
+type CameraModule = {
+  CameraView?: ComponentType<CameraViewProps>;
+  /** Root exports (absent in v57 — kept for forward-compat). */
+  getCameraPermissionsAsync?: () => Promise<CameraPermissionResult>;
+  requestCameraPermissionsAsync?: () => Promise<{ granted?: boolean }>;
+  /** Legacy holder: the only home of the permission API in v57. */
+  Camera?: CameraPermissionApi;
+};
+
+/**
+ * Permission entry points, in preference order. PROVEN on device
+ * (2026-10-08 probe: root fns absent, `Camera.*` present): the root-only
+ * lookup silently no-ops, so the legacy holder is load-bearing, not a
+ * fallback of convenience.
+ */
+function cameraPermissionApi(
+  mod: CameraModule | null,
+): Required<CameraPermissionApi> | null {
+  const get =
+    mod?.getCameraPermissionsAsync ?? mod?.Camera?.getCameraPermissionsAsync;
+  const request =
+    mod?.requestCameraPermissionsAsync ??
+    mod?.Camera?.requestCameraPermissionsAsync;
+  if (!get || !request) return null;
+  return { getCameraPermissionsAsync: get, requestCameraPermissionsAsync: request };
+}
 
 type ScanCornersProps = {
   corner: {
@@ -136,6 +170,65 @@ export function ScanViewfinder({
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
   const [torch, setTorch] = useState(false);
+  // The camera mounts only AFTER permission is granted: a session born
+  // without permission stays black even after Allow (device-proved) — the
+  // grant must precede the mount, not follow it.
+  const [permGranted, setPermGranted] = useState(false);
+
+  // Session reset on close via render-adjust (V5/analytics pattern — never
+  // setState synchronously in an effect): every open re-checks permission
+  // and mounts a fresh camera session, so a Settings grant between opens
+  // just works and no stale `ready` survives a close.
+  const [lastVisible, setLastVisible] = useState(visible);
+  if (lastVisible !== visible) {
+    setLastVisible(visible);
+    if (!visible) {
+      setPermGranted(false);
+      setReady(false);
+    }
+  }
+
+  // Permission belongs to the open session, not the shutter tap: without
+  // it the CameraView never becomes ready, so a capture-time request sits
+  // behind a guard that never opens (device bug: no OS prompt ever, black
+  // preview, Settings workaround). A denial shows the Settings alert and
+  // closes instead of stranding a dead viewfinder.
+  //
+  // The effect keys on `visible` (not a ref guard): a guard + cleanup pair
+  // can cancel its own one-shot timer when the opener's back-to-back
+  // setStates re-render before it fires — that exact race silenced the
+  // prompt on device. Cleanup now only runs on close/unmount.
+  async function ensureCameraPermission(): Promise<void> {
+    const api = cameraPermissionApi(loadCameraModule());
+    if (!api) return;
+    const current = await api.getCameraPermissionsAsync().catch(() => null);
+    if (current?.granted) {
+      setPermGranted(true);
+      return;
+    }
+    if (current && current.status === 'denied' && !current.canAskAgain) {
+      Alert.alert(tr.permissionTitle, tr.permissionBody);
+      onClose();
+      return;
+    }
+    const next = await api.requestCameraPermissionsAsync().catch(() => null);
+    if (next?.granted) {
+      setPermGranted(true);
+      return;
+    }
+    Alert.alert(tr.permissionTitle, tr.permissionBody);
+    onClose();
+  }
+
+  // Ask once per open; reopening after a Settings grant re-checks silently.
+  // Deferred past the effect body so no setState runs synchronously in an
+  // effect (same pattern as the caller's autoCamera).
+  useEffect(() => {
+    if (!visible) return;
+    const timer = setTimeout(() => void ensureCameraPermission(), 0);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
 
   // Torch belongs to one open session: reset when the viewfinder closes,
   // whichever path closed it (button, system back, or scan completion).
@@ -231,7 +324,7 @@ export function ScanViewfinder({
             style={styles.camera}
             resizeMode="cover"
           />
-        ) : (
+        ) : permGranted ? (
           <CameraViewComp
             ref={cameraRef}
             style={styles.camera}
@@ -239,6 +332,10 @@ export function ScanViewfinder({
             enableTorch={torch}
             onCameraReady={() => setReady(true)}
           />
+        ) : (
+          <View testID="scan-permission-wait" style={styles.wait}>
+            <ActivityIndicator color={colors.textSecondary} />
+          </View>
         )}
         <View style={styles.overlay} pointerEvents="box-none">
           <View
@@ -361,7 +458,10 @@ export function ScanViewfinder({
                 accessibilityRole="button"
                 accessibilityLabel={tr.viewfinderCaptureA11y}
                 onPress={() =>
-                  void capture(CameraViewComp, mod.requestCameraPermissionsAsync)
+                  void capture(
+                    CameraViewComp,
+                    cameraPermissionApi(mod)?.requestCameraPermissionsAsync,
+                  )
                 }
                 hitSlop={spacing.sm}
                 style={({ pressed }) => [
@@ -393,6 +493,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+  },
+  /** Brief permission-check window: the camera mounts only after grant. */
+  wait: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   overlay: {
     flex: 1,

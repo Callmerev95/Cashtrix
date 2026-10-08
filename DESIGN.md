@@ -190,6 +190,13 @@ Depth = tonal layering + hairline edges + diffuse gold glow (never heavy drop sh
 - Well: `#1C1C1E`, 4px inner padding, `rounded-full`.
 - Active: `#2C2C2E` (or gold fill on filters) + glow `0 2px 12px rgba(212,175,55,0.28)`.
 - Filter chips active: gold border + gold text.
+
+### Konfirmasi & Alert (selaras 2.1.x)
+- **OS Alert untuk ya-tidak sederhana** (hapus, keluar, matikan 2FA, arsip): Batal dulu + aksi kedua; destruktif = `destructive` merah. Arsip sengaja non-merah (reversibel).
+- **Sheet B1 untuk destruktif berkonteks** (hapus transaksi/budget): kartu tengah + ikon `delete-outline` merah + tombol Hapus merah (`errorContainer` + border `error`), tidak pernah emas.
+- **Picker-inline untuk pilihan** (reassign dompet, bulk kategori): tanpa merah — copy eksplisit sebagai pengaman, bukan warna.
+- **Typed-gate untuk hapus akun**: ketik `HAPUS` + confirm destruktif (satu-satunya yang dua lapis).
+- **Notice gagal/sukses**: `judul + pesan + OK`, tanpa keputusan di dalamnya.
 ### Voice record (AI6) + waveform (B1, Stitch adoption)
 
 - **Mic hero (Stitch `Layar Suara Instan`):** 84px circular record button (`mic`
