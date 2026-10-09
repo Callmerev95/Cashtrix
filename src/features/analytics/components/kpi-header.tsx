@@ -14,6 +14,7 @@ import { dictionaryFor, useLanguage, type Language } from '@/i18n';
 
 import { deltaTone, formatDelta } from '../domain';
 import { formatGrouped } from '../../transactions/domain';
+import { AnimatedNumber } from './animated-number';
 
 export function KpiHeader({
   totals,
@@ -76,6 +77,7 @@ function Kpi({
 }) {
   const direction = deltaTone(delta);
   const t = dictionaryFor(language).analytics;
+  const prefix = t.currencyPrefix;
   return (
     <View testID={testID} style={styles.kpi}>
       <Text
@@ -86,15 +88,15 @@ function Kpi({
       >
         {label}
       </Text>
-      <Text
+      <AnimatedNumber
         testID={`${testID}-value`}
+        value={value}
+        format={(n) => `${prefix} ${formatGrouped(n, language)}`}
         style={[typography.currencyMd, valueToneStyle[tone]]}
         numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={0.75}
-      >
-        {t.currencyPrefix} {formatGrouped(value, language)}
-      </Text>
+      />
       <Text
         testID={`${testID}-delta`}
         style={[

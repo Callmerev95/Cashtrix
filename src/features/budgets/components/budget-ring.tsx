@@ -13,17 +13,47 @@
  * The centre shows the percent in JetBrains Mono (`currency-*` tokens) and the
  * state label beneath it — never red (DESIGN.md §1: no error reds in charts).
  */
+import type { ComponentType } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Circle, G, Svg } from 'react-native-svg';
 
 import { colors, spacing, typography } from '@/theme';
 import { useLanguage } from '@/i18n';
+import { useReducedMotion } from '@/components';
 
 import {
   budgetStateLabel,
   ringFillFor,
   type BudgetState,
 } from '../domain';
+import { AnimatedNumber } from '../../analytics/components/animated-number';
+
+type AnimatedRingArcProps = {
+  dash: number;
+  circumference: number;
+  center: number;
+  radius: number;
+  thickness: number;
+  testID: string;
+};
+
+function loadAnimatedRingArc(): ComponentType<AnimatedRingArcProps> | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require('./budget-ring-animated') as {
+      AnimatedRingArc?: ComponentType<AnimatedRingArcProps>;
+    };
+    return typeof mod?.AnimatedRingArc === 'function'
+      ? mod.AnimatedRingArc
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+// Module scope: the native twin either loads once or the session renders
+// a static arc (Jest, Expo Go).
+const AnimatedRingArc = loadAnimatedRingArc();
 
 /** Tick-era segment count — kept for the public seam; the ring is now solid. */
 export const RING_SEGMENTS = 48;
@@ -43,6 +73,7 @@ export function BudgetRing({
 }) {
   // C6: state label follows the OS language (ADR-0008).
   const language = useLanguage();
+  const reduceMotion = useReducedMotion();
   const fill = ringFillFor(percent);
   const sweep = Math.min(Math.max(fill, 0), 1) * 360;
   const inner = size - thickness * 2;
@@ -74,18 +105,29 @@ export function BudgetRing({
               strokeWidth={thickness}
             />
             {sweep > 0 ? (
-              <Circle
-                testID={`${testID}-fill`}
-                cx={center}
-                cy={center}
-                r={radius}
-                fill="none"
-                stroke={colors.accent}
-                strokeWidth={thickness}
-                strokeLinecap="butt"
-                strokeDasharray={`${dash} ${circumference}`}
-                transform={`rotate(-90 ${center} ${center})`}
-              />
+              AnimatedRingArc && !reduceMotion ? (
+                <AnimatedRingArc
+                  dash={dash}
+                  circumference={circumference}
+                  center={center}
+                  radius={radius}
+                  thickness={thickness}
+                  testID={testID}
+                />
+              ) : (
+                <Circle
+                  testID={`${testID}-fill`}
+                  cx={center}
+                  cy={center}
+                  r={radius}
+                  fill="none"
+                  stroke={colors.accent}
+                  strokeWidth={thickness}
+                  strokeLinecap="butt"
+                  strokeDasharray={`${dash} ${circumference}`}
+                  transform={`rotate(-90 ${center} ${center})`}
+                />
+              )
             ) : null}
           </G>
         </Svg>
@@ -96,14 +138,14 @@ export function BudgetRing({
             { width: inner, height: inner, borderRadius: inner / 2 },
           ]}
         >
-          <Text
+          <AnimatedNumber
             testID={`${testID}-percent`}
+            value={percent}
+            format={(n) => formatRingPercent(n)}
             style={[typography.currencySm, styles.holePercent]}
             numberOfLines={1}
             adjustsFontSizeToFit
-          >
-            {formatRingPercent(percent)}
-          </Text>
+          />
           <Text style={[typography.bodySm, styles.holeState]} numberOfLines={1}>
             {budgetStateLabel(state, language)}
           </Text>

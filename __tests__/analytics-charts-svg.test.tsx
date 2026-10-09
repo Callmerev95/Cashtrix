@@ -124,3 +124,18 @@ describe('PR2 selection + insight', () => {
     expect(toJSON()).toBeNull();
   });
 });
+
+describe('AnimatedNumber (P1a static fallback)', () => {
+  it('renders the exact formatted value without the native bridge', async () => {
+    const { AnimatedNumber } = require('@/features/analytics/components/animated-number');
+    render(
+      <AnimatedNumber
+        value={248590.4}
+        format={(n: number) => `Rp ${n}`}
+        testID="anim-number"
+      />,
+    );
+    expect(await screen.findByTestId('anim-number')).toBeTruthy();
+    expect(screen.getByText('Rp 248590.4')).toBeTruthy();
+  });
+});

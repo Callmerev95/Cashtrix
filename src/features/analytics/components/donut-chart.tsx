@@ -19,11 +19,13 @@
  * Arcs thinner than `MIN_ARC_SHARE` (0.5%) are already filtered out by
  * `toDonutSlices`, so the wheel never draws invisible slivers.
  */
+import type { ComponentType } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Circle, G, Svg } from 'react-native-svg';
 
 import { colors, spacing, typography } from '@/theme';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
+import { useReducedMotion } from '@/components';
 
 import { formatGrouped } from '../../transactions/domain';
 import { sliceColor } from './slice-ramp';
@@ -33,6 +35,49 @@ const EDGE_GAP_DEG = 1;
 
 /** Wedges at or below this sweep skip the gap so slivers never vanish. */
 const GAP_MIN_SWEEP_DEG = 3;
+
+/** One rendered arc (shared by the static and animated paths). */
+export type DonutArcPart = {
+  key: string;
+  sliceId: string;
+  label: string;
+  share: number;
+  color: string;
+  rotation: number;
+  dash: number;
+  gap: number;
+  dimmed: boolean;
+};
+
+type AnimatedDonutArcsProps = {
+  parts: DonutArcPart[];
+  animKey: string;
+  center: number;
+  radius: number;
+  thickness: number;
+  selectedId: string | null;
+  onSelect: ((id: string | null) => void) | undefined;
+  sliceA11y: (label: string, share: number) => string;
+  testID: string;
+};
+
+function loadAnimatedDonutArcs(): ComponentType<AnimatedDonutArcsProps> | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require('./donut-arcs-animated') as {
+      AnimatedDonutArcs?: ComponentType<AnimatedDonutArcsProps>;
+    };
+    return typeof mod?.AnimatedDonutArcs === 'function'
+      ? mod.AnimatedDonutArcs
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+// Module scope: the native twin either loads once or the session renders
+// static arcs (Jest, Expo Go).
+const AnimatedDonutArcs = loadAnimatedDonutArcs();
 
 export function DonutChart({
   slices,
@@ -55,24 +100,14 @@ export function DonutChart({
   // C6: center-total format + strings follow the OS language (R10).
   const language = useLanguage();
   const t = dictionaryFor(language).analytics;
+  const reduceMotion = useReducedMotion();
   const inner = size - thickness * 2;
   const center = size / 2;
   const radius = (size - thickness) / 2;
   const circumference = 2 * Math.PI * radius;
   const degToLen = (deg: number) => (deg / 360) * circumference;
 
-  type ArcPart = {
-    key: string;
-    sliceId: string;
-    label: string;
-    share: number;
-    color: string;
-    rotation: number;
-    dash: number;
-    gap: number;
-    dimmed: boolean;
-  };
-  const parts: ArcPart[] = [];
+  const parts: DonutArcPart[] = [];
   let cursor = 0;
   const gapless = slices.length <= 1;
   slices.forEach((slice, index) => {
@@ -101,33 +136,52 @@ export function DonutChart({
       <View style={[styles.pie, { width: size, height: size }]}>
         <Svg width={size} height={size}>
           <G>
-            {parts.map((part) => (
-              <G key={part.key}>
-                <Circle
-                  testID={`${testID}-slice-${part.sliceId}`}
-                  cx={center}
-                  cy={center}
-                  r={radius}
-                  fill="none"
-                  stroke={part.color}
-                  strokeWidth={thickness}
-                  strokeLinecap="butt"
-                  opacity={part.dimmed ? 0.35 : 1}
-                  strokeDasharray={`${part.dash} ${part.gap}`}
-                  transform={`rotate(${part.rotation} ${center} ${center})`}
-                  accessible
-                  accessibilityLabel={fill(t.sliceA11y, {
-                    label: part.label,
-                    share: `${Math.round(part.share * 100)}`,
-                  })}
-                  onPress={() =>
-                    onSelect?.(
-                      selectedId === part.sliceId ? null : part.sliceId,
-                    )
-                  }
-                />
-              </G>
-            ))}
+            {AnimatedDonutArcs && !reduceMotion ? (
+              <AnimatedDonutArcs
+                parts={parts}
+                animKey={parts.map((p) => `${p.sliceId}:${p.dash}`).join('|')}
+                center={center}
+                radius={radius}
+                thickness={thickness}
+                selectedId={selectedId}
+                onSelect={onSelect}
+                sliceA11y={(label: string, share: number) =>
+                  fill(t.sliceA11y, {
+                    label,
+                    share: `${Math.round(share * 100)}`,
+                  })
+                }
+                testID={testID}
+              />
+            ) : (
+              parts.map((part) => (
+                <G key={part.key}>
+                  <Circle
+                    testID={`${testID}-slice-${part.sliceId}`}
+                    cx={center}
+                    cy={center}
+                    r={radius}
+                    fill="none"
+                    stroke={part.color}
+                    strokeWidth={thickness}
+                    strokeLinecap="butt"
+                    opacity={part.dimmed ? 0.35 : 1}
+                    strokeDasharray={`${part.dash} ${part.gap}`}
+                    transform={`rotate(${part.rotation} ${center} ${center})`}
+                    accessible
+                    accessibilityLabel={fill(t.sliceA11y, {
+                      label: part.label,
+                      share: `${Math.round(part.share * 100)}`,
+                    })}
+                    onPress={() =>
+                      onSelect?.(
+                        selectedId === part.sliceId ? null : part.sliceId,
+                      )
+                    }
+                  />
+                </G>
+              ))
+            )}
           </G>
         </Svg>
 
