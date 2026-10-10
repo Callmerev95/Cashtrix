@@ -198,9 +198,13 @@ async function main() {
     .single();
   check('membuat rule paused', !rPaused.error, rPaused.error?.message);
 
+  // Far-future window (not "next month"): an open-ended rule anchored to
+  // a hardcoded month rots the day its due date arrives (2026-10-10 wrote
+  // +1: expected 19, got 20). 2030 keeps "all dues in the future" true
+  // regardless of run date — same discipline as pastClamp in verify-t6.
   const rFuture = await supabase
     .from('recurring_rules')
-    .insert(ruleBase({ due_day: 10, starts_on: '2026-10-01', ends_on: null }))
+    .insert(ruleBase({ due_day: 10, starts_on: '2030-01-01', ends_on: null }))
     .select('id')
     .single();
   check('membuat rule starts masa depan', !rFuture.error, rFuture.error?.message);
