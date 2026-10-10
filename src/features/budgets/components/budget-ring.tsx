@@ -21,6 +21,8 @@ import { colors, spacing, typography } from '@/theme';
 import { useLanguage } from '@/i18n';
 import { useReducedMotion } from '@/components';
 
+import { reanimatedUsable } from '../../../components/reanimated-cap';
+
 import {
   budgetStateLabel,
   ringFillFor,
@@ -38,6 +40,8 @@ type AnimatedRingArcProps = {
 };
 
 function loadAnimatedRingArc(): ComponentType<AnimatedRingArcProps> | null {
+  if (!reanimatedUsable()) return null;
+  
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const mod = require('./budget-ring-animated') as {

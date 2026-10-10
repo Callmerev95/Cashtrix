@@ -13,6 +13,8 @@ import { Text, type StyleProp, type TextStyle } from 'react-native';
 
 import { useReducedMotion } from '@/components';
 
+import { reanimatedUsable } from '../../../components/reanimated-cap';
+
 export type AnimatedNumberProps = {
   value: number;
   format: (n: number) => string;
@@ -24,6 +26,8 @@ export type AnimatedNumberProps = {
 };
 
 function loadAnimatedNumberNative(): ComponentType<AnimatedNumberProps> | null {
+  if (!reanimatedUsable()) return null;
+  
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const mod = require('./animated-number-native') as {

@@ -37,6 +37,33 @@ import { colors } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
 
+/**
+ * Gesture host (custom pull): `GestureDetector` needs a
+ * `GestureHandlerRootView` ancestor on Android — without it the Pan stays
+ * silently dead (no tracking, no spinner, no crash; device lesson). Lazy-
+ * required (scan-corners pattern) so Jest renders the plain tree instead
+ * of crashing the navigation suite.
+ */
+type GestureHostProps = {
+  style?: object;
+  children?: React.ReactNode;
+};
+
+function loadGestureHost(): React.ComponentType<GestureHostProps> | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require('react-native-gesture-handler') as {
+      GestureHandlerRootView?: React.ComponentType<GestureHostProps>;
+    };
+    if (typeof mod?.GestureHandlerRootView !== 'function') return null;
+    return mod.GestureHandlerRootView;
+  } catch {
+    return null;
+  }
+}
+
+const GestureHost = loadGestureHost();
+
 function AuthGate() {
   const { status } = useAuth();
   const segments = useSegments();
@@ -149,7 +176,9 @@ function RootNavigator() {
   // is ever visible. Lock ≠ sign-out: the Supabase session persists.
   const lockedIn = locked && status === 'authenticated';
 
-  return (
+  // GestureHost is null in Jest (no usable gesture native side): render the
+  // plain tree instead of crashing the navigation suite.
+  const tree = (
     <>
       <AuthGate />
       <Animated.View
@@ -198,6 +227,9 @@ function RootNavigator() {
       <StatusBar style="light" />
     </>
   );
+
+  if (!GestureHost) return tree;
+  return <GestureHost style={styles.viewport}>{tree}</GestureHost>;
 }
 
 const styles = StyleSheet.create({

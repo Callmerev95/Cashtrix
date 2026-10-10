@@ -11,10 +11,12 @@
  * client aggregation of money.
  */
 import { router } from 'expo-router';
+import { useCallback } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyStateCard, AppHeader, ErrorStateCard, Screen, SectionHeader, SkeletonList } from '@/components';
+import { PullGesture, PullHeader, usePullRefresh } from '@/components/pull-refresh';
 import { MonthlySummaryCard, useAnalytics } from '@/features/analytics';
 import { useAuth } from '@/features/auth';
 import { useBudgets } from '@/features/budgets';
@@ -74,6 +76,21 @@ export default function DashboardScreen() {
   // C6: copy + date format follow the OS language (ADR-0008, R10).
   const language = useLanguage();
   const t = dictionaryFor(language);
+
+  // Custom pull (no native RefreshControl — H1: it blanks scroller
+  // viewports on this build). Every surface re-reads, same sources as the
+  // post-save path. No alert evaluation — a read never notifies.
+  const refreshDashboard = useCallback(
+    () =>
+      Promise.all([
+        refreshWallets(),
+        refreshBudgets(),
+        refreshAnalytics(),
+        refreshTransactions(),
+      ]).then(() => undefined),
+    [refreshWallets, refreshBudgets, refreshAnalytics, refreshTransactions],
+  );
+  const { refreshing, onRefresh } = usePullRefresh(refreshDashboard);
 
   // Identity comes from the profile row (editable in Profile); a row still
   // carrying the seed default — or none at all — falls back to the email.
@@ -202,6 +219,7 @@ export default function DashboardScreen() {
         />
       </View>
       <View style={styles.listWrap}>
+        <PullGesture refreshing={refreshing} onRefresh={onRefresh}>
         <TransactionHistoryList
           transactions={transactions}
           loading={loadingTransactions}
@@ -220,6 +238,7 @@ export default function DashboardScreen() {
           }
           contentContainerStyle={styles.body}
           ListHeaderComponent={header}
+          headerExtra={<PullHeader gap={0} testID="dashboard-pull-header" />}
           onPressTransaction={(transaction) =>
             router.push({
               pathname: '/add-transaction',
@@ -227,6 +246,7 @@ export default function DashboardScreen() {
             })
           }
         />
+        </PullGesture>
       </View>
 
       <UndoSnackbar

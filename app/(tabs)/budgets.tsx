@@ -24,6 +24,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyStateCard, AppHeader, Card, ErrorStateCard, Screen, SectionHeader, Skeleton, SkeletonBlock } from '@/components';
+import { PullGesture, PullHeader, usePullRefresh } from '@/components/pull-refresh';
+import { Stagger } from '@/components/stagger';
 import {
   budgetStateLabels,
   formatPercent,
@@ -68,6 +70,7 @@ export default function BudgetsScreen() {
   const language = useLanguage();
   const t = dictionaryFor(language);
   const tb = t.budgets;
+  const { refreshing, onRefresh } = usePullRefresh(refresh);
 
   return (
     <Screen
@@ -108,11 +111,13 @@ export default function BudgetsScreen() {
         />
       ))}
 
+      <PullGesture refreshing={refreshing} onRefresh={onRefresh}>
       <ScrollView
         testID="budgets-scroll"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
+        <PullHeader gap={spacing.md} testID="budgets-pull-header" />
         {loading ? (
           <Skeleton testID="budgets-loading" style={styles.skeleton}>
             <View style={styles.card}>
@@ -160,12 +165,18 @@ export default function BudgetsScreen() {
               actionLabel={tb.screen.add}
               onAction={() => router.push('/budget-form')}
             />
-            {budgets.map((budget) => (
-              <BudgetCard key={budget.budgetId} budget={budget} />
+            {budgets.map((budget, index) => (
+              <Stagger
+                key={`${month ?? 'all'}-${budget.budgetId}`}
+                index={index}
+              >
+                <BudgetCard budget={budget} />
+              </Stagger>
             ))}
           </>
         )}
       </ScrollView>
+      </PullGesture>
     </Screen>
   );
 }

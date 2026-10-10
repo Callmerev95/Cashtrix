@@ -33,6 +33,7 @@ import {
   useAnalytics,
 } from '@/features/analytics';
 import { Screen, AppHeader, ErrorStateCard, Skeleton, SkeletonBlock } from '@/components';
+import { PullGesture, PullHeader, usePullRefresh } from '@/components/pull-refresh';
 import { useBudgets } from '@/features/budgets';
 import { useProfile } from '@/features/profile';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
@@ -58,6 +59,7 @@ export default function AnalyticsScreen() {
   // C6: section copy + bar labels follow the OS language (ADR-0008, R10).
   const language = useLanguage();
   const t = dictionaryFor(language);
+  const { refreshing, onRefresh } = usePullRefresh(refresh);
   // Timezone follows the profile (not a hardcoded default) so client
   // gap-filling agrees with the server's tz-aware bucketing.
   const tz = profile?.timezone ?? 'Asia/Jakarta';
@@ -124,11 +126,13 @@ export default function AnalyticsScreen() {
         onChange={setWalletId}
       />
 
+      <PullGesture refreshing={refreshing} onRefresh={onRefresh}>
       <ScrollView
         testID="analytics-scroll"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
+        <PullHeader gap={spacing.md} testID="analytics-pull-header" />
         {loading && !overview ? (
           <Skeleton testID="analytics-loading" style={styles.skeleton}>
             <View style={styles.skeletonKpiRow}>
@@ -181,6 +185,7 @@ export default function AnalyticsScreen() {
               />
               <View style={styles.legendDivider} />
               <BreakdownList
+                key={range}
                 slices={slices}
                 selectedId={selectedSliceId}
                 onSelect={setSelectedSliceId}
@@ -205,6 +210,7 @@ export default function AnalyticsScreen() {
           </>
         )}
       </ScrollView>
+      </PullGesture>
     </Screen>
   );
 }

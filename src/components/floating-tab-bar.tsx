@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, gradients, layout, radius, shadows, spacing, typography } from '@/theme';
 import { pressedFeedback } from '@/components/pressed';
+import { TabPop } from './tab-pop';
 
 type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
 
@@ -52,7 +53,7 @@ function TabIcon({
   focused: boolean;
 }) {
   return (
-    <View style={styles.tabContent}>
+    <TabPop focused={focused} style={styles.tabContent}>
       <MaterialIcons
         name={icon}
         size={24}
@@ -67,7 +68,7 @@ function TabIcon({
       >
         {label}
       </Text>
-    </View>
+    </TabPop>
   );
 }
 

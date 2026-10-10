@@ -27,6 +27,8 @@ import { colors, spacing, typography } from '@/theme';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { useReducedMotion } from '@/components';
 
+import { reanimatedUsable } from '../../../components/reanimated-cap';
+
 import { formatGrouped } from '../../transactions/domain';
 import { sliceColor } from './slice-ramp';
 
@@ -62,6 +64,8 @@ type AnimatedDonutArcsProps = {
 };
 
 function loadAnimatedDonutArcs(): ComponentType<AnimatedDonutArcsProps> | null {
+  if (!reanimatedUsable()) return null;
+  
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const mod = require('./donut-arcs-animated') as {

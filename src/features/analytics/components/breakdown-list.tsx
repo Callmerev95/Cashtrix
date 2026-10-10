@@ -15,6 +15,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, layout, radius, spacing, typography } from '@/theme';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
+import { Stagger } from '@/components/stagger';
 
 import { formatGrouped } from '../../transactions/domain';
 import { sliceColor } from './slice-ramp';
@@ -44,8 +45,8 @@ export function BreakdownList({
         const selected = selectedId === slice.id;
         const dimmed = selectedId !== null && !selected;
         return (
+          <Stagger key={slice.id} index={index}>
           <Pressable
-            key={slice.id}
             testID={`${testID}-row-${slice.id}`}
             accessibilityRole="button"
             accessibilityState={{ selected }}
@@ -90,6 +91,7 @@ export function BreakdownList({
               {t.currencyPrefix} {formatGrouped(slice.value, language)}
             </Text>
           </Pressable>
+          </Stagger>
         );
       })}
     </View>

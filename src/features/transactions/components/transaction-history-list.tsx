@@ -22,6 +22,9 @@ import {
   StyleSheet,
   Text,
   View,
+  type GestureResponderEvent,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
@@ -30,6 +33,7 @@ import { router } from 'expo-router';
 import { EmptyStateCard } from '@/components/empty-state-card';
 import { ErrorStateCard } from '@/components/error-state-card';
 import { SkeletonList } from '@/components/skeleton';
+import { Stagger } from '@/components/stagger';
 import { colors, spacing, typography } from '@/theme';
 import { dictionaryFor, useLanguage } from '@/i18n';
 
@@ -50,6 +54,12 @@ export function TransactionHistoryList({
   selecting = false,
   selectedIds = [],
   listError = null,
+  onScroll,
+  onTouchStart,
+  onTouchMove,
+  onTouchEnd,
+  onTouchCancel,
+  headerExtra = null,
 }: {
   transactions: Transaction[];
   loading?: boolean;
@@ -66,6 +76,15 @@ export function TransactionHistoryList({
   selectedIds?: string[];
   /** D4: empty-because-error renders retry instead of the "Catat" card. */
   listError?: { message: string; onRetry: () => void } | null;
+  /** P1b custom pull: scroll offset for the top-only gate (twin injects). */
+  onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  /** P1b custom pull: observe-only touch tracking (never claims responder). */
+  onTouchStart?: (event: GestureResponderEvent) => void;
+  onTouchMove?: (event: GestureResponderEvent) => void;
+  onTouchEnd?: (event: GestureResponderEvent) => void;
+  onTouchCancel?: (event: GestureResponderEvent) => void;
+  /** P1b custom pull: spinner strip above the list header (twin renders). */
+  headerExtra?: React.ReactNode;
 }) {
   // C6: day dividers + empty copy follow the OS language (ADR-0008).
   const language = useLanguage();
@@ -86,18 +105,19 @@ export function TransactionHistoryList({
       testID={testID}
       sections={sections}
       keyExtractor={(item) => item.id}
-      renderItem={({ item }) => (
-        <TransactionRow
-          key={item.id}
-          testID={`transaction-${item.id}`}
-          transaction={item}
-          selecting={selecting}
-          selected={selectedIds.includes(item.id)}
-          dimmed={selecting && item.type === 'transfer'}
-          onPress={
-            onPressTransaction ? () => onPressTransaction(item) : undefined
-          }
-        />
+      renderItem={({ item, index }) => (
+        <Stagger index={Math.min(index, 8)}>
+          <TransactionRow
+            testID={`transaction-${item.id}`}
+            transaction={item}
+            selecting={selecting}
+            selected={selectedIds.includes(item.id)}
+            dimmed={selecting && item.type === 'transfer'}
+            onPress={
+              onPressTransaction ? () => onPressTransaction(item) : undefined
+            }
+          />
+        </Stagger>
       )}
       renderSectionHeader={({ section }) => (
         <View style={styles.dividerWrap}>
@@ -115,7 +135,16 @@ export function TransactionHistoryList({
         </View>
       )}
       stickySectionHeadersEnabled
-      ListHeaderComponent={ListHeaderComponent}
+      ListHeaderComponent={
+        headerExtra ? (
+          <>
+            {headerExtra}
+            {ListHeaderComponent}
+          </>
+        ) : (
+          ListHeaderComponent
+        )
+      }
       ListEmptyComponent={
         loading ? (
           <SkeletonList testID={`${testID}-loading`} rows={5} />
@@ -151,6 +180,11 @@ export function TransactionHistoryList({
       onEndReachedThreshold={0.4}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={contentContainerStyle}
+      onScroll={onScroll}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      onTouchCancel={onTouchCancel}
       scrollEventThrottle={16}
     />
   );
