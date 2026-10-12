@@ -151,13 +151,38 @@ export function DonutChart({
   });
 
   const selected = parts.find((part) => part.sliceId === selectedId) ?? null;
+  // A lone full wheel is a solid ring, not an arc: caps meeting at one
+  // point leave a 1px AA seam (same device proof as the budget ring).
+  const fullPart =
+    gapless && parts.length === 1 && cursor >= 359.9 ? parts[0] : null;
 
   return (
     <View testID={testID} style={styles.wrap}>
       <View style={[styles.pie, { width: size, height: size }]}>
         <Svg width={size} height={size}>
           <G>
-            {AnimatedDonutArcs && !reduceMotion ? (
+            {fullPart != null ? (
+              <Circle
+                testID={`${testID}-slice-${fullPart.sliceId}`}
+                cx={center}
+                cy={center}
+                r={radius}
+                fill="none"
+                stroke={fullPart.color}
+                strokeWidth={thickness}
+                opacity={fullPart.dimmed ? 0.35 : 1}
+                accessible
+                accessibilityLabel={fill(t.sliceA11y, {
+                  label: fullPart.label,
+                  share: `${Math.round(fullPart.share * 100)}`,
+                })}
+                onPress={() =>
+                  onSelect?.(
+                    selectedId === fullPart.sliceId ? null : fullPart.sliceId,
+                  )
+                }
+              />
+            ) : AnimatedDonutArcs && !reduceMotion ? (
               <AnimatedDonutArcs
                 parts={parts}
                 animKey={parts.map((p) => `${p.sliceId}:${p.dash}`).join('|')}

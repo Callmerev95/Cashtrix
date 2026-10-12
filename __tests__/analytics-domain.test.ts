@@ -498,7 +498,6 @@ describe('P2a chart geometry (gradient, honest round caps)', () => {
     const span = roundCapSpan(0, 5, 24, 578);
     expect(span.dash).toBeGreaterThan(0);
   });
-});
 
   it('rounds caps only on arcs long enough to carry them', () => {
     const C = 2 * Math.PI * 92;
@@ -507,3 +506,4 @@ describe('P2a chart geometry (gradient, honest round caps)', () => {
     expect(shouldRoundCaps(10, 24, C)).toBe(false);
     expect(shouldRoundCaps(0, 24, C)).toBe(false);
   });
+});

@@ -15,7 +15,7 @@
  */
 import type { ComponentType } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Circle, Defs, G, LinearGradient, Stop, Svg } from 'react-native-svg';
+import { Circle, G, Svg } from 'react-native-svg';
 
 import { colors, spacing, typography } from '@/theme';
 import { useLanguage } from '@/i18n';
@@ -30,7 +30,6 @@ import {
 } from '../domain';
 import { AnimatedNumber } from '../../analytics/components/animated-number';
 import {
-  arcGradientVector,
   roundCapSpan,
   shouldRoundCaps,
 } from '../../analytics/domain';
@@ -41,7 +40,6 @@ type AnimatedRingArcProps = {
   center: number;
   radius: number;
   thickness: number;
-  gradientId: string;
   rotation: number;
   round: boolean;
   testID: string;
@@ -92,22 +90,19 @@ export function BudgetRing({
   const center = size / 2;
   const radius = (size - thickness) / 2;
   const circumference = 2 * Math.PI * radius;
-  // P2a: along-arc sheen (accent → pale tip) + round caps pre-trimmed so
-  // the tip stays exactly on the true percent.
-  const gradientId = 'budget-ring-gradient';
+  // Full-gold fill (owner verdict on the grey tip) + honest round caps on
+  // both ends so no nub juts into gaps. Conditional caps stay: small arcs
+  // hug the track instead of floating as dots.
   const round = sweep > 0 && shouldRoundCaps(sweep, thickness, circumference);
   const span = round
     ? roundCapSpan(-90, sweep, thickness, circumference)
     : { rotation: -90, dash: (sweep / 360) * circumference };
-  const gradientVector = arcGradientVector(
-    center,
-    center,
-    radius,
-    span.rotation,
-    (span.dash / circumference) * 360,
-  );
   const trimmedDash = span.dash;
   const trimmedRotation = span.rotation;
+  // A full wheel is a solid ring, not an arc: two round caps meeting at
+  // exactly one point leave a 1px AA seam (device-proved gap on exceeded
+  // budgets). No dash, no joint, no seam.
+  const isFull = fill >= 1;
 
   return (
     <View testID={testID} style={styles.wrap}>
@@ -122,19 +117,6 @@ export function BudgetRing({
         ]}
       >
         <Svg width={size} height={size}>
-          <Defs>
-            <LinearGradient
-              id={gradientId}
-              gradientUnits="userSpaceOnUse"
-              x1={gradientVector.x1}
-              y1={gradientVector.y1}
-              x2={gradientVector.x2}
-              y2={gradientVector.y2}
-            >
-              <Stop offset="0" stopColor={colors.accent} />
-              <Stop offset="1" stopColor={colors.accentSoft} />
-            </LinearGradient>
-          </Defs>
           <G>
             <Circle
               cx={center}
@@ -145,14 +127,23 @@ export function BudgetRing({
               strokeWidth={thickness}
             />
             {sweep > 0 ? (
-              AnimatedRingArc && !reduceMotion ? (
+              isFull ? (
+                <Circle
+                  testID={`${testID}-fill`}
+                  cx={center}
+                  cy={center}
+                  r={radius}
+                  fill="none"
+                  stroke={colors.accent}
+                  strokeWidth={thickness}
+                />
+              ) : AnimatedRingArc && !reduceMotion ? (
                 <AnimatedRingArc
                   dash={trimmedDash}
                   circumference={circumference}
                   center={center}
                   radius={radius}
                   thickness={thickness}
-                  gradientId={gradientId}
                   rotation={trimmedRotation}
                   round={round}
                   testID={testID}
@@ -164,7 +155,7 @@ export function BudgetRing({
                   cy={center}
                   r={radius}
                   fill="none"
-                  stroke={`url(#${gradientId})`}
+                  stroke={colors.accent}
                   strokeWidth={thickness}
                   strokeLinecap={round ? 'round' : 'butt'}
                   strokeDasharray={`${trimmedDash} ${circumference}`}

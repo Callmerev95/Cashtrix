@@ -175,3 +175,23 @@ describe('P2a tooltip (geometry-anchored)', () => {
     expect(bubble.props.accessibilityLabel).toContain('Rp');
   });
 });
+
+describe('full wheels render seamless solid rings (no cap joint)', () => {
+  it('budget ring at/over 100% fills without a dash seam', async () => {
+    render(<BudgetRing percent={120} state="exceeded" />);
+    expect(await screen.findByTestId('budget-ring')).toBeTruthy();
+    expect(screen.getByTestId('budget-ring-fill')).toBeTruthy();
+    expect(screen.getByText('120%')).toBeTruthy();
+  });
+
+  it('donut with a lone full slice renders one seamless ring', async () => {
+    render(
+      <DonutChart
+        slices={[{ id: 'c1', label: 'Gaji', value: 500000, share: 1 }]}
+        total={500000}
+      />,
+    );
+    expect(await screen.findByTestId('analytics-donut')).toBeTruthy();
+    expect(screen.getByTestId('analytics-donut-slice-c1')).toBeTruthy();
+  });
+});
