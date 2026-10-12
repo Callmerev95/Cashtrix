@@ -206,6 +206,36 @@ export function enumerateDueDates(input: {
 }
 
 /**
+ * Whether the `[startsOn, endsOn]` window contains at least one due date.
+ * Pure window math (no `today` filter — unlike `enumerateDueDates`): the
+ * form uses it to refuse an end month in which the due never lands (the
+ * "Oktober–Oktober, due 10" trap: starts and ends day-1 pass validation
+ * while the window is empty, and the rule silently never fires).
+ */
+export function windowHasDues(input: {
+  startsOn: string;
+  endsOn: string;
+  dueDay: number | null;
+  dueLast: boolean;
+}): boolean {
+  const start = parseDayOne(input.startsOn);
+  const end = parseDayOne(input.endsOn);
+  let year = start.year;
+  let month = start.month;
+
+  while (year < end.year || (year === end.year && month <= end.month)) {
+    const due = resolveDueDate(year, month, input.dueDay, input.dueLast);
+    if (due >= input.startsOn && due <= input.endsOn) return true;
+    month += 1;
+    if (month > 12) {
+      month = 1;
+      year += 1;
+    }
+  }
+  return false;
+}
+
+/**
  * The `starts_on` default for a new rule (day-1, PRD R8): the running month,
  * bumped to NEXT month when this month's due already passed — otherwise the
  * first catch-up would invent a payment for a due the user never owed
@@ -241,6 +271,7 @@ export const recurringMessages = {
   startsNotDayOne: id.recurring.validation.startsNotDayOne,
   endsNotDayOne: id.recurring.validation.endsNotDayOne,
   endsBeforeStarts: id.recurring.validation.endsBeforeStarts,
+  endsWindowEmpty: id.recurring.validation.endsWindowEmpty,
 } as const;
 
 function isDayOne(value: string): boolean {
@@ -286,6 +317,17 @@ export function validateRecurringRule(
     if (!isDayOne(input.endsOn)) return messages.endsNotDayOne;
     if (input.endsOn < input.startsOn) {
       return messages.endsBeforeStarts;
+    }
+    if (
+      (input.dueLast || input.dueDay !== null) &&
+      !windowHasDues({
+        startsOn: input.startsOn,
+        endsOn: input.endsOn,
+        dueDay: input.dueDay,
+        dueLast: input.dueLast,
+      })
+    ) {
+      return messages.endsWindowEmpty;
     }
   }
   return null;

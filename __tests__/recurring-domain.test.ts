@@ -23,6 +23,7 @@ import {
   resolveDueDate,
   statusLabel,
   validateRecurringRule,
+  windowHasDues,
 } from '@/features/recurring';
 
 describe('constants & guards', () => {
@@ -279,5 +280,80 @@ describe('validateRecurringRule', () => {
         endsOn: '2026-08-01',
       }),
     ).toBe(recurringMessages.endsBeforeStarts);
+  });
+});
+
+describe('windowHasDues (jendela kosong tidak boleh disimpan)', () => {
+  it('menolak akhir sebulan dengan due setelah hari-1 (kasus Gaji Okt)', () => {
+    expect(
+      windowHasDues({
+        startsOn: '2026-10-01',
+        endsOn: '2026-10-01',
+        dueDay: 10,
+        dueLast: false,
+      }),
+    ).toBe(false);
+    expect(
+      validateRecurringRule({
+        kind: 'income',
+        walletId: 'w1',
+        categoryId: 'c1',
+        dueDay: 10,
+        dueLast: false,
+        startsOn: '2026-10-01',
+        endsOn: '2026-10-01',
+      }),
+    ).toBe(recurringMessages.endsWindowEmpty);
+  });
+
+  it('menerima due tepat di hari-1 akhir; due-last sebulan juga kosong', () => {
+    expect(
+      windowHasDues({
+        startsOn: '2026-10-01',
+        endsOn: '2026-10-01',
+        dueDay: 1,
+        dueLast: false,
+      }),
+    ).toBe(true);
+    // Due-last jatuh tanggal 31 — selalu di luar ends day-1 sebulan:
+    // guard yang sama menolaknya dengan jujur.
+    expect(
+      windowHasDues({
+        startsOn: '2026-10-01',
+        endsOn: '2026-10-01',
+        dueDay: null,
+        dueLast: true,
+      }),
+    ).toBe(false);
+    expect(
+      windowHasDues({
+        startsOn: '2026-10-01',
+        endsOn: '2026-11-01',
+        dueDay: null,
+        dueLast: true,
+      }),
+    ).toBe(true);
+  });
+
+  it('menerima rentang multi-bulan dan menolak akhir-sebelum-mulai', () => {
+    expect(
+      windowHasDues({
+        startsOn: '2026-10-01',
+        endsOn: '2026-12-01',
+        dueDay: 10,
+        dueLast: false,
+      }),
+    ).toBe(true);
+    expect(
+      validateRecurringRule({
+        kind: 'income',
+        walletId: 'w1',
+        categoryId: 'c1',
+        dueDay: 10,
+        dueLast: false,
+        startsOn: '2026-10-01',
+        endsOn: '2027-09-01',
+      }),
+    ).toBeNull();
   });
 });

@@ -705,6 +705,8 @@ export const id = {
       startsNotDayOne: 'Bulan mulai harus tanggal 1',
       endsNotDayOne: 'Bulan akhir harus tanggal 1',
       endsBeforeStarts: 'Bulan akhir tidak boleh sebelum bulan mulai',
+      endsWindowEmpty:
+        'Jatuh tempo tak pernah tiba dalam rentang ini — mundurkan bulan akhir atau matikan batasnya',
     },
     screen: {
       kicker: 'Otomatisasi',
@@ -746,6 +748,7 @@ export const id = {
       startsBumped:
         'Due bulan ini sudah lewat. Occurrence pertama lahir bulan depan agar tidak mengarang pembayaran lalu.',
       endsToggle: 'Ada bulan akhir',
+      endsHint: 'Setelah bulan ini, transaksi berhenti dibuat.',
       endsPrevA11y: 'Bulan akhir sebelumnya',
       endsNextA11y: 'Bulan akhir berikutnya',
       loadMonthFail: 'Bulan berjalan belum termuat, coba lagi sebentar lagi.',

@@ -33,5 +33,6 @@ export {
   resolveDueDate,
   statusLabel,
   validateRecurringRule,
+  windowHasDues,
 } from './domain';
 export type { RecurringKind, RecurringRule, RuleStatus } from './domain';

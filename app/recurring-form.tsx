@@ -430,8 +430,11 @@ export default function RecurringFormScreen() {
               accessibilityState={{ checked: endsEnabled }}
               accessibilityLabel={tr.form.endsToggle}
               onPress={() => {
+                // First enable defaults to start + 11 (a 12-cycle contract):
+                // defaulting to the start month builds an empty window for
+                // any due_day > 1 — a rule that silently never fires.
                 if (!endsEnabled && !endsMonth && startsOn) {
-                  setEndsMonth(startsOn);
+                  setEndsMonth(shiftMonth(startsOn, 11));
                 }
                 setEndsEnabled(!endsEnabled);
               }}
@@ -449,6 +452,11 @@ export default function RecurringFormScreen() {
                 {tr.form.endsToggle}
               </Text>
             </Pressable>
+            {endsEnabled ? (
+              <Text style={[typography.bodySm, styles.hint]}>
+                {tr.form.endsHint}
+              </Text>
+            ) : null}
             {endsEnabled ? (
               <View style={styles.endsRow}>
                 <Pressable

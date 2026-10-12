@@ -703,6 +703,8 @@ export const en: Dictionary = {
       startsNotDayOne: 'Start month must be the 1st',
       endsNotDayOne: 'End month must be the 1st',
       endsBeforeStarts: 'End month cannot be before the start month',
+      endsWindowEmpty:
+        'No due date ever lands in this range — push the end month out or switch the limit off',
     },
     screen: {
       kicker: 'Automation',
@@ -743,6 +745,7 @@ export const en: Dictionary = {
       startsBumped:
         'This month’s due already passed. The first occurrence is born next month so no past payment is invented.',
       endsToggle: 'Has an end month',
+      endsHint: 'After this month, no new transactions are created.',
       endsPrevA11y: 'Previous end month',
       endsNextA11y: 'Next end month',
       loadMonthFail: 'The current month is not loaded yet, try again shortly.',
