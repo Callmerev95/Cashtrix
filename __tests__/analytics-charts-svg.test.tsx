@@ -8,7 +8,7 @@
  * stand-in in Jest (`__tests__/mocks/react-native-svg.js`), so these assert
  * structure, not pixels — pixels are the device gate's job.
  */
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen, within } from '@testing-library/react-native';
 
 import { DonutChart } from '@/features/analytics/components/donut-chart';
 import { BarChart } from '@/features/analytics/components/bar-chart';
@@ -137,5 +137,41 @@ describe('AnimatedNumber (P1a static fallback)', () => {
     );
     expect(await screen.findByTestId('anim-number')).toBeTruthy();
     expect(screen.getByText('Rp 248590.4')).toBeTruthy();
+  });
+});
+
+describe('P2a tooltip (geometry-anchored)', () => {
+  const slices = [
+    { id: 'c1', label: 'Makanan', icon: 'restaurant', value: 300000, share: 0.75 },
+    { id: 'c2', label: 'Transport', icon: 'directions_bus', value: 100000, share: 0.25 },
+  ];
+
+  it('donut shows the bubble for the selected slice only', async () => {
+    const { rerender } = render(
+      <DonutChart slices={slices} total={400000} selectedId={null} />,
+    );
+    expect(screen.queryByTestId('analytics-tooltip')).toBeNull();
+    rerender(
+      <DonutChart slices={slices} total={400000} selectedId="c1" />,
+    );
+    expect(await screen.findByTestId('analytics-tooltip')).toBeTruthy();
+    expect(screen.getByText(/Makanan · Rp 300\.000 · 75%/)).toBeTruthy();
+  });
+
+  it('bar chart shows the bubble for the selected bucket only', async () => {
+    const bars = [
+      { bucket: '2026-09-01', value: 50000, height: 1, label: '1' },
+      { bucket: '2026-09-02', value: 20000, height: 0.4, label: '2' },
+    ];
+    const { rerender } = render(<BarChart bars={bars} selectedBucket={null} />);
+    expect(screen.queryByTestId('analytics-tooltip')).toBeNull();
+    fireEvent(screen.getByTestId('analytics-bars-plot'), 'layout', {
+      nativeEvent: { layout: { width: 300 } },
+    });
+    rerender(<BarChart bars={bars} selectedBucket="2026-09-02" />);
+    const bubble = await screen.findByTestId('analytics-tooltip');
+    expect(bubble).toBeTruthy();
+    expect(within(bubble).getByText(/2 · Rp 20\.000/)).toBeTruthy();
+    expect(bubble.props.accessibilityLabel).toContain('Rp');
   });
 });

@@ -98,8 +98,10 @@ function AnimatedDonutArc({
     );
   }, [animKey, delayMs, progress]);
 
+  // Caller pre-trims the span (roundCapSpan): the tip lands exactly.
+  const trimmed = part.dash;
   const animatedProps = useAnimatedProps(() => ({
-    strokeDasharray: `${progress.value * part.dash} ${part.gap}`,
+    strokeDasharray: `${progress.value * trimmed} ${part.gap}`,
     opacity: part.dimmed ? 0.35 : 1,
   }));
 
@@ -113,7 +115,7 @@ function AnimatedDonutArc({
         fill="none"
         stroke={part.color}
         strokeWidth={thickness}
-        strokeLinecap="butt"
+        strokeLinecap={part.round ? 'round' : 'butt'}
         transform={`rotate(${part.rotation} ${center} ${center})`}
         accessible
         accessibilityLabel={a11yLabel}

@@ -25,6 +25,9 @@ import {
   toBars,
   toDonutSlices,
   toInsightSummary,
+  arcGradientVector,
+  roundCapSpan,
+  shouldRoundCaps,
   type AnalyticsOverview,
   type CategoryBreakdown,
   type DateRange,
@@ -473,3 +476,34 @@ describe('toInsightSummary (2.1.0 deterministic insight)', () => {
     expect(summary.lines[0]).toContain('matches');
   });
 });
+describe('P2a chart geometry (gradient, honest round caps)', () => {
+  it('runs a gradient along the arc from its start to its tip', () => {
+    // Quarter arc starting at the top, sweeping clockwise to 3 o'clock.
+    const vector = arcGradientVector(104, 104, 92, -90, 90);
+    expect(vector.x1).toBeCloseTo(104, 5);
+    expect(vector.y1).toBeCloseTo(12, 5);
+    expect(vector.x2).toBeCloseTo(196, 5);
+    expect(vector.y2).toBeCloseTo(104, 5);
+  });
+
+  it('insets both ends past the cap overshoot (full stroke shorter)', () => {
+    // 24dp stroke on a 578dp wheel: overshoot ≈ 7.46° per end.
+    const span = roundCapSpan(0, 150, 24, 2 * Math.PI * 92);
+    expect(span.rotation).toBeCloseTo(7.46, 1);
+    // dash = (150 − 2×7.46)/360 × C.
+    expect(span.dash).toBeCloseTo(((150 - 14.92) / 360) * (2 * Math.PI * 92), 0);
+  });
+
+  it('never goes negative on tiny sweeps (a dot survives)', () => {
+    const span = roundCapSpan(0, 5, 24, 578);
+    expect(span.dash).toBeGreaterThan(0);
+  });
+});
+
+  it('rounds caps only on arcs long enough to carry them', () => {
+    const C = 2 * Math.PI * 92;
+    // 24dp stroke needs >= ~29.9 degrees; small slices stay flat.
+    expect(shouldRoundCaps(150, 24, C)).toBe(true);
+    expect(shouldRoundCaps(10, 24, C)).toBe(false);
+    expect(shouldRoundCaps(0, 24, C)).toBe(false);
+  });

@@ -30,6 +30,8 @@ import { useReducedMotion } from '@/components';
 import { reanimatedUsable } from '../../../components/reanimated-cap';
 
 import { formatGrouped } from '../../transactions/domain';
+import { roundCapSpan, shouldRoundCaps } from '../domain';
+import { ChartTooltip } from './chart-tooltip';
 import { sliceColor } from './slice-ramp';
 
 /** Half-gap on each wedge edge — the card shows through as a separator. */
@@ -43,7 +45,11 @@ export type DonutArcPart = {
   key: string;
   sliceId: string;
   label: string;
+  value: number;
   share: number;
+  sweep: number;
+  /** Round caps iff long enough (shouldRoundCaps); else flat hugging. */
+  round: boolean;
   color: string;
   rotation: number;
   dash: number;
@@ -120,20 +126,31 @@ export function DonutChart({
     const trim =
       !gapless && sweep > GAP_MIN_SWEEP_DEG ? EDGE_GAP_DEG * 2 : 0;
     const show = Math.max(sweep - trim, 0.5);
-    const rotation = -90 + cursor;
+    // Round caps only on arcs long enough to carry them (shouldRoundCaps):
+    // small arcs stay flat-ended so they hug the ring instead of floating
+    // off as dots that collide. Rank colour is flat (legend twin).
+    const round = shouldRoundCaps(show, thickness, circumference);
+    const span = round
+      ? roundCapSpan(-90 + cursor, show, thickness, circumference)
+      : { rotation: -90 + cursor, dash: degToLen(show) };
     parts.push({
       key: slice.id,
       sliceId: slice.id,
       label: slice.label,
+      value: slice.value,
       share: slice.share,
+      sweep,
+      round,
       color: sliceColor(index),
-      rotation,
-      dash: degToLen(show),
+      rotation: span.rotation,
+      dash: span.dash,
       gap: circumference,
       dimmed: selectedId !== null && selectedId !== slice.id,
     });
     cursor += sweep;
   });
+
+  const selected = parts.find((part) => part.sliceId === selectedId) ?? null;
 
   return (
     <View testID={testID} style={styles.wrap}>
@@ -168,7 +185,7 @@ export function DonutChart({
                     fill="none"
                     stroke={part.color}
                     strokeWidth={thickness}
-                    strokeLinecap="butt"
+                    strokeLinecap={part.round ? 'round' : 'butt'}
                     opacity={part.dimmed ? 0.35 : 1}
                     strokeDasharray={`${part.dash} ${part.gap}`}
                     transform={`rotate(${part.rotation} ${center} ${center})`}
@@ -208,6 +225,21 @@ export function DonutChart({
           </Text>
         </View>
       </View>
+
+      {selected != null ? (
+        <ChartTooltip
+          swatch={selected.color}
+          title={selected.label}
+          lines={[
+            `${t.currencyPrefix} ${formatGrouped(selected.value, language)}`,
+            `${Math.round(selected.share * 100)}%`,
+          ]}
+          a11yLabel={fill(t.sliceA11y, {
+            label: selected.label,
+            share: `${Math.round(selected.share * 100)}`,
+          })}
+        />
+      ) : null}
     </View>
   );
 }
@@ -216,6 +248,7 @@ const styles = StyleSheet.create({
   wrap: {
     alignItems: 'center',
     paddingVertical: spacing.md,
+    gap: spacing.sm,
   },
   pie: {
     alignItems: 'center',

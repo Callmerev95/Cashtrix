@@ -623,3 +623,80 @@ export function toInsightSummary(input: InsightInput): InsightSummary {
 function wholePercent(share: number): string {
   return `${Math.round(share * 100)}%`;
 }
+
+// P2a chart geometry (pure — the Jest seam for gradient/caps/tooltip)
+
+const degToRad = (deg: number): number => (deg * Math.PI) / 180;
+
+const polar = (
+  cx: number,
+  cy: number,
+  r: number,
+  degClockwiseFromEast: number,
+): { x: number; y: number } => ({
+  x: cx + r * Math.cos(degToRad(degClockwiseFromEast)),
+  y: cy + r * Math.sin(degToRad(degClockwiseFromEast)),
+});
+
+export type ArcGradientVector = {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+};
+
+/**
+ * `userSpaceOnUse` gradient endpoints running ALONG an arc: base colour at
+ * the arc start, bright tip at the arc end. Angles follow the svg
+ * convention used by the dash rotation (`-90` = top, clockwise positive).
+ */
+export function arcGradientVector(
+  cx: number,
+  cy: number,
+  r: number,
+  startDeg: number,
+  sweepDeg: number,
+): ArcGradientVector {
+  const from = polar(cx, cy, r, startDeg);
+  const to = polar(cx, cy, r, startDeg + sweepDeg);
+  return { x1: from.x, y1: from.y, x2: to.x, y2: to.y };
+}
+
+/**
+ * Honest round-cap span: round caps overshoot half a stroke at EACH end,
+ * so the dash starts half a stroke late AND ends half a stroke early
+ * (total one full stroke shorter). Without both corrections the start cap
+ * juts into the preceding gap (device-proved nub at every arc boundary).
+ */
+export function roundCapSpan(
+  startDeg: number,
+  sweepDeg: number,
+  strokeWidth: number,
+  circumference: number,
+): { rotation: number; dash: number } {
+  const halfDeg = strokeWidthToDeg(strokeWidth, circumference) / 2;
+  const showDeg = Math.max(sweepDeg - halfDeg * 2, 0.5);
+  return {
+    rotation: startDeg + halfDeg,
+    dash: (showDeg / 360) * circumference,
+  };
+}
+
+/**
+ * Round caps only when the arc is long enough to carry them: a cap pair
+ * wider than the dash renders as a detached dot, and neighbouring dots
+ * collide into blobs (device-proved on many-category wheels). Below the
+ * threshold the arc stays flat-ended (butt) and hugs the ring.
+ */
+export function shouldRoundCaps(
+  sweepDeg: number,
+  strokeWidth: number,
+  circumference: number,
+): boolean {
+  return sweepDeg >= ((strokeWidth * 2) / circumference) * 360;
+}
+
+/** Stroke width expressed as sweep degrees on a ring of `circumference`. */
+function strokeWidthToDeg(strokeWidth: number, circumference: number): number {
+  return (strokeWidth / circumference) * 360;
+}

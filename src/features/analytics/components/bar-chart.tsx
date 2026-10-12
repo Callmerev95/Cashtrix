@@ -29,6 +29,7 @@ import { colors, radius, spacing, typography } from '@/theme';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 
 import { formatGrouped } from '../../transactions/domain';
+import { ChartTooltip } from './chart-tooltip';
 import type { BarDatum } from '../domain';
 
 const MAX_BAR_HEIGHT = 120;
@@ -67,10 +68,12 @@ export function BarChart({
     plotWidth > 0 ? (plotWidth - BAR_GAP * (count - 1)) / count : 0;
   const toggle = (bucket: string) =>
     onSelect?.(selectedBucket === bucket ? null : bucket);
+  const selectedBar = bars.find((bar) => bar.bucket === selectedBucket) ?? null;
 
   return (
     <View testID={testID} style={styles.chart}>
       <View
+        testID={`${testID}-plot`}
         style={styles.plot}
         onLayout={(event) => setPlotWidth(event.nativeEvent.layout.width)}
       >
@@ -112,6 +115,19 @@ export function BarChart({
           </Svg>
         ) : null}
       </View>
+      {selectedBar != null ? (
+        <ChartTooltip
+          swatch={colors.accent}
+          title={selectedBar.label}
+          lines={[
+            `${t.currencyPrefix} ${formatGrouped(selectedBar.value, language)}`,
+          ]}
+          a11yLabel={fill(t.barA11y, {
+            label: selectedBar.label,
+            amount: `${t.currencyPrefix} ${formatGrouped(selectedBar.value, language)}`,
+          })}
+        />
+      ) : null}
       <View style={styles.labels}>
         {bars.map((bar) => {
           const selected = selectedBucket === bar.bucket;
@@ -148,6 +164,7 @@ export function BarChart({
 const styles = StyleSheet.create({
   chart: {
     paddingTop: spacing.md,
+    gap: spacing.xs,
   },
   plot: {
     height: MAX_BAR_HEIGHT,

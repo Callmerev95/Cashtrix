@@ -13,6 +13,9 @@ export {
   OTHER_ICON,
   OTHER_LABEL,
   RANGE_PRESETS,
+  arcGradientVector,
+  roundCapSpan,
+  shouldRoundCaps,
   deltaTone,
   donutSegmentSliceIndices,
   enumerateBuckets,
@@ -38,6 +41,7 @@ export {
 } from './domain';
 export type {
   AnalyticsOverview,
+  ArcGradientVector,
   BarDatum,
   CategoryBreakdown,
   DateRange,
@@ -54,6 +58,7 @@ export type {
 } from './domain';
 export { DonutChart } from './components/donut-chart';
 export { BarChart } from './components/bar-chart';
+export { ChartTooltip } from './components/chart-tooltip';
 export { InsightCard } from './components/insight-card';
 export { KpiHeader } from './components/kpi-header';
 export { MonthlySummaryCard } from './components/monthly-summary-card';
