@@ -195,3 +195,30 @@ describe('full wheels render seamless solid rings (no cap joint)', () => {
     expect(screen.getByTestId('analytics-donut-slice-c1')).toBeTruthy();
   });
 });
+
+describe('P2b net area (geometry, not pixels)', () => {
+  const { NetAreaChart } = require('@/features/analytics');
+
+  it('draws the line with a zero reference on mixed windows', async () => {
+    const { toNetPoints } = require('@/features/analytics');
+    const range = {
+      start: new Date('2026-09-01T00:00:00+07:00'),
+      end: new Date('2026-09-04T00:00:00+07:00'),
+      previousStart: new Date('2026-08-29T00:00:00+07:00'),
+      previousEnd: new Date('2026-09-01T00:00:00+07:00'),
+    };
+    const series = [
+      { bucket: '2026-09-01', totalExpense: 0, totalIncome: 300000, net: 300000 },
+      { bucket: '2026-09-02', totalExpense: 400000, totalIncome: 0, net: -400000 },
+      { bucket: '2026-09-03', totalExpense: 0, totalIncome: 0, net: 0 },
+    ];
+    const net = toNetPoints(series, range, true);
+    render(<NetAreaChart points={net.points} zeroY={net.zeroY} />);
+    expect(await screen.findByTestId('analytics-net')).toBeTruthy();
+  });
+
+  it('shows the empty note instead of a flat line', async () => {
+    render(<NetAreaChart points={[]} zeroY={0} />);
+    expect(await screen.findByTestId('analytics-net-empty')).toBeTruthy();
+  });
+});

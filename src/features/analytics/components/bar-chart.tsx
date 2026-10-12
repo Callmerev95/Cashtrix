@@ -30,7 +30,7 @@ import { dictionaryFor, fill, useLanguage } from '@/i18n';
 
 import { formatGrouped } from '../../transactions/domain';
 import { ChartTooltip } from './chart-tooltip';
-import type { BarDatum } from '../domain';
+import type { BarDatum, TrendMode } from '../domain';
 
 const MAX_BAR_HEIGHT = 120;
 const BAR_GAP = 2;
@@ -41,12 +41,15 @@ export function BarChart({
   bars,
   selectedBucket = null,
   onSelect,
+  mode = 'expense',
   testID = 'analytics-bars',
 }: {
   bars: BarDatum[];
   /** The tapped bucket stays bright; the rest dim. */
   selectedBucket?: string | null;
   onSelect?: (bucket: string | null) => void;
+  /** Expense bars wear the gold gradient; income bars flat green. */
+  mode?: Exclude<TrendMode, 'net'>;
   testID?: string;
 }) {
   // C6: labels + number format follow the OS language (R10, ADR-0008).
@@ -68,6 +71,8 @@ export function BarChart({
     plotWidth > 0 ? (plotWidth - BAR_GAP * (count - 1)) / count : 0;
   const toggle = (bucket: string) =>
     onSelect?.(selectedBucket === bucket ? null : bucket);
+  const gradientId =
+    mode === 'income' ? 'analytics-bar-income' : 'analytics-bar-gradient';
   const selectedBar = bars.find((bar) => bar.bucket === selectedBucket) ?? null;
 
   return (
@@ -83,6 +88,10 @@ export function BarChart({
               <LinearGradient id="analytics-bar-gradient" x1="0" y1="1" x2="0" y2="0">
                 <Stop offset="0" stopColor={colors.accentSoft} />
                 <Stop offset="1" stopColor={colors.accent} />
+              </LinearGradient>
+              <LinearGradient id="analytics-bar-income" x1="0" y1="1" x2="0" y2="0">
+                <Stop offset="0" stopColor={colors.income} />
+                <Stop offset="1" stopColor={colors.income} />
               </LinearGradient>
             </Defs>
             <Rect
@@ -106,7 +115,7 @@ export function BarChart({
                   width={Math.max(columnWidth, 2)}
                   height={height}
                   rx={radius.sm}
-                  fill="url(#analytics-bar-gradient)"
+                  fill={`url(#${gradientId})`}
                   opacity={dimmed ? 0.35 : bar.value > 0 ? 1 : 0.25}
                   onPress={() => toggle(bar.bucket)}
                 />

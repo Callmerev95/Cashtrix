@@ -223,6 +223,10 @@ export type BarDatum = {
   label: string;
 };
 
+/** Trend metric of the trend card (bars for money legs, area for net). */
+export type TrendMode = 'expense' | 'income' | 'net';
+export const TREND_MODES: TrendMode[] = ['expense', 'income', 'net'];
+
 /**
  * Turns the sparse server series into a dense, axis-aligned list of bars.
  *
@@ -239,9 +243,14 @@ export function toBars(
   daily: boolean,
   tz: string = 'Asia/Jakarta',
   lang: Language = 'id',
+  mode: Exclude<TrendMode, 'net'> = 'expense',
 ): BarDatum[] {
   const buckets = enumerateBuckets(range, daily, tz);
-  const byKey = new Map(series.map((item) => [item.bucket, item.totalExpense]));
+  const pick =
+    mode === 'income'
+      ? (item: SeriesBucket) => item.totalIncome
+      : (item: SeriesBucket) => item.totalExpense;
+  const byKey = new Map(series.map((item) => [item.bucket, pick(item)]));
 
   const values = buckets.map((bucket) => byKey.get(bucket) ?? 0);
   const max = values.reduce((peak, value) => (value > peak ? value : peak), 0);
@@ -252,6 +261,61 @@ export function toBars(
     height: max > 0 ? (values[index] ?? 0) / max : 0,
     label: daily ? dayLabel(bucket) : monthLabel(bucket, lang),
   }));
+}
+
+export type NetPoint = {
+  /** `YYYY-MM-DD` bucket the server returned. */
+  bucket: string;
+  value: number;
+  /** 0..1 across the window (0.5 when a single bucket). */
+  x: number;
+  /** 0..1 up the plot (0 = bottom). */
+  y: number;
+  /** Short axis label (`5` for a day, `Sep` for a month). */
+  label: string;
+};
+
+export type NetSeries = {
+  points: NetPoint[];
+  /** 0..1 height of the zero line (1 when everything is ≥ 0). */
+  zeroY: number;
+};
+
+/**
+ * Net series for the area chart: same buckets and labels as `toBars`, but
+ * values keep their sign (surplus above, deficit below the zero line).
+ * Normalised against the largest absolute extreme, so a −50rb dip and a
+ * +5jt month share one honest scale. All-zero windows flatten to the
+ * bottom (no NaN — AC #7 family).
+ */
+export function toNetPoints(
+  series: SeriesBucket[],
+  range: DateRange,
+  daily: boolean,
+  tz: string = 'Asia/Jakarta',
+  lang: Language = 'id',
+): NetSeries {
+  const buckets = enumerateBuckets(range, daily, tz);
+  const byKey = new Map(series.map((item) => [item.bucket, item.net]));
+
+  const values = buckets.map((bucket) => byKey.get(bucket) ?? 0);
+  const hi = values.reduce((peak, value) => (value > peak ? value : peak), 0);
+  const lo = values.reduce((trough, value) => (value < trough ? value : trough), 0);
+  const floor = Math.min(lo, 0);
+  const ceil = Math.max(hi, 0);
+  const span = ceil - floor || 1;
+  const count = buckets.length;
+
+  return {
+    points: buckets.map((bucket, index) => ({
+      bucket,
+      value: values[index] ?? 0,
+      x: count > 1 ? index / (count - 1) : 0.5,
+      y: ((values[index] ?? 0) - floor) / span,
+      label: daily ? dayLabel(bucket) : monthLabel(bucket, lang),
+    })),
+    zeroY: (0 - floor) / span,
+  };
 }
 
 /**

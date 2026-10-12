@@ -25,6 +25,7 @@ import {
   toBars,
   toDonutSlices,
   toInsightSummary,
+  toNetPoints,
   arcGradientVector,
   roundCapSpan,
   shouldRoundCaps,
@@ -505,5 +506,45 @@ describe('P2a chart geometry (gradient, honest round caps)', () => {
     expect(shouldRoundCaps(150, 24, C)).toBe(true);
     expect(shouldRoundCaps(10, 24, C)).toBe(false);
     expect(shouldRoundCaps(0, 24, C)).toBe(false);
+  });
+});
+
+describe('P2b trend modes (bars + net area)', () => {
+  const series = [
+    { bucket: '2026-09-01', totalExpense: 100000, totalIncome: 400000, net: 300000 },
+    { bucket: '2026-09-02', totalExpense: 500000, totalIncome: 100000, net: -400000 },
+    { bucket: '2026-09-03', totalExpense: 0, totalIncome: 0, net: 0 },
+  ];
+  const range = {
+    start: new Date('2026-09-01T00:00:00+07:00'),
+    end: new Date('2026-09-04T00:00:00+07:00'),
+    previousStart: new Date('2026-08-29T00:00:00+07:00'),
+    previousEnd: new Date('2026-09-01T00:00:00+07:00'),
+  };
+
+  it('reads income buckets in income mode, expense by default', () => {
+    const expense = toBars(series, range, true);
+    const income = toBars(series, range, true, 'Asia/Jakarta', 'id', 'income');
+    expect(expense.map((bar) => bar.value)).toEqual([100000, 500000, 0]);
+    expect(income.map((bar) => bar.value)).toEqual([400000, 100000, 0]);
+    expect(income[0]?.height).toBe(1);
+  });
+
+  it('keeps the sign of net points on one honest scale', () => {
+    const net = toNetPoints(series, range, true);
+    expect(net.points).toHaveLength(3);
+    expect(net.points.map((point) => point.value)).toEqual([300000, -400000, 0]);
+    // Span -400rb..300rb: zero line sits at 4/7 height, surplus above it.
+    expect(net.zeroY).toBeCloseTo(4 / 7, 5);
+    expect(net.points[0]?.y).toBeGreaterThan(net.zeroY);
+    expect(net.points[1]?.y).toBeLessThan(net.zeroY);
+    expect(net.points[0]?.x).toBe(0);
+    expect(net.points[2]?.x).toBe(1);
+  });
+
+  it('flattens an all-zero window without NaN', () => {
+    const net = toNetPoints([], range, true);
+    expect(net.points.every((point) => Number.isFinite(point.y))).toBe(true);
+    expect(Number.isFinite(net.zeroY)).toBe(true);
   });
 });

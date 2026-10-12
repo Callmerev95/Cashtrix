@@ -13,6 +13,7 @@ export {
   OTHER_ICON,
   OTHER_LABEL,
   RANGE_PRESETS,
+  TREND_MODES,
   arcGradientVector,
   roundCapSpan,
   shouldRoundCaps,
@@ -38,6 +39,7 @@ export {
   toDonutSlices,
   toInsightSummary,
   toMonthlyComparison,
+  toNetPoints,
 } from './domain';
 export type {
   AnalyticsOverview,
@@ -53,12 +55,16 @@ export type {
   MoneyTotals,
   MonthlyComparison,
   MonthlyTotals,
+  NetPoint,
+  NetSeries,
   RangePreset,
   SeriesBucket,
+  TrendMode,
 } from './domain';
 export { DonutChart } from './components/donut-chart';
 export { BarChart } from './components/bar-chart';
 export { ChartTooltip } from './components/chart-tooltip';
+export { NetAreaChart } from './components/net-area-chart';
 export { InsightCard } from './components/insight-card';
 export { KpiHeader } from './components/kpi-header';
 export { MonthlySummaryCard } from './components/monthly-summary-card';

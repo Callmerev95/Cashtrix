@@ -9,7 +9,7 @@
  * A range with no transactions renders `AnalyticsEmptyState` instead of charts
  * (AC #7), so a new account never sees a NaN/Infinity axis.
  */
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -23,6 +23,7 @@ import {
   DonutChart,
   InsightCard,
   KpiHeader,
+  NetAreaChart,
   RangeSegmentedControl,
   WalletFilterChips,
   isDailyRange,
@@ -30,7 +31,9 @@ import {
   toBars,
   toDonutSlices,
   toInsightSummary,
+  toNetPoints,
   useAnalytics,
+  type TrendMode,
 } from '@/features/analytics';
 import { Screen, AppHeader, ErrorStateCard, Skeleton, SkeletonBlock } from '@/components';
 import { PullGesture, PullHeader, usePullRefresh } from '@/components/pull-refresh';
@@ -71,6 +74,8 @@ export default function AnalyticsScreen() {
   const [filterKeySeen, setFilterKeySeen] = useState(filterKey);
   const [selectedSliceId, setSelectedSliceId] = useState<string | null>(null);
   const [selectedBucket, setSelectedBucket] = useState<string | null>(null);
+  // P2b: one trend card, three metrics (default Expense = previous pixels).
+  const [trendMode, setTrendMode] = useState<TrendMode>('expense');
   if (filterKeySeen !== filterKey) {
     setFilterKeySeen(filterKey);
     setSelectedSliceId(null);
@@ -83,8 +88,19 @@ export default function AnalyticsScreen() {
     ? toDonutSlices(overview.breakdown, t.analytics.other)
     : [];
   const bars = overview
-    ? toBars(overview.series, window, daily, tz, language)
+    ? toBars(
+        overview.series,
+        window,
+        daily,
+        tz,
+        language,
+        trendMode === 'net' ? 'expense' : trendMode,
+      )
     : [];
+  const net =
+    overview && trendMode === 'net'
+      ? toNetPoints(overview.series, window, daily, tz, language)
+      : null;
   const insight =
     overview && monthly
       ? toInsightSummary({
@@ -201,11 +217,48 @@ export default function AnalyticsScreen() {
                   ? t.analytics.section.trendDaily
                   : t.analytics.section.trendMonthly}
               </Text>
-              <BarChart
-                bars={bars}
-                selectedBucket={selectedBucket}
-                onSelect={setSelectedBucket}
-              />
+              <View
+                style={styles.trendToggle}
+                accessibilityRole="radiogroup"
+              >
+                {(['expense', 'income', 'net'] as const).map((mode) => {
+                  const active = trendMode === mode;
+                  return (
+                    <Pressable
+                      key={mode}
+                      testID={`analytics-trend-mode-${mode}`}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: active }}
+                      accessibilityLabel={t.analytics.kpi[mode]}
+                      onPress={() => {
+                        setTrendMode(mode);
+                        setSelectedBucket(null);
+                      }}
+                      style={[styles.trendOption, active && styles.trendActive]}
+                    >
+                      <Text
+                        style={[
+                          typography.bodySm,
+                          styles.trendLabel,
+                          active && styles.trendLabelActive,
+                        ]}
+                      >
+                        {t.analytics.kpi[mode]}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              {trendMode === 'net' && net != null ? (
+                <NetAreaChart points={net.points} zeroY={net.zeroY} />
+              ) : (
+                <BarChart
+                  bars={bars}
+                  mode={trendMode === 'net' ? 'expense' : trendMode}
+                  selectedBucket={selectedBucket}
+                  onSelect={setSelectedBucket}
+                />
+              )}
             </LinearGradient>
           </>
         )}
@@ -243,6 +296,28 @@ const styles = StyleSheet.create({
   },
   cardKicker: {
     color: colors.textSecondary,
+  },
+  trendToggle: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  trendOption: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  trendActive: {
+    borderColor: colors.accent,
+    backgroundColor: colors.surfaceElevated,
+  },
+  trendLabel: {
+    color: colors.textSecondary,
+  },
+  trendLabelActive: {
+    color: colors.accent,
   },
   legendDivider: {
     borderTopWidth: StyleSheet.hairlineWidth,
