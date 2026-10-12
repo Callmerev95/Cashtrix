@@ -222,3 +222,26 @@ describe('P2b net area (geometry, not pixels)', () => {
     expect(await screen.findByTestId('analytics-net-empty')).toBeTruthy();
   });
 });
+
+describe('P2b-spark rows (best-effort mini trends)', () => {
+  const { BreakdownList } = require('@/features/analytics');
+  const slices = [
+    { id: 'c1', label: 'Makanan', icon: 'restaurant', value: 300000, share: 0.75 },
+  ];
+
+  it('renders a sparkline when the shape exists', async () => {
+    render(
+      <BreakdownList
+        slices={slices}
+        sparks={[{ id: 'c1', values: [0, 0.5, 1] }]}
+      />,
+    );
+    expect(await screen.findByTestId('analytics-breakdown-spark-c1')).toBeTruthy();
+  });
+
+  it('renders no sparkline without shapes (failed series stays silent)', async () => {
+    render(<BreakdownList slices={slices} sparks={[]} />);
+    expect(await screen.findByTestId('analytics-breakdown-row-c1')).toBeTruthy();
+    expect(screen.queryByTestId('analytics-breakdown-spark-c1')).toBeNull();
+  });
+});

@@ -1,11 +1,12 @@
 export { AnalyticsProvider, useAnalytics } from './analytics-context';
 export {
+  fetchCategorySeries,
   fetchMonthlySummary,
   fetchOverview,
   fetchTimezone,
   listWalletFilters,
 } from './api';
-export type { FetchOverviewInput } from './api';
+export type { CategorySparkRow, FetchOverviewInput, FetchSeriesInput } from './api';
 export {
   DONUT_SEGMENTS,
   DONUT_TOP_N,
@@ -40,6 +41,7 @@ export {
   toInsightSummary,
   toMonthlyComparison,
   toNetPoints,
+  toSparklines,
 } from './domain';
 export type {
   AnalyticsOverview,
@@ -59,6 +61,7 @@ export type {
   NetSeries,
   RangePreset,
   SeriesBucket,
+  Sparkline,
   TrendMode,
 } from './domain';
 export { DonutChart } from './components/donut-chart';

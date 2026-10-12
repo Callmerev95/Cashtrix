@@ -26,12 +26,14 @@ import {
   NetAreaChart,
   RangeSegmentedControl,
   WalletFilterChips,
+  enumerateBuckets,
   isDailyRange,
   resolveRange,
   toBars,
   toDonutSlices,
   toInsightSummary,
   toNetPoints,
+  toSparklines,
   useAnalytics,
   type TrendMode,
 } from '@/features/analytics';
@@ -54,6 +56,7 @@ export default function AnalyticsScreen() {
     error,
     isEmpty,
     monthly,
+    sparks,
     refresh,
   } = useAnalytics();
   const { avatarSignedUrl, profile } = useProfile();
@@ -97,6 +100,9 @@ export default function AnalyticsScreen() {
         trendMode === 'net' ? 'expense' : trendMode,
       )
     : [];
+  // Sparkline axis: identical inputs to the series RPC (same buckets).
+  const sparkBuckets = enumerateBuckets(window, daily, tz);
+  const sparkLines = toSparklines(sparks, slices, sparkBuckets);
   const net =
     overview && trendMode === 'net'
       ? toNetPoints(overview.series, window, daily, tz, language)
@@ -203,6 +209,7 @@ export default function AnalyticsScreen() {
               <BreakdownList
                 key={range}
                 slices={slices}
+                sparks={sparkLines}
                 selectedId={selectedSliceId}
                 onSelect={setSelectedSliceId}
               />

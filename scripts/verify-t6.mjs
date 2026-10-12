@@ -205,6 +205,36 @@ async function main() {
   );
 
   // -------------------------------------------------------------------------
+  section('v_category_series (P2b-spark)');
+  const catSeries = await supabase.rpc('v_category_series', {
+    range_start: rangeStart.toISOString(),
+    range_end: rangeEnd.toISOString(),
+    tz: 'Asia/Jakarta',
+    wallet_filter: null,
+    daily: true,
+  });
+  check('v_category_series callable', !catSeries.error, catSeries.error?.message);
+  const catRows = catSeries.data ?? [];
+  const foodRows = catRows.filter((r) => r.category_id === food.id);
+  const transportRows = catRows.filter((r) => r.category_id === transport.id);
+  check(
+    'Makanan: 1 bucket 300k bulan ini',
+    foodRows.length === 1 && Number(foodRows[0]?.total_expense) === 300_000,
+    JSON.stringify(foodRows),
+  );
+  check(
+    'Transport: 1 bucket 100k bulan ini',
+    transportRows.length === 1 &&
+      Number(transportRows[0]?.total_expense) === 100_000,
+    JSON.stringify(transportRows),
+  );
+  check(
+    'Gaji (income) absen dari deret expense',
+    !catRows.some((r) => r.category_id === salary.id),
+    String(catRows.length),
+  );
+
+  // -------------------------------------------------------------------------
   section('filter wallet');
   const noWallet = await supabase.rpc('analytics_overview', {
     range_start: rangeStart.toISOString(),

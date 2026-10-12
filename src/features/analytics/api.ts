@@ -146,6 +146,52 @@ export async function fetchTimezone(): Promise<string> {
   return (data as { timezone: string } | null)?.timezone ?? 'Asia/Jakarta';
 }
 
+/** Raw `v_category_series` row (numeric columns arrive as strings). */
+type CategorySeriesRow = {
+  category_id: string;
+  bucket: string;
+  total_expense: number | string;
+};
+
+export type CategorySparkRow = {
+  categoryId: string;
+  bucket: string;
+  totalExpense: number;
+};
+
+export type FetchSeriesInput = {
+  range: DateRange;
+  /** `profiles.timezone` — same tz the overview buckets use. */
+  tz: string;
+  /** null = all wallets. */
+  walletId: string | null;
+  daily: boolean;
+};
+
+/**
+ * Per-category expense series for breakdown sparklines (P2b-spark).
+ * Separate cheap call next to the overview (Opsi A): the hot payload is
+ * untouched, and a failure only hides the mini-trends (caller catches).
+ */
+export async function fetchCategorySeries(
+  input: FetchSeriesInput,
+): Promise<CategorySparkRow[]> {
+  const { data, error } = await supabase.rpc('v_category_series', {
+    range_start: input.range.start.toISOString(),
+    range_end: input.range.end.toISOString(),
+    tz: input.tz,
+    wallet_filter: input.walletId,
+    daily: input.daily,
+  });
+
+  if (error) throw error;
+  return ((data ?? []) as CategorySeriesRow[]).map((row) => ({
+    categoryId: row.category_id,
+    bucket: row.bucket,
+    totalExpense: num(row.total_expense),
+  }));
+}
+
 /** Raw `v_monthly_summary` row (numeric columns arrive as strings). */
 type MonthlySummaryRow = {
   month: string;

@@ -29,6 +29,7 @@ import {
   arcGradientVector,
   roundCapSpan,
   shouldRoundCaps,
+  toSparklines,
   type AnalyticsOverview,
   type CategoryBreakdown,
   type DateRange,
@@ -546,5 +547,27 @@ describe('P2b trend modes (bars + net area)', () => {
     const net = toNetPoints([], range, true);
     expect(net.points.every((point) => Number.isFinite(point.y))).toBe(true);
     expect(Number.isFinite(net.zeroY)).toBe(true);
+  });
+});
+
+describe('toSparklines (per-slice shapes, never money summed)', () => {
+  const slices = [{ id: 'c1' }, { id: 'c2' }, { id: '__other__' }];
+  const buckets = ['2026-09-01', '2026-09-02', '2026-09-03'];
+  const rows = [
+    { categoryId: 'c1', bucket: '2026-09-01', totalExpense: 100 },
+    { categoryId: 'c1', bucket: '2026-09-03', totalExpense: 300 },
+    { categoryId: 'c2', bucket: '2026-09-02', totalExpense: 50 },
+  ];
+
+  it('gap-fills, normalises per slice, and skips Other', () => {
+    const sparks = toSparklines(rows, slices, buckets);
+    expect(sparks.map((spark) => spark.id)).toEqual(['c1', 'c2']);
+    expect(sparks[0]?.values).toEqual([100 / 300, 0, 1]);
+    expect(sparks[1]?.values).toEqual([0, 1, 0]);
+  });
+
+  it('zero-fills a flat slice without NaN', () => {
+    const sparks = toSparklines([], [{ id: 'c9' }], buckets);
+    expect(sparks).toEqual([{ id: 'c9', values: [0, 0, 0] }]);
   });
 });

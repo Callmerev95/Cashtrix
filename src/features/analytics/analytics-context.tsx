@@ -25,7 +25,8 @@ import {
 import { onLocalDataPurge } from '@/supabase';
 import { dictionaryFor, useLanguage } from '@/i18n';
 
-import { fetchMonthlySummary, fetchOverview, fetchTimezone, listWalletFilters } from './api';
+import { fetchCategorySeries, fetchMonthlySummary, fetchOverview, fetchTimezone, listWalletFilters } from './api';
+import type { CategorySparkRow } from './api';
 import {
   RANGE_PRESETS,
   isDailyRange,
@@ -51,6 +52,8 @@ type AnalyticsContextValue = {
   /** Current vs previous calendar month from `v_monthly_summary` (A6). */
   monthly: MonthlyComparison | null;
   monthlyLoading: boolean;
+  /** Per-category series rows for sparklines (P2b-spark, best-effort). */
+  sparks: CategorySparkRow[];
   refresh: () => Promise<void>;
 };
 
@@ -63,6 +66,9 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // P2b-spark rows: same range/wallet inputs as the overview; a failed
+  // series only hides the mini-trends, never the screen.
+  const [sparks, setSparks] = useState<CategorySparkRow[]>([]);
   // A6 monthly pair: independent of the selected range — it always shows the
   // current calendar month vs the previous one.
   const [monthly, setMonthly] = useState<MonthlyComparison | null>(null);
@@ -114,6 +120,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
         setError(null);
         setMonthly(null);
         setMonthlyLoaded(false);
+        setSparks([]);
       }),
     [],
   );
@@ -133,14 +140,32 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
             tz,
             walletId: nextWalletId,
             daily: isDailyRange(nextRange),
+          }).then((payload) => {
+            if (!mounted.current || ticket !== requestId.current) return;
+            setOverview(payload);
+            setLoadedKey(rangeKey(nextRange, nextWalletId));
+            setError(null);
+            // Sparklines ride along best-effort (P2b-spark).
+            const sparkRange = resolveRange(nextRange);
+            const sparkDaily = isDailyRange(nextRange);
+            void fetchCategorySeries({
+              range: sparkRange,
+              tz,
+              walletId: nextWalletId,
+              daily: sparkDaily,
+            })
+              .then((rows) => {
+                if (mounted.current && ticket === requestId.current) {
+                  setSparks(rows);
+                }
+              })
+              .catch(() => {
+                if (mounted.current && ticket === requestId.current) {
+                  setSparks([]);
+                }
+              });
           }),
         )
-        .then((payload) => {
-          if (!mounted.current || ticket !== requestId.current) return;
-          setOverview(payload);
-          setLoadedKey(rangeKey(nextRange, nextWalletId));
-          setError(null);
-        })
         .catch((cause: unknown) => {
           if (!mounted.current || ticket !== requestId.current) return;
           setError(
@@ -212,6 +237,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       isEmpty: isEmptyRange(overview),
       monthly,
       monthlyLoading: !monthlyLoaded,
+      sparks,
       refresh,
     }),
     [
@@ -226,6 +252,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       refresh,
       monthly,
       monthlyLoaded,
+      sparks,
     ],
   );
 

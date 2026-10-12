@@ -607,6 +607,44 @@ export type InsightInput = {
   lang?: Language;
 };
 
+/** Per-slice sparkline (P2b-spark): normalised shape, never money summed. */
+export type Sparkline = {
+  /** Category id (matches the donut slice; never `__other__`). */
+  id: string;
+  /** 0..1 values aligned to the dense bucket axis (gap-filled with 0). */
+  values: number[];
+};
+
+/**
+ * Folds sparse per-category series rows into per-slice sparklines, aligned
+ * to the screen's dense bucket axis (`enumerateBuckets` with the same
+ * range/daily/tz the RPC used). Normalised per slice (relative shape, not
+ * absolute scale — a 5k wiggle and a 5jt climb read honestly within their
+ * own rows). The `__other__` tail gets no sparkline (an aggregate of
+ * leftovers has no readable trend).
+ */
+export function toSparklines(
+  rows: { categoryId: string; bucket: string; totalExpense: number }[],
+  slices: Pick<DonutSlice, 'id'>[],
+  buckets: string[],
+): Sparkline[] {
+  return slices
+    .filter((slice) => slice.id !== '__other__')
+    .map((slice) => {
+      const byBucket = new Map(
+        rows
+          .filter((row) => row.categoryId === slice.id)
+          .map((row) => [row.bucket, row.totalExpense]),
+      );
+      const values = buckets.map((bucket) => byBucket.get(bucket) ?? 0);
+      const max = values.reduce((peak, value) => (value > peak ? value : peak), 0);
+      return {
+        id: slice.id,
+        values: max > 0 ? values.map((value) => value / max) : values.map(() => 0),
+      };
+    });
+}
+
 export type InsightSummary = {
   title: string;
   lines: string[];
