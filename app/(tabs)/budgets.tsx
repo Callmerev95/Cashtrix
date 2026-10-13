@@ -15,6 +15,7 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
 import {
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -24,6 +25,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyStateCard, AppHeader, Card, ErrorStateCard, Screen, SectionHeader, Skeleton, SkeletonBlock } from '@/components';
+import { showQuickActions } from '@/components/quick-actions';
 import { PullGesture, PullHeader, usePullRefresh } from '@/components/pull-refresh';
 import { Stagger } from '@/components/stagger';
 import {
@@ -62,6 +64,7 @@ export default function BudgetsScreen() {
     recentAlerts,
     dismissAlert,
     refresh,
+    remove,
     unreadCount,
   } = useBudgets();
   const { avatarSignedUrl } = useProfile();
@@ -71,6 +74,47 @@ export default function BudgetsScreen() {
   const t = dictionaryFor(language);
   const tb = t.budgets;
   const { refreshing, onRefresh } = usePullRefresh(refresh);
+
+  /** P3b-1: long-press menu — Ubah reuses the card tap, Hapus reuses the
+   * form's confirm copy + the same `remove` the form calls. */
+  function quickActionsFor(budget: BudgetStatus) {
+    const qa = t.quickActions;
+    showQuickActions(
+      budget.categoryName,
+      [
+        {
+          label: qa.edit,
+          icon: 'edit',
+          run: () =>
+            router.push({
+              pathname: '/budget-form',
+              params: { id: budget.budgetId },
+            }),
+        },
+        {
+          label: qa.remove,
+          icon: 'delete-outline',
+          destructive: true,
+          run: () =>
+            Alert.alert(tb.form.deleteTitle, tb.form.deleteBody, [
+              { text: t.common.cancel, style: 'cancel' },
+              {
+                text: t.common.delete,
+                style: 'destructive',
+                onPress: () =>
+                  void remove(budget.budgetId).catch((cause: unknown) =>
+                    Alert.alert(
+                      tb.form.deleteFail,
+                      cause instanceof Error ? cause.message : t.common.retry,
+                    ),
+                  ),
+              },
+            ]),
+        },
+      ],
+      qa.cancel,
+    );
+  }
 
   return (
     <Screen
@@ -170,7 +214,10 @@ export default function BudgetsScreen() {
                 key={`${month ?? 'all'}-${budget.budgetId}`}
                 index={index}
               >
-                <BudgetCard budget={budget} />
+                <BudgetCard
+                  budget={budget}
+                  onLongPress={() => quickActionsFor(budget)}
+                />
               </Stagger>
             ))}
           </>
@@ -181,7 +228,14 @@ export default function BudgetsScreen() {
   );
 }
 
-function BudgetCard({ budget }: { budget: BudgetStatus }) {
+function BudgetCard({
+  budget,
+  onLongPress,
+}: {
+  budget: BudgetStatus;
+  /** Quick-action menu (P3b-1): OS long-press timer, no gesture code. */
+  onLongPress?: () => void;
+}) {
   // C6: labels + amount/percent format follow the OS language (ADR-0008, R10).
   const language = useLanguage();
   const t = dictionaryFor(language);
@@ -197,6 +251,7 @@ function BudgetCard({ budget }: { budget: BudgetStatus }) {
         onPress={() =>
           router.push({ pathname: '/budget-form', params: { id: budget.budgetId } })
         }
+        onLongPress={onLongPress}
         unstable_pressDelay={PRESS_FEEDBACK_DELAY_MS}
         style={({ pressed }) => [
           styles.cardPress,

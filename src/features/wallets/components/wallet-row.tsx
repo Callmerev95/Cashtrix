@@ -22,11 +22,14 @@ type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
 export function WalletRow({
   wallet,
   onPress,
+  onLongPress,
   trailing,
   testID,
 }: {
   wallet: Wallet;
   onPress?: () => void;
+  /** Quick-action menu (P3b-1): OS long-press timer, no gesture code. */
+  onLongPress?: () => void;
   trailing?: React.ReactNode;
   testID?: string;
 }) {
@@ -68,7 +71,9 @@ export function WalletRow({
     </>
   );
 
-  if (!onPress) {
+  // Pressable when either tap or long-press acts (archived rows are
+  // tap-inert but still offer the unarchive quick action on long-press).
+  if (!onPress && !onLongPress) {
     return (
       <View testID={testID} style={styles.row}>
         {content}
@@ -85,6 +90,7 @@ export function WalletRow({
         balance: balanceText,
       })}
       onPress={onPress}
+      onLongPress={onLongPress}
       unstable_pressDelay={PRESS_FEEDBACK_DELAY_MS}
       style={({ pressed }) => [styles.row, pressed && pressedFeedback]}
     >

@@ -20,3 +20,6 @@ export { AiPrefillBanner, AI_BANNER_STAGGER_MS } from './ai-prefill-banner';
 export { LogoMark } from './logo-mark';
 export { AppHeader } from './app-header';
 export { SectionHeader } from './section-header';
+export { showQuickActions } from './quick-actions';
+export type { QuickAction } from './quick-actions';
+export { QuickActionSheetHost } from './quick-action-host';

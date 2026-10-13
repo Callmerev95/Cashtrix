@@ -30,6 +30,7 @@ import {
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 import { pressedFeedback } from '@/components/pressed';
+import { showQuickActions, type QuickAction } from '@/components/quick-actions';
 
 export default function CategoriesScreen() {
   const { session } = useAuth();
@@ -101,8 +102,46 @@ export default function CategoriesScreen() {
     );
   }
 
-  async function remove(item: ManagedCategory) {
-    if (busyId) return;
+  /** P3b-1: long-press menu reusing the exact handlers above — no new logic. */
+  function quickActionsFor(item: ManagedCategory) {
+    const qa = t.quickActions;
+    const hidden = item.archived || item.muted;
+    const toggleLabel = item.isSystem
+      ? hidden
+        ? qa.unarchive
+        : qa.mute
+      : hidden
+        ? qa.unarchive
+        : qa.archive;
+    const actions: QuickAction[] = [];
+    if (!item.isSystem && !hidden) {
+      actions.push({
+        label: qa.edit,
+        icon: 'edit',
+        run: () =>
+          router.push({
+            pathname: '/category-form',
+            params: { id: item.id },
+          }),
+      });
+    }
+    actions.push({
+      label: toggleLabel,
+      icon: hidden ? 'unarchive' : 'archive',
+      run: () => void toggleArchive(item),
+    });
+    if (!item.isSystem) {
+      actions.push({
+        label: qa.remove,
+        icon: 'delete-outline',
+        destructive: true,
+        run: () => confirmDelete(item),
+      });
+    }
+    showQuickActions(item.name, actions, qa.cancel);
+  }
+
+  async function remove(item: ManagedCategory) {    if (busyId) return;
     setBusyId(item.id);
     try {
       await deleteManagedCategory({ id: item.id, isSystem: item.isSystem });
@@ -167,6 +206,7 @@ export default function CategoriesScreen() {
                     })
                   }
                   onDelete={() => confirmDelete(item)}
+                  onLongPress={() => quickActionsFor(item)}
                 />
               ))
             )}
@@ -185,6 +225,7 @@ export default function CategoriesScreen() {
                 item={item}
                 busy={busyId === item.id}
                 onToggle={() => void toggleArchive(item)}
+                onLongPress={() => quickActionsFor(item)}
               />
             ))}
           </>
@@ -200,18 +241,21 @@ function CategoryRow({
   onToggle,
   onEdit,
   onDelete,
+  onLongPress,
 }: {
   item: ManagedCategory;
   busy: boolean;
   onToggle: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  /** Quick-action menu (P3b-1): OS long-press timer, no gesture code. */
+  onLongPress?: () => void;
 }) {
   // C6: labels follow the OS language (ADR-0008).
   const t = dictionaryFor(useLanguage());
   const tc = t.profile.categories;
   const hidden = item.archived || item.muted;
-  return (
+  const body = (
     <Card style={[styles.card, hidden && styles.cardHidden]}>
       <View style={styles.iconWell}>
         <MaterialIcons
@@ -279,6 +323,19 @@ function CategoryRow({
         </View>
       )}
     </Card>
+  );
+  // Inner icon buttons keep their own taps; the row itself only listens for
+  // the hold (no onPress, so tap behaviour is unchanged).
+  if (!onLongPress) return body;
+  return (
+    <Pressable
+      testID={`category-row-${item.id}`}
+      accessibilityRole="button"
+      accessibilityLabel={item.name}
+      onLongPress={onLongPress}
+    >
+      {body}
+    </Pressable>
   );
 }
 

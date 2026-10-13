@@ -12,10 +12,11 @@
  */
 import { router } from 'expo-router';
 import { useCallback } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyStateCard, AppHeader, ErrorStateCard, Screen, SectionHeader, SkeletonList } from '@/components';
+import { showQuickActions } from '@/components/quick-actions';
 import { PullGesture, PullHeader, usePullRefresh } from '@/components/pull-refresh';
 import { MonthlySummaryCard, useAnalytics } from '@/features/analytics';
 import { useAuth } from '@/features/auth';
@@ -27,7 +28,12 @@ import {
   UndoSnackbar,
   useTransactions,
 } from '@/features/transactions';
-import { formatCurrency, useWallets } from '@/features/wallets';
+import {
+  formatCurrency,
+  setWalletArchived,
+  useWallets,
+  type Wallet,
+} from '@/features/wallets';
 import { TotalBalanceCard } from '@/features/wallets/components/total-balance-card';
 import { WalletRow } from '@/features/wallets/components/wallet-row';
 import { dictionaryFor, fill, localeTagFor, useLanguage } from '@/i18n';
@@ -91,6 +97,47 @@ export default function DashboardScreen() {
     [refreshWallets, refreshBudgets, refreshAnalytics, refreshTransactions],
   );
   const { refreshing, onRefresh } = usePullRefresh(refreshDashboard);
+
+  /** P3b-1: Dashboard long-press — Ubah reuses the card tap, Arsipkan reuses
+   * the manage screen's archive path incl. the dual refresh (#81). */
+  function quickActionsFor(wallet: Wallet) {
+    const qa = t.quickActions;
+    showQuickActions(
+      wallet.name,
+      [
+        {
+          label: qa.edit,
+          icon: 'edit',
+          run: () =>
+            router.push({
+              pathname: '/wallet-form',
+              params: { id: wallet.id },
+            }),
+        },
+        {
+          label: qa.archive,
+          icon: 'archive',
+          run: () =>
+            void (async () => {
+              try {
+                await setWalletArchived(wallet.id, true);
+                await Promise.all([refreshWallets(), refreshTransactions()]);
+                Alert.alert(
+                  t.wallets.list.archivedOk,
+                  fill(t.wallets.list.archivedBody, { name: wallet.name }),
+                );
+              } catch (cause) {
+                Alert.alert(
+                  t.wallets.list.archiveFail,
+                  cause instanceof Error ? cause.message : t.common.retry,
+                );
+              }
+            })(),
+        },
+      ],
+      qa.cancel,
+    );
+  }
 
   // Identity comes from the profile row (editable in Profile); a row still
   // carrying the seed default — or none at all — falls back to the email.
@@ -166,6 +213,7 @@ export default function DashboardScreen() {
                     params: { id: wallet.id },
                   })
                 }
+                onLongPress={() => quickActionsFor(wallet)}
               />
             ))
         )}

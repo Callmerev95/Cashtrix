@@ -785,6 +785,15 @@ export const id = {
     deleteAction: 'Hapus akun permanen',
     deleteFail: 'Gagal menghapus akun',
   },
+  quickActions: {
+    title: 'Aksi cepat',
+    edit: 'Ubah',
+    archive: 'Arsipkan',
+    unarchive: 'Buka arsip',
+    mute: 'Bisukan',
+    remove: 'Hapus',
+    cancel: 'Batal',
+  },
   voice: {
     needAmount: 'Sebutkan angkanya, mis. 30 ribu',
     multiAmount: 'Sebutkan satu per satu',

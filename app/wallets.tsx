@@ -38,6 +38,7 @@ import { useTransactions } from '@/features/transactions';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 import { pressedFeedback } from '@/components/pressed';
+import { showQuickActions } from '@/components/quick-actions';
 
 export default function WalletsScreen() {
   const { wallets, archivedWallets, summary, loading, error, refresh } =
@@ -111,6 +112,33 @@ export default function WalletsScreen() {
     } finally {
       setBusy(false);
     }
+  }
+
+  function editWallet(wallet: Wallet) {
+    router.push({ pathname: '/wallet-form', params: { id: wallet.id } });
+  }
+
+  /** P3b-1: long-press menu reusing the exact handlers below — no new logic. */
+  function quickActionsFor(wallet: Wallet) {
+    const qa = t.quickActions;
+    showQuickActions(
+      wallet.name,
+      [
+        { label: qa.edit, icon: 'edit', run: () => editWallet(wallet) },
+        {
+          label: qa.archive,
+          icon: 'archive',
+          run: () => void archiveWallet(wallet, true),
+        },
+        {
+          label: qa.remove,
+          icon: 'delete-outline',
+          destructive: true,
+          run: () => onDeletePress(wallet),
+        },
+      ],
+      qa.cancel,
+    );
   }
 
   async function reassignTo(target: Wallet) {
@@ -218,6 +246,7 @@ export default function WalletsScreen() {
                     params: { id: wallet.id },
                   })
                 }
+                onLongPress={() => quickActionsFor(wallet)}
                 trailing={
                   <View style={styles.rowActions}>
                     <Pressable
@@ -291,6 +320,19 @@ export default function WalletsScreen() {
                 key={wallet.id}
                 testID={`wallet-archived-${wallet.id}`}
                 wallet={wallet}
+                onLongPress={() =>
+                  showQuickActions(
+                    wallet.name,
+                    [
+                      {
+                        label: t.quickActions.unarchive,
+                        icon: 'unarchive',
+                        run: () => void archiveWallet(wallet, false),
+                      },
+                    ],
+                    t.quickActions.cancel,
+                  )
+                }
                 trailing={
                   <Pressable
                     testID={`wallet-unarchive-${wallet.id}`}

@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
+import { useEffect } from 'react';
 import {
+  Animated,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -10,6 +12,7 @@ import {
 } from 'react-native';
 
 import { colors, radius, spacing } from '@/theme';
+import { useSheetDrag } from '@/components/sheet-drag';
 
 type VoiceBottomSheetProps = {
   open: boolean;
@@ -39,6 +42,25 @@ export function VoiceBottomSheet({
   children,
   testID = 'voice-bottom-sheet',
 }: VoiceBottomSheetProps) {
+  // Seret-tutup via hook bersama (pola quick-action sheet): driver sentuh
+  // mentah, tanpa PanResponder. Handler dipasang HANYA di strip gagang —
+  // isi kartu adalah ScrollView dan scroll-nya tidak boleh dicuri.
+  const {
+    dragY,
+    closing,
+    reset,
+    onTouchStart,
+    onTouchMove,
+    onTouchEnd,
+    onTouchCancel,
+  } = useSheetDrag(onClose);
+  // Sheet ini tetap mount (cuma visible=false): tiap dibuka kembali,
+  // kembalikan kartu dari posisi exit-animation ke posisi diam. Tanpa ini
+  // buka-kedua hanya menaikkan scrim hitam (kartu nyangkut di luar layar)
+  // dan kartu tak tersentuh (closing nyangkut true).
+  useEffect(() => {
+    if (open) reset();
+  }, [open, reset]);
   return (
     <View testID={testID} collapsable={false} style={styles.slot}>
       <Modal
@@ -59,15 +81,28 @@ export function VoiceBottomSheet({
             onPress={onClose}
             style={styles.scrim}
           />
-          <View style={styles.card}>
-            <View style={styles.handle} />
+          <Animated.View
+            style={[styles.card, { transform: [{ translateY: dragY }] }]}
+            pointerEvents={closing ? 'none' : 'auto'}
+          >
+            <View
+              testID="voice-sheet-handle"
+              accessibilityLabel="Close voice panel"
+              style={styles.handleHit}
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
+              onTouchCancel={onTouchCancel}
+            >
+              <View style={styles.handle} />
+            </View>
             <ScrollView
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
               {children}
             </ScrollView>
-          </View>
+          </Animated.View>
         </KeyboardAvoidingView>
       </Modal>
     </View>
@@ -100,12 +135,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.margin,
     paddingBottom: spacing.margin,
   },
+  handleHit: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+  },
   handle: {
-    alignSelf: 'center',
     width: 40,
     height: 4,
     borderRadius: 2,
     backgroundColor: colors.borderStrong,
-    marginVertical: spacing.sm,
   },
 });

@@ -781,6 +781,15 @@ export const en: Dictionary = {
     deleteAction: 'Delete account permanently',
     deleteFail: 'Failed to delete account',
   },
+  quickActions: {
+    title: 'Quick actions',
+    edit: 'Edit',
+    archive: 'Archive',
+    unarchive: 'Unarchive',
+    mute: 'Mute',
+    remove: 'Delete',
+    cancel: 'Cancel',
+  },
   voice: {
     needAmount: 'Say the amount, e.g. 30 ribu',
     multiAmount: 'One item at a time',

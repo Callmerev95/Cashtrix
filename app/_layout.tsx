@@ -33,6 +33,7 @@ import { RecurringProvider } from '@/features/recurring';
 import { TransactionsProvider } from '@/features/transactions';
 import { WalletsProvider } from '@/features/wallets';
 import { useReducedMotion } from '@/components/skeleton';
+import { QuickActionSheetHost } from '@/components/quick-action-host';
 import { colors } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -224,6 +225,9 @@ function RootNavigator() {
         </View>
         {lockedIn ? <LockOverlay /> : null}
       </Animated.View>
+      {/* P3b-2: one app-wide quick-action sheet (core Modal, own window) —
+          sibling of the navigator so it covers tabs and root screens alike. */}
+      <QuickActionSheetHost />
       <StatusBar style="light" />
     </>
   );

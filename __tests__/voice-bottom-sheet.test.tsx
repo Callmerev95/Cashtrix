@@ -61,3 +61,12 @@ test('tapping the scrim closes the sheet', async () => {
   fireEvent.press(screen.getByTestId('voice-sheet-scrim'));
   expect(screen.queryByTestId('voice-sheet')).toBeNull();
 });
+
+test('sheet gagang punya strip seret (tutup via gagang di device)', async () => {
+  renderControlledSheet();
+  fireEvent.press(screen.getByTestId('voice-mic'));
+  expect(await screen.findByTestId('voice-sheet')).toBeTruthy();
+  // Strip gagang membawa touch-handler driver bersama (scroll isi tak
+  // tersentuh — seret dari konten tetap scroll, dari gagang menutup).
+  expect(screen.getByTestId('voice-sheet-handle')).toBeTruthy();
+});

@@ -363,6 +363,24 @@ function runStaticContract() {
     missingEvents.length === 0,
     missingEvents.join(', '),
   );
+
+  // P3b-1 quick actions: every surface must keep its OS-timer long-press
+  // wiring (no gesture code by design — the cancelled P3a swipe proved
+  // moves starve in this tree). Per-file read so a silent drop turns red.
+  const qaSurfaces = [
+    'app/wallets.tsx',
+    'app/(tabs)/budgets.tsx',
+    'app/categories.tsx',
+    'app/(tabs)/index.tsx',
+  ];
+  const missingQa = qaSurfaces.filter(
+    (rel) => !readFileSync(join(ROOT, rel), 'utf8').includes('onLongPress'),
+  );
+  check(
+    '4 permukaan quick-action punya onLongPress',
+    missingQa.length === 0,
+    missingQa.join(', '),
+  );
 }
 
 main().catch((error) => {
