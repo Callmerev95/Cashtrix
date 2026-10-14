@@ -541,6 +541,15 @@ hijau — temperature-0 nondeterministik antar-call). Fix: TEPAT-SATU
 retry ber-pace hanya untuk probe model (flood/error-path tak
 tersentuh); invalid persisten tetap merah. Batas: 3+3 call, jauh di
 bawah 500 RPD. Run 38514613326 hijau penuh.
+
+Pelajaran CI bagian 3 (run 38516424283 merah: probe light gagal DUA
+kali beruntun — retry tak menyelamatkan; yang rapuh = KESAMAAN JUMLAH
+BARIS pada input 4+ baris, model merge/split antar-call). Fix final:
+probe panjang jadi oracle AKSEPTASI deterministik (200 + `ok`
+boolean — true ATAU invalid; cap + validator-tereksekusi terbukti
+tanpa bergantung mood model), strict content tetap di probe 1-2
+(stabil) + Jest + batas. Produksi tak tersentuh. Run 38518357211
+hijau penuh.
 | L4 | Interaksi penuh (drill-down → `/search`, multi-wallet compare, custom range) | setelah L3 |
 | L5 | QR svg opsional (default tetap link+secret) | bila ada alasan baru |
 | LW | Widget bitmap (waveform/watermark/grafik struk/glow) + density + gate launcher | bila diminta |
