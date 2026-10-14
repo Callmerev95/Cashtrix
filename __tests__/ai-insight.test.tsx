@@ -41,16 +41,20 @@ import {
   subscribeInsightConsent,
 } from '@/features/analytics/insight-consent';
 import { InsightCard } from '@/features/analytics/components/insight-card';
+import { fetchOverview } from '@/features/analytics/api';
+import { resolveRange } from '@/features/analytics/domain';
 import { insightAiEvent } from '@/features/observability';
 import { supabase } from '@/supabase';
 
 jest.mock('@/supabase', () => ({
   supabase: {
     functions: { invoke: jest.fn() },
+    rpc: jest.fn(),
   },
 }));
 
 const invoke = supabase.functions.invoke as unknown as jest.Mock;
+const rpc = (supabase as unknown as { rpc: jest.Mock }).rpc;
 
 beforeEach(() => {
   invoke.mockReset();
@@ -77,7 +81,7 @@ describe('prompt seam', () => {
     for (const line of INPUT_ID) expect(prompt).toContain(line);
     const promptEn = buildInsightPrompt({ lines: INPUT_ID, lang: 'en' });
     expect(promptEn).toContain('English');
-    expect(INSIGHT_MAX_INPUT_LINES).toBe(3);
+    expect(INSIGHT_MAX_INPUT_LINES).toBe(4);
   });
 });
 
@@ -122,7 +126,9 @@ describe('client insight.ts', () => {
     ]);
     expect(parseInsightPayload({ ok: false })).toBeNull();
     expect(parseInsightPayload({ ok: true, lines: [] })).toBeNull();
-    expect(parseInsightPayload({ ok: true, lines: ['a', 'b', 'c', 'd'] })).toBeNull();
+    expect(
+      parseInsightPayload({ ok: true, lines: ['a', 'b', 'c', 'd', 'e'] }),
+    ).toBeNull();
     expect(parseInsightPayload({ ok: true, lines: ['  '] })).toBeNull();
   });
 
@@ -351,5 +357,66 @@ describe('shouldAutoRefine (L1 auto gate)', () => {
         hasLines: hasLines as boolean,
       }),
     ).toBe(expected as boolean);
+  });
+});
+
+describe('L2 wiring (prev_breakdown + budget 4 baris)', () => {
+  const row = {
+    category_id: 'c1',
+    category_name: 'Makanan',
+    category_icon: 'restaurant',
+    total_expense: 200000,
+    transaction_count: 2,
+    share: 1,
+  };
+  const basePayload = {
+    range: { start: 'x', end: 'y' },
+    totals: { expense: 1, income: 2, net: 1 },
+    previous: { expense: 1, income: 2, net: 1 },
+    delta: { expense: null, income: null, net: null },
+    breakdown: [],
+    series: [],
+  };
+  const overviewInput = {
+    range: resolveRange('1M'),
+    tz: 'Asia/Jakarta',
+    walletId: null,
+    daily: true,
+  };
+
+  it('fetchOverview memetakan prev_breakdown; absen = [] (mode L1)', async () => {
+    rpc.mockResolvedValue({
+      data: { ...basePayload, prev_breakdown: [row] },
+      error: null,
+    });
+    const withPrev = await fetchOverview(overviewInput);
+    expect(withPrev.prevBreakdown).toEqual([
+      {
+        categoryId: 'c1',
+        categoryName: 'Makanan',
+        categoryIcon: 'restaurant',
+        totalExpense: 200000,
+        transactionCount: 2,
+        share: 1,
+      },
+    ]);
+
+    rpc.mockResolvedValue({ data: { ...basePayload }, error: null });
+    const withoutPrev = await fetchOverview(overviewInput);
+    expect(withoutPrev.prevBreakdown).toEqual([]);
+    expect(rpc).toHaveBeenCalledWith(
+      'analytics_overview',
+      expect.objectContaining({ wallet_filter: null }),
+    );
+  });
+
+  it('validator + klien menerima 4 baris, menolak 5', () => {
+    const four = ['satu 10%.', 'dua Rp 1.000.', 'tiga 2026.', 'empat 5%.'];
+    expect(validateInsightPayload({ lines: four }, four)).toEqual(four);
+    expect(
+      validateInsightPayload({ lines: [...four, 'lima.'] }, [...four, 'lima.']),
+    ).toBeNull();
+    expect(parseInsightPayload({ ok: true, lines: four })).toEqual(four);
+    expect(parseInsightPayload({ ok: true, lines: [...four, 'lima.'] })).toBeNull();
   });
 });

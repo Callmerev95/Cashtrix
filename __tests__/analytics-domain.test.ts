@@ -22,8 +22,11 @@ import {
   resolveRange,
   sliceIndexAtTurn,
   toArcOffsets,
+  toAnomalies,
   toBars,
   toDonutSlices,
+  toDrivers,
+  toFullSlices,
   toInsightSummary,
   toNetPoints,
   arcGradientVector,
@@ -476,6 +479,106 @@ describe('toInsightSummary (2.1.0 deterministic insight)', () => {
     });
     expect(summary.title).toBe('Summary');
     expect(summary.lines[0]).toContain('matches');
+  });
+});
+
+describe('L2 drivers + anomalies (pure seam)', () => {
+  const slice = (id: string, label: string, value: number) => ({
+    id,
+    label,
+    icon: 'restaurant',
+    value,
+    share: 0,
+  });
+  const curr = [
+    slice('makan', 'Makanan', 400000),
+    slice('transport', 'Transportasi', 100000),
+  ];
+  const prev = [slice('makan', 'Makanan', 200000)];
+
+  it('toDrivers: strongest absolute move first, cap 2, __other__ skipped', () => {
+    const drivers = toDrivers(curr, prev);
+    expect(drivers.map((d) => d.id)).toEqual(['makan', 'transport']);
+    expect(drivers[0]).toMatchObject({ delta: 200000 });
+    expect(drivers[1]).toMatchObject({ delta: 100000 });
+    const withOther = toDrivers(
+      [...curr, slice('__other__', 'Lainnya', 999999)],
+      prev,
+    );
+    expect(withOther.find((d) => d.id === '__other__')).toBeUndefined();
+    expect(toDrivers(curr, curr)).toEqual([]);
+  });
+
+  it('toAnomalies: new-from-zero + surge, floor kills noise, __other__ skipped', () => {
+    const anomalies = toAnomalies(curr, prev);
+    // transport 0 -> 100k = new; makan 200k -> 400k = 2x spike.
+    expect(anomalies.map((a) => `${a.id}:${a.kind}`)).toEqual([
+      'makan:spike',
+      'transport:new',
+    ]);
+    // Below floor even at 10x: noise, not insight.
+    expect(toAnomalies([slice('kopi', 'Kopi', 15000)], [])).toEqual([]);
+    expect(
+      toAnomalies(
+        [...curr, slice('__other__', 'Lainnya', 500000)],
+        prev,
+      ).find((a) => a.id === '__other__'),
+    ).toBeUndefined();
+    // Below multiple, above floor: no anomaly.
+    expect(
+      toAnomalies([slice('makan', 'Makanan', 250000)], prev),
+    ).toEqual([]);
+  });
+
+  it('toFullSlices: no top-cut, no arc filter (honest prev)', () => {
+    const tiny = {
+      categoryId: 'kecil',
+      categoryName: 'Kecil',
+      categoryIcon: 'restaurant',
+      totalExpense: 100,
+      transactionCount: 1,
+      share: 0.001,
+    };
+    expect(toFullSlices([tiny])).toEqual([
+      { id: 'kecil', label: 'Kecil', icon: 'restaurant', value: 100, share: 0.001 },
+    ]);
+  });
+
+  it('composition: driver takes concentration slot, anomaly closes, cap 4', () => {
+    const summary = toInsightSummary({
+      totals: { expense: 500000, income: 600000, net: 100000 },
+      monthly: {
+        current: { month: '2026-10-01', income: 600000, expense: 500000, net: 100000 },
+        previous: { month: '2026-09-01', income: 0, expense: 200000, net: -200000 },
+      },
+      slices: [
+        { id: 'makan', label: 'Makanan', icon: 'restaurant', value: 400000, share: 0.8 },
+      ],
+      prevSlices: prev,
+    });
+    // mom + driver + coverage + anomaly(spike makan) = 4, no concentration.
+    expect(summary.lines).toHaveLength(4);
+    expect(summary.lines[1]).toContain('Makanan');
+    expect(summary.lines[1]).toContain('pendorong');
+    expect(summary.lines[3]).toContain('Janggal');
+    expect(summary.lines[3]).toContain('Makanan');
+  });
+
+  it('without prevSlices the output is bit-identical L1', () => {
+    const base = {
+      totals: { expense: 300000, income: 500000, net: 200000 },
+      monthly: {
+        current: { month: '2026-10-01', income: 500000, expense: 300000, net: 200000 },
+        previous: { month: '2026-09-01', income: 0, expense: 200000, net: -200000 },
+      },
+      slices: [
+        { id: 'c0', label: 'Cat0', icon: 'restaurant', value: 600, share: 0.6 },
+      ],
+    };
+    expect(toInsightSummary({ ...base, prevSlices: [] })).toEqual(
+      toInsightSummary(base),
+    );
+    expect(toInsightSummary(base).lines).toHaveLength(3);
   });
 });
 describe('P2a chart geometry (gradient, honest round caps)', () => {

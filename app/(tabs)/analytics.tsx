@@ -38,6 +38,7 @@ import {
   subscribeInsightConsent,
   toBars,
   toDonutSlices,
+  toFullSlices,
   toInsightSummary,
   toNetPoints,
   toSparklines,
@@ -120,6 +121,9 @@ export default function AnalyticsScreen() {
           totals: overview.totals,
           monthly,
           slices,
+          // L2, defensif: payload lama tanpa kunci ini -> [] -> baris L1,
+          // bit-identik (kontrak anti-regresi).
+          prevSlices: toFullSlices(overview.prevBreakdown ?? []),
           lang: language,
         })
       : null;

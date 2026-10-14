@@ -17,7 +17,7 @@ set role postgres;
 set search_path = public, extensions;
 
 begin;
-select plan(43);
+select plan(51);
 
 -- ---------------------------------------------------------------------------
 -- Data uji: alice (Asia/Jakarta) dan bob (UTC).
@@ -330,6 +330,74 @@ select is(
   4,
   'analytics_overview: series harian Sep = 4 bucket');
 
+-- ---------------------------------------------------------------------------
+-- L2 — prev_breakdown: donut periode sebelumnya (aditif, kunci lama utuh)
+-- ---------------------------------------------------------------------------
+
+-- Agu alice: Makan 120k+80k = 200k, satu-satunya kategori (Transport hanya Sep).
+select ok(
+  (public.analytics_overview(
+     '2026-08-31T17:00:00Z', '2026-09-30T17:00:00Z',
+     '2026-07-31T17:00:00Z', '2026-08-31T17:00:00Z',
+     'Asia/Jakarta', null, true) ? 'prev_breakdown'),
+  'analytics_overview: kunci prev_breakdown hadir di payload');
+
+select is(
+  jsonb_array_length(public.analytics_overview(
+     '2026-08-31T17:00:00Z', '2026-09-30T17:00:00Z',
+     '2026-07-31T17:00:00Z', '2026-08-31T17:00:00Z',
+     'Asia/Jakarta', null, true) #> '{prev_breakdown}'),
+  1,
+  'analytics_overview: prev_breakdown Agu = 1 kategori (Makan saja)');
+
+select is(
+  (select (row->>'total_expense')::numeric
+   from jsonb_array_elements(public.analytics_overview(
+     '2026-08-31T17:00:00Z', '2026-09-30T17:00:00Z',
+     '2026-07-31T17:00:00Z', '2026-08-31T17:00:00Z',
+     'Asia/Jakarta', null, true) #> '{prev_breakdown}') as row
+   where row->>'category_id' = 'bb000000-0000-4000-a000-000000000001'),
+  200000::numeric,
+  'analytics_overview: prev_breakdown Makan Agu = 200.000');
+
+-- Regresi kontrak: kunci lama tidak berubah oleh tambahan kunci baru.
+select is(
+  (select (row->>'total_expense')::numeric
+   from jsonb_array_elements(public.analytics_overview(
+     '2026-08-31T17:00:00Z', '2026-09-30T17:00:00Z',
+     '2026-07-31T17:00:00Z', '2026-08-31T17:00:00Z',
+     'Asia/Jakarta', null, true) #> '{breakdown}') as row
+   where row->>'category_id' = 'bb000000-0000-4000-a000-000000000001'),
+  400000::numeric,
+  'analytics_overview: breakdown Sep tetap Makan 400.000 (L2 tidak mengubah lama)');
+
+-- Filter wallet ikut berlaku di prev (kedua transaksi Agu di dompet BCA).
+select is(
+  (select (row->>'total_expense')::numeric
+   from jsonb_array_elements(public.analytics_overview(
+     '2026-08-31T17:00:00Z', '2026-09-30T17:00:00Z',
+     '2026-07-31T17:00:00Z', '2026-08-31T17:00:00Z',
+     'Asia/Jakarta', 'ba000000-0000-4000-a000-000000000001', true) #> '{prev_breakdown}') as row
+   where row->>'category_id' = 'bb000000-0000-4000-a000-000000000001'),
+  200000::numeric,
+  'analytics_overview: prev_breakdown filter BCA -> Makan Agu 200.000');
+
+select is(
+  jsonb_array_length(public.analytics_overview(
+     '2026-08-31T17:00:00Z', '2026-09-30T17:00:00Z',
+     '2026-07-31T17:00:00Z', '2026-08-31T17:00:00Z',
+     'Asia/Jakarta', 'ba000000-0000-4000-a000-000000000002', true) #> '{prev_breakdown}'),
+  0,
+  'analytics_overview: prev_breakdown filter Cash -> [] (transaksi Agu di BCA)');
+
+select is(
+  jsonb_array_length(public.analytics_overview(
+     '2020-01-01T00:00:00Z', '2020-02-01T00:00:00Z',
+     '2019-12-01T00:00:00Z', '2020-01-01T00:00:00Z',
+     'Asia/Jakarta', null, true) #> '{prev_breakdown}'),
+  0,
+  'analytics_overview: rentang kosong -> prev_breakdown [] (bukan error)');
+
 -- Rentang kosong: totals 0, delta null, breakdown & series kosong (bukan NaN).
 select is(
   (public.analytics_overview(
@@ -379,6 +447,14 @@ select is(
      '2026-08-31T17:00:00Z', '2026-09-30T17:00:00Z')),
   1,
   'v_category_breakdown: sebagai bob -> 1 kategori (miliknya), bukan kategori alice');
+
+select is(
+  jsonb_array_length(public.analytics_overview(
+     '2026-08-31T17:00:00Z', '2026-09-30T17:00:00Z',
+     '2026-07-31T17:00:00Z', '2026-08-31T17:00:00Z',
+     'UTC', null, true) #> '{prev_breakdown}'),
+  0,
+  'analytics_overview: sebagai bob -> prev_breakdown kosong (tanpa transaksi Agu, tanpa baris alice)');
 
 select is(
   (select count(*)::int from public.v_monthly_summary),

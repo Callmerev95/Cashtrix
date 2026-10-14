@@ -502,6 +502,20 @@ tapi per-angka-berubah): store consent `insight-consent.ts`
 Matematika kuota: buka-10x-angka-sama = 1 call; 500 RPD cukup untuk
 puluhan user; mentok = sunyi-deterministik (fail-open). OTA `98799fcc`.
 | L2 | Insight #2 pendorong+anomali (perluasan prev-breakdown = DDL + pgTAP + verify) | setelah L1 |
+
+Status L2 (working tree, kontrak anti-regresi): migrasi aditif
+`20261014090000_analytics_prev_breakdown.sql` (key baru, 6 lama utuh —
+terverifikasi live) + apply hosted via endpoint Management (pooler mati
+dari mesin ini) + riwayat `schema_migrations` + pgTAP `10_analytics.sql`
+43→51 (emulasi live per-asersi pola A5: Admin-provision 2 user, 8/8
+hijau, cleanup + hapus user) + domain `toDrivers`/`toAnomalies`
+(top-2 absolut, spike ≥2× + floor Rp 50rb, `__other__` diskip jujur) +
+`toFullSlices` (tanpa potong top-8 agar "nol" jujur) + 2 template ID/EN +
+budget 4 baris (Edge + klien + redeploy mandiri; komposisi: mom +
+driver/konsentrasi + coverage + anomali) + wiring `prevSlices`
+(absen = L1 bit-identik, dibuktikan test) + golden + `verify-insight`
+probe 4-baris 34/34. Tanpa consent/legal/secret/rebuild baru. OTA
+`ea16e2c1`.
 | L3 | Insight #3 run-rate + join `v_budget_status` + tap → Budgets | setelah L2 |
 | L4 | Interaksi penuh (drill-down → `/search`, multi-wallet compare, custom range) | setelah L3 |
 | L5 | QR svg opsional (default tetap link+secret) | bila ada alasan baru |

@@ -681,6 +681,11 @@ export const id = {
       topPair: '{a} dan {b} menghabiskan {share} dari pengeluaran.',
       surplus: 'Pemasukan menutup pengeluaran, sisa {amount}.',
       deficit: 'Pengeluaran melebihi pemasukan sebesar {amount}.',
+      driverUp: '{name} naik {amount} dan menjadi pendorong utama.',
+      driverDown: '{name} turun {amount} dan menjadi penahan utama.',
+      anomalyNew: 'Janggal: {name} tiba-tiba {amount} padahal periode lalu nol.',
+      anomalySpike:
+        'Janggal: {name} melonjak menjadi {amount} (periode lalu {prevAmount}).',
       refine: 'Susun ulang dengan Asisten AI',
       refining: 'Menyusun ulang…',
       aiBadge: 'Asisten AI',

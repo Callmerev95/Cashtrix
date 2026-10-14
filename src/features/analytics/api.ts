@@ -38,6 +38,15 @@ type OverviewPayload = {
     transaction_count: number | string;
     share: number | string;
   }[];
+  /** L2: previous-window breakdown (absent on old payloads — optional). */
+  prev_breakdown?: {
+    category_id: string;
+    category_name: string;
+    category_icon: string;
+    total_expense: number | string;
+    transaction_count: number | string;
+    share: number | string;
+  }[];
   series: {
     bucket: string;
     total_expense: number | string;
@@ -71,6 +80,16 @@ function toOverview(payload: OverviewPayload): AnalyticsOverview {
       net: numOrNull(payload.delta.net),
     },
     breakdown: (payload.breakdown ?? []).map((row) => ({
+      categoryId: row.category_id,
+      categoryName: row.category_name,
+      categoryIcon: row.category_icon,
+      totalExpense: num(row.total_expense),
+      transactionCount: num(row.transaction_count),
+      share: num(row.share),
+    })),
+    // L2, defensif: payload lama (pre-migrasi) tidak punya kunci ini —
+    // `undefined` berarti insight jalan mode L1, bit-identik.
+    prevBreakdown: (payload.prev_breakdown ?? []).map((row) => ({
       categoryId: row.category_id,
       categoryName: row.category_name,
       categoryIcon: row.category_icon,

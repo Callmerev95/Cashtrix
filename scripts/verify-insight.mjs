@@ -177,6 +177,16 @@ async function main() {
       lang: 'en',
       label: 'EN 1 baris',
     },
+    {
+      lines: [
+        'Pengeluaran Oktober naik 12,5% vs September.',
+        'Makanan naik Rp 200.000 dan menjadi pendorong utama.',
+        'Pemasukan menutup pengeluaran, sisa Rp 250.000.',
+        'Janggal: Transportasi tiba-tiba Rp 300.000 padahal periode lalu nol.',
+      ],
+      lang: 'id',
+      label: 'ID 4 baris (L2 driver+anomali)',
+    },
   ];
   for (const probe of probes) {
     await pace();
@@ -220,10 +230,10 @@ async function main() {
   const blank = await callInsight(token, { lines: ['   '], lang: 'id' });
   check('baris kosong jadi 400', blank.status === 400, `got ${blank.status}`);
   const tooMany = await callInsight(token, {
-    lines: ['a', 'b', 'c', 'd'],
+    lines: ['a', 'b', 'c', 'd', 'e'],
     lang: 'id',
   });
-  check('4 baris jadi 400', tooMany.status === 400, `got ${tooMany.status}`);
+  check('5 baris jadi 400', tooMany.status === 400, `got ${tooMany.status}`);
   const getMethod = await callInsight(token, { lines: ['a'] }, 'GET');
   check('GET jadi 405', getMethod.status === 405, `got ${getMethod.status}`);
 

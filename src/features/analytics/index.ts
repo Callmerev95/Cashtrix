@@ -8,8 +8,11 @@ export {
 } from './api';
 export type { CategorySparkRow, FetchOverviewInput, FetchSeriesInput } from './api';
 export {
+  ANOMALY_FLOOR,
+  ANOMALY_MULTIPLE,
   DONUT_SEGMENTS,
   DONUT_TOP_N,
+  INSIGHT_TOP_DRIVERS,
   MIN_ARC_SHARE,
   OTHER_ICON,
   OTHER_LABEL,
@@ -36,8 +39,12 @@ export {
   resolveRange,
   sliceIndexAtTurn,
   toArcOffsets,
+  toAnomalies,
   toBars,
+  toCategoryDeltas,
   toDonutSlices,
+  toDrivers,
+  toFullSlices,
   toInsightSummary,
   toMonthlyComparison,
   toNetPoints,
@@ -45,9 +52,12 @@ export {
 } from './domain';
 export type {
   AnalyticsOverview,
+  AnomalyKind,
   ArcGradientVector,
   BarDatum,
+  CategoryAnomaly,
   CategoryBreakdown,
+  CategoryDelta,
   DateRange,
   DeltaTone,
   DonutSlice,

@@ -47,6 +47,8 @@ export type AnalyticsOverview = {
   previous: MoneyTotals;
   delta: MoneyDelta;
   breakdown: CategoryBreakdown[];
+  /** L2: previous-window breakdown (absent on old payloads — optional). */
+  prevBreakdown?: CategoryBreakdown[];
   series: SeriesBucket[];
 };
 
@@ -191,6 +193,23 @@ export function toDonutSlices(
   }
 
   return head.filter((slice) => slice.share >= MIN_ARC_SHARE);
+}
+
+/**
+ * L2: full breakdown → slices with NO top-cut and NO arc filter. The
+ * comparison input must see every category: a previous-window row outside
+ * the wheel's top 8 (or below `MIN_ARC_SHARE`) still counts as "existed",
+ * so only a truly absent row reads as zero ("periode lalu nol" stays
+ * honest). Never rendered — comparison only.
+ */
+export function toFullSlices(breakdown: CategoryBreakdown[]): DonutSlice[] {
+  return breakdown.map((item) => ({
+    id: item.categoryId,
+    label: item.categoryName,
+    icon: item.categoryIcon,
+    value: item.totalExpense,
+    share: item.share,
+  }));
 }
 
 /**
@@ -604,6 +623,8 @@ export type InsightInput = {
   totals: MoneyTotals;
   monthly: MonthlyComparison | null;
   slices: DonutSlice[];
+  /** L2: previous-window slices (same shape). Absent/empty = L1 output, bit-identical. */
+  prevSlices?: DonutSlice[];
   lang?: Language;
 };
 
@@ -658,7 +679,7 @@ export type InsightSummary = {
  * never invent the figures (Opsi A).
  */
 export function toInsightSummary(input: InsightInput): InsightSummary {
-  const { totals, monthly, slices, lang = 'id' } = input;
+  const { totals, monthly, slices, prevSlices, lang = 'id' } = input;
   const t = dictionaryFor(lang).analytics;
   const lines: string[] = [];
 
@@ -695,7 +716,21 @@ export function toInsightSummary(input: InsightInput): InsightSummary {
   }
 
   const [first, second] = slices;
-  if (first && first.share >= 0.5) {
+  // L2: when previous-window slices exist, the strongest mover explains
+  // the change better than the static concentration line, so the driver
+  // takes its slot (line budget stays 4 for the Edge contract).
+  const drivers =
+    prevSlices && prevSlices.length > 0 ? toDrivers(slices, prevSlices) : [];
+  const [driver] = drivers;
+  if (driver) {
+    const amount = `${t.currencyPrefix} ${formatGrouped(Math.abs(driver.delta), lang)}`;
+    lines.push(
+      fill(
+        driver.delta > 0 ? t.insight.driverUp : t.insight.driverDown,
+        { name: driver.label, amount },
+      ),
+    );
+  } else if (first && first.share >= 0.5) {
     lines.push(
       fill(t.insight.topSingle, {
         name: first.label,
@@ -718,12 +753,149 @@ export function toInsightSummary(input: InsightInput): InsightSummary {
     lines.push(fill(diff >= 0 ? t.insight.surplus : t.insight.deficit, { amount }));
   }
 
+  // L2 anomaly closes the card (max one line, so the composition caps at
+  // 4: mom + driver/concentration + coverage + anomaly). Net safety first,
+  // the oddity last — ends on the hook.
+  if (prevSlices && prevSlices.length > 0) {
+    const [anomaly] = toAnomalies(slices, prevSlices);
+    if (anomaly) {
+      const amount = `${t.currencyPrefix} ${formatGrouped(anomaly.curr, lang)}`;
+      if (anomaly.kind === 'new') {
+        lines.push(
+          fill(t.insight.anomalyNew, { name: anomaly.label, amount }),
+        );
+      } else {
+        const prevAmount = `${t.currencyPrefix} ${formatGrouped(anomaly.prev, lang)}`;
+        lines.push(
+          fill(t.insight.anomalySpike, {
+            name: anomaly.label,
+            amount,
+            prevAmount,
+          }),
+        );
+      }
+    }
+  }
+
   return { title: t.insight.title, lines };
 }
 
 /** `0.413` → `"41%"` for insight copy (rows keep their own formatting). */
 function wholePercent(share: number): string {
   return `${Math.round(share * 100)}%`;
+}
+
+// L2 drivers + anomalies (pure — the Jest seam for "why did it move").
+
+export type CategoryDelta = {
+  id: string;
+  label: string;
+  prev: number;
+  curr: number;
+  /** curr - prev (signed rupiah). */
+  delta: number;
+};
+
+/** Strongest movers shown (one line, the single strongest). */
+export const INSIGHT_TOP_DRIVERS = 2;
+/** Anomaly floor: below this, even a 10x jump is noise, not insight. */
+export const ANOMALY_FLOOR = 50000;
+/** Spike multiple: curr >= prev * this (with prev > 0) counts as a surge. */
+export const ANOMALY_MULTIPLE = 2;
+
+function sliceValue(slices: DonutSlice[], id: string): number {
+  return slices.find((slice) => slice.id === id)?.value ?? 0;
+}
+
+function sliceLabel(
+  curr: DonutSlice[],
+  prev: DonutSlice[],
+  id: string,
+): string {
+  return (
+    curr.find((slice) => slice.id === id)?.label ??
+    prev.find((slice) => slice.id === id)?.label ??
+    id
+  );
+}
+
+/**
+ * Per-category current-vs-previous deltas, strongest absolute move first.
+ * `__other__` is skipped: a tail aggregate cannot be named honestly, and
+ * naming it would pretend a cause ("Lainnya naik") without one.
+ */
+export function toCategoryDeltas(
+  curr: DonutSlice[],
+  prev: DonutSlice[],
+): CategoryDelta[] {
+  const ids = new Set<string>();
+  for (const slice of [...curr, ...prev]) {
+    if (slice.id !== '__other__') ids.add(slice.id);
+  }
+  return [...ids]
+    .map((id) => {
+      const prevValue = sliceValue(prev, id);
+      const currValue = sliceValue(curr, id);
+      return {
+        id,
+        label: sliceLabel(curr, prev, id),
+        prev: prevValue,
+        curr: currValue,
+        delta: currValue - prevValue,
+      };
+    })
+    .filter((row) => row.delta !== 0)
+    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+}
+
+/** Top movers (cap `INSIGHT_TOP_DRIVERS`); empty when nothing moved. */
+export function toDrivers(
+  curr: DonutSlice[],
+  prev: DonutSlice[],
+): CategoryDelta[] {
+  return toCategoryDeltas(curr, prev).slice(0, INSIGHT_TOP_DRIVERS);
+}
+
+export type AnomalyKind = 'new' | 'spike';
+
+export type CategoryAnomaly = CategoryDelta & { kind: AnomalyKind };
+
+/**
+ * Rule-based anomalies (not ML, not predictions): a category that appears
+ * from zero above the floor (`new`), or surges past the multiple above
+ * the floor (`spike`). Biggest money first. `__other__` skipped (same
+ * honesty rule as drivers).
+ */
+export function toAnomalies(
+  curr: DonutSlice[],
+  prev: DonutSlice[],
+): CategoryAnomaly[] {
+  const out: CategoryAnomaly[] = [];
+  for (const slice of curr) {
+    if (slice.id === '__other__') continue;
+    const prevValue = sliceValue(prev, slice.id);
+    if (prevValue === 0) {
+      if (slice.value >= ANOMALY_FLOOR) {
+        out.push({ ...toDeltaRow(slice, 0), kind: 'new' });
+      }
+    } else if (
+      slice.value >= ANOMALY_FLOOR &&
+      slice.value >= prevValue * ANOMALY_MULTIPLE
+    ) {
+      out.push({ ...toDeltaRow(slice, prevValue), kind: 'spike' });
+    }
+  }
+  return out.sort((a, b) => b.curr - a.curr);
+}
+
+function toDeltaRow(slice: DonutSlice, prev: number): CategoryDelta {
+  return {
+    id: slice.id,
+    label: slice.label,
+    prev,
+    curr: slice.value,
+    delta: slice.value - prev,
+  };
 }
 
 // P2a chart geometry (pure — the Jest seam for gradient/caps/tooltip)

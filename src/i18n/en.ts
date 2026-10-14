@@ -679,6 +679,11 @@ export const en: Dictionary = {
       topPair: '{a} and {b} take {share} of spending.',
       surplus: 'Income covers spending, {amount} left over.',
       deficit: 'Spending exceeds income by {amount}.',
+      driverUp: '{name} rose {amount} and drove the move.',
+      driverDown: '{name} fell {amount} and held the move back.',
+      anomalyNew: 'Odd: {name} suddenly {amount} from zero last period.',
+      anomalySpike:
+        'Odd: {name} surged to {amount} (last period {prevAmount}).',
       refine: 'Rephrase with AI Assistant',
       refining: 'Rephrasing…',
       aiBadge: 'AI Assistant',
