@@ -534,6 +534,13 @@ Pelajaran CI 2026-10-14 (run 38507946211 merah di L2): probe live
 buruk); yang rapuh TEST-nya. Fix: probe figure-LIGHT (bukti
 akseptasi cap end-to-end; keketatan tetap dibuktikan probe 1-2 +
 Jest + batas 5→400). Jangan lunakkan validator untuk menenangkan CI.
+
+Pelajaran CI bagian 2 (run 38513394882 merah: bahkan probe
+figure-LIGHT flake `{ok:false,stage:invalid}` minutes setelah lokal
+hijau — temperature-0 nondeterministik antar-call). Fix: TEPAT-SATU
+retry ber-pace hanya untuk probe model (flood/error-path tak
+tersentuh); invalid persisten tetap merah. Batas: 3+3 call, jauh di
+bawah 500 RPD. Run 38514613326 hijau penuh.
 | L4 | Interaksi penuh (drill-down → `/search`, multi-wallet compare, custom range) | setelah L3 |
 | L5 | QR svg opsional (default tetap link+secret) | bila ada alasan baru |
 | LW | Widget bitmap (waveform/watermark/grafik struk/glow) + density + gate launcher | bila diminta |

@@ -547,4 +547,5 @@ Single-context layout — one `CONTEXT.md` + `docs/adr/` at the repo root. See `
 - Tap kartu opsional (`onOpenBudgets` + affordance `viewBudgets`, hanya dengan baris run-rate; tanpanya tree identik — suite svg lama tak tersentuh) → `/(tabs)/budgets`.
 - Budget 4→5 di semua gerbang + redeploy mandiri (komposisi: mom + driver/konsentrasi + coverage + anomali + runrate). Tanpa Edge-logika/consent/legal/secret/rebuild baru; live baru tak perlu (Edge tak berubah — golden + device cukup).
 - Pelajaran CI (run 38507946211 merah, 2026-10-14): probe live figure-heavy flake saat model menormalkan satu figur (`200 {ok:false,stage:invalid}` — cap terdeploy benar, buktinya 200 bukan 400). Gate ketat JANGAN dilunakkan untuk CI; yang dirampingkan TEST-nya (probe figure-light untuk bukti akseptasi; keketatan di probe 1-2 + Jest + batas).
+- Pelajaran CI bagian 2 (run 38513394882 merah: bahkan figure-light flake minutes setelah lokal hijau). Fix: TEPAT-SATU retry ber-pace khusus probe model (flood/error tak tersentuh); invalid persisten tetap merah. Run 38514613326 hijau penuh.
 - `delete __tests__/.session-seed.json` sebelum Jest (sama). Kontrak statis tak berubah.
