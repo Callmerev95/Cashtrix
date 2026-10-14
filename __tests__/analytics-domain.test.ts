@@ -28,6 +28,7 @@ import {
   toDrivers,
   toFullSlices,
   toInsightSummary,
+  toRunRate,
   toNetPoints,
   arcGradientVector,
   roundCapSpan,
@@ -579,6 +580,87 @@ describe('L2 drivers + anomalies (pure seam)', () => {
       toInsightSummary(base),
     );
     expect(toInsightSummary(base).lines).toHaveLength(3);
+  });
+});
+
+describe('L3 run-rate (pure seam)', () => {
+  const budgets = [
+    { categoryName: 'Makanan', spent: 400000, amountLimit: 500000, state: 'warning' as const },
+    { categoryName: 'Transportasi', spent: 100000, amountLimit: 500000, state: 'ok' as const },
+  ];
+
+  it('projects the worst overshoot; null when honest to stay silent', () => {
+    // 400k/14d × 31d = 885.714 → overrun 385.714.
+    const alert = toRunRate(budgets, '2026-10-14', '2026-10-01');
+    expect(alert).toEqual({ name: 'Makanan', overrun: (400000 / 14) * 31 - 500000 });
+    // Day 1: too early to pace (would invent a scare).
+    expect(toRunRate(budgets, '2026-10-01', '2026-10-01')).toBeNull();
+    // Stale month, non-positive limit, empty: all null.
+    expect(toRunRate(budgets, '2026-11-02', '2026-10-01')).toBeNull();
+    expect(
+      toRunRate(
+        [{ categoryName: 'X', spent: 10, amountLimit: 0, state: 'ok' }],
+        '2026-10-14',
+        '2026-10-01',
+      ),
+    ).toBeNull();
+    expect(toRunRate([], '2026-10-14', '2026-10-01')).toBeNull();
+    // On track: projected under limit.
+    expect(
+      toRunRate(
+        [{ categoryName: 'Y', spent: 100000, amountLimit: 900000, state: 'ok' }],
+        '2026-10-14',
+        '2026-10-01',
+      ),
+    ).toBeNull();
+    // Exceeded already alerted: skipped, never double-alarmed.
+    expect(
+      toRunRate(
+        [{ categoryName: 'Z', spent: 600000, amountLimit: 500000, state: 'exceeded' }],
+        '2026-10-14',
+        '2026-10-01',
+      ),
+    ).toBeNull();
+  });
+
+  it('composition: run-rate closes at 5, absent without budgets', () => {
+    const runRate = {
+      budgets,
+      todayKey: '2026-10-14',
+      monthKey: '2026-10-01',
+    };
+    const withRate = toInsightSummary({
+      totals: { expense: 500000, income: 600000, net: 100000 },
+      monthly: {
+        current: { month: '2026-10-01', income: 600000, expense: 500000, net: 100000 },
+        previous: { month: '2026-09-01', income: 0, expense: 200000, net: -200000 },
+      },
+      slices: [
+        { id: 'makan', label: 'Makanan', icon: 'restaurant', value: 400000, share: 0.8 },
+      ],
+      prevSlices: [
+        { id: 'makan', label: 'Makanan', icon: 'restaurant', value: 200000, share: 0 },
+      ],
+      runRate,
+    });
+    expect(withRate.lines).toHaveLength(5);
+    expect(withRate.lines[4]).toContain('Makanan');
+    expect(withRate.lines[4]).toContain('jebol');
+
+    const withoutRate = toInsightSummary({
+      totals: { expense: 500000, income: 600000, net: 100000 },
+      monthly: {
+        current: { month: '2026-10-01', income: 600000, expense: 500000, net: 100000 },
+        previous: { month: '2026-09-01', income: 0, expense: 200000, net: -200000 },
+      },
+      slices: [
+        { id: 'makan', label: 'Makanan', icon: 'restaurant', value: 400000, share: 0.8 },
+      ],
+      prevSlices: [
+        { id: 'makan', label: 'Makanan', icon: 'restaurant', value: 200000, share: 0 },
+      ],
+    });
+    expect(withoutRate.lines).toHaveLength(4);
   });
 });
 describe('P2a chart geometry (gradient, honest round caps)', () => {

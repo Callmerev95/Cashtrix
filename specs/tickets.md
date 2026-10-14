@@ -517,6 +517,15 @@ driver/konsentrasi + coverage + anomali) + wiring `prevSlices`
 probe 4-baris 34/34. Tanpa consent/legal/secret/rebuild baru. OTA
 `ea16e2c1`.
 | L3 | Insight #3 run-rate + join `v_budget_status` + tap → Budgets | setelah L2 |
+
+Status L3 (working tree, TANPA DDL): `toRunRate` murni (pace × sisa
+bulan vs limit; terburuk saja; null jujur: hari-1/bulan-basi/limit-0/
+tak-diproyeksikan-jebol/sudah-jebol-skip) + template ID/EN + komposisi
+max 5 (bump cap semua gerbang + redeploy mandiri) + wiring `budgets` +
+`month` dari `useBudgets` yang sudah mount + tap kartu opsional (hanya
+dengan baris run-rate + affordance; tanpa itu tree identik L1/L2) +
+golden + device. Tanpa Edge-logika/consent/legal/secret/rebuild baru.
+OTA `1e18df72`.
 | L4 | Interaksi penuh (drill-down → `/search`, multi-wallet compare, custom range) | setelah L3 |
 | L5 | QR svg opsional (default tetap link+secret) | bila ada alasan baru |
 | LW | Widget bitmap (waveform/watermark/grafik struk/glow) + density + gate launcher | bila diminta |

@@ -27,6 +27,7 @@ import {
   RangeSegmentedControl,
   WalletFilterChips,
   enumerateBuckets,
+  formatDateKey,
   getCachedInsightAi,
   getInsightConsentSnapshot,
   isDailyRange,
@@ -40,6 +41,7 @@ import {
   toDonutSlices,
   toFullSlices,
   toInsightSummary,
+  toRunRate,
   toNetPoints,
   toSparklines,
   useAnalytics,
@@ -70,7 +72,7 @@ export default function AnalyticsScreen() {
     refresh,
   } = useAnalytics();
   const { avatarSignedUrl, profile } = useProfile();
-  const { unreadCount } = useBudgets();
+  const { unreadCount, budgets, month: budgetMonth } = useBudgets();
   const insets = useSafeAreaInsets();
   // C6: section copy + bar labels follow the OS language (ADR-0008, R10).
   const language = useLanguage();
@@ -115,6 +117,11 @@ export default function AnalyticsScreen() {
     overview && trendMode === 'net'
       ? toNetPoints(overview.series, window, daily, tz, language)
       : null;
+  const insightRunRateInput = {
+    budgets,
+    todayKey: formatDateKey(new Date(), tz),
+    monthKey: budgetMonth ?? '',
+  };
   const insight =
     overview && monthly
       ? toInsightSummary({
@@ -124,9 +131,21 @@ export default function AnalyticsScreen() {
           // L2, defensif: payload lama tanpa kunci ini -> [] -> baris L1,
           // bit-identik (kontrak anti-regresi).
           prevSlices: toFullSlices(overview.prevBreakdown ?? []),
+          // L3: run-rate dari baris budget bulan berjalan (agregat
+          // server) + hari-ini di tz user. Absen = output pra-L3.
+          runRate: insightRunRateInput,
           lang: language,
         })
       : null;
+  // Kartu bisa di-tap hanya bila membawa baris run-rate (affordance
+  // eksplisit di kartu — tap tanpa tujuan adalah jebakan).
+  const insightHasRunRate = Boolean(
+    toRunRate(
+      insightRunRateInput.budgets,
+      insightRunRateInput.todayKey,
+      insightRunRateInput.monthKey,
+    ),
+  );
 
   // L1: AI rephrase rides on top of the deterministic lines (never instead
   // of them). Stale AI clears via render-adjust when the input changes —
@@ -311,6 +330,12 @@ export default function AnalyticsScreen() {
                 retryLabel={t.analytics.insight.retry}
                 onRefine={() => void onRefinePress()}
                 onRetry={() => void runRefine()}
+                openBudgetsLabel={t.analytics.insight.viewBudgets}
+                onOpenBudgets={
+                  insightHasRunRate
+                    ? () => router.push('/(tabs)/budgets')
+                    : undefined
+                }
               />
             ) : null}
 

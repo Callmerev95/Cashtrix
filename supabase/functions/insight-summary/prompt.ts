@@ -13,7 +13,7 @@
 
 export type InsightLang = 'id' | 'en';
 
-export const INSIGHT_MAX_INPUT_LINES = 4;
+export const INSIGHT_MAX_INPUT_LINES = 5;
 export const INSIGHT_MAX_INPUT_CHARS = 500;
 
 export type InsightPromptInput = {

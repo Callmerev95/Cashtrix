@@ -625,6 +625,14 @@ export type InsightInput = {
   slices: DonutSlice[];
   /** L2: previous-window slices (same shape). Absent/empty = L1 output, bit-identical. */
   prevSlices?: DonutSlice[];
+  /** L3: run-rate projection input. Absent = pre-L3 output, bit-identical. */
+  runRate?: {
+    budgets: RunRateBudget[];
+    /** `YYYY-MM-DD` today in the user's tz (`formatDateKey`). */
+    todayKey: string;
+    /** `YYYY-MM-01` running month (budgets `month`, server tz). */
+    monthKey: string;
+  };
   lang?: Language;
 };
 
@@ -679,7 +687,7 @@ export type InsightSummary = {
  * never invent the figures (Opsi A).
  */
 export function toInsightSummary(input: InsightInput): InsightSummary {
-  const { totals, monthly, slices, prevSlices, lang = 'id' } = input;
+  const { totals, monthly, slices, prevSlices, runRate, lang = 'id' } = input;
   const t = dictionaryFor(lang).analytics;
   const lines: string[] = [];
 
@@ -718,7 +726,7 @@ export function toInsightSummary(input: InsightInput): InsightSummary {
   const [first, second] = slices;
   // L2: when previous-window slices exist, the strongest mover explains
   // the change better than the static concentration line, so the driver
-  // takes its slot (line budget stays 4 for the Edge contract).
+  // takes its slot (line budget stays 5 for the Edge contract).
   const drivers =
     prevSlices && prevSlices.length > 0 ? toDrivers(slices, prevSlices) : [];
   const [driver] = drivers;
@@ -774,6 +782,20 @@ export function toInsightSummary(input: InsightInput): InsightSummary {
           }),
         );
       }
+    }
+  }
+
+  // L3 run-rate closes after the anomaly (composition caps at 5 for the
+  // Edge contract): at most one line, only the worst projected overshoot.
+  if (runRate) {
+    const alert = toRunRate(
+      runRate.budgets,
+      runRate.todayKey,
+      runRate.monthKey,
+    );
+    if (alert) {
+      const amount = `${t.currencyPrefix} ${formatGrouped(Math.round(alert.overrun), lang)}`;
+      lines.push(fill(t.insight.runRate, { name: alert.name, amount }));
     }
   }
 
@@ -896,6 +918,58 @@ function toDeltaRow(slice: DonutSlice, prev: number): CategoryDelta {
     curr: slice.value,
     delta: slice.value - prev,
   };
+}
+
+// L3 run-rate (pure — the Jest seam for "will the budget survive").
+
+/** Minimal budget shape the projection needs (structural, no cross-import). */
+export type RunRateBudget = {
+  categoryName: string;
+  spent: number;
+  amountLimit: number;
+  state: 'ok' | 'warning' | 'exceeded';
+};
+
+export type RunRateAlert = {
+  name: string;
+  /** Projected month-end overshoot in rupiah (> 0 by construction). */
+  overrun: number;
+};
+
+/**
+ * Projects each non-exceeded budget to month-end at its current daily
+ * pace (`spent / elapsed-days × days-in-month`) and returns the single
+ * worst projected overshoot. Inputs are server aggregates; the projection
+ * is presentation arithmetic (same class as percent/delta), never a
+ * transaction sum. Honest nulls: no budgets, day 1 (nothing to pace from —
+ * dividing by ~nothing would invent a scare), stale month, non-positive
+ * limit, or nothing projected over. Exceeded budgets are skipped (their
+ * alert already fired — projecting them would double-alarm).
+ */
+export function toRunRate(
+  budgets: RunRateBudget[],
+  todayKey: string,
+  monthKey: string,
+): RunRateAlert | null {
+  if (todayKey.slice(0, 7) !== monthKey.slice(0, 7)) return null;
+  const day = Number(todayKey.slice(8, 10));
+  if (!Number.isInteger(day) || day < 2) return null;
+  const year = Number(monthKey.slice(0, 4));
+  const month = Number(monthKey.slice(5, 7));
+  if (!Number.isInteger(year) || !Number.isInteger(month)) return null;
+  const daysInMonth = new Date(year, month, 0).getDate();
+  if (!(daysInMonth > 0)) return null;
+
+  let worst: RunRateAlert | null = null;
+  for (const budget of budgets) {
+    if (budget.state === 'exceeded') continue;
+    if (!(budget.amountLimit > 0) || !(budget.spent >= 0)) continue;
+    const overrun = (budget.spent / day) * daysInMonth - budget.amountLimit;
+    if (overrun > 0 && (!worst || overrun > worst.overrun)) {
+      worst = { name: budget.categoryName, overrun };
+    }
+  }
+  return worst;
 }
 
 // P2a chart geometry (pure — the Jest seam for gradient/caps/tooltip)

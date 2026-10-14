@@ -540,3 +540,10 @@ Single-context layout — one `CONTEXT.md` + `docs/adr/` at the repo root. See `
 - Domain: `toCategoryDeltas`/`toDrivers` (top-2 absolut), `toAnomalies` (`new` + `spike` ≥2× + floor `ANOMALY_FLOOR = 50rb`; `__other__` diskip — ekor tak bisa disebut jujur), `toFullSlices` (tanpa potong/filter — kategori kecil-prev tak boleh diklaim "nol"). Komposisi max 4: mom + driver/konsentrasi + coverage + anomali; tanpa prev = L1 bit-identik (dikunci test).
 - Budget 3→4 di SEMUA gerbang (Edge prompt/validate + klien parse + redeploy mandiri via CLI token keychain) + probe live 4-baris (`verify-insight.mjs` 34/34). Wiring `prevSlices` + mapping `prevBreakdown` defensif (`?? []`) + test. Tanpa consent/legal/secret/rebuild baru (kelas data sama).
 - `delete __tests__/.session-seed.json` sebelum Jest (sama). Kontrak statis tak berubah.
+
+### Insight run-rate + tap Budgets (L3, working tree — OTA `1e18df72`, device pending)
+
+- TANPA DDL: `toRunRate` murni dari baris `v_budget_status` bulan berjalan (`spent/limit/state` via `useBudgets` yang sudah mount) + hari-ini tz (`formatDateKey`, preseden Intl) — proyeksi = aritmetika presentasi (sekelas persen/delta), bukan agregat transaksi. Terburuk saja; null jujur (hari-1/bulan-basi/limit-0/tak-over/sudah-exceeded-skip-tanpa-double-alarm). Template `runRate` ID/EN (nominal overrun dibulatkan rupiah).
+- Tap kartu opsional (`onOpenBudgets` + affordance `viewBudgets`, hanya dengan baris run-rate; tanpanya tree identik — suite svg lama tak tersentuh) → `/(tabs)/budgets`.
+- Budget 4→5 di semua gerbang + redeploy mandiri (komposisi: mom + driver/konsentrasi + coverage + anomali + runrate). Tanpa Edge-logika/consent/legal/secret/rebuild baru; live baru tak perlu (Edge tak berubah — golden + device cukup).
+- `delete __tests__/.session-seed.json` sebelum Jest (sama). Kontrak statis tak berubah.

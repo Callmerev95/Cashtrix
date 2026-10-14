@@ -686,6 +686,9 @@ export const id = {
       anomalyNew: 'Janggal: {name} tiba-tiba {amount} padahal periode lalu nol.',
       anomalySpike:
         'Janggal: {name} melonjak menjadi {amount} (periode lalu {prevAmount}).',
+      runRate:
+        'Dengan laju ini, {name} jebol {amount} sebelum akhir bulan.',
+      viewBudgets: 'Lihat budget',
       refine: 'Susun ulang dengan Asisten AI',
       refining: 'Menyusun ulang…',
       aiBadge: 'Asisten AI',

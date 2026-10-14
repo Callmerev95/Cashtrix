@@ -11,7 +11,7 @@
  * deferred to L2); invented NUMBERS are never accepted.
  */
 
-export const INSIGHT_MAX_LINES = 4;
+export const INSIGHT_MAX_LINES = 5;
 export const INSIGHT_MAX_LINE_CHARS = 280;
 
 /** Number-tokens: digit-led runs with grouping/decimal separators + % . */

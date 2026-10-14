@@ -34,6 +34,8 @@ export function InsightCard({
   retryLabel = '',
   onRefine = () => undefined,
   onRetry = () => undefined,
+  openBudgetsLabel = '',
+  onOpenBudgets,
   testID = 'analytics-insight',
 }: {
   summary: InsightSummary;
@@ -47,13 +49,16 @@ export function InsightCard({
   retryLabel?: string;
   onRefine?: () => void;
   onRetry?: () => void;
+  /** L3: tap-to-Budgets affordance (only passed with a run-rate line). */
+  openBudgetsLabel?: string;
+  onOpenBudgets?: () => void;
   testID?: string;
 }) {
   if (summary.lines.length === 0) return null;
   const showAi = aiState === 'ai' && aiLines && aiLines.length > 0;
   const lines = showAi ? aiLines : summary.lines;
-  return (
-    <View testID={testID} style={styles.card}>
+  const body = (
+    <>
       <View style={styles.kickerRow}>
         <Text style={[typography.labelUppercase, styles.kicker]}>
           {summary.title}
@@ -73,6 +78,10 @@ export function InsightCard({
           {line}
         </Text>
       ))}
+    </>
+  );
+  const footer = (
+    <>
       {aiState === 'idle' ? (
         <Pressable
           testID={`${testID}-refine`}
@@ -108,7 +117,43 @@ export function InsightCard({
           {quotaNote}
         </Text>
       ) : null}
-    </View>
+      {onOpenBudgets ? (
+        <Pressable
+          testID={`${testID}-budgets`}
+          accessibilityRole="button"
+          accessibilityLabel={openBudgetsLabel}
+          onPress={onOpenBudgets}
+          style={({ pressed }) => [pressed && pressedFeedback]}
+        >
+          <Text style={[typography.bodySm, styles.refine]}>
+            {openBudgetsLabel}
+          </Text>
+        </Pressable>
+      ) : null}
+    </>
+  );
+  // L3: the whole card is tappable only with a run-rate line (explicit
+  // affordance above — a tap without a destination would be a trap).
+  // Without it, the tree is byte-identical to L1/L2 (suite svg untouched).
+  if (!onOpenBudgets) {
+    return (
+      <View testID={testID} style={styles.card}>
+        {body}
+        {footer}
+      </View>
+    );
+  }
+  return (
+    <Pressable
+      testID={testID}
+      accessibilityRole="button"
+      accessibilityLabel={openBudgetsLabel}
+      onPress={onOpenBudgets}
+      style={({ pressed }) => [styles.card, pressed && pressedFeedback]}
+    >
+      {body}
+      {footer}
+    </Pressable>
   );
 }
 

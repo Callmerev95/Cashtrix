@@ -684,6 +684,9 @@ export const en: Dictionary = {
       anomalyNew: 'Odd: {name} suddenly {amount} from zero last period.',
       anomalySpike:
         'Odd: {name} surged to {amount} (last period {prevAmount}).',
+      runRate:
+        'At this pace, {name} overshoots by {amount} before month end.',
+      viewBudgets: 'View budgets',
       refine: 'Rephrase with AI Assistant',
       refining: 'Rephrasing…',
       aiBadge: 'AI Assistant',

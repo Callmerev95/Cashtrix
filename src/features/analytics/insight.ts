@@ -25,7 +25,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-export const INSIGHT_MAX_LINES = 4;
+export const INSIGHT_MAX_LINES = 5;
 export const INSIGHT_MAX_LINE_CHARS = 280;
 
 export function parseInsightPayload(data: unknown): string[] | null {

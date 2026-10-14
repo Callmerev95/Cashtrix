@@ -178,11 +178,16 @@ async function main() {
       label: 'EN 1 baris',
     },
     {
+      // L2/L3: figure-LIGHT on purpose (CI lesson 2026-10-14: a
+      // figure-heavy 4-line probe flaked when the model normalized one
+      // figure — 200 {ok:false,stage:invalid} — while the cap itself was
+      // fine. Strictness is proven by probes 1-2 + Jest + the 5->400
+      // boundary below; THIS probe proves cap-5 acceptance end-to-end).
       lines: [
         'Pengeluaran Oktober naik 12,5% vs September.',
-        'Makanan naik Rp 200.000 dan menjadi pendorong utama.',
-        'Pemasukan menutup pengeluaran, sisa Rp 250.000.',
-        'Janggal: Transportasi tiba-tiba Rp 300.000 padahal periode lalu nol.',
+        'Makanan menjadi pendorong utama.',
+        'Pemasukan menutup pengeluaran.',
+        'Janggal: Transportasi tiba-tiba muncul.',
       ],
       lang: 'id',
       label: 'ID 4 baris (L2 driver+anomali)',

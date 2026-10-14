@@ -81,7 +81,7 @@ describe('prompt seam', () => {
     for (const line of INPUT_ID) expect(prompt).toContain(line);
     const promptEn = buildInsightPrompt({ lines: INPUT_ID, lang: 'en' });
     expect(promptEn).toContain('English');
-    expect(INSIGHT_MAX_INPUT_LINES).toBe(4);
+    expect(INSIGHT_MAX_INPUT_LINES).toBe(5);
   });
 });
 
@@ -127,7 +127,7 @@ describe('client insight.ts', () => {
     expect(parseInsightPayload({ ok: false })).toBeNull();
     expect(parseInsightPayload({ ok: true, lines: [] })).toBeNull();
     expect(
-      parseInsightPayload({ ok: true, lines: ['a', 'b', 'c', 'd', 'e'] }),
+      parseInsightPayload({ ok: true, lines: ['a', 'b', 'c', 'd', 'e', 'f'] }),
     ).toBeNull();
     expect(parseInsightPayload({ ok: true, lines: ['  '] })).toBeNull();
   });
@@ -291,6 +291,40 @@ describe('InsightCard L1', () => {  const summary = { title: 'Ringkasan', lines:
     );
     expect(screen.getByTestId('analytics-insight-quota')).toBeTruthy();
   });
+
+  it('tanpa run-rate: kartu bukan tombol (tanpa jebakan tap)', () => {
+    render(
+      <InsightCard
+        summary={summary}
+        aiLines={null}
+        aiState="idle"
+        onRefine={jest.fn()}
+        onRetry={jest.fn()}
+        {...labels}
+      />,
+    );
+    expect(screen.queryByTestId('analytics-insight-budgets')).toBeNull();
+  });
+
+  it('dengan run-rate: tap kartu + affordance membuka budgets', () => {
+    const onOpenBudgets = jest.fn();
+    render(
+      <InsightCard
+        summary={summary}
+        aiLines={null}
+        aiState="idle"
+        onRefine={jest.fn()}
+        onRetry={jest.fn()}
+        openBudgetsLabel="Lihat budget"
+        onOpenBudgets={onOpenBudgets}
+        {...labels}
+      />,
+    );
+    fireEvent.press(screen.getByTestId('analytics-insight-budgets'));
+    expect(onOpenBudgets).toHaveBeenCalledTimes(1);
+    fireEvent.press(screen.getByTestId('analytics-insight'));
+    expect(onOpenBudgets).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe('insight consent store (L1 auto)', () => {
@@ -360,7 +394,7 @@ describe('shouldAutoRefine (L1 auto gate)', () => {
   });
 });
 
-describe('L2 wiring (prev_breakdown + budget 4 baris)', () => {
+describe('L2 wiring (prev_breakdown + budget 5 baris)', () => {
   const row = {
     category_id: 'c1',
     category_name: 'Makanan',
@@ -410,13 +444,13 @@ describe('L2 wiring (prev_breakdown + budget 4 baris)', () => {
     );
   });
 
-  it('validator + klien menerima 4 baris, menolak 5', () => {
-    const four = ['satu 10%.', 'dua Rp 1.000.', 'tiga 2026.', 'empat 5%.'];
-    expect(validateInsightPayload({ lines: four }, four)).toEqual(four);
+  it('validator + klien menerima 5 baris, menolak 6', () => {
+    const five = ['satu 10%.', 'dua Rp 1.000.', 'tiga 2026.', 'empat 5%.', 'lima 3%.'];
+    expect(validateInsightPayload({ lines: five }, five)).toEqual(five);
     expect(
-      validateInsightPayload({ lines: [...four, 'lima.'] }, [...four, 'lima.']),
+      validateInsightPayload({ lines: [...five, 'enam.'] }, [...five, 'enam.']),
     ).toBeNull();
-    expect(parseInsightPayload({ ok: true, lines: four })).toEqual(four);
-    expect(parseInsightPayload({ ok: true, lines: [...four, 'lima.'] })).toBeNull();
+    expect(parseInsightPayload({ ok: true, lines: five })).toEqual(five);
+    expect(parseInsightPayload({ ok: true, lines: [...five, 'enam.'] })).toBeNull();
   });
 });
