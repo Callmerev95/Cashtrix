@@ -9,8 +9,8 @@
  * A range with no transactions renders `AnalyticsEmptyState` instead of charts
  * (AC #7), so a new account never sees a NaN/Infinity axis.
  */
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
@@ -27,16 +27,25 @@ import {
   RangeSegmentedControl,
   WalletFilterChips,
   enumerateBuckets,
+  getCachedInsightAi,
+  getInsightConsentSnapshot,
   isDailyRange,
+  requestInsight,
   resolveRange,
+  setCachedInsightAi,
+  setInsightConsented,
+  shouldAutoRefine,
+  subscribeInsightConsent,
   toBars,
   toDonutSlices,
   toInsightSummary,
   toNetPoints,
   toSparklines,
   useAnalytics,
+  type InsightAiState,
   type TrendMode,
 } from '@/features/analytics';
+import { insightAiEvent, trackEvent } from '@/features/observability';
 import { Screen, AppHeader, ErrorStateCard, Skeleton, SkeletonBlock } from '@/components';
 import { PullGesture, PullHeader, usePullRefresh } from '@/components/pull-refresh';
 import { useBudgets } from '@/features/budgets';
@@ -84,10 +93,8 @@ export default function AnalyticsScreen() {
     setSelectedSliceId(null);
     setSelectedBucket(null);
   }
-
   const window = resolveRange(range);
-  const daily = isDailyRange(range);
-  const slices = overview
+  const daily = isDailyRange(range);  const slices = overview
     ? toDonutSlices(overview.breakdown, t.analytics.other)
     : [];
   const bars = overview
@@ -116,6 +123,105 @@ export default function AnalyticsScreen() {
           lang: language,
         })
       : null;
+
+  // L1: AI rephrase rides on top of the deterministic lines (never instead
+  // of them). Stale AI clears via render-adjust when the input changes —
+  // same pattern as the filter reset above, never setState in an effect.
+  // L1 auto: consented users get ONE background fetch per distinct numbers
+  // (session cache makes re-opens free); revoke clears immediately.
+  const consented = useSyncExternalStore(
+    subscribeInsightConsent,
+    getInsightConsentSnapshot,
+  );
+  const [aiLines, setAiLines] = useState<string[] | null>(null);
+  const [aiState, setAiState] = useState<InsightAiState>('idle');
+  const [refineLines, setRefineLines] = useState<string[] | null>(null);
+  const insightKey = insight ? insight.lines.join('\n') : '';
+  const [insightKeySeen, setInsightKeySeen] = useState(insightKey);
+  if (insightKeySeen !== insightKey) {
+    setInsightKeySeen(insightKey);
+    const hit = insight ? getCachedInsightAi(insightKey) : null;
+    setAiLines(hit);
+    setAiState(hit ? 'ai' : 'idle');
+    setRefineLines(insight ? insight.lines : null);
+  }
+  if (!consented && (aiLines !== null || aiState !== 'idle')) {
+    setAiLines(null);
+    setAiState('idle');
+  }
+
+  const fetchGuard = useRef(false);
+  // Fix loop-gagal (Okt 2026): auto-effect menembak lagi tiap state
+  // kembali idle — kegagalan persisten = quota-burner diam-diam. Auto
+  // hanya sekali per angka; retry manual (tombol) selalu boleh.
+  const attempted = useRef(new Set<string>());
+  const runRefine = useCallback(async () => {
+    if (!refineLines || refineLines.length === 0 || aiState === 'loading') {
+      return;
+    }
+    if (fetchGuard.current) return;
+    fetchGuard.current = true;
+    setAiState('loading');
+    try {
+      const outcome = await requestInsight({
+        lines: refineLines,
+        lang: language,
+      });
+      if (outcome.status === 'ok') {
+        setCachedInsightAi(insightKeySeen, outcome.lines);
+        setAiLines(outcome.lines);
+        setAiState('ai');
+        trackEvent(insightAiEvent({ ok: true }));
+      } else if (outcome.status === 'rate_limited') {
+        setAiState('rate_limited');
+        trackEvent(insightAiEvent({ ok: false }));
+      } else if (outcome.status === 'quota_exceeded') {
+        setAiState('quota_exceeded');
+        trackEvent(insightAiEvent({ ok: false }));
+      } else {
+        // empty/offline: stay deterministic silently (fail-open, pola AI4).
+        setAiState('idle');
+      }
+    } finally {
+      fetchGuard.current = false;
+    }
+  }, [refineLines, aiState, language, insightKeySeen]);
+
+  useEffect(() => {
+    if (
+      !shouldAutoRefine({
+        consented,
+        aiState,
+        hasLines: (refineLines?.length ?? 0) > 0,
+      })
+    ) {
+      return;
+    }
+    if (attempted.current.has(insightKeySeen)) return;
+    attempted.current.add(insightKeySeen);
+    void runRefine();
+  }, [consented, aiState, refineLines, runRefine, insightKeySeen]);
+
+  async function onRefinePress() {
+    if (aiState === 'loading') return;
+    if (consented) {
+      await runRefine();
+      return;
+    }
+    const ti = t.analytics.insight;
+    Alert.alert(ti.consentTitle, ti.consentBody, [
+      { text: t.common.cancel, style: 'cancel' },
+      {
+        text: ti.consentSend,
+        onPress: () => {
+          void (async () => {
+            await setInsightConsented(true);
+            await runRefine();
+          })();
+        },
+      },
+    ]);
+  }
 
   return (
     <Screen
@@ -189,7 +295,19 @@ export default function AnalyticsScreen() {
             <KpiHeader totals={overview.totals} delta={overview.delta} />
 
             {insight && insight.lines.length > 0 ? (
-              <InsightCard summary={insight} />
+              <InsightCard
+                summary={insight}
+                aiLines={aiLines}
+                aiState={aiState}
+                refineLabel={t.analytics.insight.refine}
+                refiningLabel={t.analytics.insight.refining}
+                aiBadge={t.analytics.insight.aiBadge}
+                rateLimitedNote={t.analytics.insight.rateLimited}
+                quotaNote={t.analytics.insight.quotaExceeded}
+                retryLabel={t.analytics.insight.retry}
+                onRefine={() => void onRefinePress()}
+                onRetry={() => void runRefine()}
+              />
             ) : null}
 
             <LinearGradient

@@ -59,6 +59,18 @@
     no table, the transcript itself is never stored. Server logs record
     codes only, never audio or amounts. The result only pre-fills the form,
     and nothing is saved until you press Save yourself.</li>
+    <li><strong>AI insight rephrase (Phase 1):</strong> only if you tap
+    rephrase on the Analytics insight card, after a separate explicit
+    consent. The app sends only the already-computed summary lines
+    (aggregates plus sentences, max 3 lines) to the
+    <code>insight-summary</code> function; no tables are read server-side
+    and raw transactions are never sent. The AI assistant only rephrases
+    those lines into more natural language: every figure must return
+    verbatim, and a reply that drops or changes a figure is rejected whole
+    (the figured summary stays). After consenting, every summary change
+    auto-loads in the background; turn it off anytime from Profile.
+    Processing is temporary and server logs
+    record codes only.</li>
     <li><strong>Two-factor authentication (optional):</strong> if you turn it
     on, a one-time-code factor is registered with Supabase Auth; recovery is
     the email password reset.</li>

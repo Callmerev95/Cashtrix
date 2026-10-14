@@ -58,6 +58,18 @@
     sendiri tidak pernah disimpan. Log server hanya mencatat kode, tidak pernah
     audio atau nominal. Hasilnya hanya mengisi form, dan tidak ada yang
     tersimpan sebelum Anda menekan Simpan sendiri.</li>
+    <li><strong>Susunan ulang wawasan AI (Fase 1):</strong> hanya jika Anda
+    menekan susun ulang di kartu wawasan Analytics, setelah persetujuan
+    terpisah yang eksplisit. Aplikasi hanya mengirim baris ringkasan yang
+    sudah dihitung (agregat ditambah kalimat, maksimal 3 baris) ke fungsi
+    <code>insight-summary</code>; tidak ada tabel yang dibaca di sisi server
+    dan transaksi mentah tidak pernah dikirim. Asisten AI hanya menyusun
+    ulang baris itu menjadi bahasa yang lebih natural: setiap angka wajib
+    kembali verbatim, dan jawaban yang menghilangkan atau mengubah angka
+    ditolak utuh (ringkasan berangka tetap tampil). Setelah setuju, setiap
+    ringkasan berubah dimuat otomatis di latar; matikan kapan saja dari
+    Profil. Pemrosesan bersifat
+    sementara dan log server hanya mencatat kode.</li>
     <li><strong>Autentikasi dua faktor (opsional):</strong> jika Anda
     mengaktifkannya, faktor kode sekali pakai didaftarkan ke Supabase Auth;
     pemulihannya lewat reset kata sandi via email.</li>

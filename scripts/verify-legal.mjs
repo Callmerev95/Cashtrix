@@ -44,10 +44,10 @@ for (const file of FILES) {
 }
 
 const REQUIRED = {
-  'docs/legal/privacy.html': ['parse-voice', 'scan-receipt', 'AI assistant', 'Save'],
-  'docs/legal/privacy-id.html': ['parse-voice', 'scan-receipt', 'Asisten AI', 'Simpan'],
-  'docs/legal/terms.html': ['receipt scan', 'voice entry', 'save manually', 'wrong'],
-  'docs/legal/terms-id.html': ['Pindai struk', 'entri suara', 'simpan manual', 'salah'],
+  'docs/legal/privacy.html': ['parse-voice', 'scan-receipt', 'AI assistant', 'Save', 'insight-summary'],
+  'docs/legal/privacy-id.html': ['parse-voice', 'scan-receipt', 'Asisten AI', 'Simpan', 'insight-summary'],
+  'docs/legal/terms.html': ['receipt scan', 'voice entry', 'save manually', 'wrong', 'insight rephrase'],
+  'docs/legal/terms-id.html': ['Pindai struk', 'entri suara', 'simpan manual', 'salah', 'susunan ulang wawasan'],
 };
 for (const file of FILES) {
   const text = texts.get(file);

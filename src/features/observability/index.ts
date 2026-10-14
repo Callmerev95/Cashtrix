@@ -4,6 +4,7 @@ export {
   aiPrefillEvent,
   budgetThresholdEvent,
   containsFinancialData,
+  insightAiEvent,
   screenNameFromSegments,
   screenViewEvent,
   scrubValue,

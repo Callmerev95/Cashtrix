@@ -69,6 +69,25 @@ export { BarChart } from './components/bar-chart';
 export { ChartTooltip } from './components/chart-tooltip';
 export { NetAreaChart } from './components/net-area-chart';
 export { InsightCard } from './components/insight-card';
+export type { InsightAiState } from './components/insight-card';
+export {
+  hasInsightConsent,
+  INSIGHT_CONSENT_KEY,
+  requestInsight,
+  setInsightConsent,
+  shouldAutoRefine,
+} from './insight';
+export type { InsightAiOutcome, InsightLang } from './insight';
+export {
+  getInsightConsentSnapshot,
+  setInsightConsented,
+  subscribeInsightConsent,
+} from './insight-consent';
+export {
+  getCachedInsightAi,
+  resetInsightAiCacheForTests,
+  setCachedInsightAi,
+} from './insight-cache';
 export { KpiHeader } from './components/kpi-header';
 export { MonthlySummaryCard } from './components/monthly-summary-card';
 export { BreakdownList } from './components/breakdown-list';

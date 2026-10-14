@@ -473,6 +473,34 @@ Urutan mengikat: PR1 → rebuild → PR2 → gate → tag.
 | ID | Isi | Pemicu |
 |---|---|---|
 | L1 | LLM insight #1 (Edge `insight-summary` + consent terpisah + legal + golden + Rp 0) | setelah 2.1.0 hijau |
+
+Status L1 (working tree, pola AI1/AI4/AI5): Edge `insight-summary`
+(`prompt.ts` + `validate.ts` + `gemini.ts` salinan-lokal + `index.ts` +
+`deno.json`; JWT → rate 5/mnt → quota 402 → primer lite + fallback 3.8 →
+figure-preservation → `{ok,lines}`/`{ok:false}`; server TANPA baca DB —
+klien kirim baris deterministik, model cuma lihat agregat) + klien
+(`analytics/insight.ts` + consent `INSIGHT_CONSENT_KEY` + `InsightCard`
+deterministik-dulu-upgrade + KPI `insight_ai_ok` boolean-only) + golden
+`ai-insight.test.tsx` (seam + replay + outcome + kartu) + legal 4 file +
+`verify-legal` keyword + `verify-insight.mjs` (Rp0: flood-400, ±4 call
+model) + CI setelah `verify-ai6`. Aksi owner: deploy fungsi
+(`GEMINI_API_KEY` reuse, tanpa secret/DDL/rebuild baru) + live + device.
+
+Live 2026-10-14: deploy `insight-summary` via CLI (token keychain,
+sekali pakai) + **`verify-insight.mjs` 32/32 hijau run pertama**
+(2 probe model ok:true angka-verbatim ID+EN, error-path, flood 5+2 Rp0,
+isolasi B, 0 residu; env unset + history bersih sesudahnya). Sisa L1:
+device-gate (consent → AI → pesawat → rate) + commit seizin pemilik.
+
+L1 auto (pilihan pemilik 2026-10-14: auto-setelah-consent, BUKAN per-buka
+tapi per-angka-berubah): store consent `insight-consent.ts`
+(subscribe/get/set + settled-guard lawan race lazy-load) + cache sesi
+`insight-cache.ts` (Map cap 10, key = insightKey) + effect auto di
+`analytics.tsx` (deps consented/aiState/refineLines, guard in-flight,
+`shouldAutoRefine` murni) + toggle `profile-insight-toggle` (icon
+`lightbulb`, revoke = clear + stop) + kamus auto + legal 1 kalimat.
+Matematika kuota: buka-10x-angka-sama = 1 call; 500 RPD cukup untuk
+puluhan user; mentok = sunyi-deterministik (fail-open). OTA `98799fcc`.
 | L2 | Insight #2 pendorong+anomali (perluasan prev-breakdown = DDL + pgTAP + verify) | setelah L1 |
 | L3 | Insight #3 run-rate + join `v_budget_status` + tap → Budgets | setelah L2 |
 | L4 | Interaksi penuh (drill-down → `/search`, multi-wallet compare, custom range) | setelah L3 |

@@ -12,7 +12,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -28,6 +28,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card, GhostButton, PrimaryButton, Screen, SkeletonList, TextField } from '@/components';
+import {
+  getInsightConsentSnapshot,
+  setInsightConsented,
+  subscribeInsightConsent,
+} from '@/features/analytics';
 import { signOut, useAuth } from '@/features/auth';
 import { exportAndShareTransactions } from '@/features/data-ownership';
 import { tapToggle } from '@/features/haptics';
@@ -68,6 +73,11 @@ export default function ProfileScreen() {
   const { rules: recurringRules } = useRecurring();
   const { enabled: lockEnabled, biometricsReady, setEnabled } = useLock();
   const { enabled: mfaEnabled, loading: mfaLoading, unenroll } = useMfa();
+  // L1 auto: consent sekaligus saklar auto (revoke = AI mati seketika).
+  const insightConsented = useSyncExternalStore(
+    subscribeInsightConsent,
+    getInsightConsentSnapshot,
+  );
   // C6: copy follows the OS language (ADR-0008).
   const language = useLanguage();
   const t = dictionaryFor(language);
@@ -497,6 +507,34 @@ export default function ProfileScreen() {
                 value={mfaEnabled}
                 onValueChange={onMfaToggle}
                 disabled={mfaLoading || mfaBusy}
+                trackColor={{ false: colors.surfaceElevated, true: colors.accent }}
+                thumbColor={colors.textPrimary}
+              />
+            </View>
+            <View style={styles.plainRow}>
+              <View style={styles.rowIcon}>
+                <MaterialIcons
+                  name="lightbulb"
+                  size={20}
+                  color={colors.accent}
+                />
+              </View>
+              <View style={styles.rowBody}>
+                <Text style={[typography.bodyMd, styles.rowTitle]}>
+                  {t.analytics.insight.autoTitle}
+                </Text>
+                <Text style={[typography.bodySm, styles.rowSubtitle]}>
+                  {t.analytics.insight.autoBody}
+                </Text>
+              </View>
+              <Switch
+                testID="profile-insight-toggle"
+                accessibilityLabel={t.analytics.insight.toggleA11y}
+                value={insightConsented}
+                onValueChange={(value) => {
+                  void tapToggle();
+                  void setInsightConsented(value);
+                }}
                 trackColor={{ false: colors.surfaceElevated, true: colors.accent }}
                 thumbColor={colors.textPrimary}
               />

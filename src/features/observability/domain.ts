@@ -22,6 +22,7 @@ export const OBSERVABILITY_EVENT_NAMES = [
   'tx_created',
   'budget_threshold_reached',
   'ai_prefill_ok',
+  'insight_ai_ok',
 ] as const;
 
 export type ObservabilityEventName =
@@ -164,6 +165,17 @@ export function txCreatedEvent(input: {
 export function aiPrefillEvent(input: { ok: boolean }): AnalyticsEvent {
   return {
     name: 'ai_prefill_ok',
+    params: { ok: input.ok },
+  };
+}
+
+/**
+ * `insight_ai_ok`: L1 proof, whether one AI insight rephrase landed.
+ * Boolean only (PRD §4.4: never lines or figures).
+ */
+export function insightAiEvent(input: { ok: boolean }): AnalyticsEvent {
+  return {
+    name: 'insight_ai_ok',
     params: { ok: input.ok },
   };
 }

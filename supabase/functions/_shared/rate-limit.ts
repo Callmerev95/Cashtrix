@@ -27,6 +27,7 @@ export const FUNCTION_RATE_LIMITS: Record<string, number> = {
   'scan-receipt': 5,
   'parse-voice': 5,
   'transcribe-voice': 5,
+  'insight-summary': 5,
 };
 
 export type RateLimitRow = {
