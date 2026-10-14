@@ -162,6 +162,16 @@ async function main() {
 
   // -------------------------------------------------------------------------
   section('probes: parafrasa valid, angka verbatim');
+  // Counter fresh (provisi baru = 0, tapi reset eksplisit membuat rerun
+  // skrip deterministik) — probe + retry boleh menyentuh model.
+  {
+    const { error: probeResetError } = await admin
+      .from('function_rate_limits')
+      .delete()
+      .eq('function_name', 'insight-summary')
+      .eq('bucket_key', userId);
+    check('counter di-reset sebelum probes', !probeResetError, probeResetError?.message);
+  }
   const probes = [
     {
       lines: [
@@ -195,7 +205,7 @@ async function main() {
   ];
   for (const probe of probes) {
     await pace();
-    const r = await callInsight(token, {
+    let r = await callInsight(token, {
       lines: probe.lines,
       lang: probe.lang,
     });
@@ -206,6 +216,21 @@ async function main() {
         'function menjawab 500 server_misconfigured: set secret GEMINI_API_KEY lalu deploy ulang',
       );
       continue;
+    }
+    if (r.status === 200 && r.body?.ok !== true) {
+      // Tepat-satu-retry (pelajaran CI 2026-10-14, dua run merah:
+      // temperature-0 tetap nondeterministik antar-call — `{ok:false}`
+      // sesekali padahal input sama, lokal hijau minutes apart). Retry
+      // TERBATAS untuk probe model saja (bukan flood/error-path), dengan
+      // pace; invalid persisten tetap merah. Batas matematis: 3 probe +
+      // 3 retry = 6 call < jauh di bawah 500 RPD; jendela OUR 5/mnt hanya
+      // penuh bila KETIGA probe gagal serentak (langka; tandanya 429 yang
+      // diagnosabel, bukan merah palsu sunyi).
+      await pace();
+      r = await callInsight(token, {
+        lines: probe.lines,
+        lang: probe.lang,
+      });
     }
     check(
       `probe ${probe.label} 200 ok:true`,
