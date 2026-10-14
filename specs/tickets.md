@@ -526,6 +526,14 @@ max 5 (bump cap semua gerbang + redeploy mandiri) + wiring `budgets` +
 dengan baris run-rate + affordance; tanpa itu tree identik L1/L2) +
 golden + device. Tanpa Edge-logika/consent/legal/secret/rebuild baru.
 OTA `1e18df72`.
+
+Pelajaran CI 2026-10-14 (run 38507946211 merah di L2): probe live
+4-baris figure-HEAVY flake — model menormalkan satu figur
+(200 `{ok:false,stage:invalid}`) padahal cap-4 terdeploy benar (bukti:
+200 bukan 400). Gate ketat bekerja sesuai desain (menolak parafrasa
+buruk); yang rapuh TEST-nya. Fix: probe figure-LIGHT (bukti
+akseptasi cap end-to-end; keketatan tetap dibuktikan probe 1-2 +
+Jest + batas 5→400). Jangan lunakkan validator untuk menenangkan CI.
 | L4 | Interaksi penuh (drill-down → `/search`, multi-wallet compare, custom range) | setelah L3 |
 | L5 | QR svg opsional (default tetap link+secret) | bila ada alasan baru |
 | LW | Widget bitmap (waveform/watermark/grafik struk/glow) + density + gate launcher | bila diminta |

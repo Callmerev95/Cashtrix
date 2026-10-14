@@ -235,10 +235,10 @@ async function main() {
   const blank = await callInsight(token, { lines: ['   '], lang: 'id' });
   check('baris kosong jadi 400', blank.status === 400, `got ${blank.status}`);
   const tooMany = await callInsight(token, {
-    lines: ['a', 'b', 'c', 'd', 'e'],
+    lines: ['a', 'b', 'c', 'd', 'e', 'f'],
     lang: 'id',
   });
-  check('5 baris jadi 400', tooMany.status === 400, `got ${tooMany.status}`);
+  check('6 baris jadi 400', tooMany.status === 400, `got ${tooMany.status}`);
   const getMethod = await callInsight(token, { lines: ['a'] }, 'GET');
   check('GET jadi 405', getMethod.status === 405, `got ${getMethod.status}`);
 
