@@ -20,18 +20,23 @@ import {
   AnalyticsEmptyState,
   BarChart,
   BreakdownList,
+  CustomRangeSheet,
   DonutChart,
   InsightCard,
   KpiHeader,
   NetAreaChart,
   RangeSegmentedControl,
   WalletFilterChips,
+  CUSTOM_RANGE,
   enumerateBuckets,
+  formatCustomLabel,
   formatDateKey,
   getCachedInsightAi,
   getInsightConsentSnapshot,
+  isDailyCustom,
   isDailyRange,
   requestInsight,
+  resolveCustomRange,
   resolveRange,
   setCachedInsightAi,
   setInsightConsented,
@@ -45,11 +50,13 @@ import {
   toNetPoints,
   toSparklines,
   useAnalytics,
+  type CustomRange,
   type InsightAiState,
   type TrendMode,
 } from '@/features/analytics';
 import { insightAiEvent, trackEvent } from '@/features/observability';
 import { Screen, AppHeader, ErrorStateCard, Skeleton, SkeletonBlock } from '@/components';
+import { pressedFeedback } from '@/components/pressed';
 import { PullGesture, PullHeader, usePullRefresh } from '@/components/pull-refresh';
 import { useBudgets } from '@/features/budgets';
 import { useProfile } from '@/features/profile';
@@ -60,6 +67,8 @@ export default function AnalyticsScreen() {
   const {
     range,
     setRange,
+    customRange,
+    setCustomRange,
     wallets,
     walletId,
     setWalletId,
@@ -85,10 +94,16 @@ export default function AnalyticsScreen() {
   // 2.1.0 PR2: shared tap-selection (donut ↔ breakdown rows, bars stand
   // alone). Reset on filter change via render-adjust (V5 calendar pattern —
   // never setState synchronously in an effect).
-  const filterKey = `${range}:${walletId ?? 'all'}`;
+  const customKey =
+    range === CUSTOM_RANGE && customRange
+      ? `${customRange.startKey}|${customRange.endKey}`
+      : '';
+  const filterKey = `${range}:${customKey}:${walletId ?? 'all'}`;
   const [filterKeySeen, setFilterKeySeen] = useState(filterKey);
   const [selectedSliceId, setSelectedSliceId] = useState<string | null>(null);
   const [selectedBucket, setSelectedBucket] = useState<string | null>(null);
+  // L4c: the custom-range sheet (controlled here so the control stays dumb).
+  const [customOpen, setCustomOpen] = useState(false);
   // P2b: one trend card, three metrics (default Expense = previous pixels).
   const [trendMode, setTrendMode] = useState<TrendMode>('expense');
   if (filterKeySeen !== filterKey) {
@@ -96,8 +111,31 @@ export default function AnalyticsScreen() {
     setSelectedSliceId(null);
     setSelectedBucket(null);
   }
-  const window = resolveRange(range);
-  const daily = isDailyRange(range);  const slices = overview
+  // L4c: presets resolve as before; CUSTOM resolves through its own pure
+  // function. A CUSTOM range without a picked window cannot happen via the
+  // UI (the context guard rejects it), but the fallback keeps the types
+  // honest: the trailing 30 days, ending today.
+  const customForWindow: CustomRange =
+    customRange ??
+    (() => {
+      const now = new Date();
+      const from = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate() - 29,
+      );
+      return {
+        startKey: formatDateKey(from, tz),
+        endKey: formatDateKey(now, tz),
+      };
+    })();
+  const window =
+    range === CUSTOM_RANGE
+      ? resolveCustomRange(customForWindow)
+      : resolveRange(range);
+  const daily =
+    range === CUSTOM_RANGE ? isDailyCustom(window) : isDailyRange(range);
+  const slices = overview
     ? toDonutSlices(overview.breakdown, t.analytics.other)
     : [];
   const bars = overview
@@ -269,7 +307,39 @@ export default function AnalyticsScreen() {
         </Text>
       </View>
 
-      <RangeSegmentedControl value={range} onChange={setRange} />
+      <RangeSegmentedControl
+        value={range}
+        onChange={setRange}
+        onCustomPress={() => setCustomOpen(true)}
+      />
+      {range === CUSTOM_RANGE && customRange ? (
+        <Pressable
+          testID="analytics-custom-label"
+          accessibilityRole="button"
+          accessibilityLabel={formatCustomLabel(customRange, language)}
+          onPress={() => setCustomOpen(true)}
+          style={({ pressed }) => [pressed && pressedFeedback]}
+        >
+          <Text style={[typography.bodySm, styles.customLabel]}>
+            {formatCustomLabel(customRange, language)}
+          </Text>
+        </Pressable>
+      ) : null}
+      {/* Remount-on-open (Oct 2026 black-scrim bug): `return null` inside
+          the sheet is NOT an unmount — hook state (dragY/closing/picks)
+          survives and reopens stuck off-screen. Conditional render makes
+          every open a true fresh mount. */}
+      {customOpen ? (
+        <CustomRangeSheet
+          open={customOpen}
+          initial={customRange}
+          onClose={() => setCustomOpen(false)}
+          onApply={(next) => {
+            setCustomRange(next);
+            setCustomOpen(false);
+          }}
+        />
+      ) : null}
 
       <WalletFilterChips
         wallets={wallets}
@@ -354,7 +424,7 @@ export default function AnalyticsScreen() {
               />
               <View style={styles.legendDivider} />
               <BreakdownList
-                key={range}
+                key={filterKey}
                 slices={slices}
                 sparks={sparkLines}
                 selectedId={selectedSliceId}
@@ -435,6 +505,9 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.textPrimary,
+  },
+  customLabel: {
+    color: colors.accent,
   },
   content: {
     gap: spacing.md,

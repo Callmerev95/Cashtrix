@@ -6,25 +6,36 @@
  * the Expense/Income toggle — DESIGN.md §5 calls out "gold fill on filters".
  */
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { colors, layout, radius, shadows, spacing, typography } from '@/theme';
 import { pressedFeedback } from '@/components/pressed';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 
-import { RANGE_PRESETS, rangeLabel, type RangePreset } from '../domain';
+import {
+  CUSTOM_RANGE,
+  RANGE_PRESETS,
+  rangeLabel,
+  type AnalyticsRange,
+  type RangePreset,
+} from '../domain';
 
 export function RangeSegmentedControl({
   value,
   onChange,
+  onCustomPress,
   testID = 'analytics-range',
 }: {
-  value: RangePreset;
+  value: AnalyticsRange;
   onChange: (value: RangePreset) => void;
+  /** L4c: opens the custom-range sheet (the control never selects it). */
+  onCustomPress: () => void;
   testID?: string;
 }) {
   // C6: labels follow the OS language (ADR-0008).
   const language = useLanguage();
   const t = dictionaryFor(language);
+  const customActive = value === CUSTOM_RANGE;
   return (
     <View testID={testID} style={styles.well}>
       {RANGE_PRESETS.map((preset) => {
@@ -56,6 +67,25 @@ export function RangeSegmentedControl({
           </Pressable>
         );
       })}
+      <Pressable
+        testID="range-option-CUSTOM"
+        accessibilityRole="button"
+        accessibilityState={{ selected: customActive }}
+        accessibilityLabel={t.analytics.rangeCustomA11y}
+        onPress={onCustomPress}
+        style={({ pressed }) => [
+          styles.segment,
+          styles.customSegment,
+          customActive && styles.segmentActive,
+          pressed && pressedFeedback,
+        ]}
+      >
+        <MaterialIcons
+          name="date-range"
+          size={20}
+          color={customActive ? colors.textOnAccent : colors.textSecondary}
+        />
+      </Pressable>
     </View>
   );
 }
@@ -156,6 +186,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.full,
+  },
+  customSegment: {
+    flexGrow: 0,
+    flexBasis: layout.minTapTarget,
   },
   segmentActive: {
     backgroundColor: colors.accent,

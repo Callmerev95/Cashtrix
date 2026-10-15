@@ -5,6 +5,8 @@
  * dash rule that keeps `NaN`/`Infinity` off the screen).
  */
 import {
+  CUSTOM_MAX_MONTHS,
+  CUSTOM_RANGE,
   DONUT_TOP_N,
   MIN_ARC_SHARE,
   OTHER_LABEL,
@@ -12,13 +14,17 @@ import {
   deltaTone,
   donutSegmentSliceIndices,
   enumerateBuckets,
+  formatCustomLabel,
   formatDateKey,
   formatDelta,
+  isAnalyticsRange,
+  isDailyCustom,
   isDailyRange,
   isEmptyRange,
   isRangePreset,
   rangeLabel,
   rangeLabels,
+  resolveCustomRange,
   resolveRange,
   sliceIndexAtTurn,
   toArcOffsets,
@@ -754,5 +760,106 @@ describe('toSparklines (per-slice shapes, never money summed)', () => {
   it('zero-fills a flat slice without NaN', () => {
     const sparks = toSparklines([], [{ id: 'c9' }], buckets);
     expect(sparks).toEqual([{ id: 'c9', values: [0, 0, 0] }]);
+  });
+});
+
+describe('resolveCustomRange (L4c pick-any-window)', () => {
+  const now = new Date(2026, 9, 14, 12, 0, 0);
+
+  it('resolves a plain window with an exclusive end + equal previous', () => {
+    const range = resolveCustomRange(
+      { startKey: '2026-09-15', endKey: '2026-10-07' },
+      now,
+    );
+    expect(range.start).toEqual(new Date(2026, 8, 15));
+    // Exclusive end: midnight after the last picked day.
+    expect(range.end).toEqual(new Date(2026, 9, 8));
+    const span = range.end.getTime() - range.start.getTime();
+    expect(range.previousEnd).toEqual(range.start);
+    expect(range.previousStart.getTime()).toEqual(
+      range.start.getTime() - span,
+    );
+  });
+
+  it('swaps a reversed pick instead of rejecting it', () => {
+    const range = resolveCustomRange(
+      { startKey: '2026-10-07', endKey: '2026-09-15' },
+      now,
+    );
+    expect(range.start).toEqual(new Date(2026, 8, 15));
+    expect(range.end).toEqual(new Date(2026, 9, 8));
+  });
+
+  it('clamps a future end to today (no-future discipline)', () => {
+    const range = resolveCustomRange(
+      { startKey: '2026-10-10', endKey: '2026-12-31' },
+      now,
+    );
+    expect(range.end).toEqual(new Date(2026, 9, 15));
+    expect(range.start).toEqual(new Date(2026, 9, 10));
+  });
+
+  it('collapses a fully-future pick to a single today', () => {
+    const range = resolveCustomRange(
+      { startKey: '2026-11-01', endKey: '2026-11-30' },
+      now,
+    );
+    expect(range.start).toEqual(new Date(2026, 9, 14));
+    expect(range.end).toEqual(new Date(2026, 9, 15));
+  });
+
+  it('clamps a 3-year pick to the latest 12 months', () => {
+    const range = resolveCustomRange(
+      { startKey: '2023-01-01', endKey: '2026-10-07' },
+      now,
+    );
+    // Latest-12-months mirror of the preset construction: first of Nov 2025.
+    expect(range.start).toEqual(new Date(2025, 10, 1));
+    expect(range.end).toEqual(new Date(2026, 9, 8));
+  });
+
+  it('rejects malformed and impossible calendar days', () => {
+    expect(() =>
+      resolveCustomRange({ startKey: '15-09-2026', endKey: '2026-10-07' }, now),
+    ).toThrow();
+    expect(() =>
+      resolveCustomRange({ startKey: '2026-02-30', endKey: '2026-10-07' }, now),
+    ).toThrow();
+  });
+
+  it('isAnalyticsRange accepts CUSTOM alongside the presets', () => {
+    expect(isAnalyticsRange(CUSTOM_RANGE)).toBe(true);
+    expect(isAnalyticsRange('1M')).toBe(true);
+    expect(isAnalyticsRange('bogus')).toBe(false);
+    expect(CUSTOM_MAX_MONTHS).toBe(12);
+  });
+});
+
+describe('isDailyCustom + formatCustomLabel (L4c)', () => {
+  const now = new Date(2026, 9, 14, 12, 0, 0);
+
+  it('buckets short windows daily and long ones monthly', () => {
+    const short = resolveCustomRange(
+      { startKey: '2026-09-15', endKey: '2026-10-07' },
+      now,
+    );
+    const long = resolveCustomRange(
+      { startKey: '2026-01-01', endKey: '2026-10-07' },
+      now,
+    );
+    expect(isDailyCustom(short)).toBe(true);
+    expect(isDailyCustom(long)).toBe(false);
+  });
+
+  it('labels one year once, two years twice (id + en)', () => {
+    expect(
+      formatCustomLabel({ startKey: '2026-09-15', endKey: '2026-10-07' }, 'id'),
+    ).toBe('15 Sep – 7 Okt 2026');
+    expect(
+      formatCustomLabel({ startKey: '2025-12-15', endKey: '2026-01-07' }, 'id'),
+    ).toBe('15 Des 2025 – 7 Jan 2026');
+    expect(
+      formatCustomLabel({ startKey: '2026-09-15', endKey: '2026-10-07' }, 'en'),
+    ).toBe('Sep 15 – Oct 7 2026');
   });
 });

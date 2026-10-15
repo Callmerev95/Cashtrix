@@ -35,10 +35,17 @@ export function CalendarGrid({
   value,
   onChange,
   testID = 'date-calendar',
+  framed = true,
 }: {
   value: Date;
   onChange: (next: Date) => void;
   testID?: string;
+  /**
+   * L4c polish: the custom-range sheet hosts two grids inside its own card,
+   * so they render bare (no double chrome). Default `true` — the Add form
+   * path is byte-identical.
+   */
+  framed?: boolean;
 }) {
   const [visibleKey, setVisibleKey] = useState(() => monthKey(value));
   const [lastValueKey, setLastValueKey] = useState(() => monthKey(value));
@@ -65,7 +72,7 @@ export function CalendarGrid({
   }
 
   return (
-    <View testID={testID} style={styles.card}>
+    <View testID={testID} style={framed ? styles.card : styles.bare}>
       <View style={styles.header}>
         <Pressable
           testID={`${testID}-prev`}
@@ -167,6 +174,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceCard,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderStrong,
+    gap: spacing.sm,
+  },
+  bare: {
     gap: spacing.sm,
   },
   header: {

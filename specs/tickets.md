@@ -551,6 +551,45 @@ tanpa bergantung mood model), strict content tetap di probe 1-2
 (stabil) + Jest + batas. Produksi tak tersentuh. Run 38518357211
 hijau penuh.
 | L4 | Interaksi penuh (drill-down → `/search`, multi-wallet compare, custom range) | setelah L3 |
+
+Status L4c (working tree, TANPA DDL — paket 1/2, pilihan pemilik ikut
+urutan L4c → L4a → L4b): domain `CustomRange` (kunci `YYYY-MM-DD`,
+`resolveCustomRange`: tukar-bila-terbalik → clamp-future-ke-hari-ini →
+clamp-12-bulan-terbaru (`CUSTOM_MAX_MONTHS`) → jendela-prev-sepanjang-sama;
+`isDailyCustom` ≤62 hari; `formatCustomLabel` tahun-sekali/k seberang-tahun)
++ context `range: AnalyticsRange` + `customRange`/`setCustomRange` atomik
+(`setRange('CUSTOM')` tanpa window ditolak) + `rangeKey` ikut window +
+`CustomRangeSheet` (Modal inti + 2 `CalendarGrid` reuse, closed→null pola
+VoiceSheet, mount-fresh = reset gratis) + segmen ke-6 ikon `date-range`
+(`range-option-CUSTOM`) + caption label tap-buka-ulang
+(`analytics-custom-label`) + kamus `rangeCustomA11y`/`customSheet` ID/EN.
+RPC tak tersentuh (bentuk `DateRange` sama). Tanpa modul native → OTA aman.
+Gate: lint + typecheck + Jest 945/945 (+9 domain, +4 sheet) + kontrak
+statis + legal + export Android hijau.
+Pelajaran: sheet JANGAN impor barrel `@/features/transactions`
+(siklus barrel → context → receipts → barrel = ekspor parsial
+`AMOUNT_MAX` undefined saat pertama dicapai lewat sheet) — deep import
+(`components/calendar-grid`, `domain`) pola domain analytics yang ada.
+Polish device-review (pemilik, item 1–5; tint-rentang skip sadar):
+baris ringkasan hidup (`formatCustomLabel` + hitung hari inklusif,
+gold) + prop `framed` di `CalendarGrid` (default true, form Add
+bit-identik) + well header tanpa angka ("Tanggal mulai", border gold
+di grid-terakhir-disentuh; kapitalisasi sentence-case dipertahankan)
++ drag-tutup via `useSheetDrag` di strip gagang (pola voice sheet) +
+divider + gap `md` + gagang + kunci `customSheet.days` ID/EN. Jest
+950/950.
+Fix device pengguna kedua (scrim hitam saat buka-ulang): `return null`
+BUKAN unmount — state hook (dragY/closing/pilihan) bertahan antar buka-
+tutup. Fix = remount kondisional di `analytics.tsx` (`customOpen ?
+<CustomRangeSheet/> : null`; `if (!open) return null` di sheet
+dipertahankan sebagai sabuk). Test regresi harness parent membuktikan
+kartu kembali di `translateY 0` + interaktif. Jest 951/951.
+Pelajaran harness: test yang menekan sel hari grid WAJIB menavigasi
+dulu via chevron seperti user — tiap grid buka di bulannya sendiri
+(start = H-29, end = hari ini), dan target di seberang batas bulan
+tak dirender sama sekali (bukan disabled). Helper `pressGridDay`
+(1 hop cukup: jendela H-29→H-10 max 1 batas). + timeout waitFor
+5 detik untuk exit-animation 200ms agar tak flake saat CI loaded.
 | L5 | QR svg opsional (default tetap link+secret) | bila ada alasan baru |
 | LW | Widget bitmap (waveform/watermark/grafik struk/glow) + density + gate launcher | bila diminta |
 | OB1–OB3 | Outbox + read cache (urutan roadmap tidak berubah) | setelah trek Analytics |

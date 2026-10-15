@@ -131,6 +131,148 @@ export function isDailyRange(preset: RangePreset): boolean {
   return preset === '1M';
 }
 
+// Custom range (L4c — "tanggal segini sampai segini")
+//
+// A preset plus one: the user picks two calendar days and the screen behaves
+// like any other range. Keys are `YYYY-MM-DD` calendar days (the same shape
+// as `toDateKey`), so the sheet's `CalendarGrid` picks map 1:1 — no parsing
+// of display strings anywhere.
+
+/** The pseudo-preset that selects the custom window (never sent to the RPC). */
+export const CUSTOM_RANGE = 'CUSTOM' as const;
+
+/** Any range the Analytics screen can hold: a preset or the custom window. */
+export type AnalyticsRange = RangePreset | typeof CUSTOM_RANGE;
+
+export function isAnalyticsRange(value: unknown): value is AnalyticsRange {
+  return value === CUSTOM_RANGE || isRangePreset(value);
+}
+
+export type CustomRange = {
+  /** Inclusive first calendar day (`YYYY-MM-DD`). */
+  startKey: string;
+  /** Inclusive last calendar day (`YYYY-MM-DD`). */
+  endKey: string;
+};
+
+/**
+ * Custom windows may span at most 12 months (the `1Y` preset's reach): a
+ * wider window would break the screen's p95 <300ms budget on 10k
+ * transactions. Longer picks clamp to the latest 12 months, never reject —
+ * the sheet always produces a usable range.
+ */
+export const CUSTOM_MAX_MONTHS = 12;
+
+/** A custom window is daily-bucketed up to ~2 months, monthly beyond that. */
+export const CUSTOM_DAILY_MAX_DAYS = 62;
+
+const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function parseDateKey(key: string): Date {
+  if (!DATE_KEY_PATTERN.test(key)) {
+    throw new Error(`Custom range memakai kunci tanggal ${key}`);
+  }
+  const year = Number(key.slice(0, 4));
+  const month = Number(key.slice(5, 7));
+  const day = Number(key.slice(8, 10));
+  const date = new Date(year, month - 1, day);
+  // `2026-02-30` matches the pattern but overflows the calendar — reject it
+  // rather than silently querying the wrong window.
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    throw new Error(`Custom range memakai kunci tanggal ${key}`);
+  }
+  return date;
+}
+
+/**
+ * Custom keys → `DateRange` (same shape as `resolveRange`, so the RPC,
+ * gap-filling and charts reuse it unchanged). Normalisation, in order:
+ * swap when reversed, clamp the end to today (a custom window can never
+ * reach the future — V2 no-future discipline), clamp the span to
+ * `CUSTOM_MAX_MONTHS` keeping the latest months, then hang the equal-length
+ * previous window off the front. `now` is injectable for tests.
+ */
+export function resolveCustomRange(
+  custom: CustomRange,
+  now: Date = new Date(),
+): DateRange {
+  let start = parseDateKey(custom.startKey);
+  let end = parseDateKey(custom.endKey);
+  if (start.getTime() > end.getTime()) {
+    [start, end] = [end, start];
+  }
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (end.getTime() > today.getTime()) {
+    end = today;
+  }
+  if (start.getTime() > end.getTime()) {
+    start = end;
+  }
+  // Latest-12-months clamp, mirroring the preset construction (months ending
+  // with the end's month, starting at the first of the earliest month).
+  const minStart = new Date(
+    end.getFullYear(),
+    end.getMonth() - (CUSTOM_MAX_MONTHS - 1),
+    1,
+  );
+  if (start.getTime() < minStart.getTime()) {
+    start = minStart;
+  }
+  // `end` is exclusive: the day after the last picked day, at midnight.
+  const exclusiveEnd = new Date(
+    end.getFullYear(),
+    end.getMonth(),
+    end.getDate() + 1,
+  );
+  const spanMs = exclusiveEnd.getTime() - start.getTime();
+  const previousEnd = new Date(start.getTime());
+  const previousStart = new Date(start.getTime() - spanMs);
+  return { start, end: exclusiveEnd, previousStart, previousEnd };
+}
+
+/** Daily buckets for short custom windows, monthly beyond that. */
+export function isDailyCustom(range: DateRange): boolean {
+  const spanDays =
+    (range.end.getTime() - range.start.getTime()) / (24 * 60 * 60 * 1000);
+  return spanDays <= CUSTOM_DAILY_MAX_DAYS;
+}
+
+/**
+ * Compact custom label (`15 Sep – 7 Okt 2026`; the year repeats on both ends
+ * only when the window crosses New Year). Throws on invalid keys, like the
+ * resolver — the sheet only ever passes keys its own grids produced.
+ */
+export function formatCustomLabel(
+  custom: CustomRange,
+  lang: Language = 'id',
+): string {
+  const start = parseDateKey(custom.startKey);
+  const end = parseDateKey(custom.endKey);
+  const [first, last] =
+    start.getTime() <= end.getTime() ? [start, end] : [end, start];
+  const locale = localeTagFor(lang);
+  const dayMonth = new Intl.DateTimeFormat(locale, {
+    day: 'numeric',
+    month: 'short',
+  });
+  if (first.getFullYear() === last.getFullYear()) {
+    const year = new Intl.DateTimeFormat(locale, { year: 'numeric' }).format(
+      last,
+    );
+    return `${dayMonth.format(first)} – ${dayMonth.format(last)} ${year}`;
+  }
+  const full = new Intl.DateTimeFormat(locale, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+  return `${full.format(first)} – ${full.format(last)}`;
+}
+
 /** The "Other" slice is real once there are more than 8 categories. */
 export const DONUT_TOP_N = 8;
 export const OTHER_LABEL = 'Other';

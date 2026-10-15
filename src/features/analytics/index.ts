@@ -10,6 +10,8 @@ export type { CategorySparkRow, FetchOverviewInput, FetchSeriesInput } from './a
 export {
   ANOMALY_FLOOR,
   ANOMALY_MULTIPLE,
+  CUSTOM_MAX_MONTHS,
+  CUSTOM_RANGE,
   DONUT_SEGMENTS,
   DONUT_TOP_N,
   INSIGHT_TOP_DRIVERS,
@@ -24,9 +26,12 @@ export {
   deltaTone,
   donutSegmentSliceIndices,
   enumerateBuckets,
+  formatCustomLabel,
   formatDateKey,
   formatDelta,
   formatMonthTitle,
+  isAnalyticsRange,
+  isDailyCustom,
   isDailyRange,
   isEmptyMonthly,
   isEmptyRange,
@@ -36,6 +41,7 @@ export {
   prevMonthKey,
   rangeLabel,
   rangeLabels,
+  resolveCustomRange,
   resolveRange,
   sliceIndexAtTurn,
   toArcOffsets,
@@ -53,12 +59,14 @@ export {
 } from './domain';
 export type {
   AnalyticsOverview,
+  AnalyticsRange,
   AnomalyKind,
   ArcGradientVector,
   BarDatum,
   CategoryAnomaly,
   CategoryBreakdown,
   CategoryDelta,
+  CustomRange,
   DateRange,
   DeltaTone,
   DonutSlice,
@@ -102,6 +110,7 @@ export {
   setCachedInsightAi,
 } from './insight-cache';
 export { KpiHeader } from './components/kpi-header';
+export { CustomRangeSheet } from './components/custom-range-sheet';
 export { MonthlySummaryCard } from './components/monthly-summary-card';
 export { BreakdownList } from './components/breakdown-list';
 export { AnalyticsEmptyState } from './components/empty-state';

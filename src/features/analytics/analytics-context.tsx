@@ -28,20 +28,28 @@ import { dictionaryFor, useLanguage } from '@/i18n';
 import { fetchCategorySeries, fetchMonthlySummary, fetchOverview, fetchTimezone, listWalletFilters } from './api';
 import type { CategorySparkRow } from './api';
 import {
+  CUSTOM_RANGE,
   RANGE_PRESETS,
+  isDailyCustom,
   isDailyRange,
   isEmptyRange,
+  resolveCustomRange,
   resolveRange,
   type AnalyticsOverview,
+  type AnalyticsRange,
+  type CustomRange,
   type MonthlyComparison,
-  type RangePreset,
 } from './domain';
 
 type WalletFilter = { id: string; name: string };
 
 type AnalyticsContextValue = {
-  range: RangePreset;
-  setRange: (value: RangePreset) => void;
+  range: AnalyticsRange;
+  setRange: (value: AnalyticsRange) => void;
+  /** L4c: the picked custom window (`null` until the user applies one). */
+  customRange: CustomRange | null;
+  /** L4c: stores the window and selects it in one call (atomic by design). */
+  setCustomRange: (value: CustomRange) => void;
   wallets: WalletFilter[];
   walletId: string | null;
   setWalletId: (value: string | null) => void;
@@ -60,7 +68,8 @@ type AnalyticsContextValue = {
 const AnalyticsContext = createContext<AnalyticsContextValue | null>(null);
 
 export function AnalyticsProvider({ children }: { children: ReactNode }) {
-  const [range, setRangeState] = useState<RangePreset>('1M');
+  const [range, setRangeState] = useState<AnalyticsRange>('1M');
+  const [customRange, setCustomRangeState] = useState<CustomRange | null>(null);
   const [wallets, setWallets] = useState<WalletFilter[]>([]);
   const [walletId, setWalletIdState] = useState<string | null>(null);
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
@@ -116,6 +125,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
         setLoadedKey(null);
         setWalletIdState(null);
         setRangeState('1M');
+        setCustomRangeState(null);
         setWallets([]);
         setError(null);
         setMonthly(null);
@@ -130,24 +140,38 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   // rule (which T5 ran into) rejects a synchronous setState, and doing it here
   // would also clear a freshly-selected range mid-render.
   const load = useCallback(
-    (nextRange: RangePreset, nextWalletId: string | null): Promise<void> => {
+    (
+      nextRange: AnalyticsRange,
+      nextWalletId: string | null,
+      nextCustom: CustomRange | null,
+    ): Promise<void> => {
       const ticket = ++requestId.current;
+      // L4c: the custom window resolves through its own pure function, but
+      // the RPC sees the same `DateRange` shape — its signature is untouched.
+      const window =
+        nextRange === CUSTOM_RANGE && nextCustom
+          ? resolveCustomRange(nextCustom)
+          : resolveRange(nextRange === CUSTOM_RANGE ? '1M' : nextRange);
+      const daily =
+        nextRange === CUSTOM_RANGE && nextCustom
+          ? isDailyCustom(window)
+          : isDailyRange(nextRange === CUSTOM_RANGE ? '1M' : nextRange);
 
       return fetchTimezone()
         .then((tz) =>
           fetchOverview({
-            range: resolveRange(nextRange),
+            range: window,
             tz,
             walletId: nextWalletId,
-            daily: isDailyRange(nextRange),
+            daily,
           }).then((payload) => {
             if (!mounted.current || ticket !== requestId.current) return;
             setOverview(payload);
-            setLoadedKey(rangeKey(nextRange, nextWalletId));
+            setLoadedKey(rangeKey(nextRange, nextWalletId, nextCustom));
             setError(null);
             // Sparklines ride along best-effort (P2b-spark).
-            const sparkRange = resolveRange(nextRange);
-            const sparkDaily = isDailyRange(nextRange);
+            const sparkRange = window;
+            const sparkDaily = daily;
             void fetchCategorySeries({
               range: sparkRange,
               tz,
@@ -179,8 +203,8 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   // The effect only *starts* the async fetch. `loading` is derived: the screen
   // is loading while the loaded key does not yet match the requested one.
   useEffect(() => {
-    void load(range, walletId);
-  }, [load, range, walletId]);
+    void load(range, walletId, customRange);
+  }, [load, range, walletId, customRange]);
 
   // A6: the monthly pair follows the same shape — fetched once on mount and
   // re-read by `refresh()` (so every transaction mutation refreshes it), but
@@ -204,12 +228,23 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     void loadMonthly();
   }, [loadMonthly]);
 
-  const requestedKey = rangeKey(range, walletId);
+  const requestedKey = rangeKey(range, walletId, customRange);
   const loading = loadedKey !== requestedKey && error === null;
 
-  const setRange = useCallback((value: RangePreset) => {
-    if (!RANGE_PRESETS.includes(value)) return;
-    setRangeState(value);
+  const setRange = useCallback(
+    (value: AnalyticsRange) => {
+      // `CUSTOM` without a picked window is not a range yet — it can only
+      // arrive via `setCustomRange`, which stores both atomically.
+      if (value === CUSTOM_RANGE && customRange === null) return;
+      if (value !== CUSTOM_RANGE && !RANGE_PRESETS.includes(value)) return;
+      setRangeState(value);
+    },
+    [customRange],
+  );
+
+  const setCustomRange = useCallback((value: CustomRange) => {
+    setCustomRangeState(value);
+    setRangeState(CUSTOM_RANGE);
   }, []);
 
   const setWalletId = useCallback((value: string | null) => {
@@ -218,16 +253,20 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(
     () =>
-      Promise.all([load(range, walletId), loadWallets(), loadMonthly()]).then(
-        () => undefined,
-      ),
-    [load, loadWallets, loadMonthly, range, walletId],
+      Promise.all([
+        load(range, walletId, customRange),
+        loadWallets(),
+        loadMonthly(),
+      ]).then(() => undefined),
+    [load, loadWallets, loadMonthly, range, walletId, customRange],
   );
 
   const value = useMemo<AnalyticsContextValue>(
     () => ({
       range,
       setRange,
+      customRange,
+      setCustomRange,
       wallets,
       walletId,
       setWalletId,
@@ -243,6 +282,8 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     [
       range,
       setRange,
+      customRange,
+      setCustomRange,
       wallets,
       walletId,
       setWalletId,
@@ -271,7 +312,15 @@ export function useAnalytics(): AnalyticsContextValue {
   return context;
 }
 
-/** Identity of an overview request: range + wallet. */
-function rangeKey(range: RangePreset, walletId: string | null): string {
-  return `${range}:${walletId ?? 'all'}`;
+/** Identity of an overview request: range (+ custom window) + wallet. */
+function rangeKey(
+  range: AnalyticsRange,
+  walletId: string | null,
+  custom: CustomRange | null,
+): string {
+  const rangePart =
+    range === CUSTOM_RANGE && custom
+      ? `${range}:${custom.startKey}|${custom.endKey}`
+      : range;
+  return `${rangePart}:${walletId ?? 'all'}`;
 }
