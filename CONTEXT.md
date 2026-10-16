@@ -268,7 +268,9 @@ _Avoid_: summary, overview
 
 **Delta**:
 Selisih persen vs periode sebelumnya; `null` (periode lalu nol) tampil `—`,
-tidak pernah NaN/Infinity. Naik = emas, turun = abu-abu, tidak pernah merah.
+tidak pernah NaN/Infinity. Warna nominal mengikuti semantiknya (income
+hijau, expense merah, net emas) — amandemen pasca-V5 atas aturan
+"tidak pernah merah".
 _Avoid_: growth, change rate
 
 **Breakdown**:
@@ -283,8 +285,31 @@ _Avoid_: data points, history series
 
 **Range preset**:
 `1M` (bulan berjalan, bukan 30 hari gelinding) / `3M` / `6M` / `1Y` / `ALL`
-(delta ALL selalu `—` karena tidak ada periode sebelumnya).
+(delta ALL selalu `—` karena tidak ada periode sebelumnya) / `CUSTOM`
+(jendela bebas pilihan user).
 _Avoid_: period, timeframe, filter tanggal
+
+**Rentang khusus (Custom range)**:
+Jendela tanggal bebas pilihan user (kunci `YYYY-MM-DD`): tukar-bila-terbalik,
+clamp-future ke hari ini, plafon 12 bulan terbaru; periode pembanding
+sepanjang yang sama. Dipilih lewat sheet dua grid kalender; label caption
+bisa diketuk untuk membuka ulang.
+_Avoid_: custom period, date filter
+
+**Insight (Ringkasan AI)**:
+Kartu di layar Analytics yang SELALU menampilkan baris deterministik
+hitungan server dulu; versi AI (rephrase via Edge `insight-summary`,
+badge "Asisten AI") hanya menimpa bila `ok` — angka dikunci validator,
+gagal sunyi = tampilan deterministik. Consent terpisah per perangkat,
+auto-refine per-angka-berubah (bukan per-buka), tanpa simpan apa pun.
+Perluasan: pendorong + anomali (L2), run-rate budget + tap → Budgets (L3).
+_Avoid_: AI advice, rekomendasi keuangan, auto-insight
+
+**Tren (kartu tren)**:
+Tiga metrik range aktif (Expense/Income/Net) dengan sparkline per metrik;
+tap slice donut ↔ baris breakdown saling memilih (tap-select).
+Presentasi di klien, angka tetap agregat-server.
+_Avoid_: grafik tren generik, forecast
 
 ### Outbox
 

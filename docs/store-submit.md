@@ -1,23 +1,23 @@
-# Paket Submit Store: Cashtrix v1.1.0 (jalur gratis)
+# Paket Submit Store: Cashtrix (jalur gratis)
 
 Keputusan pemilik 2026-09-22: submit berbayar **ditunda** sampai app selesai
 keseluruhan. Dokumen ini menyiapkan semua yang gratis (copy, jawaban
 kepatuhan, inventaris aset) + jalur distribusi gratis + langkah persis saat
-budget ada. Sumber teknis: `app.json`, `docs/legal/*` (live), `DESIGN.md`,
+budget ada. Sumber teknis: `app.json` (versi `2.1.0`), `docs/legal/*` (live), `DESIGN.md`,
 `docs/release-gate.md` §7.3–§7.5.
 
 ## 1. Status distribusi saat ini (gratis)
 
 | Jalur | Status | Kegunaan |
 |---|---|---|
-| APK preview sideload (`eas build --profile preview`) | ✅ jalan | Testing pribadi/teman, kirim file APK, izinkan install dari sumber tak dikenal sekali |
-| OTA `eas update --channel preview` | ✅ jalan | Update JS ±1 menit tanpa reinstall |
+| APK preview sideload (`eas build --profile preview`) | ✅ jalan (build `0c8b2fc2`/`d4d43852`) | Testing pribadi/teman, kirim file APK, izinkan install dari sumber tak dikenal sekali |
+| OTA `eas update --channel preview` | ⚠️ **macet 15–16 Okt 2026** (11× `asset processing timed out` di EAS; device di grup lama) | Update JS ±1 menit tanpa reinstall — pulih saat EAS sehat kembali |
 | Expo Go | ✅ jalan | Kerja JS harian |
 | Play Store / TestFlight | ⏸️ tunda ($25 sekali / $99 per tahun) | Lihat §6 saat budget ada |
 
 ## 2. Identitas app (dari `app.json`: jangan diubah sembarangan)
 
-- Nama: **Cashtrix** · versi **1.1.0** · orientasi portrait · dark-only
+- Nama: **Cashtrix** · versi **2.1.0** · orientasi portrait · dark-only
 - Android `package` / iOS `bundleIdentifier`: `com.callmerev95.cashtrix`
   (mengganti ini = app baru di store, jangan pernah)
 - Scheme deep link: `cashtrix://` (dipakai konfirmasi email + reset password)
@@ -58,7 +58,7 @@ email dukungan `support@cashtrix.my.id` (+ situs opsional). Penghapusan data: in
 | Adaptive icon Android (foreground/background/mono) | ✅ ada | |
 | Splash (`assets/splash-icon.png`) | ✅ ada | |
 | Privacy Policy + Terms (EN + ID, GitHub Pages) | ✅ live 200 | `https://callmerev95.github.io/Cashtrix/privacy.html` dan `.../terms.html`, URL yang sama dibuka in-app |
-| Screenshot HP (min 2 Play; set App Store 6.5"+5.5") | ✅ diambil (RLS 2026-09-27) | Dashboard, Add, Analytics, Budgets, Recurring, tanpa data asli |
+| Screenshot HP (min 2 Play; set App Store 6.5"+5.5") | ✅ diambil (RLS 2026-09-27; utang: layar widget/AI/insight/custom-range 2.x belum difoto) | Dashboard, Add, Analytics, Budgets, Recurring, tanpa data asli |
 | Feature graphic Play 1024×500 | ✅ ada (`docs/store/feature-graphic.png`, sumber vektor `feature-graphic.svg`) | Logo + tagline di atas, latar `#0A0A0A` + aksen gold `#D4AF37` (token `DESIGN.md` §1); raster via `qlmanage` + `sips` dari SVG (lihat SVG untuk rebuild) |
 
 ## 5. Data Safety Play (jawaban final, siap salin)

@@ -474,7 +474,7 @@ Urutan mengikat: PR1 → rebuild → PR2 → gate → tag.
 |---|---|---|
 | L1 | LLM insight #1 (Edge `insight-summary` + consent terpisah + legal + golden + Rp 0) | setelah 2.1.0 hijau |
 
-Status L1 (working tree, pola AI1/AI4/AI5): Edge `insight-summary`
+Status L1 (COMMITTED di main, pola AI1/AI4/AI5): Edge `insight-summary`
 (`prompt.ts` + `validate.ts` + `gemini.ts` salinan-lokal + `index.ts` +
 `deno.json`; JWT → rate 5/mnt → quota 402 → primer lite + fallback 3.8 →
 figure-preservation → `{ok,lines}`/`{ok:false}`; server TANPA baca DB —
@@ -503,7 +503,7 @@ Matematika kuota: buka-10x-angka-sama = 1 call; 500 RPD cukup untuk
 puluhan user; mentok = sunyi-deterministik (fail-open). OTA `98799fcc`.
 | L2 | Insight #2 pendorong+anomali (perluasan prev-breakdown = DDL + pgTAP + verify) | setelah L1 |
 
-Status L2 (working tree, kontrak anti-regresi): migrasi aditif
+Status L2 (COMMITTED di main, kontrak anti-regresi): migrasi aditif
 `20261014090000_analytics_prev_breakdown.sql` (key baru, 6 lama utuh —
 terverifikasi live) + apply hosted via endpoint Management (pooler mati
 dari mesin ini) + riwayat `schema_migrations` + pgTAP `10_analytics.sql`
@@ -518,7 +518,7 @@ probe 4-baris 34/34. Tanpa consent/legal/secret/rebuild baru. OTA
 `ea16e2c1`.
 | L3 | Insight #3 run-rate + join `v_budget_status` + tap → Budgets | setelah L2 |
 
-Status L3 (working tree, TANPA DDL): `toRunRate` murni (pace × sisa
+Status L3 (COMMITTED di main, TANPA DDL): `toRunRate` murni (pace × sisa
 bulan vs limit; terburuk saja; null jujur: hari-1/bulan-basi/limit-0/
 tak-diproyeksikan-jebol/sudah-jebol-skip) + template ID/EN + komposisi
 max 5 (bump cap semua gerbang + redeploy mandiri) + wiring `budgets` +
@@ -552,7 +552,7 @@ tanpa bergantung mood model), strict content tetap di probe 1-2
 hijau penuh.
 | L4 | Interaksi penuh (drill-down → `/search`, multi-wallet compare, custom range) | setelah L3 |
 
-Status L4c (working tree, TANPA DDL — paket 1/2, pilihan pemilik ikut
+Status L4c (COMMITTED `f9b5557`, TANPA DDL — paket 1/2, pilihan pemilik ikut
 urutan L4c → L4a → L4b): domain `CustomRange` (kunci `YYYY-MM-DD`,
 `resolveCustomRange`: tukar-bila-terbalik → clamp-future-ke-hari-ini →
 clamp-12-bulan-terbaru (`CUSTOM_MAX_MONTHS`) → jendela-prev-sepanjang-sama;
@@ -596,17 +596,21 @@ tak dirender sama sekali (bukan disabled). Helper `pressGridDay`
 
 ### Frontier
 
-PR1 implementasi di working tree (grill 2026-10-06): svg ×3 parity +
-mock + kunci Jest + widget XML-only + prebuild-verify hijau
-(`xmllint` 5 file) + revert `android/` + docs (glosarium + ADR-0017 +
-L-ledger). Sisa PR1: full Jest + kontrak statis + export Android, lalu
-rebuild preview + device Redmi (aksi owner).
+PR1 (svg ×3 parity + mock + kunci Jest + widget XML-only + prebuild-verify)
+dan PR2 (interaksi-minimal + deterministik, OTA) SELESAI + tag `v2.1.0`
+(`2a7b700`) + rebuild preview final `d4d43852` (runtime 2.1.0).
 
-Status 2026-10-06 sore: PR1 + 3 ronde fix device (halo inset →
-containment → crisp-edge) + PR2 (tap-select, a11y, i18n-sweep, tz
-profile, insight deterministik #1) + polish italic — SEMUA via OTA
-(`9fee2405` → `25611b36` → `bc91a09f` → `0db7d93c`), device gate lolos
-tiap ronde. Bump `app.json`/`package.json` → `2.1.0` + gate
-(lint/typecheck/Jest 848/848/kontrak 112/10/3) + rebuild preview final
-`d4d43852` (runtime 2.1.0, fp `75b6c46`) + smoke lolos. Sisa: tag
-`v2.1.0` (seizin pemilik) + tutup tiket.
+Trek Insight L1–L3 COMMITTED di main: L1 rephrase (`insight-summary`,
+consent terpisah, auto-refine, fix sunyi-abadi via OTA `23cd3c8b`) +
+L2 pendorong/anomali (DDL aditif `prev_breakdown`, pgTAP 43→51, OTA
+`ea16e2c1`, device pending) + L3 run-rate/tap-Budgets (OTA `1e18df72`,
+device pending). Live `verify-insight.mjs` hijau + matriks CI.
+
+L4c custom range COMMITTED `f9b5557` (domain + context + sheet + segmen
+ke-6 + remount-fix + pelajaran harness). **OTA preview TERTUNDA
+2026-10-15/16**: 11× `Asset processing timed out` di EAS (bundle normal,
+internet sehat; insiden Expo 14 Okt sebagai latar). Device masih grup
+`a3c66bf2`. JANGAN hammer — retry spaced-out; rebuild APK opsi terakhir.
+
+Lanjut: L4a drill-down → `/search`, lalu L4b multi-wallet compare
+(paket 2/2 trek L4). Maks 2 fitur antre device gate.

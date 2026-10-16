@@ -9,15 +9,16 @@ notifikasi, dan widget home screen. Saran AI selalu prefill yang wajib
 diketuk Simpan manual. Satu pengguna, satu perangkat; semua agregasi
 uang dihitung di Postgres, tidak pernah di klien.
 
-> **Status: AI Fase 1 + B1 di `main` (PRD R13).** Di atas v2.0.0: AI server
-> prefill-only (AI1 `parse-voice` + AI2 golden 40 + AI3 `scan-receipt`
-> Gemini + AI4 wiring form + AI5 legal + AI6 rekam audio
-> `transcribe-voice`) + batch haptics B1 (`expo-haptics`, waveform,
-> Screen pin); preview build `0c8b2fc2` FINISHED (app 2.0.0 vc 1).
-> Sebelumnya: v2.0.0 (tag `v2.0.0`): widget Android + fast-lane
-> (WG1 parser split, WG2 widget + notifikasi) + polish (kartu Profile,
-> pill Keluar, hero obsidian + eye, 76 ikon, kartu Mata Uang) + fix
-> refresh opsi dompet, di atas fondasi v1.2.0. Peta ticket:
+> **Status: L4c custom range di `main` (`f9b5557`), OTA preview macet
+> di EAS (11× `asset processing timed out`, 15–16 Okt 2026 — device masih
+> di grup `a3c66bf2`).** Di bawahnya: v2.1.0 (tag `v2.1.0`): widget Android
+> + fast-lane + polish + chart svg (PR1/PR2) + kartu tren + Insight AI
+> L1–L3 (`insight-summary`, consent terpisah, auto-refine) + AI Fase 1
+> (AI1 `parse-voice` + AI2 golden 40 + AI3 `scan-receipt` Gemini + AI4
+> wiring form + AI5 legal + AI6 rekam audio `transcribe-voice`) + batch
+> haptics B1; preview build `0c8b2fc2` FINISHED (app 2.0.0 vc 1).
+> Sebelumnya: v2.0.0 (tag `v2.0.0`): WG1 parser split, WG2 widget +
+> notifikasi, WG3 gerbang + bump, di atas fondasi v1.2.0. Peta ticket:
 > [specs/tickets.md](specs/tickets.md).
 
 **Dokumen perencanaan (mengikat):**
@@ -30,9 +31,9 @@ uang dihitung di Postgres, tidak pernah di klien.
 | [specs/cashtrix-v1.1.md](specs/cashtrix-v1.1.md) | Spec v1.1 (V0–V6) |
 | [specs/cashtrix-v1.2.md](specs/cashtrix-v1.2.md) | Spec v1.2 (S1–S3 pintasan + scan, gerbang `1.2.0`) |
 | [specs/cashtrix-voice-capture.md](specs/cashtrix-voice-capture.md) | Spec voice capture / Catat Suara (VC1–VC3, device lolos, tanpa bump versi) |
-| [specs/tickets.md](specs/tickets.md) | Peta ticket: T1–T11, V0–V6, A3–A6, D4, B4, C6, C2/D5/D3, S1–S3 + RLS, VC1–VC3, WG1–WG3, OB1–OB3, AU1/AU2, AI1–AI6 + B1 |
+| [specs/tickets.md](specs/tickets.md) | Peta ticket: T1–T11, V0–V6, A3–A6, D4, B4, C6, C2/D5/D3, S1–S3 + RLS, VC1–VC3, WG1–WG3, OB1–OB3, AU1/AU2, AI1–AI6 + B1, PR1–PR2, P1–P3, L1–L4 (L4c custom range) |
 | [docs/roadmap.md](docs/roadmap.md) | Katalog ide + urutan rilis + keputusan OPEN |
-| [docs/adr/](docs/adr/) | ADR-0001..0016 (scope, dev-client, transfer, recurring, legal, lock, i18n, shortcut/scan, voice, widget, outbox, SMTP, OAuth, audio Fase 2, batch haptics) |
+| [docs/adr/](docs/adr/) | ADR-0001..0017 (scope, dev-client, transfer, recurring, legal, lock, i18n, shortcut/scan, voice, widget, outbox, SMTP, OAuth, audio Fase 2, batch haptics, analytics-svg-widget) |
 | [docs/release-gate.md](docs/release-gate.md) | Gerbang rilis: bukti E2E, KPI, checklist visual, pra-store |
 | [docs/store-submit.md](docs/store-submit.md) | Mekanik submit TestFlight / Play Store |
 | [CONTEXT.md](CONTEXT.md) | Glosarium + konteks domain |
@@ -105,17 +106,26 @@ uang dihitung di Postgres, tidak pernah di klien.
 - **Bulk edit kategori**: mode pilih di layar search (sejenis terkunci,
   transfer dikecualikan), satu UPDATE atomic dengan guard `type` server-side.
 
-### Analytics (Epic D, A6)
+### Analytics (Epic D, A6, PR1–PR2, P2b, L1–L4)
 
-- Rentang `1B` / `3B` / `6B` / `1T` / `Semua` + filter per dompet, semua
-  diagregasi server dalam **satu round-trip** (`analytics_overview`;
-  target p95 <300ms pada 10k transaksi). Klien tidak pernah menjumlahkan
-  `amount`.
+- Rentang `1M` / `3M` / `6M` / `1Y` / `ALL` + **rentang khusus** (`CUSTOM`,
+  jendela bebas via `CustomRangeSheet`, clamp 12 bulan, prev sepanjang
+  yang sama) + filter per dompet, semua diagregasi server dalam **satu
+  round-trip** (`analytics_overview`; target p95 <300ms pada 10k
+  transaksi). Klien tidak pernah menjumlahkan `amount`.
 - KPI header dengan delta % vs periode sebelumnya yang sama panjang (`—` bila
   periode lalu nol). Donut top-8 expense + "Other", bar chart harian/bulanan,
-  empty state eksplisit.
+  kartu tren (sparkline per metrik, tap-select donut ↔ breakdown),
+  empty state eksplisit. Donut Analytics + ring Budget = arc
+  **`react-native-svg`** (crisp-edge, tanpa glow underlay).
 - **Ringkasan bulan lalu** di Dashboard (dari `v_monthly_summary`, zero-fill
   bukan lubang), tap menuju Analytics.
+- **Insight AI (L1–L3)**: `InsightCard` selalu menampilkan baris
+  deterministik dulu; Edge `insight-summary` me-rephrase ( AI, badge
+  "Asisten AI", consent terpisah + auto-refine + cache sesi) hanya bila
+  `ok` — angka dikunci validator figure-preservation, gagal sunyi =
+  deterministik. L2 menambah pendorong + anomali (perluasan
+  `prev_breakdown`), L3 run-rate budget + tap → Budgets.
 
 ### Budget & alert (Epic E, A5)
 
@@ -186,7 +196,9 @@ uang dihitung di Postgres, tidak pernah di klien.
 - Login/register sekali ketuk via Google (`expo-auth-session`,
   `expo-web-browser`, `expo-crypto`); satu email satu akun; seed pasca-exchange.
 - SMTP Resend (`smtp.resend.com:587`, From `noreply@cashtrix.my.id`) +
-  template konfirmasi/recovery dwibahasa di `supabase/templates/`.
+  template konfirmasi/recovery Indonesia di `supabase/templates/`
+  (sumber ID; versi Inggris ditempel langsung di Dashboard Supabase,
+  bukan di repo).
 
 ### Widget + fast-lane (WG2–WG3, rilis 2.0.0, Android)
 
@@ -245,7 +257,7 @@ uang dihitung di Postgres, tidak pernah di klien.
 
 - Counter per user per fungsi di tabel `function_rate_limits` (fixed window
   60 detik): seed-user 10, export-csv 5, delete-account 3, scan-receipt 5,
-  parse-voice 5, transcribe-voice 5.
+  parse-voice 5, transcribe-voice 5, insight-summary 5.
 - Tanpa JWT = 401 sebelum rate check; limit tercapai = 429 + `Retry-After`.
 - Fail-open: gangguan guard tidak pernah membrick login.
 
@@ -273,7 +285,7 @@ uang dihitung di Postgres, tidak pernah di klien.
 | Bahasa | TypeScript strict (`tsc --noEmit`), React 19 |
 | Backend | Supabase (project `Cashtrix`, `ap-southeast-2`): Postgres + Auth + RLS + Storage + Edge Functions |
 | State server | Context per fitur di atas satu Supabase client (`src/supabase/`) + refresh eksplisit (tanpa Realtime, tanpa TanStack/RTK) |
-| Chart | `View` polos (donut = ring tick terotasi, bar = kolom gradient, ring budget = 48 tick), tanpa `react-native-svg` |
+| Chart | Donut Analytics + ring Budget = `react-native-svg` (crisp-edge sejak PR1/2.1.0); bar = kolom gradient `View`, ring = 48 tick (tanpa svg) |
 | Notifikasi | `expo-notifications` (local push), izin on-demand |
 | Konektivitas | `@react-native-community/netinfo` (modul native, berimplikasi rebuild, lihat [Rilis](#rilis--distribusi)) |
 | Crash reporting | `@sentry/react-native` via transport injeksi |
@@ -345,7 +357,7 @@ flowchart TB
     end
     subgraph Server["Supabase"]
         PG[("Postgres RLS (10 tabel, 4 view, RPC, pg_cron)")]
-        Edge["Edge Functions (seed, csv, hapus-akun, scan, parse, transcribe)"]
+        Edge["Edge Functions (seed, csv, hapus-akun, scan, parse, transcribe, insight)"]
         Sto[("Storage (avatars, receipts 30hr, voice_drafts retensi-nol)")]
         AuthS["Auth (email, Google, TOTP)"]
         Gem["Gemini (temporal, tanpa simpan)"]
@@ -394,7 +406,8 @@ Cashtrix/
 │   │   ├── transactions/       #   domain, api, context, calendar-grid,
 │   │   │                       #   undo-snackbar, history-list, search-kind…
 │   │   ├── analytics/          #   domain, api, context, donut/bar/kpi,
-│   │   │                       #   monthly-summary-card
+│   │   │                       #   monthly-summary-card, insight.ts,
+│   │   │                       #   custom-range-sheet
 │   │   ├── budgets/            #   domain, api, context, budget-ring,
 │   │   │                       #   notifications.ts
 │   │   ├── profile/            #   domain, api, context
@@ -418,17 +431,18 @@ Cashtrix/
 │   ├── with-app-widget.ts      #   widget Android (RemoteViews)
 │   └── with-app-shortcuts.ts   #   long-press icon (termasuk voice)
 ├── supabase/
-│   ├── migrations/             # 14 migrasi (kanonis, jangan divergen)
+│   ├── migrations/             # 16 migrasi (kanonis, jangan divergen)
 │   ├── functions/              # seed-user, export-csv, delete-account,
-│   │                           # scan-receipt, parse-voice, transcribe-voice
-│   │                           # (+ _shared/rate-limit.ts)
-│   ├── templates/              # template email konfirmasi/recovery (ID)
-│   └── tests/database/         # pgTAP 00_setup + 01–18
-├── __tests__/                 # 51 suite Jest (hapus .session-seed.json bila stale)
+│   │                           # scan-receipt, parse-voice, transcribe-voice,
+│   │                           # insight-summary (+ _shared/rate-limit.ts)
+│   ├── templates/              # template email konfirmasi/recovery (sumber ID;
+│   │                           # EN ditempel langsung di Dashboard, bukan repo)
+│   └── tests/database/         # pgTAP 00_setup + 01–19
+├── __tests__/                 # 63 suite Jest (hapus .session-seed.json bila stale)
 │   ├── mocks/                  #   stand-in modul native
 │   └── fixtures/               #   golden set AI (voice + receipt)
 ├── scripts/                    # verify-t5..t9, verify-t11, verify-v2/v3/v4,
-│                               # verify-a5/d5/s2/s3/ai-voice/ai6/legal,
+│                               # verify-a5/d5/s2/s3/ai-voice/ai6/insight/legal,
 │                               # provision-e2e, seed-bulk, lib/admin-confirm
 ├── .maestro/flows/            # happy-path.yaml, smoke.yaml, voice.yaml,
 │                               # widget.yaml
@@ -493,8 +507,7 @@ npx expo export --platform android --output-dir /tmp/out   # bundle check tanpa 
 | `npm run typecheck` | `tsc --noEmit`, 0 error |
 | `npm run test` | Jest, hapus `__tests__/.session-seed.json` dulu bila stale (untracked, jangan commit) |
 | `npm run db:test` | pgTAP, butuh Docker; alternatif `psql` per AGENTS.md |
-| `npm run e2e:check` | Kontrak statis selektor Maestro (tanpa device, jalan di CI) |
-| `npm run e2e:verify` | Mirror API-level happy path (self-cleanup user uji) |
+| `npm run e2e:check` | Kontrak statis selektor Maestro (tanpa device, jalan di CI) || `npm run e2e:verify` | Mirror API-level happy path (self-cleanup user uji) |
 
 ---
 
@@ -525,10 +538,13 @@ atomik, termasuk soft-deleted; collapse sumber=tujuan ditolak),
 `soft_delete_transaction` / `restore_transaction` (mengembalikan jumlah
 baris, 0 = bukan milik/tidak ada), `purge_deleted_transactions` (job
 `pg_cron` harian 03:00 UTC; sebagai `postgres` membersihkan semua user,
-sebagai `authenticated` terbatasi RLS), `current_month(tz)`,
-`v_category_breakdown`, `v_analytics_series`, `analytics_overview`
+sebagai `authenticated` terbatasi RLS), `purge_expired_receipts` (retensi
+struk 30 hari), `check_function_rate_limit` (hanya `service_role`),
+`current_month(tz)`,
+`v_category_breakdown`, `v_analytics_series`, `v_category_series`,
+`analytics_overview`
 (satu round-trip seluruh layar Analytics; `delta.*` null saat periode lalu
-nol), `run_recurring_catchup` (plafon 12/rule/sesi, `ON CONFLICT DO NOTHING`).
+nol; L2 menambah kunci `prev_breakdown`), `run_recurring_catchup` (plafon 12/rule/sesi, `ON CONFLICT DO NOTHING`).
 
 **RLS:** deny-by-default di 100% tabel (tanpa `USING (true)`; `anon`
 dicabut) + 8 policy `storage.objects` untuk 3 bucket privat (`avatars`,
@@ -542,8 +558,9 @@ counterparty-nya; trigger `enforce_transaction_no_future` (23514).
 `user_id` selalu dari JWT, tidak pernah dari body; tiap direktori fungsi
 wajib `deno.json` sendiri): `seed-user`
 (idempotent), `export-csv`, `delete-account`, `scan-receipt`, `parse-voice`,
-`transcribe-voice` (ketiganya: rate-limit 5/mnt/user → konteks server →
-Gemini → validasi strict → prefill, tanpa tulis transaksi).
+`transcribe-voice`, `insight-summary` (keempatnya: rate-limit 5/mnt/user
+→ konteks server → Gemini → validasi strict → prefill/rephrase, tanpa
+tulis transaksi).
 
 ---
 
@@ -553,8 +570,8 @@ Empat lapis; setiap ticket menjalankan ulang seluruh suite (tanpa regresi):
 
 | Lapis | Tool | Cakupan | Status |
 |---|---|---|---|
-| Unit domain | Jest, 51 suite | Format id-ID, validasi amount, threshold 79.9/80/99.9/100, boundary bulan tz, dedup alert, kalender, search, bulk, undo-window, reload pasca-login, tone warna, konektivitas, recurring, inbox, haptics, waveform, voice/record, AI (parse/validasi/wiring/golden/transcribe) | **807/807 hijau** |
-| Unit RLS/SQL | pgTAP, 18 file | Isolasi antar-user semua tabel, constraint, limit 10 wallet, storage, trigger profil, kategori sistem, saldo, reassign, transaksi, analytics, budget, mutes, transfer, recurring, arsip, alert-read, rate-limit, receipts | **403 assertion hijau** |
+| Unit domain | Jest, 63 suite | Format id-ID, validasi amount, threshold 79.9/80/99.9/100, boundary bulan tz, dedup alert, kalender, search, bulk, undo-window, reload pasca-login, tone warna, konektivitas, recurring, inbox, haptics, waveform, voice/record, AI (parse/validasi/wiring/golden/transcribe), insight, custom range | **951/951 hijau** |
+| Unit RLS/SQL | pgTAP, 19 file | Isolasi antar-user semua tabel, constraint, limit 10 wallet, storage, trigger profil, kategori sistem, saldo, reassign, transaksi, analytics, budget, mutes, transfer, recurring, arsip, alert-read, rate-limit, receipts, category-series | **443 assertion hijau** |
 | Live per fitur | `scripts/verify-*.mjs` | Alur nyata via anon client + Admin API (`provisionTestUser`): T5/T6/T7/T8/T9, transfer (V2), recurring (V3), arsip+undo (V4), inbox (A5), rate-limit (D5), lampiran (S2), OCR (S3), AI voice (AI1), audio (AI6), legal (AI5), kontrak statis + mirror E2E (T11) | Hijau, self-cleanup |
 | E2E device | Maestro | Login → 3 txn + alert → transfer → rule + catch-up → hapus + urungkan (`happy-path`); `smoke` read-only; `voice` (dikte + split); `widget` (3 pintu) | Manual per gerbang |
 
@@ -585,7 +602,7 @@ di commit bump WG3).
 - **CI** (`release-gate.yml`): lint → typecheck → Jest → `e2e:check` →
   `expo export` → `verify-legal`; matriks live penuh
   (`verify-t5/t6/t7/t8/t9/v2/v3/v4/t11` + `a5`/`d5` + `s2`/`s3` +
-  `ai-voice`/`ai6`) saat push `main` dengan 2 secret, self-cleanup.
+  `ai-voice`/`ai6`/`insight`) saat push `main` dengan 2 secret, self-cleanup.
 - **Sebelum TestFlight / Play Store** (`docs/store-submit.md`): kembalikan
   `auth.email.enable_confirmations` ke manual (hosted masih auto-confirm
   untuk dev); jangan `supabase config push` dari repo root (pakai workdir
@@ -690,10 +707,19 @@ Katalog lengkap hidup di **[docs/roadmap.md](docs/roadmap.md)**.
   40 → AI3 `scan-receipt` Gemini → AI4 wiring form → AI5 legal v2.0.0 →
   AI6 rekam audio `transcribe-voice` + B1 haptics/waveform/Screen pin
   (satu rebuild `0c8b2fc2` FINISHED).
-- **Berikutnya:** device re-gate → 2.1.0 Analytics Overhaul → OB1–OB3
+- **v2.1.0** ✅ rilis (tag `v2.1.0`): chart svg crisp-edge (PR1/PR2) +
+  kartu tren + tap-select + Insight AI L1–L3 (`insight-summary`, consent
+  terpisah, auto-refine, run-rate + tap → Budgets); preview build
+  `d4d43852` (runtime 2.1.0).
+- **L4c custom range** ✅ di `main` (`f9b5557`): jendela bebas + sheet +
+  segmen ke-6 + remount-fix scrim-hitam; OTA preview tertunda (EAS
+  `asset processing timed out`, device masih grup lama). Lanjut: L4a
+  drill-down → L4b multi-wallet compare.
+- **Berikutnya:** device re-gate (begitu OTA pulih) → OB1–OB3
   outbox + read cache paket utuh (spec sync mencakup
   `transaction_receipts` sebagai tipe antrean), lalu bank sync,
-  multi-currency (parkir OPEN-4, mungkin IDR-saja) + kurs, AI insight.
+  multi-currency (parkir OPEN-4, mungkin IDR-saja) + kurs, AI insight
+  lanjutan.
 
 Prinsip urutan (§6.4): menutup lubang > menambah permukaan; fondasi ada >
 butuh keputusan (grill dulu, pola ADR); satu pass lintas-layar dikerjakan

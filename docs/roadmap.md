@@ -1,7 +1,7 @@
 # Roadmap Cashtrix: katalog ide lengkap
 
 Dokumen ini menampung **semua** kandidat pengembangan beserta alasan, bukti kondisi
-kode saat ini (`v2.0.0`, tag `v2.0.0`), dan urutan usul. `PRD.md` tetap sumber
+kode saat ini (`v2.1.0`, tag `v2.1.0`, L4c custom range di `main`), dan urutan usul. `PRD.md` tetap sumber
 keputusan produk; dokumen ini sumber *antrean* pekerjaan.
 
 Aturan: ide boleh masuk katalog tanpa komitmen rilis. Setiap rilis mengambil
@@ -85,7 +85,7 @@ Prinsip yang dipakai:
 | D3 | **E2E Maestro di CI** | `.github/workflows/release-gate.yml` jalan tanpa device; run Maestro manual | Regresi v1.1 tidak tertangkap otomatis | 📦 v1.2 |
 | D4 | **Penanganan error yang terlihat** | semua fetch best-effort; tidak ada indikator "gagal sync" | User tidak pernah tahu datanya belum terkirim | 📦 v1.2 |
 | D5 | **Rate limiting / abuse guard di Edge Functions** | belum ada | Risiko rendah selama skala kecil | 📦 v1.2 |
-| D6 | **Migration squash + baseline** | 7 file migrasi berurutan; `supabase/migrations/0001_schema.sql` disebut PRD tapi tidak ada di repo (dokumen usang) | Kebersihan; tidak mendesak | 🧊 v2.0 |
+| D6 | **Migration squash + baseline** | 16 file migrasi berurutan | Kebersihan; tidak mendesak | 🧊 v2.x |
 | D7 | **Store listing (aset, screenshot, deskripsi)** | belum ada | Bagian dari C5/C7 | 🎯 v1.1 |
 
 ### E. Sesudah v1.1
@@ -94,7 +94,7 @@ Prinsip yang dipakai:
 |---|---|---|
 | E1 | Bank sync / Open Finance | v2.0 (PRD D3); butuh compliance review |
 | E2 | Multi-currency + kurs historis | Parkir (OPEN-4): default perilaku hari ini, mungkin IDR-saja permanen | Diputuskan ulang sebelum trek currency; TanStack gugur (bukan obat banyak-user) | 🚫/🧊 parkir |
-| E3 | Smart insight / AI | PRD §3 sengaja kosong sampai ada evaluasi sendiri |
+| E3 | Smart insight / AI lanjutan | Insight rephrase L1–L3 rilis (deterministik-dulu, figure-preservation); auto-kategori terkunci + auto-save tetap ditolak | 🧊 antre di belakang outbox |
 | E4 | Shared/household budget | Non-goal PRD §2.4 |
 | E5 | Server push notification | v1.0 sengaja local-only; baru berguna bersama recurring |
 | E6 | Widget, email digest, import bank statement | Non-goal |
@@ -143,7 +143,7 @@ server-push di v1.1.
 
 ### V4: Nilai user langsung: undo hapus + arsip wallet
 
-- Snackbar ~5 detik "Urungkan" setelah hapus, memanggil RPC
+- Snackbar ~10 detik "Urungkan" setelah hapus, memanggil RPC
   `restore_transaction` yang sudah ada (termasuk Transfer). Lewat = Soft-delete
   30 hari, tanpa layar recycle bin (itu v1.2).
 - Arsip/buka-arsip wallet (kolom `archived_at` sudah ada; perlu jalur tulis di
@@ -240,10 +240,11 @@ kegagalan tidak menahan yang lain).
 
 | Urutan | Isi | Spec + ticket |
 |---|---|---|
-| **2.0.0** | Widget + fast-lane: tiga tombol home screen (suara/tambah/pindai) → deep-link existing → sheet yang sama, split-N maks 3 sejenis, notifikasi lokal khusus save-dari-widget, gate penuh, tanpa label AI | `specs/cashtrix-v2.0-widget.md` + ADR-0011, WG1 (#70) → WG2 (#71) → WG3 (#72), spec #69 |
-| Berikutnya | Offline outbox + read cache = satu pekerjaan konsistensi (LWW buta + hapus-menang, FIFO sekuensial, coalesce, antrean eksplisit, baca terdegradasi), didahului spec + grill seperti v1.1 | `specs/cashtrix-v2.x-outbox.md` + ADR-0003/0012, OB1 (#74) → OB2 (#75) → OB3 (#76), spec #73, eksekusi setelah WG3 hijau |
+| **2.0.0** ✅ 2026-09-29 | Widget + fast-lane: tiga tombol home screen (suara/tambah/pindai) → deep-link existing → sheet yang sama, split-N maks 3 sejenis, notifikasi lokal khusus save-dari-widget, gate penuh, tanpa label AI | `specs/cashtrix-v2.0-widget.md` + ADR-0011, WG1 (#70) → WG2 (#71) → WG3 (#72), spec #69, tag `v2.0.0` |
+| **2.1.0** ✅ | Analytics Overhaul: chart svg crisp-edge (PR1/PR2) + kartu tren + tap-select + Insight AI L1–L3 + L4c custom range (commit `f9b5557`; OTA tertunda EAS Okt 2026) | ADR-0017, L1 → L2 → L3 → L4c, tag `v2.1.0` |
+| Berikutnya | Offline outbox + read cache = satu pekerjaan konsistensi (LWW buta + hapus-menang, FIFO sekuensial, coalesce, antrean eksplisit, baca terdegradasi), didahului spec + grill seperti v1.1 | `specs/cashtrix-v2.x-outbox.md` + ADR-0003/0012, OB1 (#74) → OB2 (#75) → OB3 (#76), spec #73 |
 
-Bank sync, multi-currency (parkir OPEN-4), AI insight antre di belakangnya
+Bank sync, multi-currency (parkir OPEN-4), AI insight lanjutan antre di belakangnya
 per PRD. TanStack gugur permanen untuk trek ini ("banyak user" = urusan
 server: indeks/pooling/rate-limit, bukan cache klien).
 
@@ -328,8 +329,7 @@ hero obsidian + eye toggle, katalog 76 ikon, fix refresh opsi dompet (#81).
 Keputusan terkunci: Android hand-rolled (tanpa dep runtime), iOS tunda,
 tanpa label AI, tanpa angka/statistik fiktif di widget maupun kartu.
 
-Berikutnya: OB1–OB3 outbox + read cache (rilis berikut, eksekusi setelah
-WG3 hijau; prasyarat terpenuhi).
+Berikutnya (urutan pasca-2.1.0): OB1–OB3 outbox + read cache.
 
 ### 6.10 Batch B1 + AI6 (satu rebuild hemat kuota, grill 2026-10-03)
 
@@ -341,15 +341,12 @@ Status 2026-10-03: **selesai penuh** — #101 (AI6) + #102 (B1) squash-merge
 ke `main` (`eb2b3b6`, `96796e6`); preview build `0c8b2fc2` FINISHED (app
 2.0.0 vc 1, dari HEAD pasca-#102). Sisa: device re-gate Redmi.
 
-### 6.11 Berikutnya (disetujui pemilik: PRD R13)
+### 6.11 Sesudah 2.1.0 (status Okt 2026)
 
-Device re-gate build gabungan → 2.1.0 Analytics Overhaul → OB1–OB3
-outbox + read cache. Gate hijau per rilis (pola Q10).
+2.1.0 rilis + tag (`2a7b700`): PR1/PR2 (svg crisp-edge, tren, tap-select)
++ Insight L1–L3 + L4c custom range (commit `f9b5557`).
 
-Status 2026-10-06 (grill Analytics, ADR-0017): PR1 di working tree —
-svg ×3 parity (`react-native-svg@15.15.4`, satu rebuild) + widget
-XML-only (cincin ikon, chevron, hierarki emas, ring header; bitmap = LW)
-+ mock Jest + kunci `analytics-charts-svg` + glosarium `CONTEXT.md` +
-L-ledger L1–L5/LW/OB di `specs/tickets.md`. Lanjut: full Jest + kontrak
-statis + export Android → rebuild preview → PR2 (interaksi-minimal +
-deterministik, OTA) → gate device → tag `v2.1.0`.
+Urutan berlaku: device re-gate (begitu OTA EAS pulih — tertunda
+15–16 Okt 2026, device masih grup lama) → L4a drill-down → L4b
+multi-wallet compare → OB1–OB3 outbox + read cache. Gate hijau per
+rilis (pola Q10).
