@@ -68,6 +68,20 @@ export const colors = {
   /** Ambience blob fill — radial gold at 10% opacity. */
   accentAmbience: 'rgba(212, 175, 55, 0.10)',
   /**
+   * Glass hero orb stops (SVG `RadialGradient`): core → mid → fade. The
+   * alpha falloff IS the blur — no backdrop-filter needed (owner direction,
+   * 19 Okt 2026). Fade stops reuse the same colour with `stopOpacity=0`.
+   */
+  accentAmbienceCore: 'rgba(212, 175, 55, 0.16)',
+  accentAmbienceMid: 'rgba(212, 175, 55, 0.07)',
+  accentAmbienceLow: 'rgba(212, 175, 55, 0.09)',
+  /** Warm-white specular glint inside the main hero orb. */
+  accentAmbienceSpec: 'rgba(255, 244, 214, 0.22)',
+  /** Hairline bevel line along the hero's top edge (fades at both ends). */
+  bevelHighlight: 'rgba(255, 255, 255, 0.07)',
+  /** Soft top-edge glow under the bevel line. */
+  bevelGlow: 'rgba(255, 255, 255, 0.045)',
+  /**
    * Scan viewfinder corner brackets. Gold accent, never income-green:
    * green would collide with the income meaning (DESIGN.md §1).
    */

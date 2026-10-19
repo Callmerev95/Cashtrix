@@ -5,21 +5,29 @@
  *
  * The background stays alive (owner direction): a slow gold sheen sweeps the
  * card on a ping-pong loop, silenced under reduce-motion like every other
- * animation (DESIGN.md §8). Everything is plain `View`s + one
- * `LinearGradient` — no native module, no dev-client rebuild. Colours stay
- * theme tokens; the Stitch mock is a layout reference only.
+ * animation (DESIGN.md §8). The glass pass (owner direction, 19 Okt 2026):
+ * SVG radial-falloff orbs under an `expo-blur` frost layer, micro-noise and
+ * a top bevel. Both native pieces ride modules already compiled into the
+ * binary (`react-native-svg` since PR1, `expo-blur` since the scaffold), so
+ * this ships over OTA; below Android 12 the frost degrades to a tint and the
+ * orbs carry the look alone. Colours stay theme tokens; the Stitch mock is a
+ * layout reference only.
  */
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useEffect, useState } from 'react';
+import { BlurTargetView, BlurView } from 'expo-blur';
+import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
+  Image,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
   useWindowDimensions,
 } from 'react-native';
+import { Circle, Defs, RadialGradient, Stop, Svg } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { SkeletonBlock, useReducedMotion } from '@/components/skeleton';
@@ -49,6 +57,10 @@ export function TotalBalanceCard({
   const t = dictionaryFor(language);
   const reduceMotion = useReducedMotion();
   const { width: screenWidth } = useWindowDimensions();
+
+  // Android frost samples an explicit target (expo-blur ≥ 57 API); iOS
+  // ignores it and blurs the backdrop sitting behind the BlurView.
+  const blurTargetRef = useRef<View>(null);
 
   // Device display preference (never purged on sign-out), shared with every
   // wallet row through the module store.
@@ -98,8 +110,77 @@ export function TotalBalanceCard({
         end={{ x: 1, y: 1 }}
         style={styles.inner}
       >
-        <View style={styles.ambience} pointerEvents="none" />
-        <View style={styles.ambienceLow} pointerEvents="none" />
+        {/* Glass ambience: the orbs are SVG radial falloffs on a 158×100
+            viewBox (the card's 1.58 aspect in user units), so they scale
+            with the card and need no measurement. The falloff is the blur;
+            the frost layer above just softens everything once more. */}
+        <BlurTargetView ref={blurTargetRef} style={styles.fill}>
+          <Svg
+            style={styles.fill}
+            viewBox="0 0 158 100"
+            testID="balance-orbs"
+          >
+            <Defs>
+              <RadialGradient id="orbGold">
+                <Stop offset="0" stopColor={colors.accentAmbienceCore} />
+                <Stop offset="0.55" stopColor={colors.accentAmbienceMid} />
+                <Stop
+                  offset="1"
+                  stopColor={colors.accentAmbienceMid}
+                  stopOpacity={0}
+                />
+              </RadialGradient>
+              <RadialGradient id="orbLow">
+                <Stop offset="0" stopColor={colors.accentAmbienceLow} />
+                <Stop
+                  offset="1"
+                  stopColor={colors.accentAmbienceLow}
+                  stopOpacity={0}
+                />
+              </RadialGradient>
+              <RadialGradient id="orbSpec">
+                <Stop offset="0" stopColor={colors.accentAmbienceSpec} />
+                <Stop
+                  offset="1"
+                  stopColor={colors.accentAmbienceSpec}
+                  stopOpacity={0}
+                />
+              </RadialGradient>
+            </Defs>
+            <Circle cx="148" cy="-4" r="64" fill="url(#orbGold)" />
+            <Circle cx="8" cy="104" r="66" fill="url(#orbLow)" />
+            <Circle cx="132" cy="12" r="11" fill="url(#orbSpec)" />
+          </Svg>
+          <Image
+            testID="balance-noise"
+            source={require('../../../../assets/noise.png')}
+            resizeMode="repeat"
+            style={styles.noise}
+          />
+        </BlurTargetView>
+        <BlurView
+          testID="balance-frost"
+          blurTarget={blurTargetRef}
+          blurMethod="dimezisBlurViewSdk31Plus"
+          tint="dark"
+          intensity={Platform.OS === 'ios' ? 26 : 20}
+          pointerEvents="none"
+          style={styles.fill}
+        />
+        <LinearGradient
+          colors={[colors.bevelGlow, 'transparent']}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={styles.bevelGlow}
+          pointerEvents="none"
+        />
+        <LinearGradient
+          colors={['transparent', colors.bevelHighlight, 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.bevelLine}
+          pointerEvents="none"
+        />
         <View style={styles.sheenClip} pointerEvents="none">
           <Animated.View
             style={[styles.sheenBar, { transform: [{ translateX: sheenX }] }]}
@@ -131,7 +212,8 @@ export function TotalBalanceCard({
               style={styles.chipOuter}
             >
               <View style={styles.chipInner}>
-                <View style={styles.chipH} />
+                <View style={styles.chipH1} />
+                <View style={styles.chipH2} />
                 <View style={styles.chipVLeft} />
                 <View style={styles.chipVRight} />
                 <View style={styles.chipPad} />
@@ -231,23 +313,34 @@ const styles = StyleSheet.create({
     borderRadius: radius.xxl - 1,
     overflow: 'hidden',
   },
-  ambience: {
+  fill: {
     position: 'absolute',
-    top: -72,
-    right: -48,
-    width: 168,
-    height: 168,
-    borderRadius: radius.full,
-    backgroundColor: colors.accentAmbience,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
-  ambienceLow: {
+  noise: {
     position: 'absolute',
-    bottom: -84,
-    left: -56,
-    width: 180,
-    height: 180,
-    borderRadius: radius.full,
-    backgroundColor: colors.accentAmbience,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.035,
+  },
+  bevelGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 36,
+  },
+  bevelLine: {
+    position: 'absolute',
+    top: 2,
+    left: 16,
+    right: 16,
+    height: StyleSheet.hairlineWidth,
   },
   sheenClip: {
     position: 'absolute',
@@ -312,8 +405,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     overflow: 'hidden',
   },
-  chipH: {
+  chipH1: {
     position: 'absolute',
+    top: '36%',
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: colors.accent,
+    opacity: 0.5,
+  },
+  chipH2: {
+    position: 'absolute',
+    top: '64%',
     left: 0,
     right: 0,
     height: 1,
@@ -324,7 +427,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     bottom: 0,
-    left: '33%',
+    left: '28%',
     width: 1,
     backgroundColor: colors.accent,
     opacity: 0.5,
@@ -333,14 +436,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     bottom: 0,
-    right: '33%',
+    right: '28%',
     width: 1,
     backgroundColor: colors.accent,
     opacity: 0.5,
   },
   chipPad: {
-    width: 10,
-    height: 8,
+    width: 12,
+    height: 9,
     borderRadius: 2,
     borderWidth: 1,
     borderColor: colors.accent,

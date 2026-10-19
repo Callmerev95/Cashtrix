@@ -581,6 +581,15 @@ Single-context layout — one `CONTEXT.md` + `docs/adr/` at the repo root. See `
 - **OTA terkirim 2026-10-19** (grup `899509fb-2514-4898-b9b3-6b89872cf307`, Android, runtime 2.1.0, commit `d3f3956`) — sukses sekali jalan (export ulang ke `~/.cache/cashtrix-dist-polish`; `--input-dir` **wajib sejalur** dengan perintah export karena `/tmp` tidak persisten antar-perintah di sesi ini). Device gate LULUS 2026-10-19 (eye memask semua permukaan saldo, ring 80% amber / 100% salmon + halo).
 - `delete __tests__/.session-seed.json` sebelum Jest (sama).
 
+### Kaca hero card (tanpa ticket, Okt 2026)
+
+- Permintaan pemilik: "blob" solid di `total-balance-card` jadi efek glass. Pass kaca = (A) **orb SVG radial-falloff** menggantikan dua disc `View` + (B) **frost `expo-blur`** di atasnya + bevel atas + noise grain + chip EMV lebih detail. Sheen gold tetap satu-satunya gerakan (opsi drift ditolak pemilik).
+- Tanpa modul native baru: `react-native-svg` (sejak PR1) + `expo-blur` (sejak scaffold, sudah dipakai tab bar) ada di binary → OTA JS. Token baru di `theme.ts` (`accentAmbienceCore/Mid/Low/Spec`, `bevelHighlight/bevelGlow` — semua rgba hanya di tema).
+- Orb = satu `<Svg viewBox="0 0 158 100">` (rasio card 1.58 dalam user unit, ikut lebar card tanpa mengukur) berisi 3 `Circle` + 3 `RadialGradient` (falloff alpha = blur-nya). Anchor: gold utama kanan-atas, redup kiri-bawah, specular warm-white kecil. Noise `assets/noise.png` (128×128 gray 11KB, generate ffmpeg `noise=alls=100:allf=t+u`, `resizeMode="repeat"`, opacity 0.035) mematikan banding gradien OLED.
+- Android frost butuh API ≥57: `<BlurTargetView ref>` membungkus orb+noise + `<BlurView blurTarget blurMethod="dimezisBlurViewSdk31Plus" intensity={iOS 26/Android 20}>`; iOS mengabaikan `blurTarget` (blur backdrop). Tanpa target native → fallback `none` (veil tint) tanpa crash; sheen/bevel/konten SENGAJA di atas blur agar tetap tajam dan blur tak dihitung per frame.
+- TestID baru aditif: `balance-orbs` (mock svg: 3 `RadialGradient` + 3 `Circle` via `data-svg`), `balance-frost`, `balance-noise`. Tes baru di `total-balance-card.test.tsx` 1 kasus; full Jest 980/980.
+- `delete __tests__/.session-seed.json` sebelum Jest (sama). Device gate: **pending** (OTA menyusul; cek frost engage vs degrade, kontras, sheen, reduce-motion).
+
 ### Perbaikan flake verify-d5 (fix CI run 39182340455, Okt 2026)
 
 - Kegagalan: job `live` merah di commit docs-only `202fa6a` — `verify-d5.mjs` flood seed-user `got 11` + `429 got 0`. Sebabnya **cold start**: `seed-user` pertama pasca-idle makan 38 detik (CI 00:53:03 → 00:53:41) sehingga memakan jatah window yang sudah diparkir; 11 call lalu melewati batas menit `:00` → counter reset di tengah flood. Bukan bug server/counter/RPC (window 60s selalu reset).

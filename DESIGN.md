@@ -31,7 +31,8 @@ These are the source-of-truth tokens. All UI must reference them.
 | `text-on-accent` | `#0A0A0A` | Obsidian text on gold fills (primary buttons). |
 | `danger-surface` | `rgba(147, 0, 10, 0.28)` | Tinted danger pill (sign-out). Destructive only. |
 | `obsidian` (gradient) | `#2C2925 → #191714 → #0B0A09 → #161311` | Hero metal background, diagonal. Registered in `gradients`, never inline. |
-| `accent-ambience` | `rgba(212, 175, 55, 0.10)` | Soft gold blobs behind hero surfaces. |
+| `accent-ambience` | `rgba(212, 175, 55, 0.10)` | Soft gold fill behind empty-state surfaces. |
+| `ambience-orb` (gradient stops) | `rgba(212, 175, 55, 0.16 → 0.07 → 0)` + warm-white specular `rgba(255, 244, 214, 0.22)` | Hero glass orbs — three-stop radial falloff rendered as SVG. Owner direction, 19 Okt 2026. |
 
 ### Semantic rules
 
@@ -146,7 +147,7 @@ Depth = tonal layering + hairline edges + diffuse gold glow (never heavy drop sh
 - Active segment pill: `0 2px 12px rgba(212,175,55,0.28)`
 - Progress bar fill: `0 0 12px rgba(242,202,80,0.5)`
 - Chart bars: `0 0 16px rgba(242,202,80,0.35)`
-- Decorative ambience: radial gold blobs at 10% opacity, `blur-2xl`
+- Decorative ambience: radial gold orbs whose alpha falls off to zero — the falloff IS the blur, no backdrop-filter needed
 - Frosted surfaces: `backdrop-blur-xl` (9×) / `backdrop-blur-md`
 
 **Radius scale:**
@@ -179,7 +180,7 @@ Depth = tonal layering + hairline edges + diffuse gold glow (never heavy drop sh
 ### Cards
 - L1 container, 20–24px padding, 1px `#2C2C2E` border, radius 20–32px.
 - Highlight variants: gradient border gold→`#2C2C2E`, or radial gold ambience blob behind.
-- **Obsidian hero:** fixed 1.58 aspect, `obsidian` diagonal fill, View-composed EMV chip + NFC mark, gold watermark, eye toggle, `currency-display` nominal, hairline divider, uppercase holder line. Ambient sheen + glowing gold edge (iOS renders the tint; Android carries it via frame + contrast).
+- **Obsidian hero:** fixed 1.58 aspect, `obsidian` diagonal fill, View-composed EMV chip + NFC mark, gold watermark, eye toggle, `currency-display` nominal, hairline divider, uppercase holder line. Ambient sheen + glowing gold edge (iOS renders the tint; Android carries it via frame + contrast). Glass pass (owner direction, 19 Okt 2026): SVG falloff orbs + `expo-blur` frost (`dimezisBlurViewSdk31Plus`, degrades to a tint below Android 12), 3.5% noise grain against OLED gradient banding, top bevel line.
 - **Section cards (Profile pattern):** one card per section: icon + title header, then borderless rows on hairline dividers (rule 5 exception). Destructive rows keep red icon/title but lose their own frame.
 - **Currency well:** read-only mirror of the chips (symbol + code + full name), no chevron, no tags, since decoration without behaviour is refused.
 

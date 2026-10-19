@@ -4,7 +4,7 @@
  * The ambient sheen is motion-only (dead under reduce-motion) and asserts
  * nothing.
  */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { TotalBalanceCard } from '@/features/wallets/components/total-balance-card';
@@ -62,6 +62,22 @@ describe('TotalBalanceCard', () => {
     );
     expect(screen.getByText('EVELYN VANCE')).toBeTruthy();
     expect(screen.getByTestId('balance-visibility')).toBeTruthy();
+  });
+
+  it('layers the glass ambience: SVG orbs, noise grain and frost', async () => {
+    await AsyncStorage.removeItem(BALANCE_HIDDEN_KEY);
+    render(<TotalBalanceCard {...props} />);
+    await screen.findByTestId('total-balance-card');
+
+    const orbs = screen.getByTestId('balance-orbs');
+    expect(
+      within(orbs).UNSAFE_getAllByProps({ 'data-svg': 'RadialGradient' }),
+    ).toHaveLength(3);
+    expect(
+      within(orbs).UNSAFE_getAllByProps({ 'data-svg': 'Circle' }),
+    ).toHaveLength(3);
+    expect(screen.getByTestId('balance-frost')).toBeTruthy();
+    expect(screen.getByTestId('balance-noise')).toBeTruthy();
   });
 
   it('eye toggle masks the amount and persists the choice', async () => {
