@@ -1,7 +1,7 @@
 # Roadmap Cashtrix: katalog ide lengkap
 
 Dokumen ini menampung **semua** kandidat pengembangan beserta alasan, bukti kondisi
-kode saat ini (`v2.1.0`, tag `v2.1.0`, L4c custom range di `main`, drill-down L4a di working tree), dan urutan usul. `PRD.md` tetap sumber
+kode saat ini (`v2.1.0`, tag `v2.1.0`, L4c custom range + L4a drill-down di `main`, OTA `b9a7e1ac` menunggu device gate), dan urutan usul. `PRD.md` tetap sumber
 keputusan produk; dokumen ini sumber *antrean* pekerjaan.
 
 Aturan: ide boleh masuk katalog tanpa komitmen rilis. Setiap rilis mengambil
@@ -242,7 +242,7 @@ kegagalan tidak menahan yang lain).
 |---|---|---|
 | **2.0.0** ✅ 2026-09-29 | Widget + fast-lane: tiga tombol home screen (suara/tambah/pindai) → deep-link existing → sheet yang sama, split-N maks 3 sejenis, notifikasi lokal khusus save-dari-widget, gate penuh, tanpa label AI | `specs/cashtrix-v2.0-widget.md` + ADR-0011, WG1 (#70) → WG2 (#71) → WG3 (#72), spec #69, tag `v2.0.0` |
 | **2.1.0** ✅ | Analytics Overhaul: chart svg crisp-edge (PR1/PR2) + kartu tren + tap-select + Insight AI L1–L3 + L4c custom range (commit `f9b5557`; OTA grup `2b2981e9`, device gate HP LULUS 2026-10-18) | ADR-0017, L1 → L2 → L3 → L4c, tag `v2.1.0` |
-| **2.1.x** (OTA) | Trek L4 lanjutan: L4a drill-down → `/search` (working tree, gate lokal hijau) → L4b multi-wallet compare | `specs/tickets.md` trek L4 |
+| **2.1.x** (OTA) | Trek L4 lanjutan: L4a drill-down → `/search` (COMMITTED `3dc29b0`, OTA `b9a7e1ac`, device gate pending) → L4b multi-wallet compare | `specs/tickets.md` trek L4 |
 | Berikutnya | Offline outbox + read cache = satu pekerjaan konsistensi (LWW buta + hapus-menang, FIFO sekuensial, coalesce, antrean eksplisit, baca terdegradasi), didahului spec + grill seperti v1.1 | `specs/cashtrix-v2.x-outbox.md` + ADR-0003/0012, OB1 (#74) → OB2 (#75) → OB3 (#76), spec #73 |
 
 Bank sync, multi-currency (parkir OPEN-4), AI insight lanjutan antre di belakangnya

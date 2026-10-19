@@ -625,7 +625,8 @@ KPI tap langsung + tombol "Lihat transaksi" untuk slice/bar terpilih;
 + guard `icon-convention` diperluas ke konstanta ikon fitur.
 Gate: lint + typecheck + Jest 970/970 (64 suite) + kontrak 112/10/3
 (catatan: 111 lama telat satu dari rewrite `voice.yaml` `e1dc949`) +
-verify-legal 36/36 + export Android. OTA + device gate menyusul.
+verify-legal 36/36 + export Android. COMMITTED `3dc29b0`; OTA preview
+terkirim 2026-10-19 (grup `b9a7e1ac`, runtime 2.1.0); device gate pending.
 
 Lanjut: L4b multi-wallet compare
 (paket 2/2 trek L4). Maks 2 fitur antre device gate.
