@@ -597,7 +597,7 @@ Single-context layout — one `CONTEXT.md` + `docs/adr/` at the repo root. See `
 - **8 token mati dihapus** dari `theme.ts` (`accentAmbienceCore/Mid/Low/Spec`, `bevelHighlight/bevelGlow`, `gradients.obsidian`) — semua single-consumer kartu (grep terverifikasi, nol assertion tes). Tetap: `accentAmbience` (empty-state + orb BR), `gradients.cardBorder` (app-header), `shadows.heroAmbient` (floating tab bar).
 - **Mask tetap TEKS** `"Rp ••••••"` — disettle via TTF JBM 500Medium: bullet Ø7.44pt @30pt vs mock 8.07pt (−8%), pitch 18 vs 17.24pt (+4.5%) = di bawah ambang persepsi; string tak berubah → `wallet-balance-visibility.test.tsx` aman. Eye 22 dari metrik nyata MUI `visibility-off` (ink 0.916em × 0.791em) — tebakan awal 26/23.3/21.2 digantikan angka empiris.
 - Tes: `total-balance-card.test.tsx` orbs 3→2 + assertion `balance-frost` dihapus (noise tetap); header comment kartu + DESIGN.md §1/§4/§5 di-update. Gate lokal: lint + typecheck + Jest **980/980** + verify-t11 static 112/10/3 + verify-legal 36/36 + export Android. `delete __tests__/.session-seed.json` sebelum Jest (sama).
-- Device gate mock-exact: **PENDING** setelah OTA (orb TL cool/BR gold, border redup no-glow, chip outline 2 garis, teks 14/amount putih 30, eye gold 22, divider, mask, sheen, reduce-motion, scroll Dashboard).
+- Device gate mock-exact: **PENDING** (orb TL cool/BR gold, border redup no-glow, chip outline 2 garis, teks 14/amount putih 30, eye gold 22, divider, mask, sheen, reduce-motion, scroll Dashboard). **OTA terkirim 2026-10-19** (grup `3ee4b32c-4afa-4fca-80dc-1b434db790fd`, Android, runtime 2.1.0, commit `a544476`) — sukses sekali jalan.
 
 ### Perbaikan flake verify-d5 (fix CI run 39182340455, Okt 2026)
 
