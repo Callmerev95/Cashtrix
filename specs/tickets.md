@@ -630,3 +630,7 @@ terkirim 2026-10-19 (grup `b9a7e1ac`, runtime 2.1.0); device gate pending.
 
 Lanjut: L4b multi-wallet compare
 (paket 2/2 trek L4). Maks 2 fitur antre device gate.
+
+Catatan PRD (kesepakatan pemilik 2026-10-19): revisi R15 (drill-down L4a +
+L4b) sengaja ditunda sampai L4b mendarat — satu revisi untuk seluruh trek
+L4; edit PRD wajib approval per-baris sebelum commit.
