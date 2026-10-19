@@ -1,7 +1,8 @@
 /**
  * Dashboard hero card — the combined balance (PRD §2.3 Epic B2, DESIGN.md §6),
  * dressed as an obsidian card: fixed 1.58 aspect, outline chip, CASHTRIX
- * wordmark, eye toggle, JetBrains Mono total, cardholder name.
+ * wordmark, eye toggle, JetBrains Mono total, bottom row with the cardholder
+ * name (left) and the wallet count (right).
  *
  * Mock-exact pass (owner reference `polish-card.png`, 19 Okt 2026): the
  * field is three fitted SVG radial layers on a 158×100 viewBox (the card's
@@ -219,16 +220,18 @@ export function TotalBalanceCard({
             {hidden ? MASKED_BALANCE_HERO : formatCurrency(total, 'Rp', language)}
           </Text>
         )}
-        <Text style={[typography.bodySm, styles.meta]}>
-          {fill(t.wallets.card.count, { count: walletCount })}
-        </Text>
-
         <View style={styles.holderRow}>
           <Text
             style={[typography.bodySm, styles.holder]}
             numberOfLines={1}
           >
             {holderName.toUpperCase()}
+          </Text>
+          <Text
+            style={[typography.bodySm, styles.count]}
+            numberOfLines={1}
+          >
+            {fill(t.wallets.card.count, { count: walletCount })}
           </Text>
         </View>
       </View>
@@ -361,22 +364,29 @@ const styles = StyleSheet.create({
   skeletonAmount: {
     marginTop: 20,
   },
-  meta: {
-    marginTop: spacing.sm,
-    color: colors.textSecondary,
-    fontSize: 14,
-    lineHeight: 20,
-  },
   holderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.borderStrong,
     paddingTop: 12,
-    marginTop: 2,
+    // Was 2; absorbs the wallet-count line that used to sit above the divider
+    // (8 margin + 20 line + 2) so the divider and bottom row keep the mock
+    // position — owner moved the count into this row (19 Okt 2026).
+    marginTop: 30,
   },
   holder: {
+    flexShrink: 1,
     color: colors.textSecondary,
     fontSize: 14,
     lineHeight: 20,
     letterSpacing: 2,
+  },
+  count: {
+    marginLeft: spacing.sm,
+    color: colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

@@ -1,6 +1,7 @@
 /**
  * Obsidian hero card — pure seams (visibility pref) plus the rendered
- * contract: watermark + eye toggle + masked/visible amount + holder line.
+ * contract: watermark + eye toggle + masked/visible amount + the bottom row
+ * (cardholder left, wallet count right).
  * The ambient sheen is motion-only (dead under reduce-motion) and asserts
  * nothing.
  */
@@ -61,6 +62,7 @@ describe('TotalBalanceCard', () => {
       'Rp 248.590,40',
     );
     expect(screen.getByText('EVELYN VANCE')).toBeTruthy();
+    expect(screen.getByText('3 dompet')).toBeTruthy();
     expect(screen.getByTestId('balance-visibility')).toBeTruthy();
   });
 
