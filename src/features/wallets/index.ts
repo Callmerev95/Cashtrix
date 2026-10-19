@@ -1,8 +1,16 @@
 export { WalletsProvider, useWallets } from './wallets-context';
 export {
   BALANCE_HIDDEN_KEY,
+  MASKED_BALANCE_HERO,
+  MASKED_BALANCE_ROW,
+  getBalanceHiddenSnapshot,
   parseBalanceHidden,
   readBalanceHidden,
+  resetBalanceVisibilityForTests,
+  setBalanceHidden,
+  subscribeBalanceHidden,
+  toggleBalanceHidden,
+  useBalanceHidden,
   writeBalanceHidden,
 } from './visibility';
 export {

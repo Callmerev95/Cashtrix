@@ -12,8 +12,14 @@ import {
   BALANCE_HIDDEN_KEY,
   parseBalanceHidden,
   readBalanceHidden,
+  resetBalanceVisibilityForTests,
   writeBalanceHidden,
 } from '@/features/wallets';
+
+beforeEach(() => {
+  // The shared balance-visibility store outlives a single test case.
+  resetBalanceVisibilityForTests();
+});
 
 describe('parseBalanceHidden', () => {
   it("only the exact '1' counts as hidden", () => {

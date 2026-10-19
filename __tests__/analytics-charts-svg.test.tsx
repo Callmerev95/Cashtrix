@@ -74,6 +74,27 @@ describe('BudgetRing (svg)', () => {
     expect(await screen.findByTestId('budget-ring')).toBeTruthy();
     expect(screen.queryByTestId('budget-ring-fill')).toBeNull();
   });
+
+  it('keeps the gold arc below 80%', async () => {
+    render(<BudgetRing percent={40} state="ok" />);
+    expect((await screen.findByTestId('budget-ring-fill')).props.stroke).toBe(
+      '#D4AF37',
+    );
+  });
+
+  it('turns amber at 80% (warning)', async () => {
+    render(<BudgetRing percent={80} state="warning" />);
+    expect((await screen.findByTestId('budget-ring-fill')).props.stroke).toBe(
+      '#EAA944',
+    );
+  });
+
+  it('turns salmon at 100% (exceeded, full wheel)', async () => {
+    render(<BudgetRing percent={100} state="exceeded" />);
+    expect((await screen.findByTestId('budget-ring-fill')).props.stroke).toBe(
+      '#ED7468',
+    );
+  });
 });
 
 describe('PR2 selection + insight', () => {

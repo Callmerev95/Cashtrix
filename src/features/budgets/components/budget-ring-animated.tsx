@@ -14,8 +14,6 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { colors } from '@/theme';
-
 /** Mount fill duration (opacity of motion, not data). */
 const RING_MOUNT_MS = 700;
 
@@ -29,6 +27,7 @@ export function AnimatedRingArc({
   thickness,
   rotation,
   round,
+  color,
   testID,
 }: {
   dash: number;
@@ -38,6 +37,8 @@ export function AnimatedRingArc({
   thickness: number;
   rotation: number;
   round: boolean;
+  /** State colour from `budget-ring.tsx` (gold / amber / salmon). */
+  color: string;
   testID: string;
 }) {
   const progress = useSharedValue(0);
@@ -56,7 +57,7 @@ export function AnimatedRingArc({
       cy={center}
       r={radius}
       fill="none"
-      stroke={colors.accent}
+      stroke={color}
       strokeWidth={thickness}
       strokeLinecap={round ? 'round' : 'butt'}
       transform={`rotate(${rotation} ${center} ${center})`}

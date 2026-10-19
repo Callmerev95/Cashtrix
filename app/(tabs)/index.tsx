@@ -30,7 +30,9 @@ import {
 } from '@/features/transactions';
 import {
   formatCurrency,
+  MASKED_BALANCE_ROW,
   setWalletArchived,
+  useBalanceHidden,
   useWallets,
   type Wallet,
 } from '@/features/wallets';
@@ -57,6 +59,7 @@ const DATE_FORMAT: Intl.DateTimeFormatOptions = {
 export default function DashboardScreen() {
   const { session } = useAuth();
   const { wallets, summary, loading, error: walletsError, refresh: refreshWallets } = useWallets();
+  const { hidden: balanceHidden } = useBalanceHidden();
   const { unreadCount, refresh: refreshBudgets, evaluateAndAlert } = useBudgets();
   const {
     monthly,
@@ -222,7 +225,9 @@ export default function DashboardScreen() {
           <Text style={[typography.bodySm, styles.meta]}>
             {fill(t.dashboard.wallets.moreRest, {
               rest: wallets.length - 3,
-              amount: formatCurrency(summary.totalBalance, 'Rp', language),
+              amount: balanceHidden
+                ? MASKED_BALANCE_ROW
+                : formatCurrency(summary.totalBalance, 'Rp', language),
             })}
           </Text>
         ) : null}

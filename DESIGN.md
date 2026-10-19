@@ -24,6 +24,8 @@ These are the source-of-truth tokens. All UI must reference them.
 | `accent-soft` | `#F3E5AB` | Secondary stop in gold gradients (progress fill end, hover sheen). |
 | `gain` | `#30D158` | Income green. Income amounts only. |
 | `loss` | `#FF6B62` | Expense red. Expense amounts only, never for destructive actions (those stay `error`). |
+| `budget-warning` | `#EAA944` | Budget ring, warning state (80–99%). Owner screenshot, 19 Okt 2026. |
+| `budget-exceeded` | `#ED7468` | Budget ring, exceeded state (≥100%) + its halo. Owner screenshot, 19 Okt 2026. |
 | `text-primary` | `#E5E5E5` | Muted warm white. Headings, body copy, transaction names, combined total. |
 | `text-secondary` | `#8E8E93` | Cool grey. Timestamps, metadata, inactive labels, disabled states. |
 | `text-on-accent` | `#0A0A0A` | Obsidian text on gold fills (primary buttons). |
@@ -38,6 +40,7 @@ These are the source-of-truth tokens. All UI must reference them.
 - **Net** (income − expense) = `#D4AF37` (gold, `currency-md`).
 - **Combined total** (Dashboard hero) stays `#E5E5E5` muted white.
 - **Error** = `#FFB4AB` on `#93000A` container (reserved for destructive actions only, never for expense amounts).
+- **Budget ring** = gold `#D4AF37` (1–79%), amber `#EAA944` (80–99%), salmon `#ED7468` (≥100%, halo ikut). Thresholds remain boundary-exact `stateForPercent` (80.0 / 100.0); these are budget-state tokens, not error red (owner screenshots, 19 Okt 2026).
 - Gold is never used for: page backgrounds, body text, expense amounts, or large flat fills >1 card per viewport.
 - Highlighted card borders: gradient `#D4AF37` (top-left) → `#2C2C2E` (bottom-right), or `#D4AF37` at 15% opacity.
 
@@ -237,6 +240,7 @@ Depth = tonal layering + hairline edges + diffuse gold glow (never heavy drop sh
 - Track: `#2C2C2E`, rounded caps.
 - Fill: gradient `#D4AF37` → `#F3E5AB` with `0 0 12px rgba(242,202,80,0.5)` glow; ring variant adds `rgba(212,175,55,0.25)` blur ring.
 - **Revisi 2.1.0 (crisp-edge):** svg arcs (donut Analytics + ring Budget) tanpa glow underlay — paint di luar band terbaca sebagai kebocoran di device, jadi arc flat satu warna; rank-0 dibedakan warna ramp paling terang. Bar glow + blur ring exceeded tetap (shadow View asli, bukan pita svg).
+- **Revisi polish (19 Okt 2026):** warna arc ring Budget mengikuti state — gold `#D4AF37` (1–79%) → amber `#EAA944` (warning, ≥80%) → salmon `#ED7468` (exceeded, ≥100%; halo ikut salmon). Bukan error red: token tetap semantik budget, `error` tetap destructive-only.
 
 ### Navigation
 - Floating bar: frosted `#1C1C1E`/75 + blur, icon 24px `#8E8E93` inactive / gold active, central gradient-gold FAB.

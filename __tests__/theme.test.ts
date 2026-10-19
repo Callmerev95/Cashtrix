@@ -24,6 +24,8 @@ describe('theme — canonical colours (DESIGN.md §1)', () => {
     expect(colors.accentSoft).toBe('#F3E5AB');
     expect(colors.gain).toBe('#30D158');
     expect(colors.loss).toBe('#FF6B62');
+    expect(colors.budgetWarning).toBe('#EAA944');
+    expect(colors.budgetExceeded).toBe('#ED7468');
     expect(colors.textPrimary).toBe('#E5E5E5');
     expect(colors.textSecondary).toBe('#8E8E93');
     expect(colors.textOnAccent).toBe('#0A0A0A');

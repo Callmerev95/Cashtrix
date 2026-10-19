@@ -25,10 +25,12 @@ import { Card, GhostButton, PrimaryButton, Screen, Skeleton, SkeletonBlock, Skel
 import { useAnalytics } from '@/features/analytics';
 import {
   MAX_WALLETS,
+  MASKED_BALANCE_ROW,
   deleteWallet,
   formatCurrency,
   reassignAndDeleteWallet,
   setWalletArchived,
+  useBalanceHidden,
   useWallets,
   walletTypeLabel,
   type Wallet,
@@ -43,6 +45,7 @@ import { showQuickActions } from '@/components/quick-actions';
 export default function WalletsScreen() {
   const { wallets, archivedWallets, summary, loading, error, refresh } =
     useWallets();
+  const { hidden: balanceHidden } = useBalanceHidden();
   // Same staleness as the wallet form (see its comment): pickers read the
   // transactions provider's own option list, so every mutation below
   // re-reads it alongside the manage list.
@@ -168,7 +171,9 @@ export default function WalletsScreen() {
     }
   }
 
-  const totalLabel = formatCurrency(summary.totalBalance, 'Rp', language);
+  const totalLabel = balanceHidden
+    ? MASKED_BALANCE_ROW
+    : formatCurrency(summary.totalBalance, 'Rp', language);
 
   return (
     <Screen>
@@ -420,7 +425,9 @@ export default function WalletsScreen() {
                       </Text>
                       <Text style={[typography.bodySm, styles.meta]}>
                         {walletTypeLabel(wallet.type, language)} ·{' '}
-                        {formatCurrency(wallet.balance, 'Rp', language)}
+                        {balanceHidden
+                          ? MASKED_BALANCE_ROW
+                          : formatCurrency(wallet.balance, 'Rp', language)}
                       </Text>
                     </View>
                     <MaterialIcons

@@ -419,6 +419,7 @@ export const id = {
     row: {
       transactions: '{count} transaksi',
       balanceLabel: '{name}, saldo {balance}',
+      balanceHiddenLabel: '{name}, saldo disembunyikan',
     },
     list: {
       back: 'Kembali',

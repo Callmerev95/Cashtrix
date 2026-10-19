@@ -24,6 +24,10 @@ export const palette = {
   gain: '#30D158',
   /** Expense red — expense amounts only, never destructive actions. */
   loss: '#FF6B62',
+  /** Budget ring, warning state (80–99%) — amber, owner screenshot 2026-10-19. */
+  budgetWarning: '#EAA944',
+  /** Budget ring, exceeded state (≥100%) + halo — salmon, same reference. */
+  budgetExceeded: '#ED7468',
   /** Muted warm white. Headings, body, transaction names, combined total. */
   textPrimary: '#E5E5E5',
   /** Cool grey. Timestamps, metadata, inactive labels, disabled states. */

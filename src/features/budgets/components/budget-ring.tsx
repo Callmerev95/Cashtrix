@@ -11,7 +11,9 @@
  * This stays a gauge, not a pie: it shows one percent (which can exceed 100%,
  * something a parts-of-whole pie cannot represent) with a state label.
  * The centre shows the percent in JetBrains Mono (`currency-*` tokens) and the
- * state label beneath it — never red (DESIGN.md §1: no error reds in charts).
+ * state label beneath it. The arc carries the state colour: gold 1–79%,
+ * amber at 80%, salmon at 100% (DESIGN.md §1/§5, owner screenshots
+ * 2026-10-19). `error` stays reserved for destructive actions.
  */
 import type { ComponentType } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -42,6 +44,7 @@ type AnimatedRingArcProps = {
   thickness: number;
   rotation: number;
   round: boolean;
+  color: string;
   testID: string;
 };
 
@@ -86,6 +89,14 @@ export function BudgetRing({
   const reduceMotion = useReducedMotion();
   const fill = ringFillFor(percent);
   const sweep = Math.min(Math.max(fill, 0), 1) * 360;
+  // State → colour. Thresholds are boundary-exact in `stateForPercent`, so
+  // 80.0 is warning and 100.0 is exceeded — no second comparison here.
+  const ringColor =
+    state === 'exceeded'
+      ? colors.budgetExceeded
+      : state === 'warning'
+        ? colors.budgetWarning
+        : colors.accent;
   const inner = size - thickness * 2;
   const center = size / 2;
   const radius = (size - thickness) / 2;
@@ -109,11 +120,10 @@ export function BudgetRing({
       <View
         style={[
           styles.ring,
-          {
-            width: size,
-            height: size,
-            ...(state === 'exceeded' ? styles.halo : null),
-          },
+          { width: size, height: size },
+          ...(state === 'exceeded'
+            ? [styles.halo, { shadowColor: ringColor }]
+            : []),
         ]}
       >
         <Svg width={size} height={size}>
@@ -134,7 +144,7 @@ export function BudgetRing({
                   cy={center}
                   r={radius}
                   fill="none"
-                  stroke={colors.accent}
+                  stroke={ringColor}
                   strokeWidth={thickness}
                 />
               ) : AnimatedRingArc && !reduceMotion ? (
@@ -146,6 +156,7 @@ export function BudgetRing({
                   thickness={thickness}
                   rotation={trimmedRotation}
                   round={round}
+                  color={ringColor}
                   testID={testID}
                 />
               ) : (
@@ -155,7 +166,7 @@ export function BudgetRing({
                   cy={center}
                   r={radius}
                   fill="none"
-                  stroke={colors.accent}
+                  stroke={ringColor}
                   strokeWidth={thickness}
                   strokeLinecap={round ? 'round' : 'butt'}
                   strokeDasharray={`${trimmedDash} ${circumference}`}
@@ -206,8 +217,8 @@ const styles = StyleSheet.create({
   },
   halo: {
     // Blur-ring glow for the exceeded state (DESIGN.md §4 catalog). Classic
-    // shadow props, like the primary button — no `boxShadow` strings.
-    shadowColor: colors.accent,
+    // shadow props, like the primary button — no `boxShadow` strings. The
+    // colour follows the state at the call site (salmon, not gold).
     shadowOpacity: 0.25,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 0 },

@@ -418,6 +418,7 @@ export const en: Dictionary = {
     row: {
       transactions: '{count} transactions',
       balanceLabel: '{name}, balance {balance}',
+      balanceHiddenLabel: '{name}, balance hidden',
     },
     list: {
       back: 'Back',

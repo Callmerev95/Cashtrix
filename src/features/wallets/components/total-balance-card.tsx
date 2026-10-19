@@ -23,12 +23,14 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { SkeletonBlock, useReducedMotion } from '@/components/skeleton';
-import { formatCurrency } from '@/features/wallets';
+import {
+  formatCurrency,
+  MASKED_BALANCE_HERO,
+  useBalanceHidden,
+} from '@/features/wallets';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, gradients, radius, spacing, typography } from '@/theme';
 import { pressedFeedback } from '@/components/pressed';
-
-import { readBalanceHidden, writeBalanceHidden } from '../visibility';
 
 export function TotalBalanceCard({
   total,
@@ -48,25 +50,9 @@ export function TotalBalanceCard({
   const reduceMotion = useReducedMotion();
   const { width: screenWidth } = useWindowDimensions();
 
-  // Device display preference (never purged on sign-out): read once on
-  // mount, toggle persisted best-effort. Promise callback, never
-  // synchronous setState (`react-hooks/set-state-in-effect`).
-  const [hidden, setHidden] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    readBalanceHidden().then((value) => {
-      if (!cancelled) setHidden(value);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  function toggleHidden() {
-    const next = !hidden;
-    setHidden(next);
-    void writeBalanceHidden(next);
-  }
+  // Device display preference (never purged on sign-out), shared with every
+  // wallet row through the module store.
+  const { hidden, toggle: toggleHidden } = useBalanceHidden();
 
   // Ambient sheen: a soft gold bar sweeping edge to edge and back (ping-pong
   // has no loop-seam jump). Dead under reduce-motion. State-initialised like
@@ -202,7 +188,7 @@ export function TotalBalanceCard({
             numberOfLines={1}
             adjustsFontSizeToFit
           >
-            {hidden ? 'Rp ••••••' : formatCurrency(total, 'Rp', language)}
+            {hidden ? MASKED_BALANCE_HERO : formatCurrency(total, 'Rp', language)}
           </Text>
         )}
         <Text style={[typography.bodySm, styles.meta]}>
