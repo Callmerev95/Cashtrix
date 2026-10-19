@@ -276,7 +276,9 @@ export function formatCustomLabel(
 /** The "Other" slice is real once there are more than 8 categories. */
 export const DONUT_TOP_N = 8;
 export const OTHER_LABEL = 'Other';
-export const OTHER_ICON = 'more_horiz';
+// `@expo/vector-icons@15` MaterialIcons is strip-named (`more-horiz`); the
+// underscore form is not in the font and renders a blank + LogBox warning.
+export const OTHER_ICON = 'more-horiz';
 
 /**
  * Minimum share (as a fraction) an arc must have to be drawn: "sudut 0.5%
@@ -508,6 +510,36 @@ export function enumerateBuckets(
     cursor.setUTCMonth(cursor.getUTCMonth() + 1);
   }
   return keys;
+}
+
+/**
+ * L4a: the `[from, to)` instants a chart bucket key (`YYYY-MM-DD`) covers, for
+ * the drill-down into `/search`. Daily keys span one day; monthly keys span the
+ * whole month. Built from device-local `Date` components exactly like
+ * `resolveRange`, so the drill window matches the axis the same code produced.
+ * Returns `null` for a malformed key.
+ */
+export function bucketRange(
+  bucket: string,
+  daily: boolean,
+): { from: Date; to: Date } | null {
+  const [year, month, day] = bucket.split('-').map(Number);
+  if (
+    !Number.isInteger(year) ||
+    !Number.isInteger(month) ||
+    !Number.isInteger(day) ||
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31
+  ) {
+    return null;
+  }
+  const from = new Date(year, month - 1, daily ? day : 1);
+  const to = daily
+    ? new Date(year, month - 1, day + 1)
+    : new Date(year, month, 1);
+  return { from, to };
 }
 
 /** `YYYY-MM-DD` of an instant as seen in `tz`. */

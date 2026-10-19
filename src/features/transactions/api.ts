@@ -101,6 +101,14 @@ export type SearchTransactionsInput = {
   kind: TransactionKindFilter;
   limit?: number;
   offset?: number;
+  /** L4a drill-down: restrict to one category. */
+  categoryId?: string | null;
+  /** L4a drill-down: inclusive ISO instant lower bound. */
+  from?: string | null;
+  /** L4a drill-down: exclusive ISO instant upper bound. */
+  to?: string | null;
+  /** L4a drill-down: source wallet (mirrors the Analytics wallet filter). */
+  walletId?: string | null;
 };
 
 /**
@@ -129,6 +137,20 @@ export async function searchTransactions(
 
   if (input.kind !== 'all') {
     query = query.eq('type', input.kind);
+  }
+  // L4a: the chart's drill-down window/category/wallet, applied server-side so
+  // the result set is exactly the rows behind the tapped element.
+  if (input.categoryId) {
+    query = query.eq('category_id', input.categoryId);
+  }
+  if (input.walletId) {
+    query = query.eq('wallet_id', input.walletId);
+  }
+  if (input.from) {
+    query = query.gte('occurred_at', input.from);
+  }
+  if (input.to) {
+    query = query.lt('occurred_at', input.to);
   }
   if (pattern) {
     query = query.or(

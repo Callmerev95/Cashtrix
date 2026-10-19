@@ -612,6 +612,9 @@ export const id = {
     error: 'Gagal mencari',
     noResult: 'Tidak ada hasil untuk "{query}".',
     noKindResults: 'Tidak ada transaksi jenis ini.',
+    noFilterResults: 'Tidak ada transaksi pada filter ini.',
+    filterActiveA11y: 'Hapus filter {label}',
+    clearFilterA11y: 'Hapus filter',
     searching: 'Mencari…',
     resultCount: '{count} hasil',
     cancelSelect: 'Batalkan pilihan',
@@ -652,6 +655,8 @@ export const id = {
     currencyPrefix: 'Rp',
     sliceA11y: '{label}, {share} persen',
     barA11y: '{label}, {amount}',
+    viewTransactions: 'Lihat transaksi',
+    kpiDrillA11y: 'Lihat transaksi {label}',
     kpi: {
       expense: 'Pengeluaran',
       income: 'Pemasukan',

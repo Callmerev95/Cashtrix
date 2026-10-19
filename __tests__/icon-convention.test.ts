@@ -7,7 +7,13 @@
  * `validateCategoryIcon` menganggapnya valid karena katalognya sendiri yang
  * salah. Tes validasi biasa tidak bisa menangkap ini — satu-satunya ground
  * truth adalah glyphmap font yang terinstal.
+ *
+ * L4a: kelas bug yang sama lolos lagi lewat konstanta fitur
+ * (`OTHER_ICON = 'more_horiz'`), karena guard-nya waktu itu hanya menyapu
+ * `ICON_CATALOG`. Blok kedua menutup konstanta ikon fitur juga.
  */
+import { OTHER_ICON } from '@/features/analytics/domain';
+import { TRANSFER_ICON } from '@/features/transactions/domain';
 import { ICON_CATALOG } from '@/features/profile/domain';
 
 // Ground truth: glyphmap font yang dibundel expo. Bila path internal ini
@@ -47,5 +53,17 @@ describe('ICON_CATALOG — konvensi strip @expo/vector-icons@15', () => {
       (entry) => !(entry in glyphmap),
     );
     expect(missing).toEqual([]);
+  });
+});
+
+/** Konstanta ikon fitur (bukan katalog) yang juga dirender di UI. */
+const FEATURE_ICONS = [OTHER_ICON, TRANSFER_ICON] as const;
+
+describe('ikon konstanta fitur — konvensi yang sama', () => {
+  it('ber-strip dan ada di glyphmap font yang terinstal', () => {
+    for (const name of FEATURE_ICONS) {
+      expect(name).toMatch(/^[a-z]+(-[a-z]+)*$/);
+      expect(name in glyphmap).toBe(true);
+    }
   });
 });

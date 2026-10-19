@@ -611,6 +611,9 @@ export const en: Dictionary = {
     error: 'Search failed',
     noResult: 'No results for "{query}".',
     noKindResults: 'No transactions of this type.',
+    noFilterResults: 'No transactions for this filter.',
+    filterActiveA11y: 'Remove filter {label}',
+    clearFilterA11y: 'Remove filter',
     searching: 'Searching…',
     resultCount: '{count} results',
     cancelSelect: 'Cancel selection',
@@ -651,6 +654,8 @@ export const en: Dictionary = {
     currencyPrefix: 'Rp',
     sliceA11y: '{label}, {share} percent',
     barA11y: '{label}, {amount}',
+    viewTransactions: 'View transactions',
+    kpiDrillA11y: 'View {label} transactions',
     kpi: {
       expense: 'Expenses',
       income: 'Income',

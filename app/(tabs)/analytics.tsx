@@ -13,6 +13,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -28,6 +29,7 @@ import {
   RangeSegmentedControl,
   WalletFilterChips,
   CUSTOM_RANGE,
+  bucketRange,
   enumerateBuckets,
   formatCustomLabel,
   formatDateKey,
@@ -35,6 +37,7 @@ import {
   getInsightConsentSnapshot,
   isDailyCustom,
   isDailyRange,
+  rangeLabel,
   requestInsight,
   resolveCustomRange,
   resolveRange,
@@ -54,6 +57,7 @@ import {
   type InsightAiState,
   type TrendMode,
 } from '@/features/analytics';
+import { drillParams, type TransactionKindFilter } from '@/features/transactions';
 import { insightAiEvent, trackEvent } from '@/features/observability';
 import { Screen, AppHeader, ErrorStateCard, Skeleton, SkeletonBlock } from '@/components';
 import { pressedFeedback } from '@/components/pressed';
@@ -61,7 +65,7 @@ import { PullGesture, PullHeader, usePullRefresh } from '@/components/pull-refre
 import { useBudgets } from '@/features/budgets';
 import { useProfile } from '@/features/profile';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
-import { colors, gradients, radius, spacing, typography } from '@/theme';
+import { colors, gradients, layout, radius, spacing, typography } from '@/theme';
 
 export default function AnalyticsScreen() {
   const {
@@ -184,6 +188,79 @@ export default function AnalyticsScreen() {
       insightRunRateInput.monthKey,
     ),
   );
+
+  // L4a: drill-down into `/search`. Every surface is scoped to an instant
+  // window, so the results are exactly the rows behind the tapped element:
+  // a KPI = the whole range, a donut slice = one category, a bar = one bucket.
+  const windowLabel =
+    range === CUSTOM_RANGE
+      ? formatCustomLabel(customForWindow, language)
+      : rangeLabel(range, language);
+  const selectedSlice =
+    slices.find((slice) => slice.id === selectedSliceId) ?? null;
+  const selectedBar =
+    bars.find((bar) => bar.bucket === selectedBucket) ?? null;
+  const walletName =
+    walletId !== null
+      ? wallets.find((wallet) => wallet.id === walletId)?.name ?? null
+      : null;
+
+  function drillToSearch(input: {
+    kind: TransactionKindFilter;
+    from: Date;
+    to: Date;
+    categoryId?: string | null;
+    base: string;
+  }) {
+    const label = [input.base, walletName].filter(Boolean).join(' · ');
+    router.push({
+      pathname: '/search',
+      params: drillParams({
+        kind: input.kind,
+        from: input.from.toISOString(),
+        to: input.to.toISOString(),
+        categoryId: input.categoryId ?? null,
+        walletId,
+        label,
+      }),
+    });
+  }
+
+  // The donut/breakdown are expense-only, so a slice drills expense rows. The
+  // `__other__` tail is an aggregate — it cannot be named honestly, so it has
+  // no drill (mirrors `toAnomalies` skipping it).
+  function drillSlice() {
+    if (!selectedSlice || selectedSlice.id === '__other__') return;
+    drillToSearch({
+      kind: 'expense',
+      from: window.start,
+      to: window.end,
+      categoryId: selectedSlice.id,
+      base: `${selectedSlice.label} · ${windowLabel}`,
+    });
+  }
+
+  function drillBucket() {
+    if (!selectedBucket || trendMode === 'net') return;
+    const sub = bucketRange(selectedBucket, daily);
+    if (!sub) return;
+    drillToSearch({
+      kind: trendMode,
+      from: sub.from,
+      to: sub.to,
+      base: `${selectedBar?.label ?? selectedBucket} · ${windowLabel}`,
+    });
+  }
+
+  // Net taps span every kind (net includes transfers), matching the KPI figure.
+  function drillKpi(tone: 'expense' | 'income' | 'net') {
+    drillToSearch({
+      kind: tone === 'net' ? 'all' : tone,
+      from: window.start,
+      to: window.end,
+      base: `${t.analytics.kpi[tone]} · ${windowLabel}`,
+    });
+  }
 
   // L1: AI rephrase rides on top of the deterministic lines (never instead
   // of them). Stale AI clears via render-adjust when the input changes —
@@ -385,7 +462,11 @@ export default function AnalyticsScreen() {
           <AnalyticsEmptyState />
         ) : (
           <>
-            <KpiHeader totals={overview.totals} delta={overview.delta} />
+            <KpiHeader
+              totals={overview.totals}
+              delta={overview.delta}
+              onSelect={drillKpi}
+            />
 
             {insight && insight.lines.length > 0 ? (
               <InsightCard
@@ -430,6 +511,29 @@ export default function AnalyticsScreen() {
                 selectedId={selectedSliceId}
                 onSelect={setSelectedSliceId}
               />
+              {selectedSlice && selectedSlice.id !== '__other__' ? (
+                <Pressable
+                  testID="analytics-drill-slice"
+                  accessibilityRole="button"
+                  accessibilityLabel={t.analytics.viewTransactions}
+                  onPress={drillSlice}
+                  style={({ pressed }) => [
+                    styles.drill,
+                    pressed && pressedFeedback,
+                  ]}
+                >
+                  <Text
+                    style={[typography.labelUppercase, styles.drillText]}
+                  >
+                    {t.analytics.viewTransactions}
+                  </Text>
+                  <MaterialIcons
+                    name="chevron-right"
+                    size={18}
+                    color={colors.accent}
+                  />
+                </Pressable>
+              ) : null}
             </LinearGradient>
 
             <LinearGradient
@@ -483,6 +587,29 @@ export default function AnalyticsScreen() {
                   onSelect={setSelectedBucket}
                 />
               )}
+              {selectedBucket && trendMode !== 'net' ? (
+                <Pressable
+                  testID="analytics-drill-bucket"
+                  accessibilityRole="button"
+                  accessibilityLabel={t.analytics.viewTransactions}
+                  onPress={drillBucket}
+                  style={({ pressed }) => [
+                    styles.drill,
+                    pressed && pressedFeedback,
+                  ]}
+                >
+                  <Text
+                    style={[typography.labelUppercase, styles.drillText]}
+                  >
+                    {t.analytics.viewTransactions}
+                  </Text>
+                  <MaterialIcons
+                    name="chevron-right"
+                    size={18}
+                    color={colors.accent}
+                  />
+                </Pressable>
+              ) : null}
             </LinearGradient>
           </>
         )}
@@ -549,6 +676,16 @@ const styles = StyleSheet.create({
   legendDivider: {
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
+  },
+  drill: {
+    minHeight: layout.minTapTarget,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: spacing.xs,
+  },
+  drillText: {
+    color: colors.accent,
   },
   skeleton: {
     gap: spacing.md,

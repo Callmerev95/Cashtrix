@@ -672,8 +672,119 @@ export function buildSearchPattern(query: string): string | null {
 export function isSearchActive(
   query: string,
   kind: TransactionKindFilter,
+  filters?: SearchFilters | null,
 ): boolean {
-  return buildSearchPattern(query) !== null || kind !== 'all';
+  return (
+    buildSearchPattern(query) !== null ||
+    kind !== 'all' ||
+    (filters != null && hasSearchFilters(filters))
+  );
+}
+
+// Drill-down filters (L4a — Analytics → /search)
+//
+// A drill-down carries structured filters *on top of* the free-text + kind
+// pair: the category, the `[from, to)` instant window the chart bucketed, and
+// the source wallet. They arrive as route params and are normalised here so
+// the screen and the query builder agree on one shape.
+
+/** Structured search filters from a drill-down (all optional / nullable). */
+export type SearchFilters = {
+  categoryId: string | null;
+  /** Inclusive ISO instant. */
+  from: string | null;
+  /** Exclusive ISO instant. */
+  to: string | null;
+  /** Source wallet (transfers filter by origin, mirroring Analytics). */
+  walletId: string | null;
+  /** Human summary for the removable filter chip (presentational only). */
+  label: string | null;
+};
+
+export const EMPTY_SEARCH_FILTERS: SearchFilters = {
+  categoryId: null,
+  from: null,
+  to: null,
+  walletId: null,
+  label: null,
+};
+
+/** Reads the first string of a route param (`?a=1` may arrive as an array). */
+function firstParam(value: string | string[] | undefined): string | null {
+  if (typeof value === 'string') return value.length > 0 ? value : null;
+  if (Array.isArray(value) && value.length > 0 && value[0].length > 0) {
+    return value[0];
+  }
+  return null;
+}
+
+/** Normalises `/search` route params into `SearchFilters`. */
+export function parseSearchFilters(
+  params: Record<string, string | string[] | undefined>,
+): SearchFilters {
+  return {
+    categoryId: firstParam(params.categoryId),
+    from: firstParam(params.from),
+    to: firstParam(params.to),
+    walletId: firstParam(params.walletId),
+    label: firstParam(params.label),
+  };
+}
+
+/** Whether any *query-shaping* filter is set (label is presentational). */
+export function hasSearchFilters(filters: SearchFilters): boolean {
+  return (
+    filters.categoryId !== null ||
+    filters.from !== null ||
+    filters.to !== null ||
+    filters.walletId !== null
+  );
+}
+
+/** Normalises the `kind` route param from a drill-down; unknown → `all`. */
+export function parseKindFilter(
+  value: string | string[] | undefined,
+): TransactionKindFilter {
+  const raw =
+    typeof value === 'string' ? value : Array.isArray(value) ? value[0] : undefined;
+  if (raw === 'all') return 'all';
+  return raw != null && isTransactionType(raw) ? raw : 'all';
+}
+
+/** Stable identity of the structured filters, for the in-flight request key. */
+export function searchFilterKey(filters: SearchFilters): string {
+  return [filters.categoryId, filters.from, filters.to, filters.walletId]
+    .map((value) => value ?? '')
+    .join('|');
+}
+
+export type DrillParams = {
+  kind: TransactionKindFilter;
+  /** Inclusive ISO instant of the drilled window. */
+  from: string;
+  /** Exclusive ISO instant of the drilled window. */
+  to: string;
+  categoryId?: string | null;
+  walletId?: string | null;
+  /** Human summary shown in the removable filter chip. */
+  label: string;
+};
+
+/**
+ * Route params for `/search`. `from`/`to` are always present: every drill
+ * surface (KPI, donut slice, bar bucket) is scoped to an instant window, so
+ * the results are exactly the rows behind the tapped element.
+ */
+export function drillParams(input: DrillParams): Record<string, string> {
+  const params: Record<string, string> = {
+    kind: input.kind,
+    from: input.from,
+    to: input.to,
+    label: input.label,
+  };
+  if (input.categoryId) params.categoryId = input.categoryId;
+  if (input.walletId) params.walletId = input.walletId;
+  return params;
 }
 
 // Bulk select (A4 — bulk edit kategori)

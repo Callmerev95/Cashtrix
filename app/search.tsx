@@ -3,7 +3,7 @@
  * shared history list; post-apply refreshes mirror the save flow. Loading is
  * derived (`loadedKey !== requestedKey`), never set in an effect.
  */
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
   useCallback,
   useEffect,
@@ -12,6 +12,7 @@ import {
 } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { ErrorStateCard, Screen, TextField } from '@/components';
 import { useAnalytics } from '@/features/analytics';
@@ -19,6 +20,7 @@ import { useAuth } from '@/features/auth';
 import { useBudgets } from '@/features/budgets';
 import {
   CategoryGrid,
+  EMPTY_SEARCH_FILTERS,
   PAGE_SIZE,
   SEARCH_DEBOUNCE_MS,
   SearchKindControl,
@@ -27,12 +29,17 @@ import {
   bulkUpdateCategory,
   buildSearchPattern,
   hasMoreAfter,
+  hasSearchFilters,
   isSearchActive,
   kindFilterLabel,
+  parseKindFilter,
+  parseSearchFilters,
+  searchFilterKey,
   searchTransactions,
   toggleBulkRow,
   useTransactions,
   type Category,
+  type SearchFilters,
   type Transaction,
   type TransactionKindFilter,
 } from '@/features/transactions';
@@ -41,8 +48,16 @@ import { colors, layout, radius, spacing, typography } from '@/theme';
 import { pressedFeedback } from '@/components/pressed';
 
 export default function SearchScreen() {
+  const params = useLocalSearchParams();
   const [query, setQuery] = useState('');
-  const [kind, setKind] = useState<TransactionKindFilter>('all');
+  // L4a: a drill-down from Analytics seeds the structured filters (and the
+  // kind) once; they then live in state so the chip can remove them.
+  const [kind, setKind] = useState<TransactionKindFilter>(() =>
+    parseKindFilter(params.kind),
+  );
+  const [filters, setFilters] = useState<SearchFilters>(() =>
+    parseSearchFilters(params),
+  );
   const [results, setResults] = useState<Transaction[]>([]);
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -79,10 +94,13 @@ export default function SearchScreen() {
     };
   }, []);
 
-  const active = isSearchActive(query, kind);
+  const active = isSearchActive(query, kind, filters);
   const pattern = buildSearchPattern(query);
-  // Identity of the in-flight request: kind + text. `loading` follows from it.
-  const requestedKey = active ? `${kind}|${pattern ?? ''}` : null;
+  // Identity of the in-flight request: kind + text + structured filters.
+  const filterKey = searchFilterKey(filters);
+  const requestedKey = active
+    ? `${kind}|${pattern ?? ''}|${filterKey}`
+    : null;
   const loading = requestedKey !== null && loadedKey !== requestedKey;
 
   const selection = bulkSelectionFor(selectedIds, results);
@@ -91,12 +109,20 @@ export default function SearchScreen() {
   const runSearch = useCallback(
     (nextQuery: string, nextKind: TransactionKindFilter): Promise<void> => {
       const ticket = ++requestId.current;
-      const key: string | null = isSearchActive(nextQuery, nextKind)
-        ? `${nextKind}|${buildSearchPattern(nextQuery) ?? ''}`
+      const key: string | null = isSearchActive(nextQuery, nextKind, filters)
+        ? `${nextKind}|${buildSearchPattern(nextQuery) ?? ''}|${searchFilterKey(filters)}`
         : null;
       if (key === null) return Promise.resolve();
 
-      return searchTransactions({ query: nextQuery, kind: nextKind, offset: 0 })
+      return searchTransactions({
+        query: nextQuery,
+        kind: nextKind,
+        offset: 0,
+        categoryId: filters.categoryId,
+        from: filters.from,
+        to: filters.to,
+        walletId: filters.walletId,
+      })
         .then((page) => {
           if (!mounted.current || ticket !== requestId.current) return;
           setResults(page);
@@ -115,23 +141,23 @@ export default function SearchScreen() {
           );
         });
     },
-    [ts.error],
+    [ts.error, filters],
   );
 
   // Debounced text search; a kind tap searches immediately via its handler.
   useEffect(() => {
-    if (!isSearchActive(query, kind)) return;
+    if (!isSearchActive(query, kind, filters)) return;
     const timer = setTimeout(() => {
       void runSearch(query, kind);
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [query, kind, runSearch]);
+  }, [query, kind, filters, runSearch]);
 
   // Returning from the edit form refetches — the row may have changed.
   useFocusEffect(
     useCallback(() => {
-      if (isSearchActive(query, kind)) void runSearch(query, kind);
-    }, [query, kind, runSearch]),
+      if (isSearchActive(query, kind, filters)) void runSearch(query, kind);
+    }, [query, kind, filters, runSearch]),
   );
 
   const loadMore = useCallback(() => {
@@ -139,7 +165,15 @@ export default function SearchScreen() {
     fetchingPage.current = true;
     setLoadingMore(true);
 
-    searchTransactions({ query, kind, offset: results.length })
+    searchTransactions({
+      query,
+      kind,
+      offset: results.length,
+      categoryId: filters.categoryId,
+      from: filters.from,
+      to: filters.to,
+      walletId: filters.walletId,
+    })
       .then((page) => {
         if (!mounted.current) return;
         setResults((current) => {
@@ -156,7 +190,7 @@ export default function SearchScreen() {
         fetchingPage.current = false;
         if (mounted.current) setLoadingMore(false);
       });
-  }, [query, kind, results.length, ts.error]);
+  }, [query, kind, results.length, ts.error, filters]);
 
   function exitSelect() {
     setSelecting(false);
@@ -164,6 +198,12 @@ export default function SearchScreen() {
     setSelectHint(null);
     setChoosingCategory(false);
     setPickedCategory(null);
+  }
+
+  // L4a: dropping the drill-down filters returns to the plain text/kind search.
+  function clearFilters() {
+    setFilters(EMPTY_SEARCH_FILTERS);
+    exitSelect();
   }
 
   function onPressRow(row: Transaction) {
@@ -221,7 +261,9 @@ export default function SearchScreen() {
 
   const emptyLabel = pattern
     ? fill(ts.noResult, { query: pattern.slice(1, -1) })
-    : ts.noKindResults;
+    : hasSearchFilters(filters)
+      ? ts.noFilterResults
+      : ts.noKindResults;
   const resultLabel =
     loading && results.length === 0
       ? ts.searching
@@ -252,6 +294,34 @@ export default function SearchScreen() {
             void runSearch(query, next);
           }}
         />
+        {hasSearchFilters(filters) ? (
+          <Pressable
+            testID="search-filter-chip"
+            accessibilityRole="button"
+            accessibilityLabel={fill(ts.filterActiveA11y, {
+              label: filters.label ?? '',
+            })}
+            onPress={clearFilters}
+            style={({ pressed }) => [
+              styles.filterChip,
+              pressed && pressedFeedback,
+            ]}
+          >
+            {filters.label ? (
+              <Text
+                style={[typography.bodySm, styles.filterText]}
+                numberOfLines={1}
+              >
+                {filters.label}
+              </Text>
+            ) : null}
+            <MaterialIcons
+              name="close"
+              size={16}
+              color={colors.accent}
+            />
+          </Pressable>
+        ) : null}
         {error ? (
           <ErrorStateCard
             testID="search-error"
@@ -463,6 +533,23 @@ const styles = StyleSheet.create({
   },
   hintInline: {
     color: colors.textSecondary,
+  },
+  filterChip: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingLeft: spacing.sm,
+    paddingRight: spacing.xs,
+    borderRadius: radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.accent,
+    backgroundColor: colors.surfaceElevated,
+  },
+  filterText: {
+    color: colors.accent,
+    flexShrink: 1,
   },
   error: {
     color: colors.error,

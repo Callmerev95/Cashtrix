@@ -11,6 +11,7 @@ import {
   MIN_ARC_SHARE,
   OTHER_LABEL,
   RANGE_PRESETS,
+  bucketRange,
   deltaTone,
   donutSegmentSliceIndices,
   enumerateBuckets,
@@ -861,5 +862,45 @@ describe('isDailyCustom + formatCustomLabel (L4c)', () => {
     expect(
       formatCustomLabel({ startKey: '2026-09-15', endKey: '2026-10-07' }, 'en'),
     ).toBe('Sep 15 – Oct 7 2026');
+  });
+});
+
+describe('bucketRange (L4a drill window)', () => {
+  it('daily: one day, half-open [from, to)', () => {
+    const range = bucketRange('2026-10-05', true);
+    expect(range).not.toBeNull();
+    expect(range!.from.getFullYear()).toBe(2026);
+    expect(range!.from.getMonth()).toBe(9);
+    expect(range!.from.getDate()).toBe(5);
+    expect(range!.to.getDate()).toBe(6);
+  });
+
+  it('monthly: whole month, exclusive next first', () => {
+    const range = bucketRange('2026-10-01', false);
+    expect(range!.from.getDate()).toBe(1);
+    expect(range!.from.getMonth()).toBe(9);
+    expect(range!.to.getMonth()).toBe(10);
+    expect(range!.to.getDate()).toBe(1);
+  });
+
+  it('daily across a month boundary rolls into the next month', () => {
+    const range = bucketRange('2026-10-31', true);
+    expect(range!.to.getMonth()).toBe(10);
+    expect(range!.to.getDate()).toBe(1);
+  });
+
+  it('monthly December rolls into the next year', () => {
+    const range = bucketRange('2026-12-01', false);
+    expect(range!.to.getFullYear()).toBe(2027);
+    expect(range!.to.getMonth()).toBe(0);
+  });
+
+  it('malformed keys → null (never a NaN date)', () => {
+    expect(bucketRange('', true)).toBeNull();
+    expect(bucketRange('nope', true)).toBeNull();
+    expect(bucketRange('2026-13-01', true)).toBeNull();
+    expect(bucketRange('2026-00-01', true)).toBeNull();
+    expect(bucketRange('2026-10-00', false)).toBeNull();
+    expect(bucketRange('2026-10-32', false)).toBeNull();
   });
 });

@@ -6,11 +6,12 @@
  * is gold and "down" is muted grey. A `null` delta (no previous data) renders
  * as an em dash, never `NaN`/`Infinity`.
  */
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Card } from '@/components/card';
+import { pressedFeedback } from '@/components/pressed';
 import { colors, spacing, typography } from '@/theme';
-import { dictionaryFor, useLanguage, type Language } from '@/i18n';
+import { dictionaryFor, fill, useLanguage, type Language } from '@/i18n';
 
 import { deltaTone, formatDelta } from '../domain';
 import { formatGrouped } from '../../transactions/domain';
@@ -20,10 +21,13 @@ export function KpiHeader({
   totals,
   delta,
   testID = 'analytics-kpi',
+  onSelect,
 }: {
   totals: { expense: number; income: number; net: number };
   delta: { expense: number | null; income: number | null; net: number | null };
   testID?: string;
+  /** L4a: tapping a KPI drills into its transactions. Absent = inert card. */
+  onSelect?: (tone: 'expense' | 'income' | 'net') => void;
 }) {
   // C6: labels + number format follow the OS language (ADR-0008, R10).
   const language = useLanguage();
@@ -37,6 +41,7 @@ export function KpiHeader({
         delta={delta.expense}
         tone="expense"
         language={language}
+        onPress={onSelect ? () => onSelect('expense') : undefined}
       />
       <View style={styles.divider} />
       <Kpi
@@ -46,6 +51,7 @@ export function KpiHeader({
         delta={delta.income}
         tone="income"
         language={language}
+        onPress={onSelect ? () => onSelect('income') : undefined}
       />
       <View style={styles.divider} />
       <Kpi
@@ -55,6 +61,7 @@ export function KpiHeader({
         delta={delta.net}
         tone="net"
         language={language}
+        onPress={onSelect ? () => onSelect('net') : undefined}
       />
     </Card>
   );
@@ -67,6 +74,7 @@ function Kpi({
   tone,
   testID,
   language,
+  onPress,
 }: {
   label: string;
   value: number;
@@ -74,12 +82,13 @@ function Kpi({
   tone: 'expense' | 'income' | 'net';
   testID?: string;
   language: Language;
+  onPress?: () => void;
 }) {
   const direction = deltaTone(delta);
   const t = dictionaryFor(language).analytics;
   const prefix = t.currencyPrefix;
-  return (
-    <View testID={testID} style={styles.kpi}>
+  const body = (
+    <>
       <Text
         style={[typography.labelUppercase, styles.label]}
         numberOfLines={1}
@@ -107,7 +116,27 @@ function Kpi({
       >
         {formatDelta(delta, language)}
       </Text>
-    </View>
+    </>
+  );
+
+  if (!onPress) {
+    return (
+      <View testID={testID} style={styles.kpi}>
+        {body}
+      </View>
+    );
+  }
+
+  return (
+    <Pressable
+      testID={testID}
+      accessibilityRole="button"
+      accessibilityLabel={fill(t.kpiDrillA11y, { label })}
+      onPress={onPress}
+      style={({ pressed }) => [styles.kpi, pressed && pressedFeedback]}
+    >
+      {body}
+    </Pressable>
   );
 }
 

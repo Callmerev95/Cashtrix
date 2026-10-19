@@ -23,6 +23,7 @@ export {
   arcGradientVector,
   roundCapSpan,
   shouldRoundCaps,
+  bucketRange,
   deltaTone,
   donutSegmentSliceIndices,
   enumerateBuckets,

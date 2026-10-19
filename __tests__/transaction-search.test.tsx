@@ -7,12 +7,18 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import {
+  EMPTY_SEARCH_FILTERS,
   KIND_FILTER_OPTIONS,
   SEARCH_DEBOUNCE_MS,
   SearchKindControl,
   buildSearchPattern,
+  drillParams,
+  hasSearchFilters,
   isSearchActive,
   kindFilterLabel,
+  parseKindFilter,
+  parseSearchFilters,
+  searchFilterKey,
 } from '@/features/transactions';
 
 describe('buildSearchPattern', () => {
@@ -63,6 +69,105 @@ describe('search constants', () => {
     expect(kindFilterLabel('all')).toBe('Semua');
     expect(kindFilterLabel('expense', 'en')).toBe('Expense');
     expect(kindFilterLabel('all', 'en')).toBe('All');
+  });
+});
+
+describe('drill-down filters (L4a)', () => {
+  it('parseSearchFilters menormalkan params rute (array → string pertama)', () => {
+    expect(parseSearchFilters({})).toEqual(EMPTY_SEARCH_FILTERS);
+    expect(
+      parseSearchFilters({
+        categoryId: 'cat-1',
+        from: '2026-10-01T00:00:00.000Z',
+        to: '2026-10-02T00:00:00.000Z',
+        walletId: ['w-1', 'w-2'],
+        label: 'Makanan · 1B',
+      }),
+    ).toEqual({
+      categoryId: 'cat-1',
+      from: '2026-10-01T00:00:00.000Z',
+      to: '2026-10-02T00:00:00.000Z',
+      walletId: 'w-1',
+      label: 'Makanan · 1B',
+    });
+  });
+
+  it('hasSearchFilters mengabaikan label (presentasional)', () => {
+    expect(hasSearchFilters(EMPTY_SEARCH_FILTERS)).toBe(false);
+    expect(
+      hasSearchFilters({ ...EMPTY_SEARCH_FILTERS, label: 'Makanan' }),
+    ).toBe(false);
+    expect(
+      hasSearchFilters({ ...EMPTY_SEARCH_FILTERS, categoryId: 'cat-1' }),
+    ).toBe(true);
+    expect(hasSearchFilters({ ...EMPTY_SEARCH_FILTERS, from: 'x' })).toBe(true);
+    expect(hasSearchFilters({ ...EMPTY_SEARCH_FILTERS, to: 'x' })).toBe(true);
+    expect(
+      hasSearchFilters({ ...EMPTY_SEARCH_FILTERS, walletId: 'w-1' }),
+    ).toBe(true);
+  });
+
+  it('isSearchActive ikut menyala saat hanya filter terstruktur yang diisi', () => {
+    expect(isSearchActive('', 'all', EMPTY_SEARCH_FILTERS)).toBe(false);
+    expect(
+      isSearchActive('', 'all', { ...EMPTY_SEARCH_FILTERS, categoryId: 'cat-1' }),
+    ).toBe(true);
+  });
+
+  it('searchFilterKey stabil dan berbeda per isi', () => {
+    expect(searchFilterKey(EMPTY_SEARCH_FILTERS)).toBe('|||');
+    expect(
+      searchFilterKey({
+        categoryId: 'cat-1',
+        from: 'a',
+        to: 'b',
+        walletId: 'w-1',
+        label: 'x',
+      }),
+    ).toBe('cat-1|a|b|w-1');
+  });
+
+  it('parseKindFilter hanya menerima kind yang sah', () => {
+    expect(parseKindFilter(undefined)).toBe('all');
+    expect(parseKindFilter('')).toBe('all');
+    expect(parseKindFilter('bogus')).toBe('all');
+    expect(parseKindFilter('all')).toBe('all');
+    expect(parseKindFilter('expense')).toBe('expense');
+    expect(parseKindFilter(['transfer'])).toBe('transfer');
+  });
+
+  it('drillParams selalu membawa from/to + label, kategori/dompet opsional', () => {
+    expect(
+      drillParams({
+        kind: 'expense',
+        from: '2026-10-01T00:00:00.000Z',
+        to: '2026-10-02T00:00:00.000Z',
+        label: 'Makanan · 1B',
+      }),
+    ).toEqual({
+      kind: 'expense',
+      from: '2026-10-01T00:00:00.000Z',
+      to: '2026-10-02T00:00:00.000Z',
+      label: 'Makanan · 1B',
+    });
+
+    expect(
+      drillParams({
+        kind: 'all',
+        from: 'a',
+        to: 'b',
+        categoryId: 'cat-1',
+        walletId: 'w-1',
+        label: 'Net · Semua',
+      }),
+    ).toEqual({
+      kind: 'all',
+      from: 'a',
+      to: 'b',
+      categoryId: 'cat-1',
+      walletId: 'w-1',
+      label: 'Net · Semua',
+    });
   });
 });
 
