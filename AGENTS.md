@@ -588,7 +588,7 @@ Single-context layout — one `CONTEXT.md` + `docs/adr/` at the repo root. See `
 - Orb = satu `<Svg viewBox="0 0 158 100">` (rasio card 1.58 dalam user unit, ikut lebar card tanpa mengukur) berisi 3 `Circle` + 3 `RadialGradient` (falloff alpha = blur-nya). Anchor: gold utama kanan-atas, redup kiri-bawah, specular warm-white kecil. Noise `assets/noise.png` (128×128 gray 11KB, generate ffmpeg `noise=alls=100:allf=t+u`, `resizeMode="repeat"`, opacity 0.035) mematikan banding gradien OLED.
 - Android frost butuh API ≥57: `<BlurTargetView ref>` membungkus orb+noise + `<BlurView blurTarget blurMethod="dimezisBlurViewSdk31Plus" intensity={iOS 26/Android 20}>`; iOS mengabaikan `blurTarget` (blur backdrop). Tanpa target native → fallback `none` (veil tint) tanpa crash; sheen/bevel/konten SENGAJA di atas blur agar tetap tajam dan blur tak dihitung per frame.
 - TestID baru aditif: `balance-orbs` (mock svg: 3 `RadialGradient` + 3 `Circle` via `data-svg`), `balance-frost`, `balance-noise`. Tes baru di `total-balance-card.test.tsx` 1 kasus; full Jest 980/980.
-- `delete __tests__/.session-seed.json` sebelum Jest (sama). Device gate: **pending** (OTA menyusul; cek frost engage vs degrade, kontras, sheen, reduce-motion).
+- `delete __tests__/.session-seed.json` sebelum Jest (sama). **OTA terkirim 2026-10-19** (grup `b65e2a9a-6e8a-4f56-b0fe-0090efbb618f`, Android, runtime 2.1.0, commit `b15db97`) — sukses sekali jalan. Device gate: **pending** (cek frost engage vs degrade tint, kontras, sheen di atas frost, chip 40×30, reduce-motion, scroll Dashboard).
 
 ### Perbaikan flake verify-d5 (fix CI run 39182340455, Okt 2026)
 
