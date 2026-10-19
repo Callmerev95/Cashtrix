@@ -48,11 +48,12 @@ export const palette = {
    */
   dangerSurface: 'rgba(147, 0, 10, 0.28)',
   /**
-   * Hero card, mock-exact (owner screenshot `polish-eye-hidden.png`,
-   * 19 Okt 2026): flat field base, muted-gold frame, and the softer gold of
-   * the outline chip + wordmark — all measured from the mock pixels.
+   * Hero card, mock-exact (owner reference `polish-card.png`, 19 Okt 2026):
+   * flat field base, dark centre core, muted-gold frame, and the softer gold
+   * of the outline chip + wordmark — all fitted from the mock pixels.
    */
-  heroBase: '#121212',
+  heroBase: '#131313',
+  heroCore: '#0C0C0C',
   heroBorder: '#766632',
   heroGold: '#CEB04E',
 } as const;
@@ -75,10 +76,15 @@ export const colors = {
   scrimSoft: 'rgba(0, 0, 0, 0.5)',
   /** Gold at 15% opacity for highlighted card borders. */
   accentBorderSoft: 'rgba(212, 175, 55, 0.15)',
-  /** Ambience blob fill — radial gold at 10% opacity (hero orb bottom-right). */
+  /** Ambience blob fill — radial gold at 10% opacity (empty-state surfaces). */
   accentAmbience: 'rgba(212, 175, 55, 0.10)',
-  /** Hero card cool orb (top-left corner) — measured cool white-blue sheen. */
-  heroOrbCool: 'rgba(233, 239, 255, 0.10)',
+  /**
+   * Hero card cool orb (top-left corner). Hex, not rgba: the alpha lives in
+   * each gradient stop's `stopOpacity` — the pattern proven on device
+   * elsewhere (net-area-chart, bar-chart). An `rgba()` string as `stopColor`
+   * was this card's only such use and is not trusted on Android.
+   */
+  heroOrbCool: '#E9EFFF',
   /**
    * Scan viewfinder corner brackets. Gold accent, never income-green:
    * green would collide with the income meaning (DESIGN.md §1).

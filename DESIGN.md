@@ -31,11 +31,12 @@ These are the source-of-truth tokens. All UI must reference them.
 | `text-on-accent` | `#0A0A0A` | Obsidian text on gold fills (primary buttons). |
 | `text-bright` | `#FFFFFF` | Pure white — hero card amount only (mock-measured, 19 Okt 2026). |
 | `danger-surface` | `rgba(147, 0, 10, 0.28)` | Tinted danger pill (sign-out). Destructive only. |
-| `hero-base` | `#121212` | Hero card flat field base (mock-measured, 19 Okt 2026). |
+| `hero-base` | `#131313` | Hero card flat field base (mock-fitted `polish-card.png`, 19 Okt 2026). |
+| `hero-core` | `#0C0C0C` | Hero dark centre core under the corner orbs (mock-fitted, 19 Okt 2026). |
 | `hero-border` | `#766632` | Hero card frame — muted uniform gold hairline, no glow. |
 | `hero-gold` | `#CEB04E` | Hero outline chip + wordmark (softer than `accent`). |
-| `accent-ambience` | `rgba(212, 175, 55, 0.10)` | Soft gold fill behind empty-state surfaces and the hero's bottom-right orb. |
-| `hero-orb-cool` | `rgba(233, 239, 255, 0.10)` | Hero top-left cool orb (mock-measured, 19 Okt 2026). |
+| `accent-ambience` | `rgba(212, 175, 55, 0.10)` | Soft gold fill behind empty-state surfaces. |
+| `hero-orb-cool` | `#E9EFFF` | Hero top-left cool orb — hex only; alpha lives in stop `stopOpacity` (19 Okt 2026). |
 
 ### Semantic rules
 
@@ -183,7 +184,7 @@ Depth = tonal layering + hairline edges + diffuse gold glow (never heavy drop sh
 ### Cards
 - L1 container, 20–24px padding, 1px `#2C2C2E` border, radius 20–32px.
 - Highlight variants: gradient border gold→`#2C2C2E`, or radial gold ambience blob behind.
-- **Obsidian hero:** fixed 1.58 aspect, flat `hero-base` field with two corner orbs (cool top-left, gold bottom-right) drawn as SVG radial falloffs (3-stop alpha fade — the falloff IS the glow), 3.5% noise grain against OLED gradient banding, muted `hero-border` hairline with **no glow**, outline chip (two horizontal traces, no fill, no NFC), `hero-gold` wordmark, eye toggle (`accent-soft`, 22px), pure-white `currency-display` 30px nominal, `border-strong` hairline divider, uppercase holder line. Ambient sheen stays (ping-pong, dead under reduce-motion). Mock-exact pass (owner reference `polish-eye-hidden.png`, 19 Okt 2026) — the earlier glass pass (frost `expo-blur`, bevel, vignette rim, glowing gold edge) was dropped to match the mock.
+- **Obsidian hero:** fixed 1.58 aspect, flat `hero-base` field with a dark `hero-core` centre under two corner orbs (cool top-left, gold bottom-right) drawn as SVG radial falloffs (3-stop alpha fade — the falloff IS the glow), 3.5% noise grain against OLED gradient banding, muted `hero-border` hairline with **no glow**, outline chip (two horizontal traces, no fill, no NFC), `hero-gold` wordmark, eye toggle (`accent-soft`, 22px), pure-white `currency-display` 30px nominal, `border-strong` hairline divider, uppercase holder line. Ambient sheen stays (ping-pong, dead under reduce-motion). Mock-exact pass (owner reference `polish-card.png`, 19 Okt 2026; earlier `polish-eye-hidden.png` crop superseded) — the earlier glass pass (frost `expo-blur`, bevel, vignette rim, glowing gold edge) was dropped to match the mock.
 - **Section cards (Profile pattern):** one card per section: icon + title header, then borderless rows on hairline dividers (rule 5 exception). Destructive rows keep red icon/title but lose their own frame.
 - **Currency well:** read-only mirror of the chips (symbol + code + full name), no chevron, no tags, since decoration without behaviour is refused.
 

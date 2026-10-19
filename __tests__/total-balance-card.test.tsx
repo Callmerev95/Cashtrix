@@ -64,18 +64,26 @@ describe('TotalBalanceCard', () => {
     expect(screen.getByTestId('balance-visibility')).toBeTruthy();
   });
 
-  it('layers the mock field: corner orbs and noise grain', async () => {
+  it('layers the mock field: dark core, corner orbs and noise grain', async () => {
     await AsyncStorage.removeItem(BALANCE_HIDDEN_KEY);
     render(<TotalBalanceCard {...props} />);
     await screen.findByTestId('total-balance-card');
 
     const orbs = screen.getByTestId('balance-orbs');
-    expect(
-      within(orbs).UNSAFE_getAllByProps({ 'data-svg': 'RadialGradient' }),
-    ).toHaveLength(2);
-    expect(
-      within(orbs).UNSAFE_getAllByProps({ 'data-svg': 'Circle' }),
-    ).toHaveLength(2);
+    const gradients = within(orbs).UNSAFE_getAllByProps({
+      'data-svg': 'RadialGradient',
+    });
+    expect(gradients.map((g) => g.props.id)).toEqual([
+      'fieldCore',
+      'orbCool',
+      'orbGold',
+    ]);
+    const circles = within(orbs).UNSAFE_getAllByProps({ 'data-svg': 'Circle' });
+    expect(circles.map((c) => c.props.fill)).toEqual([
+      'url(#fieldCore)',
+      'url(#orbCool)',
+      'url(#orbGold)',
+    ]);
     expect(screen.getByTestId('balance-noise')).toBeTruthy();
   });
 

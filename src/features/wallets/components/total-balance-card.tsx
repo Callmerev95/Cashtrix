@@ -3,17 +3,19 @@
  * dressed as an obsidian card: fixed 1.58 aspect, outline chip, CASHTRIX
  * wordmark, eye toggle, JetBrains Mono total, cardholder name.
  *
- * Mock-exact pass (owner reference `polish-eye-hidden.png`, 19 Okt 2026): a
- * flat `heroBase` field carrying two corner orbs — cool top-left, gold
- * bottom-right — drawn as SVG radial falloffs on a 158×100 viewBox (the
- * card's 1.58 aspect in user units, so they scale with the card and need no
- * measurement), plus micro-noise that kills gradient banding on OLED. The
- * frame is a muted `heroBorder` hairline with no glow, and the type scale,
- * chip and divider follow the mock's measurements. The frost, bevel and
- * vignette layers of the earlier glass pass were dropped to match the mock
- * (owner decision, same date). The sheen stays: a slow gold bar sweeping edge
- * to edge on a ping-pong loop, silenced under reduce-motion like every other
- * animation (DESIGN.md §8). Colours stay theme tokens.
+ * Mock-exact pass (owner reference `polish-card.png`, 19 Okt 2026): the
+ * field is three fitted SVG radial layers on a 158×100 viewBox (the card's
+ * 1.58 aspect in user units, so they scale with the card and need no
+ * measurement) — a dark centre core under two corner orbs, cool top-left and
+ * gold bottom-right — and micro-noise that kills gradient banding on OLED.
+ * Every gradient stop is hex + `stopOpacity` (an `rgba()` string as
+ * `stopColor` was this card's only such use and is not trusted on Android).
+ * The frame is a muted `heroBorder` hairline with no glow, and the type
+ * scale, chip and divider follow the mock's measurements. The frost, bevel
+ * and vignette layers of the earlier glass pass were dropped to match the
+ * mock (owner decision, same date). The sheen stays: a slow gold bar sweeping
+ * edge to edge on a ping-pong loop, silenced under reduce-motion like every
+ * other animation (DESIGN.md §8). Colours stay theme tokens.
  */
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useEffect, useState } from 'react';
@@ -99,36 +101,47 @@ export function TotalBalanceCard({
   return (
     <View testID="total-balance-card" style={[styles.frame, styles.aspect]}>
       <View style={styles.inner}>
-        {/* Corner orbs (mock): cool top-left, gold bottom-right, each fading
-            to nothing across the diagonal so the centre stays dark. The
-            falloff is the glow — no blur layer needed. */}
+        {/* Field layers, fitted against the mock: the dark centre core holds
+            the middle down (painted first), then the corner orbs — cool
+            top-left, gold bottom-right — fade to nothing so the centre stays
+            dark. The falloff is the glow — no blur layer needed. */}
         <Svg style={styles.fill} viewBox="0 0 158 100" testID="balance-orbs">
           <Defs>
+            <RadialGradient id="fieldCore">
+              <Stop offset="0" stopColor={colors.heroCore} stopOpacity={0.55} />
+              <Stop
+                offset="0.6"
+                stopColor={colors.heroCore}
+                stopOpacity={0.22}
+              />
+              <Stop offset="1" stopColor={colors.heroCore} stopOpacity={0} />
+            </RadialGradient>
             <RadialGradient id="orbCool">
-              <Stop offset="0" stopColor={colors.heroOrbCool} />
+              <Stop
+                offset="0"
+                stopColor={colors.heroOrbCool}
+                stopOpacity={0.1}
+              />
               <Stop
                 offset="0.6"
                 stopColor={colors.heroOrbCool}
-                stopOpacity={0.45}
-              />
-              <Stop offset="1" stopColor={colors.heroOrbCool} stopOpacity={0} />
-            </RadialGradient>
-            <RadialGradient id="orbGold">
-              <Stop offset="0" stopColor={colors.accentAmbience} />
-              <Stop
-                offset="0.6"
-                stopColor={colors.accentAmbience}
-                stopOpacity={0.45}
+                stopOpacity={0.045}
               />
               <Stop
                 offset="1"
-                stopColor={colors.accentAmbience}
+                stopColor={colors.heroOrbCool}
                 stopOpacity={0}
               />
             </RadialGradient>
+            <RadialGradient id="orbGold">
+              <Stop offset="0" stopColor={colors.accent} stopOpacity={0.1} />
+              <Stop offset="0.6" stopColor={colors.accent} stopOpacity={0.04} />
+              <Stop offset="1" stopColor={colors.accent} stopOpacity={0} />
+            </RadialGradient>
           </Defs>
-          <Circle cx="4" cy="4" r="105" fill="url(#orbCool)" />
-          <Circle cx="154" cy="96" r="105" fill="url(#orbGold)" />
+          <Circle cx="66.4" cy="50" r="79" fill="url(#fieldCore)" />
+          <Circle cx="4" cy="4" r="95" fill="url(#orbCool)" />
+          <Circle cx="154" cy="96" r="126" fill="url(#orbGold)" />
         </Svg>
         <Image
           testID="balance-noise"
