@@ -73,6 +73,33 @@ async function awaitFreshRateWindow(roomSeconds = 45) {
   }
 }
 
+/**
+ * Counter di-reset eksplisit lewat service role sebelum tiap flood (preseden
+ * verify-insight/verify-ai6): asersi tidak lagi bergantung pada isi baris yang
+ * diwarisi antar-run, dan sebagian besar risiko batas menit ikut hilang.
+ */
+async function resetRateLimit(functionName, bucketKey) {
+  const { error } = await admin
+    .from('function_rate_limits')
+    .delete()
+    .eq('function_name', functionName)
+    .eq('bucket_key', bucketKey);
+  check(`counter ${functionName} di-reset`, !error, error?.message);
+}
+
+/**
+ * Warm-up isolate tiap fungsi dengan satu panggilan anon: 401 `missing_authorization`
+ * terjadi SEBELUM rate check, jadi tidak mengonsumsi counter tapi tetap membangunkan
+ * instance. Tanpa ini, cold start pernah makan 38 detik (CI 2026-10-19, run 39182340455)
+ * sehingga flood melewati batas menit dan seluruh 11 call lolos (got 11, 429 0)
+ * meski window sudah diparkir.
+ */
+async function warmUpFunctions(names) {
+  for (const name of names) {
+    await callFunction(name, null);
+  }
+}
+
 const supabase = createClient(SUPABASE_URL, anonKey, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
@@ -116,6 +143,7 @@ function isRateLimited(result, name, limit) {
 async function main() {
   // -------------------------------------------------------------------------
   section('auth + seed-user normal (client path)');
+  await warmUpFunctions(['seed-user', 'export-csv', 'delete-account']);
   await awaitFreshRateWindow();
   const userId = await provisionTestUser(admin, supabase, {
     email,
@@ -124,28 +152,44 @@ async function main() {
     tag: 'user uji',
   });
 
-  const seed = await supabase.functions.invoke('seed-user', { method: 'POST' });
-  check('seed-user via client lolos', !seed.error, seed.error?.message);
-
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData.session?.access_token ?? '';
   check('sesi A tersedia untuk raw fetch', Boolean(token));
 
   // -------------------------------------------------------------------------
   section('flood seed-user: 10 lolos + 2 ditolak 429');
-  // 1 hit (client) sudah terpakai → 9 lolos + 2 ditolak dari 11 raw call.
+  // Hit #1 lewat klien + 11 raw = 12 > limit 10 → 9 lolos + 2 ditolak. Counter
+  // di-reset tepat sebelum hit #1 supaya asersinya tak bergantung state lama.
+  let clientOk = false;
   let okCount = 0;
   let limitedCount = 0;
   let shapeOk = true;
-  for (let i = 0; i < 11; i += 1) {
-    const r = await callFunction('seed-user', token);
-    if (r.status === 200) okCount += 1;
-    else if (isRateLimited(r, 'seed-user', 10)) limitedCount += 1;
-    else {
-      shapeOk = false;
-      console.log(`    unexpected seed-user #${i + 2}:`, r.status, JSON.stringify(r.body));
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    await awaitFreshRateWindow();
+    await resetRateLimit('seed-user', userId);
+
+    const seed = await supabase.functions.invoke('seed-user', { method: 'POST' });
+    clientOk = !seed.error;
+
+    okCount = 0;
+    limitedCount = 0;
+    shapeOk = true;
+    for (let i = 0; i < 11; i += 1) {
+      const r = await callFunction('seed-user', token);
+      if (r.status === 200) okCount += 1;
+      else if (isRateLimited(r, 'seed-user', 10)) limitedCount += 1;
+      else {
+        shapeOk = false;
+        console.log(`    unexpected seed-user #${i + 2}:`, r.status, JSON.stringify(r.body));
+      }
+    }
+
+    if (clientOk && okCount === 9 && limitedCount === 2 && shapeOk) break;
+    if (attempt === 1) {
+      console.log('    retry flood seed-user (batas window / cold start)');
     }
   }
+  check('seed-user via client lolos', clientOk);
   check('9 seed-user berikutnya lolos', okCount === 9, `got ${okCount}`);
   check('2 seed-user terakhir ditolak 429 ber-body rate_limited', limitedCount === 2, `got ${limitedCount}`);
   check('tidak ada respons aneh saat flood seed-user', shapeOk);
@@ -156,6 +200,7 @@ async function main() {
   // milik B pada isolasi sesudahnya) masing-masing harus muat dalam satu
   // window agar asersi 429-nya deterministik.
   await awaitFreshRateWindow();
+  await resetRateLimit('export-csv', userId);
   const exported = await supabase.functions.invoke('export-csv', { method: 'POST' });
   check('export-csv via client lolos', !exported.error, exported.error?.message);
 
@@ -200,7 +245,13 @@ async function main() {
   );
 
   // B membuktikan bentuk penuh satu penolakan export-csv (limit 5: 1 sudah
-  // terpakai di atas → 4 lolos + 1 ditolak dari 5 raw call).
+  // terpakai di atas → 4 lolos + 1 ditolak dari 5 raw call). Park + reset
+  // supaya hit #1 dan seluruh 5 raw muat satu window.
+  await awaitFreshRateWindow();
+  await resetRateLimit('export-csv', otherUserId);
+  const bWarm = await callFunction('export-csv', otherToken);
+  check('user B hit pertama export-csv 200 (counter segar)', bWarm.status === 200, `got ${bWarm.status}`);
+
   let bLimitedBody = null;
   for (let i = 0; i < 5; i += 1) {
     const r = await callFunction('export-csv', otherToken);
