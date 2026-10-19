@@ -1,7 +1,7 @@
 # Roadmap Cashtrix: katalog ide lengkap
 
 Dokumen ini menampung **semua** kandidat pengembangan beserta alasan, bukti kondisi
-kode saat ini (`v2.1.0`, tag `v2.1.0`, L4c custom range di `main`), dan urutan usul. `PRD.md` tetap sumber
+kode saat ini (`v2.1.0`, tag `v2.1.0`, L4c custom range di `main`, drill-down L4a di working tree), dan urutan usul. `PRD.md` tetap sumber
 keputusan produk; dokumen ini sumber *antrean* pekerjaan.
 
 Aturan: ide boleh masuk katalog tanpa komitmen rilis. Setiap rilis mengambil
@@ -241,7 +241,8 @@ kegagalan tidak menahan yang lain).
 | Urutan | Isi | Spec + ticket |
 |---|---|---|
 | **2.0.0** ✅ 2026-09-29 | Widget + fast-lane: tiga tombol home screen (suara/tambah/pindai) → deep-link existing → sheet yang sama, split-N maks 3 sejenis, notifikasi lokal khusus save-dari-widget, gate penuh, tanpa label AI | `specs/cashtrix-v2.0-widget.md` + ADR-0011, WG1 (#70) → WG2 (#71) → WG3 (#72), spec #69, tag `v2.0.0` |
-| **2.1.0** ✅ | Analytics Overhaul: chart svg crisp-edge (PR1/PR2) + kartu tren + tap-select + Insight AI L1–L3 + L4c custom range (commit `f9b5557`; OTA tertunda EAS Okt 2026) | ADR-0017, L1 → L2 → L3 → L4c, tag `v2.1.0` |
+| **2.1.0** ✅ | Analytics Overhaul: chart svg crisp-edge (PR1/PR2) + kartu tren + tap-select + Insight AI L1–L3 + L4c custom range (commit `f9b5557`; OTA grup `2b2981e9`, device gate HP LULUS 2026-10-18) | ADR-0017, L1 → L2 → L3 → L4c, tag `v2.1.0` |
+| **2.1.x** (OTA) | Trek L4 lanjutan: L4a drill-down → `/search` (working tree, gate lokal hijau) → L4b multi-wallet compare | `specs/tickets.md` trek L4 |
 | Berikutnya | Offline outbox + read cache = satu pekerjaan konsistensi (LWW buta + hapus-menang, FIFO sekuensial, coalesce, antrean eksplisit, baca terdegradasi), didahului spec + grill seperti v1.1 | `specs/cashtrix-v2.x-outbox.md` + ADR-0003/0012, OB1 (#74) → OB2 (#75) → OB3 (#76), spec #73 |
 
 Bank sync, multi-currency (parkir OPEN-4), AI insight lanjutan antre di belakangnya
@@ -346,7 +347,9 @@ ke `main` (`eb2b3b6`, `96796e6`); preview build `0c8b2fc2` FINISHED (app
 2.1.0 rilis + tag (`2a7b700`): PR1/PR2 (svg crisp-edge, tren, tap-select)
 + Insight L1–L3 + L4c custom range (commit `f9b5557`).
 
-Urutan berlaku: device re-gate (begitu OTA EAS pulih — tertunda
-15–16 Okt 2026, device masih grup lama) → L4a drill-down → L4b
+Urutan berlaku: device re-gate 2.1.0 **LULUS** (OTA L4c grup `2b2981e9`,
+gate di HP 2026-10-18; akar OTA macet = sourcemap `.hbc.map` ikut payload —
+fix `--skip-bundler --input-dir` tanpa sourcemap) → L4a drill-down
+(implementasi di working tree, gate lokal hijau, OTA menyusul) → L4b
 multi-wallet compare → OB1–OB3 outbox + read cache. Gate hijau per
 rilis (pola Q10).

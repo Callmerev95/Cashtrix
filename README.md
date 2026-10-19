@@ -9,9 +9,12 @@ notifikasi, dan widget home screen. Saran AI selalu prefill yang wajib
 diketuk Simpan manual. Satu pengguna, satu perangkat; semua agregasi
 uang dihitung di Postgres, tidak pernah di klien.
 
-> **Status: L4c custom range di `main` (`f9b5557`), OTA preview macet
-> di EAS (11× `asset processing timed out`, 15–16 Okt 2026 — device masih
-> di grup `a3c66bf2`).** Di bawahnya: v2.1.0 (tag `v2.1.0`): widget Android
+> **Status: L4a drill-down Analytics → `/search` di working tree (gate
+> lokal hijau), di atas L4c custom range di `main` (`f9b5557`).** OTA
+> preview L4c terkirim (grup `2b2981e9`, Android, runtime 2.1.0; device
+> gate HP LULUS 2026-10-18) — akar `asset processing timed out` = sourcemap
+> `.hbc.map` ikut payload, fix `expo export` tanpa sourcemap + `eas-cli
+> update --skip-bundler --input-dir`. Di bawahnya: v2.1.0 (tag `v2.1.0`): widget Android
 > + fast-lane + polish + chart svg (PR1/PR2) + kartu tren + Insight AI
 > L1–L3 (`insight-summary`, consent terpisah, auto-refine) + AI Fase 1
 > (AI1 `parse-voice` + AI2 golden 40 + AI3 `scan-receipt` Gemini + AI4
@@ -712,10 +715,14 @@ Katalog lengkap hidup di **[docs/roadmap.md](docs/roadmap.md)**.
   terpisah, auto-refine, run-rate + tap → Budgets); preview build
   `d4d43852` (runtime 2.1.0).
 - **L4c custom range** ✅ di `main` (`f9b5557`): jendela bebas + sheet +
-  segmen ke-6 + remount-fix scrim-hitam; OTA preview tertunda (EAS
-  `asset processing timed out`, device masih grup lama). Lanjut: L4a
-  drill-down → L4b multi-wallet compare.
-- **Berikutnya:** device re-gate (begitu OTA pulih) → OB1–OB3
+  segmen ke-6 + remount-fix scrim-hitam; OTA preview terkirim (grup
+  `2b2981e9`, Android, runtime 2.1.0) + device gate HP LULUS 2026-10-18.
+- **L4a drill-down** 🚧 working tree: tap KPI / irisan donut / baris
+  breakdown / kolom bar → `/search` dengan jendela `[from, to)` yang sama +
+  chip filter lepas; `__other__` tanpa drill. Gate lokal hijau (Jest
+  970/970, kontrak 112/10/3, legal 36/36, export Android). Lanjut: OTA →
+  device gate → L4b multi-wallet compare.
+- **Berikutnya:** L4b multi-wallet compare → OB1–OB3
   outbox + read cache paket utuh (spec sync mencakup
   `transaction_receipts` sebagai tipe antrean), lalu bank sync,
   multi-currency (parkir OPEN-4, mungkin IDR-saja) + kurs, AI insight

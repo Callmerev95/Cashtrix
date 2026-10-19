@@ -607,10 +607,25 @@ L2 pendorong/anomali (DDL aditif `prev_breakdown`, pgTAP 43→51, OTA
 device pending). Live `verify-insight.mjs` hijau + matriks CI.
 
 L4c custom range COMMITTED `f9b5557` (domain + context + sheet + segmen
-ke-6 + remount-fix + pelajaran harness). **OTA preview TERTUNDA
-2026-10-15/16**: 11× `Asset processing timed out` di EAS (bundle normal,
-internet sehat; insiden Expo 14 Okt sebagai latar). Device masih grup
-`a3c66bf2`. JANGAN hammer — retry spaced-out; rebuild APK opsi terakhir.
+ke-6 + remount-fix + pelajaran harness). OTA preview TERKIRIM 2026-10-17
+(grup `2b2981e9`, Android, runtime 2.1.0) setelah akar `Asset processing
+timed out` ditemukan = payload (sourcemap `.hbc.map` ~15MB ikut terunggah);
+fix = export sendiri tanpa sourcemap + `eas-cli update --skip-bundler
+--input-dir`. Device gate LULUS 2026-10-18.
 
-Lanjut: L4a drill-down → `/search`, lalu L4b multi-wallet compare
+L4a drill-down → `/search` implementasi di working tree (TANPA DDL):
+seam `SearchFilters`/`parseSearchFilters`/`hasSearchFilters`/
+`searchFilterKey`/`parseKindFilter`/`drillParams` + `isSearchActive`
+diperluas; `searchTransactions` + `.eq(category_id/wallet_id)` +
+`.gte/.lt(occurred_at)` (wallet = dompet sumber, mirror
+`analytics_overview`); `bucketRange` device-local di analytics/domain;
+KPI tap langsung + tombol "Lihat transaksi" untuk slice/bar terpilih;
+`__other__` tanpa drill; chip filter removable + `noFilterResults` di
+`/search`. Bonus fix: `OTHER_ICON` underscore → `more-horiz` (glyphmap)
++ guard `icon-convention` diperluas ke konstanta ikon fitur.
+Gate: lint + typecheck + Jest 970/970 (64 suite) + kontrak 112/10/3
+(catatan: 111 lama telat satu dari rewrite `voice.yaml` `e1dc949`) +
+verify-legal 36/36 + export Android. OTA + device gate menyusul.
+
+Lanjut: L4b multi-wallet compare
 (paket 2/2 trek L4). Maks 2 fitur antre device gate.

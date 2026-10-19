@@ -296,6 +296,14 @@ sepanjang yang sama. Dipilih lewat sheet dua grid kalender; label caption
 bisa diketuk untuk membuka ulang.
 _Avoid_: custom period, date filter
 
+**Drill-down**:
+Turun dari angka Analytics ke baris Transaksi di baliknya: tap KPI membuka
+seluruh rentang, irisan Donut / baris Breakdown satu Category, kolom Series
+satu bucket — semuanya mendarat di `/search` dengan jendela waktu yang sama
+persis (`[from, to)`), ditandai chip filter yang bisa dilepas. Irisan
+`__other__` (agregat kategori tak bernama) tidak bisa di-drill.
+_Avoid_: filter, ekspor, laporan
+
 **Insight (Ringkasan AI)**:
 Kartu di layar Analytics yang SELALU menampilkan baris deterministik
 hitungan server dulu; versi AI (rephrase via Edge `insight-summary`,
