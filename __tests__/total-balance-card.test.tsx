@@ -7,15 +7,18 @@
  */
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Dimensions, StyleSheet } from 'react-native';
 
 import { TotalBalanceCard } from '@/features/wallets/components/total-balance-card';
 import {
   BALANCE_HIDDEN_KEY,
+  cardScaleFor,
   parseBalanceHidden,
   readBalanceHidden,
   resetBalanceVisibilityForTests,
   writeBalanceHidden,
 } from '@/features/wallets';
+import { layout } from '@/theme';
 
 beforeEach(() => {
   // The shared balance-visibility store outlives a single test case.
@@ -129,5 +132,18 @@ describe('TotalBalanceCard', () => {
 
     expect(screen.getByTestId('total-balance-skeleton')).toBeTruthy();
     expect(screen.queryByTestId('total-balance')).toBeNull();
+  });
+
+  it('scales the type with the window (bug fix 19 Okt 2026)', async () => {
+    await AsyncStorage.removeItem(BALANCE_HIDDEN_KEY);
+    render(<TotalBalanceCard {...props} />);
+    const amount = await screen.findByTestId('total-balance');
+
+    // The card is one design object: type rides the same scale as the box,
+    // so the bottom row can never be clipped by a shrinking aspect box.
+    const s = cardScaleFor(Dimensions.get('window').width, layout.screenMargin);
+    const style = StyleSheet.flatten(amount.props.style);
+    expect(style.fontSize).toBeCloseTo(30 * s);
+    expect(style.lineHeight).toBeCloseTo(38 * s);
   });
 });

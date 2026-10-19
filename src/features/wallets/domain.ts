@@ -206,3 +206,22 @@ export function summarizeWallets(wallets: Wallet[]): WalletSummary {
     remainingSlots: Math.max(0, MAX_WALLETS - wallets.length),
   };
 }
+
+// Hero card proportional scale. The mock (`polish-card.png`) is drawn at a
+// 350pt-wide card and its content height equals the card height only at that
+// width — at 1.58 the box shrinks faster than fixed-size type, so on a 360dp
+// phone the bottom row clipped (owner bug, 19 Okt 2026). Every card dimension
+// — type included — scales by `cardWidth / 350`; the cap keeps tablets from
+// inflating the card into a billboard.
+
+export const CARD_REF_WIDTH = 350;
+export const CARD_SCALE_MAX = 1.3;
+
+/** `s` for the 1.58 hero card: card width over the mock's reference width. */
+export function cardScaleFor(
+  screenWidth: number,
+  horizontalMargin: number,
+): number {
+  const cardWidth = screenWidth - horizontalMargin * 2;
+  return Math.min(cardWidth / CARD_REF_WIDTH, CARD_SCALE_MAX);
+}

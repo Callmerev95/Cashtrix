@@ -5,9 +5,11 @@
  */
 import {
   AMOUNT_MAX,
+  CARD_SCALE_MAX,
   MAX_WALLETS,
   activeWallets,
   archivedWallets,
+  cardScaleFor,
   formatAmount,
   formatCurrency,
   hasWalletErrors,
@@ -243,5 +245,21 @@ describe('activeWallets / archivedWallets (V4)', () => {
     ];
 
     expect(summarizeWallets(activeWallets(all)).totalBalance).toBe(500_000);
+  });
+});
+
+describe('cardScaleFor (hero card, bug fix 19 Okt 2026)', () => {
+  it('menskalakan lebar kartu terhadap mock 350pt', () => {
+    // Kartu = lebar layar − 2×margin; 360dp adalah HP tempat baris bawah
+    // terpotong sebelum skala proporsional (s = 320/350 = 0,914).
+    expect(cardScaleFor(360, 20)).toBeCloseTo(320 / 350);
+    expect(cardScaleFor(393, 20)).toBeCloseTo(353 / 350);
+    expect(cardScaleFor(430, 20)).toBeCloseTo(390 / 350);
+    expect(cardScaleFor(320, 20)).toBeCloseTo(280 / 350);
+  });
+
+  it('membatasi skala di CARD_SCALE_MAX agar tablet tidak membesar', () => {
+    expect(cardScaleFor(768, 20)).toBe(CARD_SCALE_MAX);
+    expect(cardScaleFor(1200, 24)).toBe(CARD_SCALE_MAX);
   });
 });

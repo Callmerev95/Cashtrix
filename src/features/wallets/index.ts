@@ -23,11 +23,14 @@ export {
 } from './api';
 export {
   AMOUNT_MAX,
+  CARD_REF_WIDTH,
+  CARD_SCALE_MAX,
   MAX_WALLETS,
   WALLET_NAME_MAX,
   WALLET_TYPES,
   activeWallets,
   archivedWallets,
+  cardScaleFor,
   formatAmount,
   formatCurrency,
   hasWalletErrors,
