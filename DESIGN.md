@@ -26,20 +26,23 @@ These are the source-of-truth tokens. All UI must reference them.
 | `loss` | `#FF6B62` | Expense red. Expense amounts only, never for destructive actions (those stay `error`). |
 | `budget-warning` | `#EAA944` | Budget ring, warning state (80–99%). Owner screenshot, 19 Okt 2026. |
 | `budget-exceeded` | `#ED7468` | Budget ring, exceeded state (≥100%) + its halo. Owner screenshot, 19 Okt 2026. |
-| `text-primary` | `#E5E5E5` | Muted warm white. Headings, body copy, transaction names, combined total. |
+| `text-primary` | `#E5E5E5` | Muted warm white. Headings, body copy, transaction names. |
 | `text-secondary` | `#8E8E93` | Cool grey. Timestamps, metadata, inactive labels, disabled states. |
 | `text-on-accent` | `#0A0A0A` | Obsidian text on gold fills (primary buttons). |
+| `text-bright` | `#FFFFFF` | Pure white — hero card amount only (mock-measured, 19 Okt 2026). |
 | `danger-surface` | `rgba(147, 0, 10, 0.28)` | Tinted danger pill (sign-out). Destructive only. |
-| `obsidian` (gradient) | `#2C2925 → #191714 → #0B0A09 → #161311` | Hero metal background, diagonal. Registered in `gradients`, never inline. |
-| `accent-ambience` | `rgba(212, 175, 55, 0.10)` | Soft gold fill behind empty-state surfaces. |
-| `ambience-orb` (gradient stops) | `rgba(212, 175, 55, 0.16 → 0.07 → 0)` + warm-white specular `rgba(255, 244, 214, 0.22)` | Hero glass orbs — three-stop radial falloff rendered as SVG. Owner direction, 19 Okt 2026. |
+| `hero-base` | `#121212` | Hero card flat field base (mock-measured, 19 Okt 2026). |
+| `hero-border` | `#766632` | Hero card frame — muted uniform gold hairline, no glow. |
+| `hero-gold` | `#CEB04E` | Hero outline chip + wordmark (softer than `accent`). |
+| `accent-ambience` | `rgba(212, 175, 55, 0.10)` | Soft gold fill behind empty-state surfaces and the hero's bottom-right orb. |
+| `hero-orb-cool` | `rgba(233, 239, 255, 0.10)` | Hero top-left cool orb (mock-measured, 19 Okt 2026). |
 
 ### Semantic rules
 
 - **Income** = `#30D158` (green, `currency-md`, no prefix, the colour alone distinguishes it).
 - **Expense** = `#FF6B62` (red) with a leading `-` marking the direction (amended post-V5: previously muted white, never red, overturned per owner review of the preview build).
 - **Net** (income − expense) = `#D4AF37` (gold, `currency-md`).
-- **Combined total** (Dashboard hero) stays `#E5E5E5` muted white.
+- **Combined total** (Dashboard hero) renders pure white `#FFFFFF` (`text-bright`, mock-exact owner override 19 Okt 2026; every other surface keeps `#E5E5E5`).
 - **Error** = `#FFB4AB` on `#93000A` container (reserved for destructive actions only, never for expense amounts).
 - **Budget ring** = gold `#D4AF37` (1–79%), amber `#EAA944` (80–99%), salmon `#ED7468` (≥100%, halo ikut). Thresholds remain boundary-exact `stateForPercent` (80.0 / 100.0); these are budget-state tokens, not error red (owner screenshots, 19 Okt 2026).
 - Gold is never used for: page backgrounds, body text, expense amounts, or large flat fills >1 card per viewport.
@@ -158,7 +161,7 @@ Depth = tonal layering + hairline edges + diffuse gold glow (never heavy drop sh
 | `rounded` (DEFAULT) | 16px | Inputs, buttons |
 | `rounded-2xl` | 20px | Standard cards (30× in screens) |
 | `rounded-lg` | 24px | Large cards, sheets (27×) |
-| `rounded-3xl` | 32px | Hero cards (6×) |
+| `rounded-3xl` | 32px | Large cards; hero card uses 28px (mock-exact, 19 Okt 2026) |
 | `rounded-full` | 9999px | Badges, chips, pills, progress, avatars (142×, dominant) |
 
 ---
@@ -180,7 +183,7 @@ Depth = tonal layering + hairline edges + diffuse gold glow (never heavy drop sh
 ### Cards
 - L1 container, 20–24px padding, 1px `#2C2C2E` border, radius 20–32px.
 - Highlight variants: gradient border gold→`#2C2C2E`, or radial gold ambience blob behind.
-- **Obsidian hero:** fixed 1.58 aspect, `obsidian` diagonal fill, View-composed EMV chip + NFC mark, gold watermark, eye toggle, `currency-display` nominal, hairline divider, uppercase holder line. Ambient sheen + glowing gold edge (iOS renders the tint; Android carries it via frame + contrast). Glass pass (owner direction, 19 Okt 2026): SVG falloff orbs + `expo-blur` frost (`dimezisBlurViewSdk31Plus`, degrades to a tint below Android 12), 3.5% noise grain against OLED gradient banding, top bevel line.
+- **Obsidian hero:** fixed 1.58 aspect, flat `hero-base` field with two corner orbs (cool top-left, gold bottom-right) drawn as SVG radial falloffs (3-stop alpha fade — the falloff IS the glow), 3.5% noise grain against OLED gradient banding, muted `hero-border` hairline with **no glow**, outline chip (two horizontal traces, no fill, no NFC), `hero-gold` wordmark, eye toggle (`accent-soft`, 22px), pure-white `currency-display` 30px nominal, `border-strong` hairline divider, uppercase holder line. Ambient sheen stays (ping-pong, dead under reduce-motion). Mock-exact pass (owner reference `polish-eye-hidden.png`, 19 Okt 2026) — the earlier glass pass (frost `expo-blur`, bevel, vignette rim, glowing gold edge) was dropped to match the mock.
 - **Section cards (Profile pattern):** one card per section: icon + title header, then borderless rows on hairline dividers (rule 5 exception). Destructive rows keep red icon/title but lose their own frame.
 - **Currency well:** read-only mirror of the chips (symbol + code + full name), no chevron, no tags, since decoration without behaviour is refused.
 

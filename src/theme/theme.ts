@@ -34,6 +34,8 @@ export const palette = {
   textSecondary: '#8E8E93',
   /** Obsidian text on gold fills (primary buttons). */
   textOnAccent: '#0A0A0A',
+  /** Pure white — hero card amount only (mock measured 255,255,255). */
+  textBright: '#FFFFFF',
   /** Floating nav glass — surface-card at 75% alpha over blur. */
   surfaceCardTranslucent: 'rgba(28, 28, 30, 0.75)',
   /** Error text on the error container. Destructive actions only. */
@@ -45,6 +47,14 @@ export const palette = {
    * over the canvas. Destructive actions only.
    */
   dangerSurface: 'rgba(147, 0, 10, 0.28)',
+  /**
+   * Hero card, mock-exact (owner screenshot `polish-eye-hidden.png`,
+   * 19 Okt 2026): flat field base, muted-gold frame, and the softer gold of
+   * the outline chip + wordmark — all measured from the mock pixels.
+   */
+  heroBase: '#121212',
+  heroBorder: '#766632',
+  heroGold: '#CEB04E',
 } as const;
 
 /**
@@ -65,22 +75,10 @@ export const colors = {
   scrimSoft: 'rgba(0, 0, 0, 0.5)',
   /** Gold at 15% opacity for highlighted card borders. */
   accentBorderSoft: 'rgba(212, 175, 55, 0.15)',
-  /** Ambience blob fill — radial gold at 10% opacity. */
+  /** Ambience blob fill — radial gold at 10% opacity (hero orb bottom-right). */
   accentAmbience: 'rgba(212, 175, 55, 0.10)',
-  /**
-   * Glass hero orb stops (SVG `RadialGradient`): core → mid → fade. The
-   * alpha falloff IS the blur — no backdrop-filter needed (owner direction,
-   * 19 Okt 2026). Fade stops reuse the same colour with `stopOpacity=0`.
-   */
-  accentAmbienceCore: 'rgba(212, 175, 55, 0.16)',
-  accentAmbienceMid: 'rgba(212, 175, 55, 0.07)',
-  accentAmbienceLow: 'rgba(212, 175, 55, 0.09)',
-  /** Warm-white specular glint inside the main hero orb. */
-  accentAmbienceSpec: 'rgba(255, 244, 214, 0.22)',
-  /** Hairline bevel line along the hero's top edge (fades at both ends). */
-  bevelHighlight: 'rgba(255, 255, 255, 0.07)',
-  /** Soft top-edge glow under the bevel line. */
-  bevelGlow: 'rgba(255, 255, 255, 0.045)',
+  /** Hero card cool orb (top-left corner) — measured cool white-blue sheen. */
+  heroOrbCool: 'rgba(233, 239, 255, 0.10)',
   /**
    * Scan viewfinder corner brackets. Gold accent, never income-green:
    * green would collide with the income meaning (DESIGN.md §1).
@@ -299,13 +297,6 @@ export const gradients = {
   cardBorder: [palette.accent, palette.surfaceElevated] as const,
   /** Card surface fill — L1 to Canvas gradient */
   cardFill: [palette.surfaceCard, palette.background] as const,
-  /**
-   * Obsidian metal (hero only) — warm diagonal per the approved
-   * `card-reference.png` (bright warm-grey top-left melting to near-black
-   * bottom-right). Registered here so components stay hex-free (PRD §4.5);
-   * references are layout guides only.
-   */
-  obsidian: ['#2C2925', '#191714', '#0B0A09', '#161311'] as const,
   /** Horizontal fade for glows/overlays. */
   glow: ['rgba(212, 175, 55, 0.35)', 'rgba(212, 175, 55, 0)'] as const,
 } as const;

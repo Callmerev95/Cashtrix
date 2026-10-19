@@ -1,26 +1,26 @@
 /**
  * Dashboard hero card — the combined balance (PRD §2.3 Epic B2, DESIGN.md §6),
- * dressed as an obsidian card: fixed 1.58 aspect, EMV chip + NFC mark,
- * CASHTRIX watermark, eye toggle, JetBrains Mono total, cardholder name.
+ * dressed as an obsidian card: fixed 1.58 aspect, outline chip, CASHTRIX
+ * wordmark, eye toggle, JetBrains Mono total, cardholder name.
  *
- * The background stays alive (owner direction): a slow gold sheen sweeps the
- * card on a ping-pong loop, silenced under reduce-motion like every other
- * animation (DESIGN.md §8). The glass pass (owner direction, 19 Okt 2026):
- * SVG radial-falloff orbs under an `expo-blur` frost layer, micro-noise and
- * a top bevel. Both native pieces ride modules already compiled into the
- * binary (`react-native-svg` since PR1, `expo-blur` since the scaffold), so
- * this ships over OTA; below Android 12 the frost degrades to a tint and the
- * orbs carry the look alone. Colours stay theme tokens; the Stitch mock is a
- * layout reference only.
+ * Mock-exact pass (owner reference `polish-eye-hidden.png`, 19 Okt 2026): a
+ * flat `heroBase` field carrying two corner orbs — cool top-left, gold
+ * bottom-right — drawn as SVG radial falloffs on a 158×100 viewBox (the
+ * card's 1.58 aspect in user units, so they scale with the card and need no
+ * measurement), plus micro-noise that kills gradient banding on OLED. The
+ * frame is a muted `heroBorder` hairline with no glow, and the type scale,
+ * chip and divider follow the mock's measurements. The frost, bevel and
+ * vignette layers of the earlier glass pass were dropped to match the mock
+ * (owner decision, same date). The sheen stays: a slow gold bar sweeping edge
+ * to edge on a ping-pong loop, silenced under reduce-motion like every other
+ * animation (DESIGN.md §8). Colours stay theme tokens.
  */
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { BlurTargetView, BlurView } from 'expo-blur';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Animated,
   Easing,
   Image,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -37,8 +37,13 @@ import {
   useBalanceHidden,
 } from '@/features/wallets';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
-import { colors, gradients, radius, spacing, typography } from '@/theme';
+import { colors, layout, radius, spacing, typography } from '@/theme';
 import { pressedFeedback } from '@/components/pressed';
+
+/** Mock-measured card corner radius (44px at the mock's scale). */
+const CARD_RADIUS = 28;
+/** Icon is 22; padding + slop take the tap target past 44 (layout.minTapTarget). */
+const EYE_HIT_SLOP = { top: 11, bottom: 11, left: 11, right: 11 };
 
 export function TotalBalanceCard({
   total,
@@ -57,10 +62,6 @@ export function TotalBalanceCard({
   const t = dictionaryFor(language);
   const reduceMotion = useReducedMotion();
   const { width: screenWidth } = useWindowDimensions();
-
-  // Android frost samples an explicit target (expo-blur ≥ 57 API); iOS
-  // ignores it and blurs the backdrop sitting behind the BlurView.
-  const blurTargetRef = useRef<View>(null);
 
   // Device display preference (never purged on sign-out), shared with every
   // wallet row through the module store.
@@ -96,90 +97,44 @@ export function TotalBalanceCard({
   });
 
   return (
-    <LinearGradient
-      testID="total-balance-card"
-      colors={[...gradients.cardBorder]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[styles.frame, styles.aspect]}
-    >
-      <LinearGradient
-        colors={[...gradients.obsidian]}
-        locations={[0, 0.35, 0.7, 1]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.inner}
-      >
-        {/* Glass ambience: the orbs are SVG radial falloffs on a 158×100
-            viewBox (the card's 1.58 aspect in user units), so they scale
-            with the card and need no measurement. The falloff is the blur;
-            the frost layer above just softens everything once more. */}
-        <BlurTargetView ref={blurTargetRef} style={styles.fill}>
-          <Svg
-            style={styles.fill}
-            viewBox="0 0 158 100"
-            testID="balance-orbs"
-          >
-            <Defs>
-              <RadialGradient id="orbGold">
-                <Stop offset="0" stopColor={colors.accentAmbienceCore} />
-                <Stop offset="0.55" stopColor={colors.accentAmbienceMid} />
-                <Stop
-                  offset="1"
-                  stopColor={colors.accentAmbienceMid}
-                  stopOpacity={0}
-                />
-              </RadialGradient>
-              <RadialGradient id="orbLow">
-                <Stop offset="0" stopColor={colors.accentAmbienceLow} />
-                <Stop
-                  offset="1"
-                  stopColor={colors.accentAmbienceLow}
-                  stopOpacity={0}
-                />
-              </RadialGradient>
-              <RadialGradient id="orbSpec">
-                <Stop offset="0" stopColor={colors.accentAmbienceSpec} />
-                <Stop
-                  offset="1"
-                  stopColor={colors.accentAmbienceSpec}
-                  stopOpacity={0}
-                />
-              </RadialGradient>
-            </Defs>
-            <Circle cx="148" cy="-4" r="64" fill="url(#orbGold)" />
-            <Circle cx="8" cy="104" r="66" fill="url(#orbLow)" />
-            <Circle cx="132" cy="12" r="11" fill="url(#orbSpec)" />
-          </Svg>
-          <Image
-            testID="balance-noise"
-            source={require('../../../../assets/noise.png')}
-            resizeMode="repeat"
-            style={styles.noise}
-          />
-        </BlurTargetView>
-        <BlurView
-          testID="balance-frost"
-          blurTarget={blurTargetRef}
-          blurMethod="dimezisBlurViewSdk31Plus"
-          tint="dark"
-          intensity={Platform.OS === 'ios' ? 26 : 20}
-          pointerEvents="none"
-          style={styles.fill}
-        />
-        <LinearGradient
-          colors={[colors.bevelGlow, 'transparent']}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 1 }}
-          style={styles.bevelGlow}
-          pointerEvents="none"
-        />
-        <LinearGradient
-          colors={['transparent', colors.bevelHighlight, 'transparent']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.bevelLine}
-          pointerEvents="none"
+    <View testID="total-balance-card" style={[styles.frame, styles.aspect]}>
+      <View style={styles.inner}>
+        {/* Corner orbs (mock): cool top-left, gold bottom-right, each fading
+            to nothing across the diagonal so the centre stays dark. The
+            falloff is the glow — no blur layer needed. */}
+        <Svg style={styles.fill} viewBox="0 0 158 100" testID="balance-orbs">
+          <Defs>
+            <RadialGradient id="orbCool">
+              <Stop offset="0" stopColor={colors.heroOrbCool} />
+              <Stop
+                offset="0.6"
+                stopColor={colors.heroOrbCool}
+                stopOpacity={0.45}
+              />
+              <Stop offset="1" stopColor={colors.heroOrbCool} stopOpacity={0} />
+            </RadialGradient>
+            <RadialGradient id="orbGold">
+              <Stop offset="0" stopColor={colors.accentAmbience} />
+              <Stop
+                offset="0.6"
+                stopColor={colors.accentAmbience}
+                stopOpacity={0.45}
+              />
+              <Stop
+                offset="1"
+                stopColor={colors.accentAmbience}
+                stopOpacity={0}
+              />
+            </RadialGradient>
+          </Defs>
+          <Circle cx="4" cy="4" r="105" fill="url(#orbCool)" />
+          <Circle cx="154" cy="96" r="105" fill="url(#orbGold)" />
+        </Svg>
+        <Image
+          testID="balance-noise"
+          source={require('../../../../assets/noise.png')}
+          resizeMode="repeat"
+          style={styles.noise}
         />
         <View style={styles.sheenClip} pointerEvents="none">
           <Animated.View
@@ -195,35 +150,12 @@ export function TotalBalanceCard({
             </View>
           </Animated.View>
         </View>
-        <LinearGradient
-          colors={['transparent', colors.accent, 'transparent']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.rim}
-          pointerEvents="none"
-        />
 
         <View style={styles.topRow}>
-          <View style={styles.chipRow}>
-            <LinearGradient
-              colors={[...gradients.primary]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.chipOuter}
-            >
-              <View style={styles.chipInner}>
-                <View style={styles.chipH1} />
-                <View style={styles.chipH2} />
-                <View style={styles.chipVLeft} />
-                <View style={styles.chipVRight} />
-                <View style={styles.chipPad} />
-              </View>
-            </LinearGradient>
-            <MaterialIcons
-              name="nfc"
-              size={18}
-              color={colors.textSecondary}
-            />
+          {/* Outline chip (mock): two horizontal traces, no fill, no NFC. */}
+          <View style={styles.chip}>
+            <View style={styles.chipH1} />
+            <View style={styles.chipH2} />
           </View>
           <Text style={[typography.labelUppercase, styles.watermark]}>
             Cashtrix
@@ -242,6 +174,7 @@ export function TotalBalanceCard({
                 ? t.wallets.card.showBalance
                 : t.wallets.card.hideBalance
             }
+            hitSlop={EYE_HIT_SLOP}
             onPress={toggleHidden}
             style={({ pressed }) => [
               styles.eye,
@@ -250,8 +183,8 @@ export function TotalBalanceCard({
           >
             <MaterialIcons
               name={hidden ? 'visibility-off' : 'visibility'}
-              size={16}
-              color={colors.textSecondary}
+              size={22}
+              color={colors.accentSoft}
             />
           </Pressable>
         </View>
@@ -259,7 +192,7 @@ export function TotalBalanceCard({
           <SkeletonBlock
             testID="total-balance-skeleton"
             width={180}
-            height={40}
+            height={38}
             borderRadius={radius.sm}
             style={styles.skeletonAmount}
           />
@@ -285,33 +218,32 @@ export function TotalBalanceCard({
             {holderName.toUpperCase()}
           </Text>
         </View>
-      </LinearGradient>
-    </LinearGradient>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   frame: {
-    borderRadius: radius.xxl,
-    padding: StyleSheet.hairlineWidth,
-    // Floating gold edge (card-reference.png): soft outer glow, brighter
-    // up top via the offset. iOS renders the gold tint; Android ignores
-    // shadowColor (grey elevation only), where the gold frame + contrast
-    // carry the effect instead.
-    shadowColor: colors.accent,
-    shadowOpacity: 0.28,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 12 },
+    borderRadius: CARD_RADIUS,
+    // Muted uniform gold hairline, no glow (mock): the card floats on the
+    // canvas with nothing under it.
+    borderWidth: 1,
+    borderColor: colors.heroBorder,
   },
   aspect: {
     aspectRatio: 1.58,
   },
   inner: {
     flex: 1,
-    justifyContent: 'space-between',
-    padding: spacing.md,
-    borderRadius: radius.xxl - 1,
+    backgroundColor: colors.heroBase,
+    borderRadius: CARD_RADIUS - 1,
     overflow: 'hidden',
+    // Mock rhythm: generous top, tight bottom (the holder row sits close to
+    // the edge). Card-local margins below follow the same source.
+    paddingTop: layout.heroPadding,
+    paddingHorizontal: layout.heroPadding,
+    paddingBottom: spacing.sm,
   },
   fill: {
     position: 'absolute',
@@ -327,20 +259,6 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     opacity: 0.035,
-  },
-  bevelGlow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 36,
-  },
-  bevelLine: {
-    position: 'absolute',
-    top: 2,
-    left: 16,
-    right: 16,
-    height: StyleSheet.hairlineWidth,
   },
   sheenClip: {
     position: 'absolute',
@@ -371,115 +289,81 @@ const styles = StyleSheet.create({
   sheenFill: {
     flex: 1,
   },
-  rim: {
-    position: 'absolute',
-    top: 0,
-    left: 24,
-    right: 24,
-    height: StyleSheet.hairlineWidth,
-  },
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  chipRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  chipOuter: {
-    width: 40,
-    height: 30,
-    borderRadius: 5,
-    padding: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chipInner: {
-    flex: 1,
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 3,
-    backgroundColor: colors.background,
-    overflow: 'hidden',
+  chip: {
+    width: 48,
+    height: 35,
+    borderRadius: 6,
+    borderWidth: 2.5,
+    borderColor: colors.heroGold,
   },
   chipH1: {
     position: 'absolute',
-    top: '36%',
+    top: '30.6%',
     left: 0,
     right: 0,
-    height: 1,
-    backgroundColor: colors.accent,
-    opacity: 0.5,
+    height: 1.5,
+    backgroundColor: colors.heroGold,
   },
   chipH2: {
     position: 'absolute',
-    top: '64%',
+    top: '69.4%',
     left: 0,
     right: 0,
-    height: 1,
-    backgroundColor: colors.accent,
-    opacity: 0.5,
-  },
-  chipVLeft: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: '28%',
-    width: 1,
-    backgroundColor: colors.accent,
-    opacity: 0.5,
-  },
-  chipVRight: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    right: '28%',
-    width: 1,
-    backgroundColor: colors.accent,
-    opacity: 0.5,
-  },
-  chipPad: {
-    width: 12,
-    height: 9,
-    borderRadius: 2,
-    borderWidth: 1,
-    borderColor: colors.accent,
+    height: 1.5,
+    backgroundColor: colors.heroGold,
   },
   watermark: {
-    color: colors.accent,
+    color: colors.heroGold,
+    fontSize: 14,
+    lineHeight: 18,
+    letterSpacing: 1.68, // 0.12em
   },
   kickerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop: 14,
   },
   kicker: {
     color: colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 18,
+    letterSpacing: 1.68, // 0.12em
   },
   eye: {
     padding: spacing.xs,
   },
   amount: {
-    marginTop: spacing.xs,
-    color: colors.textPrimary,
+    marginTop: 20,
+    color: colors.textBright,
+    fontSize: 30,
+    lineHeight: 38,
+    letterSpacing: -0.9, // -0.03em
   },
   skeletonAmount: {
-    marginTop: spacing.xs,
+    marginTop: 20,
   },
   meta: {
-    marginTop: spacing.xs,
+    marginTop: spacing.sm,
     color: colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 20,
   },
   holderRow: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    paddingTop: spacing.sm,
+    borderTopColor: colors.borderStrong,
+    paddingTop: 12,
+    marginTop: 2,
   },
   holder: {
-    color: colors.textPrimary,
+    color: colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 20,
     letterSpacing: 2,
   },
 });

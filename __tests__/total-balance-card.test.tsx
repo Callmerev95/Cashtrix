@@ -64,7 +64,7 @@ describe('TotalBalanceCard', () => {
     expect(screen.getByTestId('balance-visibility')).toBeTruthy();
   });
 
-  it('layers the glass ambience: SVG orbs, noise grain and frost', async () => {
+  it('layers the mock field: corner orbs and noise grain', async () => {
     await AsyncStorage.removeItem(BALANCE_HIDDEN_KEY);
     render(<TotalBalanceCard {...props} />);
     await screen.findByTestId('total-balance-card');
@@ -72,11 +72,10 @@ describe('TotalBalanceCard', () => {
     const orbs = screen.getByTestId('balance-orbs');
     expect(
       within(orbs).UNSAFE_getAllByProps({ 'data-svg': 'RadialGradient' }),
-    ).toHaveLength(3);
+    ).toHaveLength(2);
     expect(
       within(orbs).UNSAFE_getAllByProps({ 'data-svg': 'Circle' }),
-    ).toHaveLength(3);
-    expect(screen.getByTestId('balance-frost')).toBeTruthy();
+    ).toHaveLength(2);
     expect(screen.getByTestId('balance-noise')).toBeTruthy();
   });
 
