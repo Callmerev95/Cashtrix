@@ -613,7 +613,7 @@ timed out` ditemukan = payload (sourcemap `.hbc.map` ~15MB ikut terunggah);
 fix = export sendiri tanpa sourcemap + `eas-cli update --skip-bundler
 --input-dir`. Device gate LULUS 2026-10-18.
 
-L4a drill-down → `/search` implementasi di working tree (TANPA DDL):
+L4a drill-down → `/search` COMMITTED (TANPA DDL):
 seam `SearchFilters`/`parseSearchFilters`/`hasSearchFilters`/
 `searchFilterKey`/`parseKindFilter`/`drillParams` + `isSearchActive`
 diperluas; `searchTransactions` + `.eq(category_id/wallet_id)` +
@@ -629,7 +629,7 @@ verify-legal 36/36 + export Android. COMMITTED `3dc29b0`; OTA preview
 terkirim 2026-10-19 (grup `b9a7e1ac`, runtime 2.1.0); device gate LULUS
 2026-10-19.
 
-L4b multi-wallet compare implementasi di working tree (paket 2/2 trek L4,
+L4b multi-wallet compare COMMITTED (paket 2/2 trek L4,
 satu DDL aditif `20261020090000_wallet_compare.sql`): RPC
 `analytics_wallet_compare` (expense+income+prev+delta+share+series per
 dompet, satu round-trip, security invoker); provider `compare` fetch
@@ -645,6 +645,5 @@ fungsi LULUS 2026-10-20 (owner). Polish visual: kartu `<Card>` gradient,
 baris ber-ikon + divider hairline + spark 48×16 + nominal rata kanan;
 OTA `69f45c8c` (runtime 2.1.0). COMMITTED `46e505c`.
 
-Catatan PRD (kesepakatan pemilik 2026-10-19): revisi R15 (drill-down L4a +
-L4b) sengaja ditunda sampai L4b mendarat — satu revisi untuk seluruh trek
-L4; edit PRD wajib approval per-baris sebelum commit.
+PRD R15 (drill-down L4a + L4b) dicatat 2026-10-20 setelah approval
+per-baris pemilik — satu revisi untuk seluruh trek L4.

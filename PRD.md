@@ -1,6 +1,6 @@
 # PRD: Cashtrix
 
-**Versi:** 1.0 · **Status:** Approved · **Tanggal:** 2026-09-17 · **Revisi terakhir:** 2026-10-16 (R14, 2.1.0 + Insight L1–L3 + L4c custom range)
+**Versi:** 1.0 · **Status:** Approved · **Tanggal:** 2026-09-17 · **Revisi terakhir:** 2026-10-20 (R15, L4a drill-down + L4b multi-wallet compare)
 **Dokumen pendamping:** `design.md` (Obsidian Luxury / Minimalist Obsidian design system), sumber kebenaran visual.
 
 ---
@@ -134,6 +134,8 @@ Struktur navigasi = **floating bottom bar** (per `design.md` §5 Navigation), 4 
 - Range `ALL` dengan 0 transaksi → empty state (bukan NaN/Infinity).
 - **Revisi R13:** copy layar + body notifikasi ikut bahasa OS (kamus ID/EN, fallback ID); kartu ringkasan bulan lalu di Dashboard (`v_monthly_summary`, tap → Analytics); filter dompet via chips; donut/bar `View`-only (tanpa `react-native-svg`).
 - **Revisi R14 (2.1.0 + L1–L4c):** donut Analytics + ring Budget = arc **`react-native-svg`** crisp-edge (amandemen R13: svg disetujui untuk chart, satu rebuild `d4d43852`; bar tetap kolom gradient `View`); kartu tren (sparkline per metrik) + tap-select donut ↔ breakdown; warna delta/nominal ikut semantik (income hijau, expense merah + glyph `-`, net emas — amandemen "tidak pernah merah" di AC atas); rentang ke-6 **CUSTOM** (jendela bebas, clamp 12 bulan, prev sepanjang yang sama, sheet dua grid kalender); kartu **Insight AI** (deterministik-dulu-selalu, rephrase via Edge `insight-summary` hanya bila `ok`, consent terpisah, L2 pendorong+anomali, L3 run-rate + tap → Budgets).
+- **Revisi R15 (L4a drill-down):** KPI, irisan donut, baris breakdown, dan kolom bar dapat membuka `/search` terfilter — KPI = jenisnya (Net = semua jenis, karena memuat transfer), irisan/baris/kolom = jendela bucket itu; `__other__` tidak dapat di-drill (agregat tak bisa disebut jujur). Filter dibawa sebagai chip removable; jendela `[from, to)` memakai tanggal device-local (sama dengan batas hari di seluruh app, bukan tz profil); wallet yang difilter = **dompet sumber** (mirror `analytics_overview`), sehingga angka KPI dan daftar hasil tak bisa berbeda. Tanpa DDL: `/search` membaca `v_transactions_feed` + filter kolom.
+- **Revisi R15 (L4b multi-dompet compare):** kartu setelah Tren membandingkan **2–4 dompet** dalam satu round-trip RPC `analytics_wallet_compare` (expense+income, previous, delta, share, series sparse per dompet) — toggle Expense/Income tidak memicu refetch. `share` memakai denominator total **semua** dompet di rentang **termasuk arsip** (angka yang sama dengan KPI); baris hanya dompet aktif dan dompet nol tetap tampil (chip dan daftar selalu setuju). Kartu disembunyikan saat filter dompet tunggal aktif atau dompet <2; baris dapat di-drill ke `/search` untuk dompet + metrik itu. Tanpa index baru (scan `transactions_user_occurred_idx`).
 
 #### Epic E: Budget & Alert ("Budget Architecture")
 
@@ -181,7 +183,7 @@ Struktur navigasi = **floating bottom bar** (per `design.md` §5 Navigation), 4 
 - ❌ Smart insight/AI di luar prefill Fase 1 (tanpa auto-kategori terkunci, tanpa auto-save).
 - ❌ Widget iOS + saldo/widget berdata (widget = tombol saja, Android-only).
 
-Sudah rilis dan keluar dari daftar ini: transfer (V2), recurring (V3), undo + arsip (V4), kalender (V5), auth gate + reset + legal (V0), EAS + Sentry (V1), ringkasan/A3–A6, lock (B4), i18n (C6), 2FA (C2), rate-limit (D5), pintasan + scan (S1–S3), voice VC1–VC3 + split + widget/fast-lane (WG1–WG3), outbox masih antre (OB1–OB3), AI Fase 1 (AI1–AI6), haptics + polish (B1), chart svg + tren + tap-select (PR1–PR2, R14), Insight AI L1–L3 (R14), custom range L4c (R14).
+Sudah rilis dan keluar dari daftar ini: transfer (V2), recurring (V3), undo + arsip (V4), kalender (V5), auth gate + reset + legal (V0), EAS + Sentry (V1), ringkasan/A3–A6, lock (B4), i18n (C6), 2FA (C2), rate-limit (D5), pintasan + scan (S1–S3), voice VC1–VC3 + split + widget/fast-lane (WG1–WG3), outbox masih antre (OB1–OB3), AI Fase 1 (AI1–AI6), haptics + polish (B1), chart svg + tren + tap-select (PR1–PR2, R14), Insight AI L1–L3 (R14), custom range L4c (R14), drill-down Analytics → `/search` (L4a, R15), multi-wallet compare (L4b, R15).
 
 ---
 
@@ -365,11 +367,13 @@ function_rate_limits (
 -- dihapus server instan pasca-transkrip = retensi nol, AI6).
 ```
 
-**View wajib (agregasi server-side):**
+**View/RPC wajib (agregasi server-side):**
 - `v_wallet_balances`, saldo per wallet (`opening_balance + Σ income − Σ expense`, exclude soft-delete).
 - `v_monthly_summary(user_id, month, tz)`, income/expense/net bulanan.
 - `v_category_breakdown(user_id, range_start, range_end)`, untuk donut & bar chart.
 - `v_budget_status(user_id, month, tz)`, join budget × spent × % × state (`ok`/`warning`/`exceeded`).
+- `analytics_wallet_compare(range_start, range_end, prev_start, prev_end, tz, daily)`, per dompet: totals current+previous, delta %, share, dan series bucket sparse; satu round-trip untuk kedua metrik, `security invoker`.
+- Drill-down L4a tidak menambah view/RPC: `/search` membaca `v_transactions_feed` dengan filter `category_id`/`wallet_id` + jendela `occurred_at` `[from, to)`.
 
 **Seed default (idempotent, via Edge Function `seed-user` saat login pertama):**
 - Wallet: "Cash" (type `cash`, opening 0), satu-satunya baris yang dibuat `seed-user` (revisi R2).
@@ -445,6 +449,7 @@ bukti kondisi kode hidup di **`docs/roadmap.md`**. Tabel di bawah ringkasannya.
 | **v2.0** | ✅ **rilis 2026-09-29** (R12, tag `v2.0.0`): widget + fast-lane (WG1–WG3) + polish batch + fix opsi dompet; lalu outbox + read cache (OB1–OB3); bank sync, multi-currency, smart insight menyusul di payung 2.x | Gate hijau per rilis (pola Q10); widget tanpa label AI; antrean selalu eksplisit; compliance review selesai sebelum bank sync |
 | **AI Fase 1 + B1** | ✅ R13 (2026-10-03): AI1 Edge `parse-voice` + AI2 golden set 40 + AI3 `scan-receipt` Gemini 1-call + AI4 wiring form + AI5 legal v2.0.0 + AI6 audio Fase 2 (`transcribe-voice`, `expo-audio`) + B1 haptics (`expo-haptics`, satu rebuild) + waveform + Screen pin; preview build `0c8b2fc2` FINISHED | Prefill-only; disiplin Rp 0; device re-gate Redmi |
 | **2.1.0** | ✅ R14 (tag `v2.1.0`): chart svg crisp-edge (PR1/PR2) + kartu tren + tap-select + Insight AI L1–L3 + L4c custom range (commit `f9b5557`); preview build `d4d43852` (runtime 2.1.0) | Gate hijau per rilis; OTA L4c tertunda EAS Okt 2026 |
+| **2.1.x (OTA)** | ✅ R15: L4a drill-down Analytics → `/search` (commit `3dc29b0`, OTA `b9a7e1ac`, gate 2026-10-19) + L4b multi-wallet compare (commit `46e505c`, OTA `8747fefd` + polish `69f45c8c`, gate 2026-10-20) | Tanpa bump versi (runtime 2.1.0); gate hijau per rilis |
 | **Berikutnya** | OB1–OB3 outbox + read cache → AI insight lanjutan → bank sync / multi-currency (parkir OPEN-4) | Spec + grill per rilis seperti v1.1 |
 
 ### 5.2 Technical Risks
@@ -477,6 +482,7 @@ Transfer / Recurring / V0 auth-legal tertutup di R7–R8. Tidak ada OPEN yang me
 Transfer / Recurring / V0 auth-legal tertutup di R7–R8. Tidak ada OPEN yang menghambat spec v1.1.
 
 - **R13, AI Fase 1 + batch haptics B1 (2026-10-03, #90–#95 + ADR-0015/0016, PR #96–#102, build `0c8b2fc2`).** AI1 `parse-voice` (lite primer + 3.8 fallback, validator strict) → AI2 golden set 40 (gate 36/40 + liar nol) → AI3 `scan-receipt` Gemini 1-call (confidence fixed jujur 0.42, `occurred_on` diabaikan form) → AI4 wiring (`VoiceSheet` AI-first + laser scan + gap-fill render-safe, KPI `ai_prefill_ok`) → AI5 legal v2.0.0 + consent suara terpisah + `verify-legal.mjs` → AI6 audio Fase 2 (`expo-audio`, bucket `voice_drafts` objek-only retensi-nol, `transcribe-voice`, cap 15dtk/<1MB, consent rekam terpisah) + B1 haptics (`expo-haptics`, 6 tap best-effort, satu rebuild preview, waveform placeholder + Screen pin search/notifications/voice). Keputusan terkunci susulan: tanpa gambar QR (ganti link `otpauth://` + secret selectable — `react-native-svg` = rebuild); STT tetap milik OS (tanpa dialog recognizer di app); widget iOS tunda; `2.1.0` = Analytics Overhaul (svg). Disiplin Rp 0 mengikat semua verify AI (flood pra-model).
+- **R15, Trek L4 Analytics — drill-down + multi-dompet compare (2026-10-20).** L4a: KPI/donut/breakdown/kolom bar membuka `/search` terfilter; KPI = jenisnya (Net = semua jenis), bucket = `[from, to)` device-local, `__other__` tanpa drill, filter chip removable, wallet = dompet sumber (mirror `analytics_overview`); tanpa DDL/RPC baru (`v_transactions_feed` + filter kolom). Commit `3dc29b0`, OTA `b9a7e1ac`, device gate LULUS 2026-10-19. L4b: kartu 2–4 dompet setelah Tren; satu RPC `analytics_wallet_compare` mengembalikan expense+income+prev+delta+share+series (toggle tanpa refetch); `share` = denominator KPI seluruh dompet termasuk arsip, baris hanya dompet aktif + dompet nol, kartu sembunyi saat filter dompet tunggal/<2 dompet, drill baris → `/search` wallet itu; DDL aditif `20261020090000_wallet_compare.sql`, `security invoker`, tanpa index baru. Commit `46e505c`, OTA `8747fefd` + polish `69f45c8c`, device gate LULUS 2026-10-20. Tanpa bump versi (runtime 2.1.0); tanpa auto-kategori/auto-save — non-goal §2.4 tidak tersentuh.
 - **R14, 2.1.0 + Insight L1–L3 + L4c custom range (2026-10-06–16).** PR1/PR2: donut Analytics + ring Budget = arc `react-native-svg@15.15.4` crisp-edge (revisi R13 yang melarang svg; bar tetap gradient `View`); kartu tren + tap-select donut ↔ breakdown; warna nominal/delta ikut semantik (amandemen "tidak pernah merah"). L1: Edge `insight-summary` rephrase-only (server tanpa baca DB, validator figure-preservation, consent `INSIGHT_CONSENT_KEY` terpisah, auto-refine, timeout 30 dtk) + L2 pendorong/anomali (DDL aditif `prev_breakdown`, pgTAP 43→51) + L3 run-rate + tap → Budgets; tag `v2.1.0`, build `d4d43852`. L4c: rentang CUSTOM + `CustomRangeSheet` + remount-fix (commit `f9b5557`); OTA preview tertunda EAS 15–16 Okt 2026 (`asset processing timed out` 11×; device di grup lama). Tanpa auto-kategori terkunci, tanpa auto-save, tanpa simpan AI apa pun — non-goal §2.4 tidak tersentuh.
 
 ### 6.1 Revisi tercatat (resolved)
