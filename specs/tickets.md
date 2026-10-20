@@ -643,7 +643,7 @@ emulasi 28/28; `verify-t6.mjs` 50/50. Gate: lint + typecheck + Jest
 Android. OTA preview 2026-10-20 (grup `8747fefd`, runtime 2.1.0); device gate
 fungsi LULUS 2026-10-20 (owner). Polish visual: kartu `<Card>` gradient,
 baris ber-ikon + divider hairline + spark 48×16 + nominal rata kanan;
-OTA `69f45c8c` (runtime 2.1.0). COMMITTED: —
+OTA `69f45c8c` (runtime 2.1.0). COMMITTED `46e505c`.
 
 Catatan PRD (kesepakatan pemilik 2026-10-19): revisi R15 (drill-down L4a +
 L4b) sengaja ditunda sampai L4b mendarat — satu revisi untuk seluruh trek
