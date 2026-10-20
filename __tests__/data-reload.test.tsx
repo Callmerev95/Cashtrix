@@ -27,6 +27,7 @@ jest.mock('@/features/analytics/api', () => {
     ...actual,
     fetchTimezone: jest.fn().mockResolvedValue('Asia/Jakarta'),
     fetchOverview: jest.fn().mockResolvedValue(null),
+    fetchWalletCompare: jest.fn().mockResolvedValue([]),
     listWalletFilters: jest.fn().mockResolvedValue([]),
   };
 });
@@ -126,5 +127,81 @@ describe('AnalyticsProvider refresh', () => {
     // One explicit refresh re-reads both the numbers and the wallet filter.
     expect(api.fetchOverview.mock.calls.length).toBeGreaterThan(overviewCalls);
     expect(api.listWalletFilters.mock.calls.length).toBeGreaterThan(chipsCalls);
+  });
+});
+
+describe('AnalyticsProvider wallet compare (L4b)', () => {
+  type CompareProbe = {
+    refresh?: () => Promise<void>;
+    setWalletId?: (walletId: string | null) => void;
+  };
+  const probe = () => globalThis as unknown as { __compareProbe?: CompareProbe };
+
+  it('refresh membaca ulang compare (pasca-tulis)', async () => {
+    const { AnalyticsProvider, useAnalytics } = require('@/features/analytics');
+    const api = require('@/features/analytics/api');
+
+    function Probe() {
+      const analytics = useAnalytics();
+      probe().__compareProbe = {
+        refresh: analytics.refresh,
+        setWalletId: analytics.setWalletId,
+      };
+      return <View testID="probe" />;
+    }
+
+    render(
+      <AnalyticsProvider>
+        <Probe />
+      </AnalyticsProvider>,
+    );
+
+    await waitFor(() => {
+      expect(api.fetchWalletCompare).toHaveBeenCalled();
+    });
+    const before = api.fetchWalletCompare.mock.calls.length;
+
+    await act(async () => {
+      await probe().__compareProbe?.refresh?.();
+    });
+
+    expect(api.fetchWalletCompare.mock.calls.length).toBeGreaterThan(before);
+  });
+
+  it('filter dompet tidak memicu fetch compare (payload bebas filter)', async () => {
+    const { AnalyticsProvider, useAnalytics } = require('@/features/analytics');
+    const api = require('@/features/analytics/api');
+
+    function Probe() {
+      const analytics = useAnalytics();
+      probe().__compareProbe = {
+        refresh: analytics.refresh,
+        setWalletId: analytics.setWalletId,
+      };
+      return <View testID="probe" />;
+    }
+
+    render(
+      <AnalyticsProvider>
+        <Probe />
+      </AnalyticsProvider>,
+    );
+
+    await waitFor(() => {
+      expect(api.fetchWalletCompare).toHaveBeenCalled();
+    });
+    const compareBefore = api.fetchWalletCompare.mock.calls.length;
+    const overviewBefore = api.fetchOverview.mock.calls.length;
+
+    await act(async () => {
+      probe().__compareProbe?.setWalletId?.('wallet-1');
+    });
+
+    await waitFor(() => {
+      expect(api.fetchOverview.mock.calls.length).toBeGreaterThan(
+        overviewBefore,
+      );
+    });
+    expect(api.fetchWalletCompare.mock.calls.length).toBe(compareBefore);
   });
 });

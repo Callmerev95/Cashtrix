@@ -303,6 +303,113 @@ async function main() {
   );
 
   // -------------------------------------------------------------------------
+  section('analytics_wallet_compare (L4b)');
+  // Runs after the overview/monthly assertions so the extra rows cannot move
+  // numbers already checked; isolation below only looks at the other user.
+  const bank = await supabase
+    .from('wallets')
+    .insert({
+      user_id: userId,
+      name: 'Dompet Uji',
+      type: 'bank',
+      opening_balance: 0,
+    })
+    .select('id, name')
+    .single();
+  check('wallet kedua dibuat', !bank.error && Boolean(bank.data?.id), bank.error?.message);
+
+  const compareInserts = await supabase.from('transactions').insert([
+    row({
+      wallet_id: bank.data.id,
+      category_id: transport.id,
+      type: 'expense',
+      amount: 600_000,
+      occurred_at: pastClamp(
+        new Date(monthStartWib(now, 0).getTime() + 3 * 3_600_000),
+      ).toISOString(),
+    }),
+    row({
+      wallet_id: bank.data.id,
+      category_id: salary.id,
+      type: 'income',
+      amount: 1_000_000,
+      occurred_at: pastClamp(
+        new Date(monthStartWib(now, 0).getTime() + 10 * 3_600_000),
+      ).toISOString(),
+    }),
+  ]);
+  check(
+    'insert transaksi wallet kedua',
+    !compareInserts.error,
+    compareInserts.error?.message,
+  );
+
+  const compare = await supabase.rpc('analytics_wallet_compare', {
+    range_start: rangeStart.toISOString(),
+    range_end: rangeEnd.toISOString(),
+    prev_start: prevStart.toISOString(),
+    prev_end: prevEnd.toISOString(),
+    tz: 'Asia/Jakarta',
+    daily: true,
+  });
+  check(
+    'analytics_wallet_compare callable',
+    !compare.error,
+    compare.error?.message,
+  );
+  const comparePayload = compare.data ?? {};
+  const compareWallets = comparePayload.wallets ?? [];
+  const bankRow = compareWallets.find((w) => w.wallet_id === bank.data?.id);
+  const cashRow = compareWallets.find((w) => w.wallet_id === cashId);
+  check(
+    'compare: 2 wallet aktif dalam satu payload',
+    compareWallets.length === 2,
+    String(compareWallets.length),
+  );
+  check(
+    'compare: urut expense desc (Dompet Uji 600k di atas Cash 400k)',
+    compareWallets[0]?.wallet_id === bank.data?.id &&
+      Number(compareWallets[0]?.totals?.expense) === 600_000,
+    JSON.stringify(compareWallets.map((w) => [w.name, w.totals?.expense])),
+  );
+  check(
+    'compare: totals = KPI overview (expense 1jt, income 6jt)',
+    Number(comparePayload.totals?.expense) === 1_000_000 &&
+      Number(comparePayload.totals?.income) === 6_000_000,
+    JSON.stringify(comparePayload.totals),
+  );
+  check(
+    'compare: share 0.6 / 0.4 dari total semua dompet',
+    Math.abs(Number(bankRow?.share?.expense) - 0.6) < 1e-6 &&
+      Math.abs(Number(cashRow?.share?.expense) - 0.4) < 1e-6,
+    JSON.stringify([bankRow?.share, cashRow?.share]),
+  );
+  check(
+    'compare: delta Cash +100% (400k vs 200k)',
+    Math.round(Number(cashRow?.delta?.expense)) === 100,
+    String(cashRow?.delta?.expense),
+  );
+  check(
+    'compare: delta Dompet Uji null (bulan lalu nol, bukan Infinity)',
+    bankRow?.delta?.expense === null,
+    String(bankRow?.delta?.expense),
+  );
+  check(
+    'compare: series Dompet Uji membawa kedua metrik',
+    Array.isArray(bankRow?.series) &&
+      bankRow.series.length === 1 &&
+      Math.abs(
+        bankRow.series.reduce((sum, b) => sum + Number(b.total_expense), 0) -
+          600_000,
+      ) < 1e-6 &&
+      Math.abs(
+        bankRow.series.reduce((sum, b) => sum + Number(b.total_income), 0) -
+          1_000_000,
+      ) < 1e-6,
+    JSON.stringify(bankRow?.series),
+  );
+
+  // -------------------------------------------------------------------------
   section('isolasi antar-user (RLS lewat security invoker)');
   const otherUserId = await provisionTestUser(admin, other, {
     email: otherEmail,
@@ -337,6 +444,32 @@ async function main() {
     String(otherMonthly.data?.length),
   );
 
+  const otherCompare = await other.rpc('analytics_wallet_compare', {
+    range_start: rangeStart.toISOString(),
+    range_end: rangeEnd.toISOString(),
+    prev_start: prevStart.toISOString(),
+    prev_end: prevEnd.toISOString(),
+    tz: 'Asia/Jakarta',
+    daily: true,
+  });
+  const otherCompareWallets = otherCompare.data?.wallets ?? [];
+  check(
+    'compare user lain: nominal nol (tidak bocor lewat agregasi)',
+    !otherCompare.error &&
+      otherCompareWallets.every(
+        (w) =>
+          Number(w.totals?.expense) === 0 && Number(w.totals?.income) === 0,
+      ) &&
+      Number(otherCompare.data?.totals?.expense) === 0 &&
+      Number(otherCompare.data?.totals?.income) === 0,
+    JSON.stringify(otherCompare.data),
+  );
+  check(
+    'compare user lain: tidak ada nama dompet user uji',
+    !otherCompareWallets.some((w) => w.name === 'Dompet Uji'),
+    JSON.stringify(otherCompareWallets.map((w) => w.name)),
+  );
+
   // -------------------------------------------------------------------------
   section('anon (tanpa login)');
   const anon = createClient(SUPABASE_URL, anonKey, {
@@ -359,6 +492,20 @@ async function main() {
 
   const anonView = await anon.from('v_monthly_summary').select('month');
   check('anon tidak bisa membaca v_monthly_summary', Boolean(anonView.error), anonView.error?.code);
+
+  const anonCompare = await anon.rpc('analytics_wallet_compare', {
+    range_start: rangeStart.toISOString(),
+    range_end: rangeEnd.toISOString(),
+    prev_start: prevStart.toISOString(),
+    prev_end: prevEnd.toISOString(),
+    tz: 'Asia/Jakarta',
+    daily: true,
+  });
+  check(
+    'anon tidak bisa memanggil analytics_wallet_compare (42501)',
+    anonCompare.error?.code === '42501' || Boolean(anonCompare.error),
+    anonCompare.error?.code,
+  );
 
   // -------------------------------------------------------------------------
   section('cleanup');

@@ -1,19 +1,27 @@
 /**
  * Analytics data access.
  *
- * Two reads, both server-aggregated (PRD §4.2 — the client never sums money):
+ * Three reads, both server-aggregated (PRD §4.2 — the client never sums money):
  *  - `analytics_overview(...)` returns the whole screen payload (KPIs, delta,
  *    donut breakdown, bar series) in **one round-trip**, which is how the
  *    p95 <300ms target is met on 10k transactions;
+ *  - `analytics_wallet_compare(...)` (L4b) returns per-wallet expense **and**
+ *    income plus previous/delta/share and a bucket series in one round-trip,
+ *    so the card's Expense/Income toggle never refetches;
  *  - `v_wallet_balances` feeds the wallet filter chips (id + name only — the
  *    filter passes a `wallet_id`, it does not compute anything).
  *
- * The overview RPC is `security invoker`, so RLS scopes every aggregate to the
+ * Both RPCs are `security invoker`, so RLS scopes every aggregate to the
  * signed-in user without an explicit `user_id` here.
  */
 import { supabase } from '@/supabase';
 
-import type { AnalyticsOverview, DateRange, MonthlyComparison } from './domain';
+import type {
+  AnalyticsOverview,
+  DateRange,
+  MonthlyComparison,
+  WalletCompareRow,
+} from './domain';
 import { monthKeyInTz, prevMonthKey, toMonthlyComparison } from './domain';
 
 /** Raw JSON shape returned by the `analytics_overview` RPC. */
@@ -135,6 +143,81 @@ export async function fetchOverview(
 
   if (error) throw error;
   return toOverview(data as OverviewPayload);
+}
+
+/** Raw JSON shape returned by the `analytics_wallet_compare` RPC (L4b). */
+type WalletComparePayload = {
+  range: { start: string; end: string };
+  totals: { expense: number | string; income: number | string };
+  wallets: {
+    wallet_id: string;
+    name: string;
+    totals: { expense: number | string; income: number | string };
+    previous: { expense: number | string; income: number | string };
+    delta: { expense: number | string | null; income: number | string | null };
+    share: { expense: number | string; income: number | string };
+    series: {
+      bucket: string;
+      total_expense: number | string;
+      total_income: number | string;
+    }[];
+  }[];
+};
+
+function toWalletCompare(payload: WalletComparePayload): WalletCompareRow[] {
+  return (payload.wallets ?? []).map((wallet) => ({
+    walletId: wallet.wallet_id,
+    name: wallet.name,
+    totals: {
+      expense: num(wallet.totals.expense),
+      income: num(wallet.totals.income),
+    },
+    previous: {
+      expense: num(wallet.previous.expense),
+      income: num(wallet.previous.income),
+    },
+    delta: {
+      expense: numOrNull(wallet.delta.expense),
+      income: numOrNull(wallet.delta.income),
+    },
+    share: {
+      expense: num(wallet.share.expense),
+      income: num(wallet.share.income),
+    },
+    series: (wallet.series ?? []).map((bucket) => ({
+      bucket: bucket.bucket,
+      totalExpense: num(bucket.total_expense),
+      totalIncome: num(bucket.total_income),
+    })),
+  }));
+}
+
+export type FetchWalletCompareInput = {
+  range: DateRange;
+  /** `profiles.timezone` — the server buckets in the user's tz, not UTC. */
+  tz: string;
+  daily: boolean;
+};
+
+/**
+ * L4b: per-wallet expense + income, previous window, delta and share in one
+ * round-trip. Deliberately ignores the wallet filter — the card's whole job
+ * is comparing wallets, so it only hides when a single wallet is filtered.
+ */
+export async function fetchWalletCompare(
+  input: FetchWalletCompareInput,
+): Promise<WalletCompareRow[]> {
+  const { data, error } = await supabase.rpc('analytics_wallet_compare', {
+    range_start: input.range.start.toISOString(),
+    range_end: input.range.end.toISOString(),
+    prev_start: input.range.previousStart.toISOString(),
+    prev_end: input.range.previousEnd.toISOString(),
+    tz: input.tz,
+    daily: input.daily,
+  });
+
+  if (error) throw error;
+  return toWalletCompare(data as WalletComparePayload);
 }
 
 /** Wallet chips for the filter. Balance is irrelevant here — id + name only. */

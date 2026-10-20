@@ -663,6 +663,14 @@ export const id = {
       income: 'Pemasukan',
       net: 'Net',
     },
+    compare: {
+      title: 'Bandingkan Dompet',
+      minHint: 'Pilih minimal dua dompet untuk dibandingkan.',
+      maxHint: 'Maksimal empat dompet sekaligus.',
+      empty: 'Tidak ada transaksi untuk metrik ini di dompet terpilih.',
+      loadError: 'Gagal memuat perbandingan dompet',
+      retry: 'Coba lagi',
+    },
     section: {
       distribution: 'Distribusi Pengeluaran',
       trendDaily: 'Tren Harian',

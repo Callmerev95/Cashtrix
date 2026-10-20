@@ -5,6 +5,8 @@
  * dash rule that keeps `NaN`/`Infinity` off the screen).
  */
 import {
+  COMPARE_MAX_WALLETS,
+  COMPARE_MIN_WALLETS,
   CUSTOM_MAX_MONTHS,
   CUSTOM_RANGE,
   DONUT_TOP_N,
@@ -12,15 +14,18 @@ import {
   OTHER_LABEL,
   RANGE_PRESETS,
   bucketRange,
+  defaultCompareSelection,
   deltaTone,
   donutSegmentSliceIndices,
   enumerateBuckets,
   formatCustomLabel,
   formatDateKey,
   formatDelta,
+  formatShare,
   isAnalyticsRange,
   isDailyCustom,
   isDailyRange,
+  isEmptyCompareMode,
   isEmptyRange,
   isRangePreset,
   rangeLabel,
@@ -40,11 +45,15 @@ import {
   arcGradientVector,
   roundCapSpan,
   shouldRoundCaps,
+  sortCompareRows,
   toSparklines,
+  toWalletSparklines,
+  toggleCompareWallet,
   type AnalyticsOverview,
   type CategoryBreakdown,
   type DateRange,
   type SeriesBucket,
+  type WalletCompareRow,
 } from '@/features/analytics';
 
 function breakdown(partial: Partial<CategoryBreakdown>): CategoryBreakdown {
@@ -902,5 +911,109 @@ describe('bucketRange (L4a drill window)', () => {
     expect(bucketRange('2026-00-01', true)).toBeNull();
     expect(bucketRange('2026-10-00', false)).toBeNull();
     expect(bucketRange('2026-10-32', false)).toBeNull();
+  });
+});
+
+function compareRow(partial: Partial<WalletCompareRow>): WalletCompareRow {
+  return {
+    walletId: partial.walletId ?? 'w1',
+    name: partial.name ?? 'BCA',
+    totals: partial.totals ?? { expense: 100_000, income: 0 },
+    previous: partial.previous ?? { expense: 0, income: 0 },
+    delta: partial.delta ?? { expense: null, income: null },
+    share: partial.share ?? { expense: 0.5, income: 0 },
+    series: partial.series ?? [],
+  };
+}
+
+describe('L4b wallet compare (pure seam)', () => {
+  it('caps the selection without silently dropping a pick', () => {
+    expect(COMPARE_MIN_WALLETS).toBe(2);
+    expect(COMPARE_MAX_WALLETS).toBe(4);
+    expect(toggleCompareWallet([], 'a')).toEqual(['a']);
+    expect(toggleCompareWallet(['a', 'b'], 'c')).toEqual(['a', 'b', 'c']);
+    expect(toggleCompareWallet(['a', 'b', 'c', 'd'], 'e')).toEqual([
+      'a',
+      'b',
+      'c',
+      'd',
+    ]);
+    expect(toggleCompareWallet(['a', 'b'], 'a')).toEqual(['b']);
+    expect(toggleCompareWallet([], 'a', 1)).toEqual(['a']);
+    expect(toggleCompareWallet(['a'], 'b', 1)).toEqual(['a']);
+  });
+
+  it('default selection = top-2 spenders, name breaks ties', () => {
+    const rows = [
+      compareRow({ walletId: 'cash', name: 'Cash', totals: { expense: 50_000, income: 0 } }),
+      compareRow({ walletId: 'bca', name: 'BCA', totals: { expense: 300_000, income: 0 } }),
+      compareRow({ walletId: 'gopay', name: 'GoPay', totals: { expense: 900_000, income: 0 } }),
+    ];
+    expect(defaultCompareSelection(rows)).toEqual(['gopay', 'bca']);
+    const tied = [
+      compareRow({ walletId: 'b', name: 'B', totals: { expense: 100, income: 0 } }),
+      compareRow({ walletId: 'a', name: 'A', totals: { expense: 100, income: 0 } }),
+    ];
+    expect(defaultCompareSelection(tied)).toEqual(['a', 'b']);
+  });
+
+  it('sortCompareRows follows the active metric, never mutates the input', () => {
+    const rows = [
+      compareRow({ walletId: 'a', name: 'A', totals: { expense: 10, income: 900 } }),
+      compareRow({ walletId: 'b', name: 'B', totals: { expense: 30, income: 100 } }),
+    ];
+    expect(sortCompareRows(rows, 'expense').map((row) => row.walletId)).toEqual([
+      'b',
+      'a',
+    ]);
+    expect(sortCompareRows(rows, 'income').map((row) => row.walletId)).toEqual([
+      'a',
+      'b',
+    ]);
+    expect(rows.map((row) => row.walletId)).toEqual(['a', 'b']);
+  });
+
+  it('formatShare never rounds a real slice down to 0%', () => {
+    expect(formatShare(0)).toBe('0%');
+    expect(formatShare(Number.NaN)).toBe('0%');
+    expect(formatShare(0.0004)).toBe('<1%');
+    expect(formatShare(0.6364)).toBe('64%');
+    expect(formatShare(1)).toBe('100%');
+  });
+
+  it('isEmptyCompareMode checks only the active metric', () => {
+    const rows = [
+      compareRow({ totals: { expense: 0, income: 500_000 } }),
+      compareRow({ walletId: 'w2', totals: { expense: 0, income: 0 } }),
+    ];
+    expect(isEmptyCompareMode(rows, 'expense')).toBe(true);
+    expect(isEmptyCompareMode(rows, 'income')).toBe(false);
+  });
+
+  it('toWalletSparklines gap-fills, orders by ids and scales each wallet to itself', () => {
+    const rows = [
+      compareRow({
+        walletId: 'bca',
+        series: [
+          { bucket: '2026-10-01', totalExpense: 100, totalIncome: 1_000 },
+          { bucket: '2026-10-03', totalExpense: 300, totalIncome: 500 },
+        ],
+      }),
+      compareRow({
+        walletId: 'cash',
+        series: [{ bucket: '2026-10-03', totalExpense: 5, totalIncome: 0 }],
+      }),
+    ];
+    const buckets = ['2026-10-01', '2026-10-02', '2026-10-03'];
+    expect(toWalletSparklines(rows, ['cash', 'bca'], buckets, 'expense')).toEqual([
+      { id: 'cash', values: [0, 0, 1] },
+      { id: 'bca', values: [1 / 3, 0, 1] },
+    ]);
+    expect(toWalletSparklines(rows, ['bca'], buckets, 'income')).toEqual([
+      { id: 'bca', values: [1, 0, 0.5] },
+    ]);
+    expect(toWalletSparklines(rows, ['gone'], buckets, 'expense')).toEqual([
+      { id: 'gone', values: [0, 0, 0] },
+    ]);
   });
 });

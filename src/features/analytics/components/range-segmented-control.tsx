@@ -137,7 +137,7 @@ export function WalletFilterChips({
   );
 }
 
-function FilterChip({
+export function FilterChip({
   label,
   active,
   onPress,

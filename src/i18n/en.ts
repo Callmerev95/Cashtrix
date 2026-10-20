@@ -662,6 +662,14 @@ export const en: Dictionary = {
       income: 'Income',
       net: 'Net',
     },
+    compare: {
+      title: 'Compare Wallets',
+      minHint: 'Pick at least two wallets to compare.',
+      maxHint: 'Up to four wallets at a time.',
+      empty: 'No transactions for this metric in the selected wallets.',
+      loadError: 'Failed to load wallet comparison',
+      retry: 'Try again',
+    },
     section: {
       distribution: 'Expense Breakdown',
       trendDaily: 'Daily Trend',

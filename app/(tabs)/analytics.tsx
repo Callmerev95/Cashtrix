@@ -28,8 +28,10 @@ import {
   NetAreaChart,
   RangeSegmentedControl,
   WalletFilterChips,
+  WalletCompareCard,
   CUSTOM_RANGE,
   bucketRange,
+  defaultCompareSelection,
   enumerateBuckets,
   formatCustomLabel,
   formatDateKey,
@@ -44,6 +46,7 @@ import {
   setCachedInsightAi,
   setInsightConsented,
   shouldAutoRefine,
+  sortCompareRows,
   subscribeInsightConsent,
   toBars,
   toDonutSlices,
@@ -52,10 +55,14 @@ import {
   toRunRate,
   toNetPoints,
   toSparklines,
+  toWalletSparklines,
+  toggleCompareWallet,
   useAnalytics,
   type CustomRange,
   type InsightAiState,
   type TrendMode,
+  type WalletCompareMode,
+  type WalletCompareRow,
 } from '@/features/analytics';
 import { drillParams, type TransactionKindFilter } from '@/features/transactions';
 import { insightAiEvent, trackEvent } from '@/features/observability';
@@ -81,6 +88,9 @@ export default function AnalyticsScreen() {
     error,
     isEmpty,
     monthly,
+    compare,
+    compareLoading,
+    compareError,
     sparks,
     refresh,
   } = useAnalytics();
@@ -110,6 +120,10 @@ export default function AnalyticsScreen() {
   const [customOpen, setCustomOpen] = useState(false);
   // P2b: one trend card, three metrics (default Expense = previous pixels).
   const [trendMode, setTrendMode] = useState<TrendMode>('expense');
+  // L4b: compare selection + metric live on the screen (like `trendMode`).
+  // `null` = untouched → derived top-2 spenders from the payload order.
+  const [compareMode, setCompareMode] = useState<WalletCompareMode>('expense');
+  const [compareIds, setCompareIds] = useState<string[] | null>(null);
   if (filterKeySeen !== filterKey) {
     setFilterKeySeen(filterKey);
     setSelectedSliceId(null);
@@ -155,6 +169,27 @@ export default function AnalyticsScreen() {
   // Sparkline axis: identical inputs to the series RPC (same buckets).
   const sparkBuckets = enumerateBuckets(window, daily, tz);
   const sparkLines = toSparklines(sparks, slices, sparkBuckets);
+  // L4b: selected rows sorted by the active metric; sparklines align with the
+  // rows so each wallet is scaled to its own peak (never cross-wallet).
+  const compareSelected =
+    compareIds === null ? defaultCompareSelection(compare) : compareIds;
+  const compareRows = sortCompareRows(
+    compareSelected
+      .map((id) => compare.find((row) => row.walletId === id))
+      .filter((row): row is WalletCompareRow => row !== undefined),
+    compareMode,
+  );
+  const compareSparks = toWalletSparklines(
+    compare,
+    compareRows.map((row) => row.walletId),
+    sparkBuckets,
+    compareMode,
+  );
+  // A single-wallet filter contradicts the card's job; below two wallets
+  // there is nothing to rank. Loading/error stay visible so retry is reachable.
+  const showCompare =
+    walletId === null &&
+    (compare.length >= 2 || compareLoading || compareError !== null);
   const net =
     overview && trendMode === 'net'
       ? toNetPoints(overview.series, window, daily, tz, language)
@@ -210,6 +245,8 @@ export default function AnalyticsScreen() {
     from: Date;
     to: Date;
     categoryId?: string | null;
+    /** L4b compare rows drill into their own wallet, not the active filter. */
+    walletId?: string;
     base: string;
   }) {
     const label = [input.base, walletName].filter(Boolean).join(' · ');
@@ -220,7 +257,7 @@ export default function AnalyticsScreen() {
         from: input.from.toISOString(),
         to: input.to.toISOString(),
         categoryId: input.categoryId ?? null,
-        walletId,
+        walletId: input.walletId ?? walletId,
         label,
       }),
     });
@@ -259,6 +296,27 @@ export default function AnalyticsScreen() {
       from: window.start,
       to: window.end,
       base: `${t.analytics.kpi[tone]} · ${windowLabel}`,
+    });
+  }
+
+  // L4b: chips add/remove; the first tap materialises the derived default so
+  // toggling off one of the top-2 never snaps back to the default selection.
+  function toggleCompare(walletIdToToggle: string) {
+    setCompareIds((previous) =>
+      toggleCompareWallet(
+        previous ?? defaultCompareSelection(compare),
+        walletIdToToggle,
+      ),
+    );
+  }
+
+  function drillCompareRow(row: WalletCompareRow) {
+    drillToSearch({
+      kind: compareMode,
+      from: window.start,
+      to: window.end,
+      walletId: row.walletId,
+      base: `${row.name} · ${windowLabel}`,
     });
   }
 
@@ -611,6 +669,22 @@ export default function AnalyticsScreen() {
                 </Pressable>
               ) : null}
             </LinearGradient>
+
+            {showCompare ? (
+              <WalletCompareCard
+                wallets={compare}
+                rows={compareRows}
+                sparks={compareSparks}
+                mode={compareMode}
+                selectedIds={compareSelected}
+                onModeChange={setCompareMode}
+                onToggle={toggleCompare}
+                onSelectRow={drillCompareRow}
+                loading={compareLoading}
+                error={compareError}
+                onRetry={() => void refresh()}
+              />
+            ) : null}
           </>
         )}
       </ScrollView>

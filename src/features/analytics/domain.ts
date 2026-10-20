@@ -52,6 +52,34 @@ export type AnalyticsOverview = {
   series: SeriesBucket[];
 };
 
+/** L4b: one wallet's bucket row inside the compare payload. */
+export type WalletCompareBucket = {
+  bucket: string;
+  totalExpense: number;
+  totalIncome: number;
+};
+
+/**
+ * L4b: one wallet row of the compare card. Both metrics ride the same
+ * payload, so the Expense/Income toggle is free (no refetch).
+ */
+export type WalletCompareRow = {
+  walletId: string;
+  name: string;
+  totals: { expense: number; income: number };
+  previous: { expense: number; income: number };
+  delta: { expense: number | null; income: number | null };
+  /** 0..1 fraction of the range total across all wallets (= the KPI figure). */
+  share: { expense: number; income: number };
+  series: WalletCompareBucket[];
+};
+
+export type WalletCompareMode = 'expense' | 'income';
+
+/** Below two wallets there is nothing to compare; four keeps the card readable. */
+export const COMPARE_MIN_WALLETS = 2;
+export const COMPARE_MAX_WALLETS = 4;
+
 export const RANGE_PRESETS = ['1M', '3M', '6M', '1Y', 'ALL'] as const;
 export type RangePreset = (typeof RANGE_PRESETS)[number];
 
@@ -852,6 +880,87 @@ export type InsightSummary = {
   title: string;
   lines: string[];
 };
+
+/**
+ * Share label for a compare row. Rounds like the donut, but never lets a real
+ * slice collapse to "0%": anything between 0 and 1 renders "<1%".
+ */
+export function formatShare(share: number): string {
+  if (!Number.isFinite(share) || share <= 0) return '0%';
+  const percent = share * 100;
+  if (percent < 1) return '<1%';
+  return `${Math.round(percent)}%`;
+}
+
+/**
+ * Adds/removes one wallet from the compare selection. Adding past the cap is
+ * a no-op — the card surfaces the max hint instead of silently dropping a
+ * pick. Unknown ids are kept; the card filters them against the payload.
+ */
+export function toggleCompareWallet(
+  selected: string[],
+  walletId: string,
+  max: number = COMPARE_MAX_WALLETS,
+): string[] {
+  if (selected.includes(walletId)) {
+    return selected.filter((id) => id !== walletId);
+  }
+  if (selected.length >= max) return selected;
+  return [...selected, walletId];
+}
+
+/** Display order follows the active metric; name breaks ties deterministically. */
+export function sortCompareRows(
+  rows: WalletCompareRow[],
+  mode: WalletCompareMode,
+): WalletCompareRow[] {
+  return [...rows].sort(
+    (a, b) => b.totals[mode] - a.totals[mode] || a.name.localeCompare(b.name),
+  );
+}
+
+/** Default selection before the user picks: top-2 spenders, independent of mode. */
+export function defaultCompareSelection(rows: WalletCompareRow[]): string[] {
+  return sortCompareRows(rows, 'expense')
+    .slice(0, COMPARE_MIN_WALLETS)
+    .map((row) => row.walletId);
+}
+
+/** `true` when every visible row is zero on the active metric. */
+export function isEmptyCompareMode(
+  rows: WalletCompareRow[],
+  mode: WalletCompareMode,
+): boolean {
+  return rows.every((row) => row.totals[mode] === 0);
+}
+
+/**
+ * Normalises each wallet's series to the screen's dense bucket axis and its
+ * own peak (same contract as `toSparklines`), so a 50k wiggle and a 5jt climb
+ * both read honestly. Order follows `walletIds`.
+ */
+export function toWalletSparklines(
+  rows: WalletCompareRow[],
+  walletIds: string[],
+  buckets: string[],
+  mode: WalletCompareMode,
+): Sparkline[] {
+  const field = mode === 'expense' ? 'totalExpense' : 'totalIncome';
+  return walletIds.map((walletId) => {
+    const row = rows.find((item) => item.walletId === walletId);
+    const byBucket = new Map(
+      (row?.series ?? []).map((item) => [item.bucket, item[field]]),
+    );
+    const values = buckets.map((bucket) => byBucket.get(bucket) ?? 0);
+    const max = values.reduce((peak, value) => (value > peak ? value : peak), 0);
+    return {
+      id: walletId,
+      values: max > 0 ? values.map((value) => value / max) : values.map(() => 0),
+    };
+  });
+}
+
+
 
 /**
  * Builds the 2–3 sentence summary from numbers the payload already carries:

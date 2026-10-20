@@ -127,6 +127,9 @@ function analyticsValue(
     isEmpty: false,
     monthly: null,
     sparks: [],
+    compare: [],
+    compareLoading: false,
+    compareError: null,
     refresh: jest.fn(),
     ...overrides,
   } as unknown as ReturnType<typeof useAnalytics>;
@@ -253,5 +256,69 @@ describe('L4a — bucket drill', () => {
     await screen.findByTestId('analytics-bars');
     expect(screen.queryByTestId('analytics-drill-bucket')).toBeNull();
     expect(push).not.toHaveBeenCalled();
+  });
+});
+
+describe('L4b — wallet compare', () => {
+  const compareRows = [
+    {
+      walletId: 'w-bca',
+      name: 'BCA',
+      totals: { expense: 300_000, income: 0 },
+      previous: { expense: 0, income: 0 },
+      delta: { expense: null, income: null },
+      share: { expense: 0.75, income: 0 },
+      series: [],
+    },
+    {
+      walletId: 'w-cash',
+      name: 'Cash',
+      totals: { expense: 100_000, income: 500_000 },
+      previous: { expense: 0, income: 0 },
+      delta: { expense: null, income: 100 },
+      share: { expense: 0.25, income: 1 },
+      series: [],
+    },
+  ];
+
+  it('renders the ranked card and drills a row with its own wallet', async () => {
+    mockAnalyticsValue = analyticsValue({ compare: compareRows });
+    renderScreen();
+
+    expect(await screen.findByTestId('wallet-compare')).toBeTruthy();
+    expect(
+      screen.getByTestId('wallet-compare-chip-w-bca').props.accessibilityState,
+    ).toEqual({ selected: true });
+
+    fireEvent.press(screen.getByTestId('wallet-compare-row-w-bca'));
+    const { params } = lastPush();
+    expect(params.kind).toBe('expense');
+    expect(params.walletId).toBe('w-bca');
+    expect(params.label).toBe('BCA · 1B');
+  });
+
+  it('follows the active metric for both rerank and drill kind', async () => {
+    mockAnalyticsValue = analyticsValue({ compare: compareRows });
+    renderScreen();
+
+    fireEvent.press(await screen.findByTestId('wallet-compare-mode-income'));
+    // Domain sorting is locked separately; here the screen must re-sort and
+    // drill the metric, not the stale expense mode.
+    fireEvent.press(await screen.findByTestId('wallet-compare-row-w-cash'));
+    const { params } = lastPush();
+    expect(params.kind).toBe('income');
+    expect(params.walletId).toBe('w-cash');
+  });
+
+  it('hides the card while a single wallet filter is active', async () => {
+    mockAnalyticsValue = analyticsValue({
+      compare: compareRows,
+      walletId: 'w-bca',
+      wallets: [{ id: 'w-bca', name: 'BCA' }],
+    });
+    renderScreen();
+
+    await screen.findByTestId('analytics-donut');
+    expect(screen.queryByTestId('wallet-compare')).toBeNull();
   });
 });

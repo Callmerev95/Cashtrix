@@ -4,14 +4,22 @@ export {
   fetchMonthlySummary,
   fetchOverview,
   fetchTimezone,
+  fetchWalletCompare,
   listWalletFilters,
 } from './api';
-export type { CategorySparkRow, FetchOverviewInput, FetchSeriesInput } from './api';
+export type {
+  CategorySparkRow,
+  FetchOverviewInput,
+  FetchSeriesInput,
+  FetchWalletCompareInput,
+} from './api';
 export {
   ANOMALY_FLOOR,
   ANOMALY_MULTIPLE,
   CUSTOM_MAX_MONTHS,
   CUSTOM_RANGE,
+  COMPARE_MAX_WALLETS,
+  COMPARE_MIN_WALLETS,
   DONUT_SEGMENTS,
   DONUT_TOP_N,
   INSIGHT_TOP_DRIVERS,
@@ -24,6 +32,7 @@ export {
   roundCapSpan,
   shouldRoundCaps,
   bucketRange,
+  defaultCompareSelection,
   deltaTone,
   donutSegmentSliceIndices,
   enumerateBuckets,
@@ -31,9 +40,11 @@ export {
   formatDateKey,
   formatDelta,
   formatMonthTitle,
+  formatShare,
   isAnalyticsRange,
   isDailyCustom,
   isDailyRange,
+  isEmptyCompareMode,
   isEmptyMonthly,
   isEmptyRange,
   isRangePreset,
@@ -45,6 +56,7 @@ export {
   resolveCustomRange,
   resolveRange,
   sliceIndexAtTurn,
+  sortCompareRows,
   toArcOffsets,
   toAnomalies,
   toBars,
@@ -57,6 +69,8 @@ export {
   toMonthlyComparison,
   toNetPoints,
   toSparklines,
+  toWalletSparklines,
+  toggleCompareWallet,
 } from './domain';
 export type {
   AnalyticsOverview,
@@ -85,6 +99,9 @@ export type {
   SeriesBucket,
   Sparkline,
   TrendMode,
+  WalletCompareBucket,
+  WalletCompareMode,
+  WalletCompareRow,
 } from './domain';
 export { DonutChart } from './components/donut-chart';
 export { BarChart } from './components/bar-chart';
@@ -114,6 +131,7 @@ export { KpiHeader } from './components/kpi-header';
 export { CustomRangeSheet } from './components/custom-range-sheet';
 export { MonthlySummaryCard } from './components/monthly-summary-card';
 export { BreakdownList } from './components/breakdown-list';
+export { WalletCompareCard } from './components/wallet-compare-card';
 export { AnalyticsEmptyState } from './components/empty-state';
 export {
   RangeSegmentedControl,

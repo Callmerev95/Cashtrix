@@ -25,7 +25,7 @@ import {
 import { onLocalDataPurge } from '@/supabase';
 import { dictionaryFor, useLanguage } from '@/i18n';
 
-import { fetchCategorySeries, fetchMonthlySummary, fetchOverview, fetchTimezone, listWalletFilters } from './api';
+import { fetchCategorySeries, fetchMonthlySummary, fetchOverview, fetchTimezone, fetchWalletCompare, listWalletFilters } from './api';
 import type { CategorySparkRow } from './api';
 import {
   CUSTOM_RANGE,
@@ -38,7 +38,9 @@ import {
   type AnalyticsOverview,
   type AnalyticsRange,
   type CustomRange,
+  type DateRange,
   type MonthlyComparison,
+  type WalletCompareRow,
 } from './domain';
 
 type WalletFilter = { id: string; name: string };
@@ -60,6 +62,10 @@ type AnalyticsContextValue = {
   /** Current vs previous calendar month from `v_monthly_summary` (A6). */
   monthly: MonthlyComparison | null;
   monthlyLoading: boolean;
+  /** L4b: per-wallet compare rows (range-only key — wallet filter ignored). */
+  compare: WalletCompareRow[];
+  compareLoading: boolean;
+  compareError: string | null;
   /** Per-category series rows for sparklines (P2b-spark, best-effort). */
   sparks: CategorySparkRow[];
   refresh: () => Promise<void>;
@@ -82,11 +88,21 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   // current calendar month vs the previous one.
   const [monthly, setMonthly] = useState<MonthlyComparison | null>(null);
   const [monthlyLoaded, setMonthlyLoaded] = useState(false);
+  // L4b compare rows: range-only key (a single-wallet filter does not shrink
+  // the comparison — the card hides instead). Failures keep the screen alive.
+  const [compare, setCompare] = useState<WalletCompareRow[]>([]);
+  const [compareLoadedKey, setCompareLoadedKey] = useState<string | null>(null);
+  const [compareError, setCompareError] = useState<string | null>(null);
 
   const mounted = useRef(true);
   // Monotonic request id: a slow response for an older range must not overwrite
   // the payload for the range the user has since selected.
   const requestId = useRef(0);
+  // Separate ticket for the compare call: it is keyed on the range only, so
+  // reusing `requestId` would drop its response whenever the wallet filter
+  // changes (the overview refetches, compare does not) and leave it stuck
+  // loading forever.
+  const compareRequestId = useRef(0);
   // C6: load-error copy follows the OS language (ADR-0008).
   const language = useLanguage();
   const loadError = dictionaryFor(language).analytics.loadError;
@@ -131,6 +147,9 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
         setMonthly(null);
         setMonthlyLoaded(false);
         setSparks([]);
+        setCompare([]);
+        setCompareLoadedKey(null);
+        setCompareError(null);
       }),
     [],
   );
@@ -148,14 +167,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       const ticket = ++requestId.current;
       // L4c: the custom window resolves through its own pure function, but
       // the RPC sees the same `DateRange` shape — its signature is untouched.
-      const window =
-        nextRange === CUSTOM_RANGE && nextCustom
-          ? resolveCustomRange(nextCustom)
-          : resolveRange(nextRange === CUSTOM_RANGE ? '1M' : nextRange);
-      const daily =
-        nextRange === CUSTOM_RANGE && nextCustom
-          ? isDailyCustom(window)
-          : isDailyRange(nextRange === CUSTOM_RANGE ? '1M' : nextRange);
+      const { window, daily } = resolveWindow(nextRange, nextCustom);
 
       return fetchTimezone()
         .then((tz) =>
@@ -206,6 +218,36 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     void load(range, walletId, customRange);
   }, [load, range, walletId, customRange]);
 
+  // L4b: same window as the overview, but no wallet filter — the card compares
+  // wallets, so it refetches only when the range changes (or via `refresh`).
+  const loadCompare = useCallback(
+    (
+      nextRange: AnalyticsRange,
+      nextCustom: CustomRange | null,
+    ): Promise<void> => {
+      const ticket = ++compareRequestId.current;
+      const { window, daily } = resolveWindow(nextRange, nextCustom);
+
+      return fetchTimezone()
+        .then((tz) => fetchWalletCompare({ range: window, tz, daily }))
+        .then((rows) => {
+          if (!mounted.current || ticket !== compareRequestId.current) return;
+          setCompare(rows);
+          setCompareLoadedKey(rangeKeyPart(nextRange, nextCustom));
+          setCompareError(null);
+        })
+        .catch((cause: unknown) => {
+          if (!mounted.current || ticket !== compareRequestId.current) return;
+          setCompareError(cause instanceof Error ? cause.message : loadError);
+        });
+    },
+    [loadError],
+  );
+
+  useEffect(() => {
+    void loadCompare(range, customRange);
+  }, [loadCompare, range, customRange]);
+
   // A6: the monthly pair follows the same shape — fetched once on mount and
   // re-read by `refresh()` (so every transaction mutation refreshes it), but
   // never on range/wallet changes, which it does not depend on. Failures are
@@ -230,6 +272,9 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
 
   const requestedKey = rangeKey(range, walletId, customRange);
   const loading = loadedKey !== requestedKey && error === null;
+  const compareRequestedKey = rangeKeyPart(range, customRange);
+  const compareLoading =
+    compareLoadedKey !== compareRequestedKey && compareError === null;
 
   const setRange = useCallback(
     (value: AnalyticsRange) => {
@@ -257,8 +302,9 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
         load(range, walletId, customRange),
         loadWallets(),
         loadMonthly(),
+        loadCompare(range, customRange),
       ]).then(() => undefined),
-    [load, loadWallets, loadMonthly, range, walletId, customRange],
+    [load, loadWallets, loadMonthly, loadCompare, range, walletId, customRange],
   );
 
   const value = useMemo<AnalyticsContextValue>(
@@ -276,6 +322,9 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       isEmpty: isEmptyRange(overview),
       monthly,
       monthlyLoading: !monthlyLoaded,
+      compare,
+      compareLoading,
+      compareError,
       sparks,
       refresh,
     }),
@@ -293,6 +342,9 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       refresh,
       monthly,
       monthlyLoaded,
+      compare,
+      compareLoading,
+      compareError,
       sparks,
     ],
   );
@@ -318,9 +370,31 @@ function rangeKey(
   walletId: string | null,
   custom: CustomRange | null,
 ): string {
-  const rangePart =
+  return `${rangeKeyPart(range, custom)}:${walletId ?? 'all'}`;
+}
+
+/** Range-only identity (the compare card ignores the wallet filter). */
+function rangeKeyPart(
+  range: AnalyticsRange,
+  custom: CustomRange | null,
+): string {
+  return range === CUSTOM_RANGE && custom
+    ? `${range}:${custom.startKey}|${custom.endKey}`
+    : range;
+}
+
+/** Shared window/daily resolution for the overview and compare calls. */
+function resolveWindow(
+  range: AnalyticsRange,
+  custom: CustomRange | null,
+): { window: DateRange; daily: boolean } {
+  const window =
     range === CUSTOM_RANGE && custom
-      ? `${range}:${custom.startKey}|${custom.endKey}`
-      : range;
-  return `${rangePart}:${walletId ?? 'all'}`;
+      ? resolveCustomRange(custom)
+      : resolveRange(range === CUSTOM_RANGE ? '1M' : range);
+  const daily =
+    range === CUSTOM_RANGE && custom
+      ? isDailyCustom(window)
+      : isDailyRange(range === CUSTOM_RANGE ? '1M' : range);
+  return { window, daily };
 }

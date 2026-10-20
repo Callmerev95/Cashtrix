@@ -626,10 +626,24 @@ KPI tap langsung + tombol "Lihat transaksi" untuk slice/bar terpilih;
 Gate: lint + typecheck + Jest 970/970 (64 suite) + kontrak 112/10/3
 (catatan: 111 lama telat satu dari rewrite `voice.yaml` `e1dc949`) +
 verify-legal 36/36 + export Android. COMMITTED `3dc29b0`; OTA preview
-terkirim 2026-10-19 (grup `b9a7e1ac`, runtime 2.1.0); device gate pending.
+terkirim 2026-10-19 (grup `b9a7e1ac`, runtime 2.1.0); device gate LULUS
+2026-10-19.
 
-Lanjut: L4b multi-wallet compare
-(paket 2/2 trek L4). Maks 2 fitur antre device gate.
+L4b multi-wallet compare implementasi di working tree (paket 2/2 trek L4,
+satu DDL aditif `20261020090000_wallet_compare.sql`): RPC
+`analytics_wallet_compare` (expense+income+prev+delta+share+series per
+dompet, satu round-trip, security invoker); provider `compare` fetch
+range-only dengan request-id terpisah; kartu `WalletCompareCard` setelah
+Tren (2–4 dompet, toggle Expense/Income nol refetch, chip, sorting klien,
+drill baris → `/search` wallet itu); helper domain (`formatShare`,
+`toggleCompareWallet`, `defaultCompareSelection`, `sortCompareRows`,
+`isEmptyCompareMode`, `toWalletSparklines`); pgTAP 20 plan(28) + live
+emulasi 28/28; `verify-t6.mjs` 50/50. Gate: lint + typecheck + Jest
+1002/1002 (66 suite) + kontrak 112/10/3 + verify-legal 36/36 + export
+Android. OTA preview 2026-10-20 (grup `8747fefd`, runtime 2.1.0); device gate
+fungsi LULUS 2026-10-20 (owner). Polish visual: kartu `<Card>` gradient,
+baris ber-ikon + divider hairline + spark 48×16 + nominal rata kanan;
+OTA `69f45c8c` (runtime 2.1.0). COMMITTED: —
 
 Catatan PRD (kesepakatan pemilik 2026-10-19): revisi R15 (drill-down L4a +
 L4b) sengaja ditunda sampai L4b mendarat — satu revisi untuk seluruh trek
