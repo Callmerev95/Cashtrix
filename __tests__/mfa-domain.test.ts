@@ -13,6 +13,7 @@ import {
   hasVerifiedTotp,
   needsMfaChallenge,
   normalizeMfaCode,
+  qrSvgMarkup,
   validateMfaCode,
   verifiedTotpFactorId,
 } from '@/features/mfa';
@@ -85,5 +86,45 @@ describe('verified-TOTP filter (C2)', () => {
     expect(verifiedTotpFactorId([pending, verified])).toBe('f1');
     expect(verifiedTotpFactorId([pending])).toBeNull();
     expect(verifiedTotpFactorId([])).toBeNull();
+  });
+});
+
+describe('QR payload decode (MFA QR pass)', () => {
+  const svg = '<svg/>';
+
+  it('decodes the URL-encoded data URL Supabase returns', () => {
+    expect(
+      qrSvgMarkup(`data:image/svg+xml;utf-8,${encodeURIComponent(svg)}`),
+    ).toBe(svg);
+  });
+
+  it('decodes a base64 data URL when the runtime provides atob', () => {
+    const holder = globalThis as { atob?: (value: string) => string };
+    if (typeof holder.atob !== 'function') return;
+    expect(qrSvgMarkup('data:image/svg+xml;base64,PHN2Zy8+')).toBe(svg);
+  });
+
+  it('degrades to null when base64 cannot be decoded', () => {
+    const holder = globalThis as { atob?: unknown };
+    const original = holder.atob;
+    holder.atob = undefined;
+    try {
+      expect(qrSvgMarkup('data:image/svg+xml;base64,PHN2Zy8+')).toBeNull();
+    } finally {
+      holder.atob = original;
+    }
+  });
+
+  it('returns null for unreadable payloads (screen keeps its fallbacks)', () => {
+    expect(qrSvgMarkup(null)).toBeNull();
+    expect(qrSvgMarkup(undefined)).toBeNull();
+    expect(qrSvgMarkup('')).toBeNull();
+    expect(qrSvgMarkup('not-a-data-url')).toBeNull();
+    expect(qrSvgMarkup('data:image/svg+xml;utf-8,')).toBeNull();
+    expect(qrSvgMarkup('data:image/svg+xml;utf-8,%E0%A4%A')).toBeNull();
+  });
+
+  it('passes raw SVG markup through defensively', () => {
+    expect(qrSvgMarkup(svg)).toBe(svg);
   });
 });

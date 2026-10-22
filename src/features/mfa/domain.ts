@@ -77,3 +77,35 @@ export function verifiedTotpFactorId(
     )?.id ?? null
   );
 }
+
+/**
+ * Extracts the SVG markup from the `data:image/svg+xml` payload Supabase
+ * returns from a TOTP enroll. Both URL-encoded and base64 bodies are
+ * accepted; anything unreadable returns `null` so the screen keeps its
+ * `otpauth://` link + secret fallback (no QR beats a broken QR).
+ */
+export function qrSvgMarkup(qrCode: string | null | undefined): string | null {
+  if (typeof qrCode !== 'string') return null;
+  const trimmed = qrCode.trim();
+  if (trimmed === '') return null;
+  if (!trimmed.startsWith('data:image/svg+xml')) {
+    return trimmed.includes('<svg') ? trimmed : null;
+  }
+  const comma = trimmed.indexOf(',');
+  if (comma === -1) return null;
+  const header = trimmed.slice(0, comma);
+  const body = trimmed.slice(comma + 1);
+  try {
+    if (header.includes(';base64')) {
+      const decode = (globalThis as { atob?: (value: string) => string }).atob;
+      if (typeof decode !== 'function') return null;
+      const xml = decode(body);
+      return xml.includes('<svg') ? xml : null;
+    }
+    const xml = decodeURIComponent(body);
+    return xml.includes('<svg') ? xml : null;
+  } catch {
+    // Unreadable encoding — still pass raw markup through if it is SVG.
+    return body.includes('<svg') ? body : null;
+  }
+}

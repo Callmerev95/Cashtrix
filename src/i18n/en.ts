@@ -445,6 +445,8 @@ export const en: Dictionary = {
       title: 'Turn on two-step verification',
       intro:
         'Add this account in your authenticator app (Google Authenticator, 1Password, etc.), then enter its 6-digit code below.',
+      qrLabel: 'Scan with your authenticator app',
+      qrA11y: 'Two-step verification enrollment QR code',
       secretLabel: 'Secret key: copy manually if needed',
       openAuth: 'Open authenticator app',
       codeLabel: '6-digit code',
@@ -700,6 +702,9 @@ export const en: Dictionary = {
     placeholder: 'Search notes, categories, wallets…',
     idleHint:
       'Type to search notes, category names, and wallet names, or pick a type above.',
+    recentLabel: 'Recent searches',
+    recentA11y: 'Search "{query}" again',
+    recentRemoveA11y: 'Remove "{query}" from history',
     error: 'Search failed',
     noResult: 'No results for "{query}".',
     noKindResults: 'No transactions of this type.',

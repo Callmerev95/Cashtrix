@@ -91,6 +91,11 @@ export const colors = {
    */
   scanBracket: palette.accent,
   /**
+   * QR canvas for TOTP enrollment. Scanners need a light field; the
+   * Supabase SVG comes transparent, so the wrapper paints it white.
+   */
+  qrSurface: '#FFFFFF',
+  /**
    * AI-prefill field fill — gold at 12% over the canvas. Reads as
    * "highlighted", not income, and survives dark mode (a light pastel
    * like `#E8F5E9` would blow out on `#0A0A0A`).

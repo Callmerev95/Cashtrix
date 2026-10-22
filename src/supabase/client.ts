@@ -9,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 
 import { LOCK_ENABLED_KEY } from '@/features/lock/domain';
+import { RECENT_SEARCHES_KEY } from '@/features/transactions/recent-searches';
 
 /** Supabase project `Cashtrix` (AGENTS.md → Database). */
 const SUPABASE_URL = 'https://bklriyyuglwiqczgbqgq.supabase.co';
@@ -44,6 +45,7 @@ export const LOCAL_STORAGE_KEYS = [
   'cashtrix:last-transaction-type',
   'cashtrix:last-wallet-id',
   LOCK_ENABLED_KEY,
+  RECENT_SEARCHES_KEY,
 ] as const;
 
 /** Extra purge hooks (e.g. dropping the SQLite cache in T5). */

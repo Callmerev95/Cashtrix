@@ -350,7 +350,9 @@ Scope terkunci: haptics wiring (simpan/urungkan/ambang/rekam/prefill/
 toggle) + Stack.Screen `search`/`notifications`/`voice` (c) + waveform
 placeholder + haptic prefill VoiceSheet (d). Ditolak eksplisit: svg
 sekarang (tunda 2.1.0 Analytics Overhaul), reanimated, kamera kustom,
-sqlite OB1. Backlog: recent search queries.
+sqlite OB1. Backlog: recent search queries — **SELESAI 2026-10-22**
+(batch JS-only tanpa ticket: chip di `/search` + QR 2FA; detail di
+`AGENTS.md`).
 
 | Ticket | Issue | Blocked by | Deliverable |
 |---|---|---|---|

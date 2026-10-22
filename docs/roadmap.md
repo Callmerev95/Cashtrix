@@ -341,7 +341,8 @@ selesai + commit, device gate LULUS) lalu OB1–OB3 outbox + read cache.
 
 `expo-audio` (AI6) + `expo-haptics` (B1) dikompilasi sekali (ADR-0016).
 `2.1.0` = Analytics Overhaul (svg yang ditangguhkan dari batch ini).
-Backlog: recent search queries.
+Backlog: recent search queries — **selesai 2026-10-22** (batch JS-only
+tanpa ticket: chip pencarian terakhir di `/search` + QR 2FA).
 
 Status 2026-10-03: **selesai penuh** — #101 (AI6) + #102 (B1) squash-merge
 ke `main` (`eb2b3b6`, `96796e6`); preview build `0c8b2fc2` FINISHED (app
@@ -399,3 +400,17 @@ Revisi penempatan pill status ke pojok kanan atas kartu Dashboard (absolute di
 `01a160fd-6328-72bc-bf37-8b13fdd2b2f7`), menyupersede `434704d6`. Device re-cek LULUS (pill pojok,
 tone per status, no-truncate, eye); commit + push ke `main`, #105–#108 ditutup.
 PRD R16 tercatat 2026-10-21 (approval per-baris) — trek Savings v1 selesai.
+
+### 6.13 Batch JS-only: pencarian terakhir + QR 2FA (2026-10-22)
+
+Dua item JS-only dari backlog selesai dalam satu batch tanpa rebuild:
+chip **pencarian terakhir** di `/search` (cap 6, device-local
+`cashtrix:recent-searches` ikut purge sign-out, dicatat hanya pada
+submit/tap chip) + **QR 2FA** tampil di enroll (`qrSvgMarkup` +
+`SvgXml`; `react-native-svg` sudah di bundle sejak 2.1.0 — amandemen
+deviasi C2 "tanpa gambar QR"). Gate statis hijau: lint, typecheck,
+Jest 1061/1061 (71 suite), kontrak 112/10/3, legal 36/36, export
+Android. OTA terkirim 2026-10-22 (grup
+`57952132-1d7f-4d8e-815e-2200cf04a153`, runtime 2.1.0, Android);
+device gate LULUS (owner, 2026-10-22). Sisa trek native (OB1–OB3 outbox + read cache,
+widget iOS, billing scan) dikerjakan di akhir per keputusan pemilik.

@@ -5,21 +5,22 @@
  * refresh the MFA status and go back. Cancel best-effort unenrolls the still
  * unverified factor so no orphan lingers in `listFactors().all`.
  *
- * No QR image on purpose: `mfa.enroll` returns the QR as an SVG data-URL and
- * this app ships no SVG renderer (adding `react-native-svg` would force a
- * dev-client rebuild — the same reason the T6 donut and T7 ring are
- * View-composed). The native equivalent is the `otpauth://` URI handed to
- * the authenticator app via `Linking` plus the secret as selectable text
- * for manual entry — every authenticator app accepts both.
+ * The QR renders through `react-native-svg` (bundled since the 2.1.0
+ * Analytics Overhaul, so no rebuild): `qrSvgMarkup` decodes the SVG
+ * data-URL Supabase returns onto a light frame. The `otpauth://` URI
+ * (`Linking`) and the selectable secret stay as fallbacks for apps or
+ * payloads where scanning isn't an option.
  */
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Linking, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SvgXml } from 'react-native-svg';
 
 import { Card, GhostButton, PrimaryButton, Screen, TextField } from '@/components';
 import {
   enrollTotp,
+  qrSvgMarkup,
   unenrollMfaFactor,
   useMfa,
   validateMfaCode,
@@ -28,6 +29,9 @@ import {
 } from '@/features/mfa';
 import { dictionaryFor, useLanguage } from '@/i18n';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme';
+
+/** Rendered QR edge in px — 176 + frame padding fits the card at 360dp. */
+const QR_SIZE = 176;
 
 export default function MfaEnrollScreen() {
   const language = useLanguage();
@@ -104,6 +108,8 @@ export default function MfaEnrollScreen() {
     Linking.openURL(enrollment.uri).catch(() => undefined);
   }
 
+  const qrMarkup = enrollment ? qrSvgMarkup(enrollment.qrCode) : null;
+
   return (
     <Screen
       style={[styles.frame, { paddingTop: insets.top + spacing.xl }]}
@@ -131,6 +137,21 @@ export default function MfaEnrollScreen() {
         </Card>
       ) : enrollment ? (
         <Card style={styles.card}>
+          {qrMarkup ? (
+            <View style={styles.qrBlock}>
+              <Text style={[typography.labelUppercase, styles.kicker]}>
+                {t.enroll.qrLabel}
+              </Text>
+              <View
+                testID="mfa-enroll-qr"
+                accessible
+                accessibilityLabel={t.enroll.qrA11y}
+                style={styles.qrFrame}
+              >
+                <SvgXml xml={qrMarkup} width={QR_SIZE} height={QR_SIZE} />
+              </View>
+            </View>
+          ) : null}
           <Text style={[typography.labelUppercase, styles.kicker]}>
             {t.enroll.secretLabel}
           </Text>
@@ -212,6 +233,15 @@ const styles = StyleSheet.create({
   },
   kicker: {
     color: colors.textSecondary,
+  },
+  qrBlock: {
+    gap: spacing.sm,
+  },
+  qrFrame: {
+    alignSelf: 'center',
+    padding: spacing.sm,
+    borderRadius: radius.md,
+    backgroundColor: colors.qrSurface,
   },
   secret: {
     color: colors.textPrimary,

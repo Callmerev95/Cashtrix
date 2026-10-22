@@ -14,6 +14,7 @@ export {
   hasVerifiedTotp,
   needsMfaChallenge,
   normalizeMfaCode,
+  qrSvgMarkup,
   validateMfaCode,
   verifiedTotpFactorId,
 } from './domain';

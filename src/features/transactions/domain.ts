@@ -762,6 +762,61 @@ export function searchFilterKey(filters: SearchFilters): string {
     .join('|');
 }
 
+// Recent searches (backlog §6.10)
+//
+// A short, device-local list of queries the user deliberately submitted
+// (return key or chip tap) — never every debounced keystroke. The cap keeps
+// the chips a glance, not a second history screen.
+
+/** Chips the idle search screen may show. */
+export const RECENT_SEARCH_CAP = 6;
+
+/** Trim + collapse whitespace so "kopi  susu" cannot shadow "kopi susu". */
+function normalizeRecentQuery(query: string): string {
+  return query.trim().replace(/\s+/g, ' ');
+}
+
+/**
+ * Parses the stored JSON list. A corrupt pref degrades to whatever is still
+ * readable (anything unreadable → empty): a bad write must never block the
+ * search screen.
+ */
+export function parseRecentSearches(raw: string | null): string[] {
+  if (raw === null) return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) return [];
+  const list: string[] = [];
+  for (const item of parsed) {
+    if (typeof item !== 'string') continue;
+    const query = normalizeRecentQuery(item);
+    if (query === '') continue;
+    if (list.some((entry) => entry.toLowerCase() === query.toLowerCase())) {
+      continue;
+    }
+    list.push(query);
+  }
+  return list.slice(0, RECENT_SEARCH_CAP);
+}
+
+/** Most-recent-first insert with case-insensitive dedupe and the cap. */
+export function addRecentSearch(list: string[], query: string): string[] {
+  const next = normalizeRecentQuery(query);
+  if (next === '') return list;
+  const rest = list.filter((item) => item.toLowerCase() !== next.toLowerCase());
+  return [next, ...rest].slice(0, RECENT_SEARCH_CAP);
+}
+
+/** Removes one query by case-insensitive match — the per-chip X. */
+export function removeRecentSearch(list: string[], query: string): string[] {
+  const target = normalizeRecentQuery(query).toLowerCase();
+  return list.filter((item) => item.toLowerCase() !== target);
+}
+
 export type DrillParams = {
   kind: TransactionKindFilter;
   /** Inclusive ISO instant of the drilled window. */

@@ -36,11 +36,13 @@ export {
   RECEIPT_MIME_TYPES,
   RECEIPT_TTL_DAYS,
   RECEIPT_TTL_MS,
+  RECENT_SEARCH_CAP,
   SEARCH_DEBOUNCE_MS,
   SHORTCUT_TYPES,
   TRANSACTION_TYPES,
   TRANSFER_ICON,
   WEEKDAY_LABELS,
+  addRecentSearch,
   amountMessages,
   buildMonthGrid,
   buildSearchPattern,
@@ -67,11 +69,13 @@ export {
   normalizeNote,
   parseEntrySource,
   parseKindFilter,
+  parseRecentSearches,
   parseScanFlag,
   parseSearchFilters,
   parseShortcutType,
   receiptExpiryCutoff,
   receiptStoragePath,
+  removeRecentSearch,
   savedTransactionLabel,
   scanForcedType,
   searchFilterKey,
@@ -105,6 +109,11 @@ export type {
   TransferValidation,
   WalletOption,
 } from './domain';
+export {
+  RECENT_SEARCHES_KEY,
+  loadRecentSearches,
+  saveRecentSearches,
+} from './recent-searches';
 export { TransactionRow } from './components/transaction-row';
 export { CategoryGrid } from './components/category-grid';
 export { CalendarGrid } from './components/calendar-grid';

@@ -446,6 +446,8 @@ export const id = {
       title: 'Aktifkan verifikasi dua langkah',
       intro:
         'Tambahkan akun ini di aplikasi authenticator (Google Authenticator, 1Password, dsb.), lalu masukkan 6 digit kodenya di bawah.',
+      qrLabel: 'Pindai dengan aplikasi authenticator',
+      qrA11y: 'Kode QR pendaftaran verifikasi dua langkah',
       secretLabel: 'Kode rahasia: salin manual bila perlu',
       openAuth: 'Buka aplikasi authenticator',
       codeLabel: 'Kode 6 digit',
@@ -702,6 +704,9 @@ export const id = {
     placeholder: 'Cari catatan, kategori, dompet…',
     idleHint:
       'Ketik untuk mencari di catatan, nama kategori, dan nama dompet, atau pilih jenis di atas.',
+    recentLabel: 'Pencarian terakhir',
+    recentA11y: 'Cari "{query}" lagi',
+    recentRemoveA11y: 'Hapus "{query}" dari riwayat',
     error: 'Gagal mencari',
     noResult: 'Tidak ada hasil untuk "{query}".',
     noKindResults: 'Tidak ada transaksi jenis ini.',

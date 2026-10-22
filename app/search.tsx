@@ -25,6 +25,7 @@ import {
   SEARCH_DEBOUNCE_MS,
   SearchKindControl,
   TransactionHistoryList,
+  addRecentSearch,
   bulkSelectionFor,
   bulkUpdateCategory,
   buildSearchPattern,
@@ -32,8 +33,11 @@ import {
   hasSearchFilters,
   isSearchActive,
   kindFilterLabel,
+  loadRecentSearches,
   parseKindFilter,
   parseSearchFilters,
+  removeRecentSearch,
+  saveRecentSearches,
   searchFilterKey,
   searchTransactions,
   toggleBulkRow,
@@ -93,6 +97,35 @@ export default function SearchScreen() {
       mounted.current = false;
     };
   }, []);
+
+  // Recent queries (backlog §6.10): recorded on a deliberate submit or a
+  // chip tap, never on the debounced keystrokes.
+  const [recent, setRecent] = useState<string[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadRecentSearches().then((list) => {
+      // A submit that beat hydration wins — never clobber it with the load.
+      if (!cancelled) {
+        setRecent((current) => (current.length > 0 ? current : list));
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function recordRecent(text: string) {
+    const next = addRecentSearch(recent, text);
+    setRecent(next);
+    void saveRecentSearches(next);
+  }
+
+  function forgetRecent(text: string) {
+    const next = removeRecentSearch(recent, text);
+    setRecent(next);
+    void saveRecentSearches(next);
+  }
 
   const active = isSearchActive(query, kind, filters);
   const pattern = buildSearchPattern(query);
@@ -285,6 +318,7 @@ export default function SearchScreen() {
           autoFocus
           returnKeyType="search"
           autoCorrect={false}
+          onSubmitEditing={() => recordRecent(query)}
         />
         <SearchKindControl
           value={kind}
@@ -330,9 +364,66 @@ export default function SearchScreen() {
           />
         ) : null}
         {!active ? (
-          <Text style={[typography.bodyMd, styles.hint]}>
-            {ts.idleHint}
-          </Text>
+          <>
+            {recent.length > 0 ? (
+              <View style={styles.recent} testID="search-recent">
+                <Text style={[typography.labelUppercase, styles.meta]}>
+                  {ts.recentLabel}
+                </Text>
+                <View style={styles.recentRow}>
+                  {recent.map((item) => (
+                    <View key={item} style={styles.recentChip}>
+                      <Pressable
+                        testID="search-recent-chip"
+                        accessibilityRole="button"
+                        accessibilityLabel={fill(ts.recentA11y, {
+                          query: item,
+                        })}
+                        hitSlop={spacing.sm}
+                        onPress={() => {
+                          setQuery(item);
+                          recordRecent(item);
+                        }}
+                        style={({ pressed }) => [
+                          styles.recentTap,
+                          pressed && pressedFeedback,
+                        ]}
+                      >
+                        <Text
+                          style={[typography.bodySm, styles.recentText]}
+                          numberOfLines={1}
+                        >
+                          {item}
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        testID="search-recent-remove"
+                        accessibilityRole="button"
+                        accessibilityLabel={fill(ts.recentRemoveA11y, {
+                          query: item,
+                        })}
+                        hitSlop={spacing.sm}
+                        onPress={() => forgetRecent(item)}
+                        style={({ pressed }) => [
+                          styles.recentRemove,
+                          pressed && pressedFeedback,
+                        ]}
+                      >
+                        <MaterialIcons
+                          name="close"
+                          size={14}
+                          color={colors.textSecondary}
+                        />
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ) : null}
+            <Text style={[typography.bodyMd, styles.hint]}>
+              {ts.idleHint}
+            </Text>
+          </>
         ) : (
           <>
             <View style={styles.toolbar}>
@@ -533,6 +624,35 @@ const styles = StyleSheet.create({
   },
   hintInline: {
     color: colors.textSecondary,
+  },
+  recent: {
+    gap: spacing.sm,
+  },
+  recentRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  recentChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: spacing.md,
+    paddingRight: spacing.sm,
+    borderRadius: radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceElevated,
+  },
+  recentTap: {
+    paddingVertical: spacing.xs,
+    maxWidth: 200,
+  },
+  recentText: {
+    color: colors.textPrimary,
+  },
+  recentRemove: {
+    paddingVertical: spacing.xs,
+    paddingLeft: spacing.sm,
   },
   filterChip: {
     alignSelf: 'flex-start',

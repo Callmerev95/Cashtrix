@@ -17,6 +17,7 @@ function host(name) {
 
 module.exports = {
   Svg: host('Svg'),
+  SvgXml: host('SvgXml'),
   G: host('G'),
   Path: host('Path'),
   Circle: host('Circle'),
