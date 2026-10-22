@@ -1,6 +1,6 @@
 # Spec: Cashtrix Savings v1 — Target Tabungan
 
-Sumber: grill 2026-10-21, `PRD.md` D1–D11 + R15, `CONTEXT.md`, `DESIGN.md`,
+Sumber: grill 2026-10-21, `PRD.md` D1–D11 + R16, `CONTEXT.md`, `DESIGN.md`,
 `docs/roadmap.md` §6.11, ADR-0018. Istilah mengikuti `CONTEXT.md`; jangan drift
 ke daftar `_Avoid_`.
 
@@ -9,8 +9,8 @@ tanpa modul native baru, tanpa bump versi). Tiket: SV1 → SV2 → SV3 → SV4.
 
 Status implementasi: **SV1–SV4 selesai + commit di `main`** (2026-10-21);
 `verify-savings.mjs` 44/44, pgTAP 29/29, OTA final grup `718599fe`
-(runtime 2.1.0), device gate LULUS. PRD R16 menunggu approval per-baris
-pemilik.
+(runtime 2.1.0), device gate LULUS. PRD R16 tercatat 2026-10-21 (approval
+per-baris pemilik).
 
 ## Problem Statement
 
@@ -268,8 +268,8 @@ Urutan provider final:
   Dompet read-only.
 - Field: Dompet, nama (opsional, placeholder nama Dompet), nominal
   (`AmountField` + `formatAmountInput`), tanggal opsional.
-- Tanggal: toggle "Punya tanggal target" + `CalendarGrid`; create future-only
-  (`disablePast`), edit menampilkan tanggal lama (termasuk yang lewat) dan bisa
+- Tanggal: toggle "Punya tanggal target" + `CalendarGrid`; create hari ini/ke
+  depan (`disablePast`), edit menampilkan tanggal lama (termasuk yang lewat) dan bisa
   dikosongkan. `CalendarGrid` mendapat prop aditif `disablePast` (default
   `false`, form Add bit-identik).
 - Simpan → create/update → `refreshSavings()` → `router.back()`.
@@ -361,7 +361,7 @@ export Android tanpa sourcemap; OTA preview; device gate manual.
 - Laporan/analytics khusus tabungan, filter target di Analytics, atau kategori
   "Tabungan".
 - Multi-currency (OPEN-4) dan konversi kurs.
-- Perubahan PRD. R16 disiapkan setelah spec dan butuh approval per-baris.
+- Perubahan PRD. R16 tercatat 2026-10-21 setelah approval per-baris pemilik.
 
 ## Further Notes
 

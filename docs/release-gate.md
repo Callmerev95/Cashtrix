@@ -1,9 +1,11 @@
-# Gerbang Rilis: Cashtrix MVP (T11, issue #12)
+# Gerbang Rilis: Cashtrix 2.1.x
 
 Satu perjalanan end-to-end terbukti otomatis berjalan di perangkat, plus
 checklist bahwa yang dikirim sesuai `DESIGN.md` dan siap masuk TestFlight +
-Play Store. Ticket ini adalah frontier terakhir: semua blocker (#7, #8, #9,
-#10, #11) sudah closed.
+Play Store. Gate aktif = **2.1.x** (Savings v1 + L4a/L4b/L4c); §9 adalah
+bukti terbaru. §8 (v1.1) dan gerbang T11 di atasnya disimpan sebagai riwayat.
+
+Ticket T11 (#12) adalah frontier lama: semua blocker (#7–#11) sudah closed.
 
 ## 1. AC → bukti
 
@@ -77,13 +79,16 @@ Stitch hanya referensi **layout**; warna selalu dari token kanonik
 | Layar | Layout vs Stitch | Token | Clearance |
 |---|---|---|---|
 | Login / Register | stack tengah, card + CTA 52px | bg `#0A0A0A`, card `#1C1C1E`, gold `#D4AF37` | keyboard tidak menutup CTA |
-| Dashboard | hero saldo → dompet → riwayat grup harian | income `#30D158`, expense `#FF6B62`, net gold (amandemen DESIGN.md §1, PR #42) | list ≥96px + safe-area |
-| Add Transaction | toggle → nominal Mono → grid 3 kolom → dompet chips → grid kalender | glyph `Rp` gold statis, error `#FFB4AB` destruktif saja | modal, tombol Simpan di atas nav |
-| Analytics | KPI → donut → bar → breakdown, atau empty state (tanpa NaN) | donut dari `chartRamp` theme | scroll ≥96px |
-| Budgets | label bulan → banner alert → ring cards | ring `ok/warning/exceeded`, hole = card | scroll ≥96px |
-| Recurring (v1.1) | header Otomatisasi → banner jeda → kartu aturan → CTA Buat aturan | chip aktif gold, teks meta `#8E8E93` | scroll ≥96px |
-| Dompet / arsip (v1.1) | Total Saldo → daftar aktif → seksi Arsip | arsip redup, bukan hilang | scroll ≥96px |
-| Profile | avatar 40px + badge → nama → currency chips → rows | destruktif `#FFB4AB` hanya Ekspor/Hapus | scroll ≥96px |
+| Dashboard | header tetap → hero mock-exact → Dompet → Savings → ringkasan bulan → riwayat, atau error state | hero field/core/orbs tanpa glow; income `#30D158`, expense `#FF6B62`, net gold; mask eye konsisten | list ≥96px + safe-area |
+| Add Transaction | toggle Expense/Income/Transfer → nominal Mono → mic → grid kategori → kalender → dompet/tujuan | glyph `Rp` gold statis, error `#FFB4AB` destruktif saja | sticky Simpan di atas nav |
+| Analytics | 6 range → KPI → donut SVG → bar → breakdown → Bandingkan Dompet → Insight | donut `chartRamp`; sparkline compare; delta `—` saat nol | scroll ≥96px |
+| Custom range | sheet 2 kalender + ringkasan rentang, tutup via gagang/scrim | border gold pada hari terakhir, future disabled | tombol aksi ≥44px |
+| Budgets | label bulan → banner alert → ring cards 3 state | gold/amber/salmon; hole = card; persen tetap putih | scroll ≥96px |
+| Savings | kartu ringkasan → daftar goal → status pill pojok | ring gold statis; saldo/persen/status hilang saat eye | scroll ≥96px, teks tidak terpotong |
+| Search / Notifications | search: chip jenis + filter + bulk; inbox: grup bulan + unread | gold aktif hanya chip; divider hairline | scroll ≥96px |
+| Recurring | header → banner jeda → kartu aturan → CTA Buat aturan | chip aktif gold, meta `#8E8E93` | scroll ≥96px |
+| Dompet / arsip | Total Saldo → daftar aktif → seksi Arsip | arsip redup; saldo ikut eye | scroll ≥96px |
+| Profile | avatar + badge → nama → currency → keamanan (lock/2FA) → rows | destruktif `#FFB4AB` hanya Ekspor/Hapus | scroll ≥96px |
 | Floating nav | bar frosted + FAB 56px gold gradient | ikon aktif gold, idle `#8E8E93` | bar 64 + overhang 16 + gap 16 = 96 |
 
 ## 5. Gerbang otomatis (CI)
@@ -92,12 +97,13 @@ Stitch hanya referensi **layout**; warna selalu dari token kanonik
 
 1. `npm run lint` + `npm run typecheck`, 0 error.
 2. `npm run test`, Jest, seluruh suite hijau.
-3. `node scripts/verify-t11.mjs --static-only`, kontrak selektor Maestro.
+3. `node scripts/verify-t11.mjs --static-only` (kontrak selektor Maestro) +
+   `node scripts/verify-legal.mjs` (4 file legal, keyword, footer).
 4. `expo export --platform android`, bundle check tanpa device.
 5. `verify-t11` penuh, hanya di push ke `main`: membuat satu user uji,
    me-replay happy path via API, lalu menghapus dirinya via
    `delete-account` (tanpa secret, tanpa residu).
-6. Matriks `live` lain di push ke `main` (urutan §8.2): `verify-t5/t6/t7/t8/t9`,
+6. Matriks `live` lain di push ke `main` (urutan tetap): `verify-t5/t6/t7/t8/t9`,
    `verify-v2-transfer/v3-recurring/v4/savings/a5/d5/s2/s3/ai-voice/ai6/insight`.
 
 Yang tetap manual (butuh perangkat): run Maestro hijau + checklist §4 +
@@ -143,10 +149,11 @@ tetap boleh Expo Go, tanpa DSN (lihat §7.2) app memakai buffer lokal T10.
 
 | Pertanyaan | Jawaban draf |
 |---|---|
-| Data dikumpulkan | Email (login), info keuangan yang diketik user (transaksi, budget), foto struk (hanya bila difoto), teks dikte suara (hanya bila dipakai, maks 500 karakter), log crash |
-| Dibagikan ke pihak ketiga | Tidak (Supabase = prosesor penyimpanan, Sentry = prosesor crash, Gemini = prosesor saran temporal Fase 1 via `parse-voice`/`scan-receipt`, bukan bagi-data) |
+| Data dikumpulkan | Email (login), info keuangan yang diketik user (transaksi, budget, target tabungan, saldo Dompet), foto struk (hanya bila difoto), teks dikte suara (maks 500 karakter), rekaman suara (maks 15 detik), ringkasan Insight turunan, log crash |
+| Dibagikan ke pihak ketiga | Tidak (Supabase = prosesor penyimpanan, Sentry = prosesor crash, Gemini = prosesor saran temporal via `parse-voice`/`scan-receipt`/`transcribe-voice`/`insight-summary`, bukan bagi-data) |
 | Iklan / penjualan data | Tidak ada iklan, tidak ada penjualan |
 | Enkripsi transit | Ya (HTTPS/TLS ke Supabase + Sentry) |
+| Retensi bukti | Foto struk ≤30 hari; rekaman suara dihapus seketika setelah transkripsi; teks dikte/Insight tidak disimpan server |
 | Penghapusan akun | Ya, in-app (`delete-account` → cascade) |
 | Target anak | Tidak |
 
@@ -258,7 +265,7 @@ semua bukti di bawah terlampir; #1 tidak disentuh.
   `git tag -a v1.1.0 <sha> -m "Cashtrix v1.1.0 (rilis store)"`.
 - Push tag hanya saat rilis disetujui pemilik: `git push origin v1.0.0 v1.1.0`.
 
-## 9. Gerbang 2.1.x: Savings v1
+## 9. Gerbang 2.1.x: L4b + Savings v1
 
 Rilis OTA 2.1.x (tanpa bump versi, tanpa modul native). Gate di commit final
 Savings v1 (`main`):
@@ -266,9 +273,9 @@ Savings v1 (`main`):
 | Gate | Bukti |
 |---|---|
 | Unit + statis | lint, typecheck, Jest 1046/1046 (70 suite), kontrak `verify-t11.mjs --static-only` 112 id / 10 teks / 3 KPI (+4 cek quick-action), `verify-legal.mjs` 36/36, `expo export` Android |
-| SQL | pgTAP 21 file / 500 assertion — `21_savings_goals.sql` 29/29 (constraint, unique, FK RESTRICT, RLS 4 policy, cross-user) |
-| Live | `scripts/verify-savings.mjs` 44/44 (create/list, duplicate 23505, CHECK, update, progress via `v_wallet_balances` setelah Transfer, guard hapus Dompet, cross-user, anon, cleanup) + matriks penuh §8.2 hijau |
-| Device | OTA final `718599fe` (runtime 2.1.0); device gate LULUS — pill status di pojok kanan atas, tone per status, no-truncate 360dp, eye-hidden, EN |
+| SQL | pgTAP 21 file / 500 assertion — `20_wallet_compare.sql` 28/28, `21_savings_goals.sql` 29/29 (constraint, unique, FK RESTRICT, RLS 4 policy, cross-user) |
+| Live | `scripts/verify-t6.mjs` 50/50 (termasuk compare + isolasi) + `scripts/verify-savings.mjs` 44/44 (create/list, duplicate 23505, CHECK, update, progress via `v_wallet_balances` setelah Transfer, guard hapus Dompet, cross-user, anon, cleanup) + matriks penuh §5 hijau |
+| Device | L4b OTA `8747fefd` + polish `69f45c8c`, gate 2026-10-20; Savings OTA final `718599fe` (runtime 2.1.0), gate 2026-10-21 — pill status pojok kanan atas, tone per status, no-truncate 360dp, eye-hidden, EN |
 
-Sisa: PRD R16 (approval per-baris pemilik). Tanpa tag baru (OTA berjalan di
-runtime 2.1.0).
+PRD R16 tercatat 2026-10-21 (approval per-baris pemilik). Tanpa tag baru (OTA
+berjalan di runtime 2.1.0).

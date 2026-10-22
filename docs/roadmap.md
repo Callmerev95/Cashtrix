@@ -1,13 +1,16 @@
 # Roadmap Cashtrix: katalog ide lengkap
 
 Dokumen ini menampung **semua** kandidat pengembangan beserta alasan, bukti kondisi
-kode saat ini (`v2.1.0`, tag `v2.1.0`, L4c custom range + L4a drill-down + L4b multi-wallet compare di `main`, OTA `b9a7e1ac`/`8747fefd`/`69f45c8c`; gate L4a/L4b LULUS), dan urutan usul. `PRD.md` tetap sumber
-keputusan produk; dokumen ini sumber *antrean* pekerjaan.
+kode saat ini (`v2.1.0` + L4c custom range + L4a drill-down + L4b multi-wallet
+compare + Savings v1 di `main`; OTA `2b2981e9`/`b9a7e1ac`/`8747fefd`/`69f45c8c`/
+`718599fe`, gate 2026-10-18 s.d. 2026-10-21), dan urutan usul. `PRD.md` tetap
+sumber keputusan produk; dokumen ini sumber *antrean* pekerjaan.
 
 Aturan: ide boleh masuk katalog tanpa komitmen rilis. Setiap rilis mengambil
 irisan dari sini dan dibekukan sebagai spec + ticket (`specs/`).
 
-Legenda status: `✅ dikerjakan` · `🎯 v1.1` · `📦 v1.2` · `🧊 v2.0` · `🚫 ditolak`
+Legenda status: `✅ dikerjakan` · `🎯 v1.1` · `📦 v1.2` · `🧊 rilis berikut` ·
+`🚫 ditolak`
 
 ---
 
@@ -85,7 +88,7 @@ Prinsip yang dipakai:
 | D3 | **E2E Maestro di CI** | `.github/workflows/release-gate.yml` jalan tanpa device; run Maestro manual | Regresi v1.1 tidak tertangkap otomatis | 📦 v1.2 |
 | D4 | **Penanganan error yang terlihat** | semua fetch best-effort; tidak ada indikator "gagal sync" | User tidak pernah tahu datanya belum terkirim | 📦 v1.2 |
 | D5 | **Rate limiting / abuse guard di Edge Functions** | belum ada | Risiko rendah selama skala kecil | 📦 v1.2 |
-| D6 | **Migration squash + baseline** | 16 file migrasi berurutan | Kebersihan; tidak mendesak | 🧊 v2.x |
+| D6 | **Migration squash + baseline** | 18 file migrasi berurutan | Kebersihan; tidak mendesak | 🧊 v2.x |
 | D7 | **Store listing (aset, screenshot, deskripsi)** | belum ada | Bagian dari C5/C7 | 🎯 v1.1 |
 
 ### E. Sesudah v1.1
@@ -97,7 +100,7 @@ Prinsip yang dipakai:
 | E3 | Smart insight / AI lanjutan | Insight rephrase L1–L3 rilis (deterministik-dulu, figure-preservation); auto-kategori terkunci + auto-save tetap ditolak | 🧊 antre di belakang outbox |
 | E4 | Shared/household budget | Non-goal PRD §2.4 |
 | E5 | Server push notification | v1.0 sengaja local-only; baru berguna bersama recurring |
-| E6 | Widget, email digest, import bank statement | Non-goal |
+| E6 | Widget, email digest, import bank statement | Widget Android selesai 2.0.0; iOS widget, email digest, dan import statement tetap non-goal |
 
 ---
 
@@ -354,9 +357,9 @@ gate di HP 2026-10-18; akar OTA macet = sourcemap `.hbc.map` ikut payload —
 fix `--skip-bundler --input-dir` tanpa sourcemap) → L4a drill-down **LULUS**
 (commit `3dc29b0`, OTA `b9a7e1ac`, gate 2026-10-19) → L4b multi-wallet
 compare **LULUS** (commit `46e505c`, OTA `8747fefd` + polish `69f45c8c`,
-gate 2026-10-20) → **Savings v1 Target Tabungan** (spec + ADR-0018 disetujui
-2026-10-21; SV1–SV4) → OB1–OB3 outbox + read cache. Gate hijau per rilis
-(pola Q10).
+gate 2026-10-20) → **Savings v1 Target Tabungan LULUS** (spec + ADR-0018;
+SV1–SV4, OTA final `718599fe`, gate 2026-10-21) → OB1–OB3 outbox + read
+cache. Gate hijau per rilis (pola Q10).
 
 ### 6.12 Savings v1: Target Tabungan (grill 2026-10-21)
 
@@ -376,7 +379,7 @@ menyamarkan nominal, persen, ring, estimasi, dan status target.
 Rilis **2.1.x OTA** (tanpa modul native/DDL besar; satu tabel + RLS).
 Spec `specs/cashtrix-savings.md` + ADR-0018; tiket SV1 (DB/RLS/pgTAP) →
 SV2 (domain/API/provider) → SV3 (layar/wiring) → SV4 (gate/OTA). PRD R16
-disiapkan setelah spec dan tetap approval per-baris.
+tercatat 2026-10-21 dan disetujui pemilik per-baris.
 
 Status 2026-10-21: **SV1–SV4 selesai + commit di `main`**. SV1 pgTAP 29/29 +
 migrasi hosted; SV2 domain/API/provider + Jest; SV3 ring/kartu/layar/form/
@@ -394,5 +397,5 @@ Revisi penempatan pill status ke pojok kanan atas kartu Dashboard (absolute di
 `Pressable`, kicker tetap satu baris) dikirim OTA grup
 `718599fe-481b-41e7-b246-cd92570524e2` (Android
 `01a160fd-6328-72bc-bf37-8b13fdd2b2f7`), menyupersede `434704d6`. Device re-cek LULUS (pill pojok,
-tone per status, no-truncate, eye); commit + push ke `main`, #105–#108 ditutup. Sisa:
-PRD R16 (approval per-baris).
+tone per status, no-truncate, eye); commit + push ke `main`, #105–#108 ditutup.
+PRD R16 tercatat 2026-10-21 (approval per-baris) — trek Savings v1 selesai.

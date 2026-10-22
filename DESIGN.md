@@ -243,9 +243,22 @@ Depth = tonal layering + hairline edges + diffuse gold glow (never heavy drop sh
 
 ### Progress
 - Track: `#2C2C2E`, rounded caps.
-- Fill: gradient `#D4AF37` → `#F3E5AB` with `0 0 12px rgba(242,202,80,0.5)` glow; ring variant adds `rgba(212,175,55,0.25)` blur ring.
-- **Revisi 2.1.0 (crisp-edge):** svg arcs (donut Analytics + ring Budget) tanpa glow underlay — paint di luar band terbaca sebagai kebocoran di device, jadi arc flat satu warna; rank-0 dibedakan warna ramp paling terang. Bar glow + blur ring exceeded tetap (shadow View asli, bukan pita svg).
+- **Bar:** fill gradient `#D4AF37` → `#F3E5AB` with `0 0 12px rgba(242,202,80,0.5)` glow.
+- **SVG arc:** flat one-colour stroke, no glow underlay (2.1.0 crisp-edge — paint outside the band reads as leakage on device); donut rank-0 uses the brightest ramp.
 - **Revisi polish (19 Okt 2026):** warna arc ring Budget mengikuti state — gold `#D4AF37` (1–79%) → amber `#EAA944` (warning, ≥80%) → salmon `#ED7468` (exceeded, ≥100%; halo ikut salmon). Bukan error red: token tetap semantik budget, `error` tetap destructive-only.
+- **Savings ring (R16):** static gold `accent` arc at every status, `#2C2C2E` track, rounded cap until full; eye-hidden draws the track only and masks the centre percent (`••%`). Status is carried by the pill, not by recolouring the ring.
+
+### Savings (R16)
+- **Summary card (Dashboard, after the Dompet section):** `Card` with 56px ring, uppercase kicker, goal/wallet name, running balance + target (two text nodes), optional date/estimate, chevron; status pill sits in the top-right corner. The whole row opens `/savings`.
+- **Goal card (`/savings`):** 76px ring + name/status/target/balance; full-width outlined “Tambah dana” action below. Dynamic text has **no `numberOfLines`** — names, wallet, balance, target, date, and estimate wrap and grow the card rather than truncate.
+- **Status pill:** `surface-elevated`, full radius, 6px dot + sentence-case `body-sm`; `active` neutral `text-secondary`, `achieved` gold, `overdue` budget-warning. Never error red.
+- **Eye-hidden:** masks running balance, percent, ring fill, estimate, and status; **target amount stays visible** (it is the plan, not a balance). Add-funds stays enabled only with ≥2 active wallets.
+
+### Wallet compare (L4b)
+- **Card:** `Card` after Tren, hairline separating controls from results. Kicker + Expense/Income segmented chips (no refetch) + horizontal wallet chips (2–4).
+- **Rows:** 32px icon well, name + `delta · share` meta, 48×16 local SVG sparkline (each wallet scaled to its own peak), right-aligned `currency-sm` amount with a 96px minimum; hairline divider between rows; no chevron.
+- **Drill:** tapping a row opens `/search` scoped to that wallet + active metric + range; `__other__`/aggregate rows never drill.
+- **Visibility:** hidden when the screen filter is a single wallet or fewer than two wallets exist; loading mirrors the row anatomy, error uses the Insight `failRow` pattern.
 
 ### Navigation
 - Floating bar: frosted `#1C1C1E`/75 + blur, icon 24px `#8E8E93` inactive / gold active, central gradient-gold FAB.
@@ -259,11 +272,23 @@ Depth = tonal layering + hairline edges + diffuse gold glow (never heavy drop sh
 |---|---|---|
 | **Login** (`2b91c004…`) | "Welcome Back" | Centered stack on `#0A0A0A`; logo, headline-lg, inputs (L2), full-width gold primary button, ghost tertiary link. |
 | **Register** (`fd14555b…`) | "Cashtrix" | Same auth pattern as Login; stacked inputs, gold CTA. |
-| **Dashboard** (`cf457859…`) | "Good evening, Evelyn" | Greeting + notification icon → obsidian hero card (EMV chip, eye toggle, holder line, ambient sheen) → quick-action tray (4-column) → transaction list → floating nav + FAB. 780×2284. |
-| **Add Transaction** (`647011f9…`) | "Add Expense" | Segmented Expense/Income toggle (gold active pill) → large `currency-display` amount entry → category grid (circular `#2C2C2E` wells) → date/note inputs → gold CTA pinned at base. 780×1982. |
-| **Analytics** (`43c228fd…`) | "Financial Intelligence" | Segmented range pills → donut/spend wheel (gold gradient + glow) → bar chart (gold gradient bars, `0 0 16px` glow) → category breakdown rows. 780×3200. |
-| **Budgets** (`bd97d810…`) | "Budget Architecture" | Progress rings/bars per budget (gold fill, `#2C2C2E` track), L1 cards 24px padding, deepest screen (780×3608). |
-| **Profile** (`0659499e…`) | "Evelyn Vance" | Avatar (generated obsidian portrait) + gold `verified_user` → section cards (identity with name editor, currency with symbol well, security, settings with in-card rows) → danger-pill sign-out. 780×3564. |
+| **Dashboard** (`cf457859…`) | "Good evening, Evelyn" | Fixed app header + bell → obsidian hero (EMV chip, eye, holder line, sheen) → Dompet section → Savings summary → ringkasan bulan lalu → Riwayat `SectionList` → floating nav + FAB. |
+| **Add Transaction** (`647011f9…`) | "Add Expense" | Segmented Expense/Income/Transfer (gold active pill) → voice row → `currency-display` amount → note → category → wallet/destination → calendar → receipt → sticky gold save. |
+| **Analytics** (`43c228fd…`) | "Analisis Keuangan" / "Financial Intelligence" | Six range pills (1M/3M/6M/1Y/ALL/CUSTOM) → KPI header → crisp SVG donut → bar chart (gradient View columns) → breakdown rows → Bandingkan Dompet → Insight. |
+| **Budgets** (`bd97d810…`) | "Budget" / "Budget Architecture" | Month label → in-app alert banners → SVG state rings (gold/amber/salmon) + cards → auto-zero empty state. |
+| **Savings** (`—`) | "Tabungan" / "Savings" | Summary/goal cards with gold SVG ring + status pill; hidden-count line; outlined “Tambah dana”; empty CTA. |
+| **Savings form** (`—`) | "Buat target" / "Ubah target" | Wallet picker locked on edit, name, target amount, today-or-later target date (create), delete sheet on edit. |
+| **Search** (`—`) | "Cari transaksi" | Debounced query + four kind chips + removable filter chips; selection toolbar → inline category grid → inline confirm. |
+| **Notifications** (`—`) | "Notifikasi" | Grouped-by-month sticky sections; unread dot; tap marks read → Budgets; bulk “Tandai dibaca”; empty/error. |
+| **Recurring** (`—`) | "Transaksi berulang" | Paused-wallet banner; rule cards with status; pause/resume/edit/delete; 20-active cap. |
+| **Wallets** (`—`) | "Dompet" | Active rows + total; archive section; long-press quick actions; delete/reassign sheet. |
+| **Wallet form** (`—`) | "Dompet baru" / "Ubah dompet" | Name, type grid, opening balance; destructive delete sheet with reassign path. |
+| **Budget form** (`—`) | "Buat budget" / "Ubah budget" | Expense-only category grid + amount; delete sheet with inline confirm. |
+| **Category form** (`—`) | "Kategori Baru" / "Ubah Kategori" | Kind segmented (locked on edit), name, icon catalog; delete/archive split. |
+| **Shortcuts** (`—`) | "Catat lebih cepat" | Four doors: expense, income, scan, voice; system setup guide (Back Tap / Quick Tap / RegiStar). |
+| **MFA enroll** (`—`) | "Verifikasi dua langkah" | `otpauth://` handoff + selectable secret + 6-digit code; cancel unenrolls the unverified factor. |
+| **Delete account** (`—`) | "Hapus akun" | Typed `HAPUS` gate + destructive confirm; CSV export and sign-out remain separate. |
+| **Profile** (`0659499e…`) | "Evelyn Vance" | Avatar + verified badge → identity/name editor → currency well + chips → security (lock, 2FA) → settings rows → sign-out pill. |
 | **Logo** (`afc82fe0…`) | — | 120×120 SVG: `#141416` squircle (rx 30), gold gradient stroke `#F9E498 → #D4AF37 → #997A15`, radial gold glow 15%, "C" + arrow mark. |
 
 ---

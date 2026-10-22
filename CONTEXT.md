@@ -285,7 +285,8 @@ _Avoid_: push notification, server push
 ### Analytics
 
 **Analytics**:
-Layar wawasan keuangan: KPI + Donut + tren Bar + kartu ringkasan bulanan.
+Layar wawasan keuangan: KPI + Donut + tren Bar + Breakdown + Bandingkan
+Dompet + Insight + kartu ringkasan bulanan, untuk range preset/custom.
 Semua angka agregat-server, klien hanya presentation-math.
 _Avoid_: Analythics (typo), report, stats
 
@@ -336,6 +337,15 @@ satu bucket — semuanya mendarat di `/search` dengan jendela waktu yang sama
 persis (`[from, to)`), ditandai chip filter yang bisa dilepas. Irisan
 `__other__` (agregat kategori tak bernama) tidak bisa di-drill.
 _Avoid_: filter, ekspor, laporan
+
+**Bandingkan Dompet (Wallet compare)**:
+Kartu Analytics yang membandingkan 2–4 Dompet aktif pada range aktif:
+nominal Expense dan Income sekaligus (toggle mode tidak memicu fetch ulang),
+Delta vs periode sebelumnya, share terhadap total semua Dompet di rentang
+(termasuk Dompet arsip sebagai penyebut), dan sparkline per Dompet. Baris
+bisa di-drill ke `/search` dengan Dompet + jendela waktu yang sama. Bukan
+peringkat: urutan bukan klaim kualitas.
+_Avoid_: leaderboard, ranking Dompet, score
 
 **Insight (Ringkasan AI)**:
 Kartu di layar Analytics yang SELALU menampilkan baris deterministik

@@ -10,8 +10,8 @@ budget ada. Sumber teknis: `app.json` (versi `2.1.0`), `docs/legal/*` (live), `D
 
 | Jalur | Status | Kegunaan |
 |---|---|---|
-| APK preview sideload (`eas build --profile preview`) | ✅ jalan (build `0c8b2fc2`/`d4d43852`) | Testing pribadi/teman, kirim file APK, izinkan install dari sumber tak dikenal sekali |
-| OTA `eas update --channel preview` | ⚠️ **macet 15–16 Okt 2026** (11× `asset processing timed out` di EAS; device di grup lama) | Update JS ±1 menit tanpa reinstall — pulih saat EAS sehat kembali |
+| APK preview sideload (`eas build --profile preview`) | ✅ jalan (build `d4d43852` = 2.1.0; `0c8b2fc2` = rebuild 2.0.0) | Testing pribadi/teman, kirim file APK, izinkan install dari sumber tak dikenal sekali |
+| OTA `eas update --channel preview` | ✅ normal (terakhir `718599fe`, runtime 2.1.0). Insiden `asset processing timed out` 15–16 Okt = payload sourcemap `.hbc.map`; fix export tanpa sourcemap + `--skip-bundler --input-dir` | Update JS ±1 menit tanpa reinstall |
 | Expo Go | ✅ jalan | Kerja JS harian |
 | Play Store / TestFlight | ⏸️ tunda ($25 sekali / $99 per tahun) | Lihat §6 saat budget ada |
 
@@ -37,7 +37,10 @@ Cashtrix adalah catatan keuangan pribadi yang cepat dan privat.
 • Transfer satu baris, saldo gabungan tidak berubah, analitik konsisten
 • Tagihan bulanan otomatis lewat aturan berulang (catch-up saat app dibuka)
 • Budget per kategori + pengingat saat 80% dan 100%
-• Kalender penuh, arsip dompet, urungkan hapus 10 detik
+• Target tabungan per dompet dengan progres dan estimasi bulanan
+• Bandingkan dompet, insight otomatis, dan drill-down ke transaksi
+• Catat dengan suara atau pindai struk; isi form lewat saran AI, simpan tetap manual
+• Kalender penuh, arsip dompet, urungkan hapus 10 detik, kunci biometrik + 2FA
 • Data milikmu: ekspor CSV + hapus akun permanen dari dalam app
 
 Tanpa iklan, tanpa penjualan data. Butuh koneksi untuk menyimpan.
@@ -58,7 +61,7 @@ email dukungan `support@cashtrix.my.id` (+ situs opsional). Penghapusan data: in
 | Adaptive icon Android (foreground/background/mono) | ✅ ada | |
 | Splash (`assets/splash-icon.png`) | ✅ ada | |
 | Privacy Policy + Terms (EN + ID, GitHub Pages) | ✅ live 200 | `https://callmerev95.github.io/Cashtrix/privacy.html` dan `.../terms.html`, URL yang sama dibuka in-app |
-| Screenshot HP (min 2 Play; set App Store 6.5"+5.5") | ✅ diambil (RLS 2026-09-27; utang: layar widget/AI/insight/custom-range 2.x belum difoto) | Dashboard, Add, Analytics, Budgets, Recurring, tanpa data asli |
+| Screenshot HP (min 2 Play; set App Store 6.5"+5.5") | ⚠️ set lama ada (RLS 2026-09-27); wajib refresh 2.1.x — Savings, Bandingkan Dompet, hero mock-exact, custom range, AI/voice belum difoto | Dashboard, Add, Analytics, Budgets, Recurring, tanpa data asli |
 | Feature graphic Play 1024×500 | ✅ ada (`docs/store/feature-graphic.png`, sumber vektor `feature-graphic.svg`) | Logo + tagline di atas, latar `#0A0A0A` + aksen gold `#D4AF37` (token `DESIGN.md` §1); raster via `qlmanage` + `sips` dari SVG (lihat SVG untuk rebuild) |
 
 ## 5. Data Safety Play (jawaban final, siap salin)
@@ -66,15 +69,16 @@ email dukungan `support@cashtrix.my.id` (+ situs opsional). Penghapusan data: in
 - Email developer: **support@cashtrix.my.id**
 - Kebijakan privasi: URL §4. Penghapusan akun: **ya, in-app**.
 - Data dikumpulkan: email (login), info keuangan yang diketik user
-  (transaksi, budget, aturan berulang), foto struk (hanya bila difoto),
-  teks dikte suara (hanya bila dipakai, maks 500 karakter), rekaman suara
-  (hanya bila menekan rekam, maks 15 detik, dihapus seketika pasca-transkrip,
-  retensi nol), log crash.
+  (transaksi, budget, aturan berulang, target tabungan, saldo Dompet), foto
+  struk (hanya bila difoto, retensi ≤30 hari), teks dikte suara (maks 500
+  karakter), rekaman suara (hanya bila menekan rekam, maks 15 detik, dihapus
+  seketika pasca-transkrip, retensi nol), ringkasan Insight turunan, log
+  crash.
 - Dibagikan ke pihak ketiga: **tidak** (Supabase = prosesor penyimpanan,
   Sentry = prosesor crash, Gemini = prosesor saran temporal Fase 1+2
-  (teks dikte via `parse-voice`, foto struk via `scan-receipt`, audio via
-  `transcribe-voice`; tanpa simpan transaksi, tanpa file temp, audio
-  dihapus instan), bukan bagi-data).
+  (`parse-voice`, `scan-receipt`, `transcribe-voice`, `insight-summary`;
+  tanpa simpan transaksi, tanpa file temp, audio dihapus instan, teks
+  dikte/Insight tidak disimpan server), bukan bagi-data).
 - Iklan / penjualan data: **tidak ada**.
 - Enkripsi transit: **ya** (HTTPS/TLS ke Supabase + Sentry).
 - Target anak: **tidak**.
@@ -84,9 +88,10 @@ email dukungan `support@cashtrix.my.id` (+ situs opsional). Penghapusan data: in
 - **Tracking (`NSPrivacyTracking`): false.** Endpoint hanya Supabase
   (fungsionalitas) dan Sentry (crash), untuk tujuan app, bukan pelacakan
   lintas-app. Tidak ada ID iklan.
-- **Privacy label:** Contact Info (email) + Financial Info (transaksi/budget
-  + crash log), keduanya *tidak dibagikan ke pihak ketiga*, untuk
-  fungsionalitas app.
+- **Privacy label:** Contact Info (email), Financial Info (transaksi, budget,
+  target tabungan, saldo Dompet), Photos (struk bila difoto), Audio Data
+  (rekaman bila dipakai), User Content (teks dikte/Insight), Crash Data —
+  semuanya *tidak dibagikan ke pihak ketiga*, untuk fungsionalitas app.
 - **Required-reason API:** dipakai tidak langsung via Expo SDK/AsyncStorage
   (`UserDefaults`, file timestamps). Manifest final digabung otomatis oleh
   EAS prebuild dari manifest tiap paket, verifikasi sebelum submit:

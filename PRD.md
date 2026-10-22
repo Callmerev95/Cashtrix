@@ -1,6 +1,6 @@
 # PRD: Cashtrix
 
-**Versi:** 1.0 · **Status:** Approved · **Tanggal:** 2026-09-17 · **Revisi terakhir:** 2026-10-20 (R15, L4a drill-down + L4b multi-wallet compare)
+**Versi:** 1.0 · **Status:** Approved · **Tanggal:** 2026-09-17 · **Revisi terakhir:** 2026-10-21 (R16, Savings v1)
 **Dokumen pendamping:** `design.md` (Obsidian Luxury / Minimalist Obsidian design system), sumber kebenaran visual.
 
 ---
@@ -183,7 +183,7 @@ Struktur navigasi = **floating bottom bar** (per `design.md` §5 Navigation), 4 
 - ❌ Smart insight/AI di luar prefill Fase 1 (tanpa auto-kategori terkunci, tanpa auto-save).
 - ❌ Widget iOS + saldo/widget berdata (widget = tombol saja, Android-only).
 
-Sudah rilis dan keluar dari daftar ini: transfer (V2), recurring (V3), undo + arsip (V4), kalender (V5), auth gate + reset + legal (V0), EAS + Sentry (V1), ringkasan/A3–A6, lock (B4), i18n (C6), 2FA (C2), rate-limit (D5), pintasan + scan (S1–S3), voice VC1–VC3 + split + widget/fast-lane (WG1–WG3), outbox masih antre (OB1–OB3), AI Fase 1 (AI1–AI6), haptics + polish (B1), chart svg + tren + tap-select (PR1–PR2, R14), Insight AI L1–L3 (R14), custom range L4c (R14), drill-down Analytics → `/search` (L4a, R15), multi-wallet compare (L4b, R15).
+Sudah rilis dan keluar dari daftar ini: transfer (V2), recurring (V3), undo + arsip (V4), kalender (V5), auth gate + reset + legal (V0), EAS + Sentry (V1), ringkasan/A3–A6, lock (B4), i18n (C6), 2FA (C2), rate-limit (D5), pintasan + scan (S1–S3), voice VC1–VC3 + split + widget/fast-lane (WG1–WG3), outbox masih antre (OB1–OB3), AI Fase 1 (AI1–AI6), haptics + polish (B1), chart svg + tren + tap-select (PR1–PR2, R14), Insight AI L1–L3 (R14), custom range L4c (R14), drill-down Analytics → `/search` (L4a, R15), multi-wallet compare (L4b, R15), Savings v1 — Target Tabungan (SV1–SV4, R16).
 
 ---
 
@@ -362,6 +362,22 @@ function_rate_limits (
 -- RPC check_function_rate_limit(fn, key, limit, 60s) → fixed window atomik;
 -- EXECUTE hanya service_role; bucket = user_id; tolak = 429 + Retry-After.
 
+-- 2.1.x (R16): target tabungan = metadata 1:1 pada Dompet (bukan ledger kedua)
+savings_goals (
+  id, user_id fk,
+  wallet_id uuid not null,
+  name text null,                  -- 1–60 char setelah trim bila diisi
+  target_amount numeric(18,2) not null,
+  target_date date null,
+  unique (user_id, wallet_id),
+  foreign key (wallet_id, user_id) references wallets (id, user_id) on delete restrict,
+  check (target_amount > 0 and target_amount <= 999999999999),
+  check (name is null or char_length(btrim(name)) between 1 and 60)
+)
+-- RLS 4 policy (select/insert/update/delete own); index (wallet_id, user_id);
+-- target_date sengaja tanpa check now() (target lama legal saat edit); progress
+-- dibaca dari v_wallet_balances, bukan kolom saldo/gagregasi baru.
+
 -- Bucket Storage privat: avatars/{userId}/ (2MB), receipts/{userId}/ (2MB,
 -- retensi 30 hari), voice_drafts/{userId}/ (cap ~1MB, objek-only TANPA tabel,
 -- dihapus server instan pasca-transkrip = retensi nol, AI6).
@@ -387,7 +403,7 @@ function_rate_limits (
 |---|---|---|
 | Supabase Auth | Register/login/session | Email verification: auto-confirm untuk pengembangan (R2); wajib konfirmasi manual sebelum rilis publik |
 | Supabase Postgres | Semua data domain | RLS aktif di semua tabel |
-| Supabase Storage | Avatar | Bucket privat, path `avatars/{user_id}` |
+| Supabase Storage | Avatar, struk, audio dikte | Bucket privat: `avatars/{user_id}` (2MB), `receipts/{user_id}` (2MB, retensi 30 hari), `voice_drafts/{user_id}` (≤1MB, retensi nol) |
 | Supabase Edge Functions | seed-user, export-csv, delete-account | Service role, dipanggil dengan JWT user |
 | Supabase Edge Functions (AI) | scan-receipt, parse-voice, transcribe-voice | JWT dulu → rate-limit per-user → konteks server → Gemini; gagal = prefill kosong, tanpa tulis transaksi |
 | Resend SMTP | Email konfirmasi + recovery | `smtp.resend.com:587`, From `noreply@cashtrix.my.id`; template ID di `supabase/templates/` |
@@ -403,7 +419,7 @@ function_rate_limits (
 - Service role key **hanya** di Edge Functions, tidak pernah di bundle client.
 - Tidak ada data finansial di log (client maupun server); Sentry scrubbing untuk field `amount`/`note`.
 - Transport: HTTPS wajib (default supabase-js); tanpa cleartext fallback.
-- Storage avatar: policy `user_id = auth.uid()` untuk read/write path miliknya.
+- Storage privat: policy `user_id = auth.uid()` untuk read/write path miliknya di `avatars/{userId}/`, `receipts/{userId}/`, dan `voice_drafts/{userId}/`; retensi struk 30 hari, audio dihapus server instan pasca-transkrip.
 - Hapus akun (F3) memenuhi hak penghapusan data; ekspor CSV (F2) memenuhi hak portabilitas.
 - Idempotency key per transaksi mencegah duplikasi saat retry jaringan.
 
@@ -426,10 +442,10 @@ Kode UI **wajib** mengonsumsi token berikut, dilarang hardcode hex di komponen:
 
 | Lapis | Cakupan | Tool |
 |---|---|---|
-| Unit, domain | Format uang, boundary budget (79.9/80/99.9/100%), boundary bulan tz (31 Des 23:59 WIB), validasi amount, dedup alert | Jest ≥90% coverage di folder domain |
+| Unit, domain | Format uang, boundary budget (79.9/80/99.9/100%), boundary bulan tz (31 Des 23:59 WIB), validasi amount, dedup alert, progress/status/tanggal Savings | Jest ≥90% coverage di folder domain |
 | Unit, RLS | Matriks akses antar-user, semua tabel | pgTAP / supabase test |
-| Integration | Flow auth→seed→tx→budget→alert (dedup fired) | Anon client + Admin API via `scripts/verify-*.mjs` (macOS tanpa Docker; `supabase test db` butuh container) |
-| E2E happy path | Login → input 3 tx → lihat dashboard & analytics → set budget → trigger alert (+ transfer, recurring, undo) | Maestro di device (akun e2e pre-konfirmasi via Admin API; register baru mendarat di Check Email by design) |
+| Integration | Flow auth→seed→tx→budget→alert (dedup fired) + Savings (progress dari `v_wallet_balances`, duplicate/delete guard) | Anon client + Admin API via `scripts/verify-*.mjs` (macOS tanpa Docker; `supabase test db` butuh container) |
+| E2E happy path | Login → input 3 tx → lihat dashboard & analytics → set budget → trigger alert (+ transfer, recurring, undo, savings) | Maestro di device (akun e2e pre-konfirmasi via Admin API; register baru mendarat di Check Email by design) |
 | Visual smoke | Layout vs Stitch (referensi saja) | Manual checklist per rilis |
 
 ---
@@ -446,10 +462,11 @@ bukti kondisi kode hidup di **`docs/roadmap.md`**. Tabel di bawah ringkasannya.
 | **MVP (v1.0)** | Epic A–F persis seperti §2.3; TestFlight/internal distribution → Play Store + App Store | Semua AC terpenuhi + KPI instrumentasi hidup |
 | **v1.1** | **Dibekukan 2026-09-19** (revisi R6): jalur distribusi + instrumentasi crash (EAS + Sentry), reset password, konfirmasi email manual, halaman privasi/ToS, transfer antar-wallet, recurring transactions, kalender penuh, undo hapus, arsip wallet | Tidak ada regresi KPI stabilitas; crash-free terukur; lolos review store |
 | **v1.2** | ✅ rilis `1.2.0` (RLS #58): A6 + A3 + A4 + A5 + D4, lalu B4 + C6 + C2 + D5 + D3 (riset: tetap manual), skeleton/motion, S1 pintasan + S2 lampiran + S3 OCR mock-first, VC1–VC3 Catat Suara, SMTP Resend + template ID + OAuth Google (AU1/AU2) | — |
-| **v2.0** | ✅ **rilis 2026-09-29** (R12, tag `v2.0.0`): widget + fast-lane (WG1–WG3) + polish batch + fix opsi dompet; lalu outbox + read cache (OB1–OB3); bank sync, multi-currency, smart insight menyusul di payung 2.x | Gate hijau per rilis (pola Q10); widget tanpa label AI; antrean selalu eksplisit; compliance review selesai sebelum bank sync |
+| **v2.0** | ✅ **rilis 2026-09-29** (R12, tag `v2.0.0`): widget + fast-lane (WG1–WG3) + polish batch + fix opsi dompet; outbox + read cache (OB1–OB3) menjadi rilis berikut, bukan bagian v2.0; bank sync, multi-currency, smart insight menyusul di payung 2.x | Gate hijau per rilis (pola Q10); widget tanpa label AI; antrean selalu eksplisit; compliance review selesai sebelum bank sync |
 | **AI Fase 1 + B1** | ✅ R13 (2026-10-03): AI1 Edge `parse-voice` + AI2 golden set 40 + AI3 `scan-receipt` Gemini 1-call + AI4 wiring form + AI5 legal v2.0.0 + AI6 audio Fase 2 (`transcribe-voice`, `expo-audio`) + B1 haptics (`expo-haptics`, satu rebuild) + waveform + Screen pin; preview build `0c8b2fc2` FINISHED | Prefill-only; disiplin Rp 0; device re-gate Redmi |
-| **2.1.0** | ✅ R14 (tag `v2.1.0`): chart svg crisp-edge (PR1/PR2) + kartu tren + tap-select + Insight AI L1–L3 + L4c custom range (commit `f9b5557`); preview build `d4d43852` (runtime 2.1.0) | Gate hijau per rilis; OTA L4c tertunda EAS Okt 2026 |
+| **2.1.0** | ✅ R14 (tag `v2.1.0`): chart svg crisp-edge (PR1/PR2) + kartu tren + tap-select + Insight AI L1–L3 + L4c custom range (commit `f9b5557`); preview build `d4d43852` (runtime 2.1.0); OTA L4c `2b2981e9` terkirim 2026-10-17, gate HP 2026-10-18 | Gate hijau per rilis; OTA L4c terkirim setelah fix sourcemap/timeout |
 | **2.1.x (OTA)** | ✅ R15: L4a drill-down Analytics → `/search` (commit `3dc29b0`, OTA `b9a7e1ac`, gate 2026-10-19) + L4b multi-wallet compare (commit `46e505c`, OTA `8747fefd` + polish `69f45c8c`, gate 2026-10-20) | Tanpa bump versi (runtime 2.1.0); gate hijau per rilis |
+| **2.1.x (OTA)** | ✅ R16: Savings v1 — Target Tabungan (SV1–SV4, #105–#108, ADR-0018); DDL `savings_goals`, tanpa view/RPC baru; OTA final `718599fe`, gate HP 2026-10-21 | Tanpa bump versi (runtime 2.1.0); progress dari `v_wallet_balances`; device gate hijau |
 | **Berikutnya** | OB1–OB3 outbox + read cache → AI insight lanjutan → bank sync / multi-currency (parkir OPEN-4) | Spec + grill per rilis seperti v1.1 |
 
 ### 5.2 Technical Risks
@@ -462,7 +479,7 @@ bukti kondisi kode hidup di **`docs/roadmap.md`**. Tabel di bawah ringkasannya.
 | Agregasi lambat saat data besar | Analytics p95 >300ms | Index `(user_id, occurred_at desc)`; view hanya agregasi, pagination di list |
 | Expo push/notification permission ditolak | Alert tidak sampai | Alert in-app (ring state) tetap berfungsi tanpa izin push; minta izin hanya saat budget pertama dibuat |
 | Drift visual ke hex Stitch (bukan kanonik) | Brand tidak konsisten | Lint rule: hex literal di komponen = error; hanya `theme.ts` boleh berisi hex |
-| Supabase downtime | Tidak bisa input | Mode read-only dari cache + banner status; komunikasi jelas, tanpa kehilangan data (tulis ditolak, bukan antrian buta) |
+| Supabase downtime | Tidak bisa input | Tulis ditolak dengan banner status; baca dari cache adalah OB2 (belum aktif), bukan antrian buta; komunikasi jelas tanpa klaim kehilangan data |
 
 ---
 
@@ -479,13 +496,16 @@ Pertanyaan baru yang muncul selama development wajib ditambahkan ke sini dengan 
 
 Transfer / Recurring / V0 auth-legal tertutup di R7–R8. Tidak ada OPEN yang menghambat spec v1.1. OPEN-4 parkir dan tidak menghambat WG/OB.
 
-Transfer / Recurring / V0 auth-legal tertutup di R7–R8. Tidak ada OPEN yang menghambat spec v1.1.
+### 6.1 Revisi tercatat (resolved)
+
+**Revisi terbaru (R13–R16):**
 
 - **R13, AI Fase 1 + batch haptics B1 (2026-10-03, #90–#95 + ADR-0015/0016, PR #96–#102, build `0c8b2fc2`).** AI1 `parse-voice` (lite primer + 3.8 fallback, validator strict) → AI2 golden set 40 (gate 36/40 + liar nol) → AI3 `scan-receipt` Gemini 1-call (confidence fixed jujur 0.42, `occurred_on` diabaikan form) → AI4 wiring (`VoiceSheet` AI-first + laser scan + gap-fill render-safe, KPI `ai_prefill_ok`) → AI5 legal v2.0.0 + consent suara terpisah + `verify-legal.mjs` → AI6 audio Fase 2 (`expo-audio`, bucket `voice_drafts` objek-only retensi-nol, `transcribe-voice`, cap 15dtk/<1MB, consent rekam terpisah) + B1 haptics (`expo-haptics`, 6 tap best-effort, satu rebuild preview, waveform placeholder + Screen pin search/notifications/voice). Keputusan terkunci susulan: tanpa gambar QR (ganti link `otpauth://` + secret selectable — `react-native-svg` = rebuild); STT tetap milik OS (tanpa dialog recognizer di app); widget iOS tunda; `2.1.0` = Analytics Overhaul (svg). Disiplin Rp 0 mengikat semua verify AI (flood pra-model).
+- **R14, 2.1.0 + Insight L1–L3 + L4c custom range (2026-10-06–16).** PR1/PR2: donut Analytics + ring Budget = arc `react-native-svg@15.15.4` crisp-edge (revisi R13 yang melarang svg; bar tetap gradient `View`); kartu tren + tap-select donut ↔ breakdown; warna nominal/delta ikut semantik (amandemen "tidak pernah merah"). L1: Edge `insight-summary` rephrase-only (server tanpa baca DB, validator figure-preservation, consent `INSIGHT_CONSENT_KEY` terpisah, auto-refine, timeout 30 dtk) + L2 pendorong/anomali (DDL aditif `prev_breakdown`, pgTAP 43→51) + L3 run-rate + tap → Budgets; tag `v2.1.0`, build `d4d43852`. L4c: rentang CUSTOM + `CustomRangeSheet` + remount-fix (commit `f9b5557`); OTA `2b2981e9` terkirim 2026-10-17, device gate LULUS 2026-10-18 setelah export tanpa sourcemap + `--skip-bundler --input-dir` (akar macet `asset processing timed out`). Tanpa auto-kategori terkunci, tanpa auto-save, tanpa simpan AI apa pun — non-goal §2.4 tidak tersentuh.
 - **R15, Trek L4 Analytics — drill-down + multi-dompet compare (2026-10-20).** L4a: KPI/donut/breakdown/kolom bar membuka `/search` terfilter; KPI = jenisnya (Net = semua jenis), bucket = `[from, to)` device-local, `__other__` tanpa drill, filter chip removable, wallet = dompet sumber (mirror `analytics_overview`); tanpa DDL/RPC baru (`v_transactions_feed` + filter kolom). Commit `3dc29b0`, OTA `b9a7e1ac`, device gate LULUS 2026-10-19. L4b: kartu 2–4 dompet setelah Tren; satu RPC `analytics_wallet_compare` mengembalikan expense+income+prev+delta+share+series (toggle tanpa refetch); `share` = denominator KPI seluruh dompet termasuk arsip, baris hanya dompet aktif + dompet nol, kartu sembunyi saat filter dompet tunggal/<2 dompet, drill baris → `/search` wallet itu; DDL aditif `20261020090000_wallet_compare.sql`, `security invoker`, tanpa index baru. Commit `46e505c`, OTA `8747fefd` + polish `69f45c8c`, device gate LULUS 2026-10-20. Tanpa bump versi (runtime 2.1.0); tanpa auto-kategori/auto-save — non-goal §2.4 tidak tersentuh.
-- **R14, 2.1.0 + Insight L1–L3 + L4c custom range (2026-10-06–16).** PR1/PR2: donut Analytics + ring Budget = arc `react-native-svg@15.15.4` crisp-edge (revisi R13 yang melarang svg; bar tetap gradient `View`); kartu tren + tap-select donut ↔ breakdown; warna nominal/delta ikut semantik (amandemen "tidak pernah merah"). L1: Edge `insight-summary` rephrase-only (server tanpa baca DB, validator figure-preservation, consent `INSIGHT_CONSENT_KEY` terpisah, auto-refine, timeout 30 dtk) + L2 pendorong/anomali (DDL aditif `prev_breakdown`, pgTAP 43→51) + L3 run-rate + tap → Budgets; tag `v2.1.0`, build `d4d43852`. L4c: rentang CUSTOM + `CustomRangeSheet` + remount-fix (commit `f9b5557`); OTA preview tertunda EAS 15–16 Okt 2026 (`asset processing timed out` 11×; device di grup lama). Tanpa auto-kategori terkunci, tanpa auto-save, tanpa simpan AI apa pun — non-goal §2.4 tidak tersentuh.
+- **R16, Savings v1 — Target Tabungan (2026-10-21, #105–#108, `specs/cashtrix-savings.md`, ADR-0018).** Satu Target per Dompet (metadata; bukan ledger/alokasi kedua), progress = Saldo Dompet dari `v_wallet_balances`; menabung = Transfer ke Dompet itu via “Tambah dana”; expense dari Dompet target menurunkan progress. Status `active`/`achieved`/`overdue`; tercapai hanya badge (tanpa auto-archive/alert), lewat target netral. Tanggal target opsional (create wajib hari ini atau setelahnya, edit boleh mempertahankan masa lalu); estimasi `≈ Rp X/bulan` hanya bila status `active` dan tenggat ≥30 hari. Dashboard kartu setelah Dompet; `/savings` + `/savings-form`; eye-hidden menyamarkan saldo berjalan/persen/ring/estimasi/status, nominal target tetap terlihat; target Dompet arsip disembunyikan + dihitung di hidden count; Dompet bertarget tidak bisa dihapus sebelum target dihapus (guard sebelum reassign, FK RESTRICT backstop). DDL `savings_goals` + RLS 4 policy; tanpa view/RPC baru; rilis 2.1.x OTA tanpa bump versi.
 
-### 6.1 Revisi tercatat (resolved)
+**Riwayat awal (R1–R12):**
 
 - **R1, Unique constraint `budget_alerts` (2026-09-17, saat T2/#2).** PRD awal memakai `unique(category_id, month, threshold)`. Karena `categories.user_id` boleh `NULL` (kategori sistem dipakai bersama antar-akun), baris alert pertama akan memblokir user lain: `ON CONFLICT DO NOTHING` membuat user kedua tidak pernah menerima alert-nya. Diputuskan: kunci dedup menjadi **per-user** → `unique(user_id, category_id, month, threshold)`. Berlaku juga di `supabase/migrations/0001_schema.sql`, `specs/cashtrix-mvp.md` §Implementation Decisions, dan acceptance criteria T2 (#2).
 - **R2, Isi seed `seed-user` + strategi verifikasi T3 (2026-09-17, saat T3/#4).** Edge Function `seed-user` hanya membuat wallet **"Cash"** (`type=cash`, opening 0). Kategori default **tidak** dikopi per-user: 12 kategori sistem dari migrasi T2 sudah terlihat semua user lewat policy `categories_select_own_or_system`; menyalinnya akan menduplikasi grid kategori (T5) dan mengubah semantik T8 (kategori bawaan harusnya hanya bisa diarsipkan). Verifikasi T3 memakai Jest untuk fungsi domain murni + verifikasi state DB via MCP/psql (pgTAP `supabase test db` butuh Docker yang tidak tersedia di mesin pengembangan); baris "integration flow auth → seed" di spec dianggap tercakup oleh kombinasi ini. Teks validasi inline Auth dikunci di PRD (lihat Epic A): "Email dan password wajib diisi", "Email tidak valid", "Password minimal 8 karakter", "Password harus memuat huruf dan angka". Verifikasi email diatur **auto-confirm** pada project Supabase hosted (pengecualian tercatat terhadap keputusan awal "Email verification wajib" §4.3; dikembalikan ke konfirmasi manual sebelum rilis publik). Sign out sejak T3 menghapus sesi + seluruh storage lokal aplikasi; purge cache persisten (`expo-sqlite`/TanStack Query) menyusul di T5 saat cache benar-benar ada.

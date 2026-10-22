@@ -25,7 +25,7 @@ Selesai (squash ke `main`): T1 #3 PR #13 · T2 #2 PR #14 · T3 #4 PR #15 · T4 #
 
 ---
 
-## v1.1: aktif
+## v1.1: selesai (arsip)
 
 Spec: issue **#28** (`spec: Cashtrix v1.1`) · Sumber: `PRD.md` R6–R8 + `CONTEXT.md` + `docs/roadmap.md` + ADR-0001..0006 + `specs/cashtrix-v1.1.md`.
 
@@ -49,20 +49,18 @@ V0 #29 ─┬─ V1 #30 ──────────────┐
                       (V3 blocked by V0+V2)
 ```
 
-### Frontier
+### Frontier (arsip)
 
-V0 (#29) closed via PR #36 (merged 2026-09-20). V1 (#30) closed via PR
-#37 (merged 2026-09-20). V2 (#31) closed via PR #38 (merged 2026-09-20).
-V3 (#32) closed via PR #39 (merged 2026-09-20).
-V4 (#33) closed via PR #40 (merged 2026-09-21).
-V5 (#34) closed via PR #41 (merged 2026-09-21).
-Ticket tanpa blocker terbuka, belum di-assign:
-**#35 (V6, Gerbang rilis v1.1)**.
+v1.1 selesai penuh. V0 (#29) closed via PR #36 (merged 2026-09-20). V1 (#30)
+closed via PR #37 (merged 2026-09-20). V2 (#31) closed via PR #38 (merged
+2026-09-20). V3 (#32) closed via PR #39 (merged 2026-09-20). V4 (#33) closed
+via PR #40 (merged 2026-09-21). V5 (#34) closed via PR #41 (merged
+2026-09-21). V6 (#35) closed 2026-09-22 — **tidak ada ticket frontier v1.1
+yang terbuka**.
 
-V6 tanpa blocker tersisa (V1+V2+V3+V4+V5 sudah closed).
-
-**#35 (V6), gate otomatis selesai 2026-09-21** (kerja di working tree,
-belum PR): lint/typecheck bersih; Jest 284/284; pgTAP 358/358 (00–15);
+**#35 (V6), gate otomatis selesai 2026-09-21** (riwayat; saat itu kerja di
+working tree, kini sudah di `main`): lint/typecheck bersih; Jest 284/284;
+pgTAP 358/358 (00–15);
 matriks live `verify-t5/t6/t7/t8/t9/v2/v3/v4/t11` hijau (t9 sempat merah,
 `export-csv` 500 sejak V2, diperbaiki + redeploy); kontrak statis Maestro
 74 selector/8 tap/3 event; `provision-e2e` menyiapkan dompet Bank; tag
@@ -668,7 +666,7 @@ Urutan mengikat SV1 → SV2 → SV3 → SV4; SV1–SV4 selesai + commit di `main
 SV1 ── SV2 ── SV3 ── SV4 (2.1.x OTA)
 ```
 
-### Frontier
+### Frontier (kosong — SV1–SV4 selesai)
 
 SV1 (#105) selesai: migrasi `20261021090000_savings_goals.sql`
 applied hosted, pgTAP `21_savings_goals.sql` 29/29. SV2 (#106) selesai:
@@ -688,4 +686,5 @@ OTA pill grup `434704d6-9273-481d-9205-941156dc7b71` (memuat kedua fix).
 Revisi penempatan (pill status ke pojok kanan atas kartu Dashboard, `titleRow`
 tanpa wrap) dikirim OTA grup `718599fe-481b-41e7-b246-cd92570524e2` (Android
 `01a160fd-6328-72bc-bf37-8b13fdd2b2f7`), menyupersede `434704d6`.
-Commit + push ke `main` 2026-10-21; #105–#108 ditutup. Sisa: PRD R16 (approval per-baris pemilik).
+Commit + push ke `main` 2026-10-21; #105–#108 ditutup. PRD R16 tercatat
+2026-10-21 (approval per-baris pemilik) — Savings v1 selesai penuh.
