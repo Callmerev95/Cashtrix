@@ -1,15 +1,15 @@
 /**
  * AI1 live verification: `parse-voice` Edge Function (issue #90).
  *
- * Flow: provision A (Admin API, pola V0) -> seed-user -> 4 teks acak
- * (sinonim, urutan terbalik, slang goceng, 1,5 juta) kembali JSON strict
- * yang valid -> categoryHint liar tidak pernah mengarang (null atau nama
- * yang dikenal) -> body kosong 400 + GET 405 + anon 401 + JWT-mati 401
- * (auth sebelum rate) -> parkir window + reset counter eksplisit (pola
- * S3/D5: parkir hanya menjamin ruang, bukan counter nol) -> flood 7x
- * TANPA model (payload 400: 5 lolos + 2 ditolak 429 ber-body — counter OUR
- * dibuktikan tanpa kuota Google) -> user B isolasi -> cleanup + 0 residu
- * + baris rate-limit uji dibersihkan.
+ * Flow: warm-up isolate anon (401 pra-rate) -> provision A (Admin API, pola
+ * V0) -> seed-user -> 4 teks acak (sinonim, urutan terbalik, slang goceng,
+ * 1,5 juta) kembali JSON strict yang valid -> categoryHint liar tidak pernah
+ * mengarang (null atau nama yang dikenal) -> body kosong 400 + GET 405 +
+ * anon 401 + JWT-mati 401 (auth sebelum rate) -> parkir window + reset
+ * counter eksplisit (pola S3/D5: parkir hanya menjamin ruang, bukan counter
+ * nol) -> flood 7x TANPA model (payload 400: 5 lolos + 2 ditolak 429
+ * ber-body — counter OUR dibuktikan tanpa kuota Google) -> user B isolasi ->
+ * cleanup + 0 residu + baris rate-limit uji dibersihkan.
  *
  * Pacing Rp 0: key AI Studio free-tier 15 RPM — 13 request pemakai-model
  * berjalan sekuensial berjarak 5 detik (`pace()`), tanpa paralel.
@@ -116,6 +116,51 @@ async function callParse(accessToken, payload, method = 'POST') {
   return { status: res.status, retryAfter: res.headers.get('retry-after'), body };
 }
 
+/**
+ * Warm-up isolate (pelajaran flake CI 2026-10-20, run 39444701633): panggilan
+ * anon ditolak 401 SEBELUM rate check, jadi tidak mengonsumsi counter maupun
+ * kuota model, tetapi tetap membangunkan instance. Tanpa ini probe model
+ * pertama bisa menunggu cold start ~2,5 menit dan berakhir 503/546.
+ */
+async function warmUpFunction() {
+  try {
+    await callParse(null, { text: 'warm-up' });
+  } catch {
+    // best-effort: probe pertama tetap punya retry infra di bawah
+  }
+}
+
+/**
+ * Retry TEPAT-SATU khusus kegagalan infra Edge: 546 WORKER_RESOURCE_LIMIT,
+ * 503/504 saat boot, atau fetch error (status 0). 200 apa pun (termasuk
+ * { ok:false } dari validator), 4xx, dan 500 server_misconfigured TIDAK
+ * diulang — kegagalan nyata harus tetap terlihat dan kuota tidak terbakar.
+ */
+function isTransientInfra(result) {
+  return (
+    result.status === 0 ||
+    result.status === 503 ||
+    result.status === 504 ||
+    result.status === 546
+  );
+}
+
+async function callParseWithRetry(accessToken, payload) {
+  const attempt = async () => {
+    try {
+      return await callParse(accessToken, payload);
+    } catch (error) {
+      return { status: 0, retryAfter: null, body: null, error };
+    }
+  };
+  const first = await attempt();
+  if (!isTransientInfra(first)) return first;
+  const label = first.status === 0 ? 'fetch error' : String(first.status);
+  console.log(`    retry setelah ${label} (infra Edge)`);
+  await pace();
+  return attempt();
+}
+
 function isRateLimited(result) {
   return (
     result.status === 429 &&
@@ -183,6 +228,8 @@ async function main() {
   );
   check('allow-list konteks terbaca', allowedNames.size >= 10, String(allowedNames.size));
 
+  await warmUpFunction();
+
   // -------------------------------------------------------------------------
   section('teks acak kembali JSON strict yang valid');
   const probes = [
@@ -193,7 +240,7 @@ async function main() {
   ];
   for (const probe of probes) {
     await pace();
-    const r = await callParse(token, { text: probe.text });
+    const r = await callParseWithRetry(token, { text: probe.text });
     if (r.status === 500 && r.body?.error === 'server_misconfigured') {
       check(
         `probe ${probe.label} (butuh GEMINI_API_KEY di hosted)`,
@@ -224,7 +271,7 @@ async function main() {
   // -------------------------------------------------------------------------
   section('hint liar jadi null + jalur error');
   await pace();
-  const wild = await callParse(token, {
+  const wild = await callParseWithRetry(token, {
     text: 'bayar kripto elon 25 ribu tunai',
   });
   check(
@@ -309,7 +356,7 @@ async function main() {
   const { data: otherSession } = await other.auth.getSession();
   const otherToken = otherSession.session?.access_token ?? '';
   await pace();
-  const bParse = await callParse(otherToken, { text: 'kopi 12rb' });
+  const bParse = await callParseWithRetry(otherToken, { text: 'kopi 12rb' });
   check(
     'user B parse lolos walau bucket A penuh',
     bParse.status === 200 && bParse.body?.ok === true,

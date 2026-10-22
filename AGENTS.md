@@ -625,6 +625,12 @@ Single-context layout — one `CONTEXT.md` + `docs/adr/` at the repo root. See `
 - Verifier lain (`verify-s3/ai6/ai-voice/insight/t11`) memakai park + reset tapi **tanpa warm-up** — kelas risiko cold-start yang sama masih terbuka; tambahkan hanya bila muncul flake serupa (verifikasi live-nya butuh service key, jadi jangan diubah spekulatif).
 - Service key sekali pakai: `security find-generic-password -s "Supabase CLI" -w` → Management API `/v1/projects/{ref}/api-keys` → env per-perintah; 0 residu di env/disk/history sudah diverifikasi sesudahnya.
 
+### Perbaikan flake verify-ai-voice (fix CI run 39444701633, Okt 2026)
+
+- Kegagalan: job `live` merah hanya di `verify-ai-voice.mjs` — probe 1 HTTP `503`, probe 2 HTTP `546` `{"code":"WORKER_RESOURCE_LIMIT"}` (~2,5 menit cold start per probe); 35 check lain (probe goceng/1,5 juta/hint liar, flood 5×400+2×429, isolasi B, anon/JWT-mati) hijau. Bukan bug kode — Edge runtime belum siap/kehabisan resource, dan dua assertion strict membaca `null`.
+- Fix `scripts/verify-ai-voice.mjs` (preseden verify-d5): (1) `warmUpFunction()` — POST anon → 401 SEBELUM rate check (0 counter, 0 kuota model) membangunkan isolate; (2) `callParseWithRetry()` — retry **TEPAT-SATU** ber-`pace()` hanya untuk `503/504/546`/fetch error; `200` (termasuk `{ok:false}`), `4xx`, dan `500 server_misconfigured` tidak diulang. Dipakai hanya jalur model (4 probe + hint liar + parse B); flood/error-path tetap mentah supaya disiplin Rp 0 dan kegagalan nyata tetap terlihat.
+- Run `39444701633` dibiarkan merah di histori (keputusan pemilik: tanpa rerun); run berikutnya yang membuktikan. Pola warm-up kini juga kandidat untuk `verify-s3/ai6/insight/t11` bila flake cold-start serupa muncul.
+
 ### Savings v1 — Target Tabungan (SV1–SV4 selesai; live 44/44 + device LULUS, OTA final `718599fe`, commit di `main`)
 
 - **Model A (ADR-0018):** Target Tabungan = metadata pada satu Dompet, bukan ledger/envelope/alokasi kedua. Progress = Saldo Dompet dari `v_wallet_balances`; menabung = Transfer ke Dompet itu; expense/income mengubah progress lewat refresh saldo yang sudah ada. Satu Dompet maksimal satu target (maks 10 alami dari batas Dompet). Tercapai hanya badge (bisa hilang bila saldo turun), `Lewat target` netral.
