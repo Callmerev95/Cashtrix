@@ -36,6 +36,7 @@ import {
   type Wallet,
 } from '@/features/wallets';
 import { WalletRow } from '@/features/wallets/components/wallet-row';
+import { useSavings } from '@/features/savings';
 import { useTransactions } from '@/features/transactions';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
@@ -51,6 +52,7 @@ export default function WalletsScreen() {
   // re-reads it alongside the manage list.
   const { refresh: refreshTransactionOptions } = useTransactions();
   const { refresh: refreshAnalytics } = useAnalytics();
+  const { goalForWallet } = useSavings();
   const insets = useSafeAreaInsets();
   // C6: copy + amount format follow the OS language (ADR-0008, R10).
   const language = useLanguage();
@@ -77,6 +79,29 @@ export default function WalletsScreen() {
   }
 
   function onDeletePress(wallet: Wallet) {
+    // A goal references the wallet with `on delete restrict`. The database is
+    // the backstop; this explains it before the user taps into a failure.
+    const goal = goalForWallet(wallet.id);
+    if (goal) {
+      Alert.alert(
+        tw.list.deleteGoalTitle,
+        fill(
+          goal.walletArchived
+            ? tw.list.deleteGoalHiddenBody
+            : tw.list.deleteGoalBody,
+          { name: wallet.name },
+        ),
+        [
+          { text: t.common.cancel, style: 'cancel' },
+          {
+            text: t.savings.screen.title,
+            onPress: () => router.push('/savings'),
+          },
+        ],
+      );
+      return;
+    }
+
     if (wallet.transactionCount === 0) {
       Alert.alert(
         tw.list.deleteTitle,

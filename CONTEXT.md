@@ -131,6 +131,39 @@ Pemberitahuan sekali per User per Category per Budget month per ambang
 (`warning_80` atau `exceeded_100`). Tidak dihapus jika Spent turun kembali.
 _Avoid_: notification (itu saluran, bukan peristiwa), reminder
 
+### Tabungan
+
+**Target Tabungan**:
+Metadata pada satu Wallet: nama opsional, nominal target, dan tanggal target
+opsional. Satu Wallet punya paling banyak satu Target. Progress-nya adalah
+Saldo Wallet itu, bukan saldo terpisah dan bukan alokasi virtual.
+_Avoid_: savings account, envelope, pot, goal ledger, saldo tabungan
+
+**Progress tabungan**:
+Saldo Wallet saat ini terhadap nominal Target. Bisa turun bila Wallet dipakai;
+tidak pernah dijumlah dari daftar Transaction di klien.
+_Avoid_: saved amount, alokasi, saldo terkunci
+
+**Tambah dana**:
+Pintasan ke form Transfer yang sudah ada, dengan Wallet target sebagai tujuan.
+Bukan setoran, bukan auto-save, bukan API baru.
+_Avoid_: top up, deposit, auto-debit
+
+**Tercapai**:
+Status saat Saldo Wallet ≥ nominal Target. Hanya badge; tidak mengarsipkan
+Target dan bisa hilang bila Saldo turun.
+_Avoid_: completed, closed, selesai permanen
+
+**Lewat target**:
+Tanggal target sudah lewat dan Target belum tercapai. Label netral, tanpa
+alarm atau status gagal.
+_Avoid_: overdue penalty, failed, telat
+
+**Estimasi bulanan**:
+Sisa Target dibagi sisa bulan (hari ÷ 30), dibulatkan ke atas per ribuan.
+Hanya tampilan; bukan jadwal transfer atau komitmen.
+_Avoid_: auto-save, monthly debit, target bulanan
+
 ### Siklus hidup data
 
 **Soft-delete**:

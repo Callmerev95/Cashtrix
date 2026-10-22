@@ -22,6 +22,8 @@ import { MonthlySummaryCard, useAnalytics } from '@/features/analytics';
 import { useAuth } from '@/features/auth';
 import { useBudgets } from '@/features/budgets';
 import { displayNameOrEmail, useProfile } from '@/features/profile';
+import { pickDashboardGoal, useSavings } from '@/features/savings';
+import { SavingsSummaryCard } from '@/features/savings/components/savings-summary-card';
 import {
   SavedSnackbar,
   TransactionHistoryList,
@@ -68,6 +70,12 @@ export default function DashboardScreen() {
   } = useAnalytics();
   const { avatarSignedUrl, profile } = useProfile();
   const {
+    goals: savingsGoals,
+    loading: savingsLoading,
+    error: savingsError,
+    refresh: refreshSavings,
+  } = useSavings();
+  const {
     transactions,
     loading: loadingTransactions,
     loadingMore,
@@ -96,8 +104,15 @@ export default function DashboardScreen() {
         refreshBudgets(),
         refreshAnalytics(),
         refreshTransactions(),
+        refreshSavings(),
       ]).then(() => undefined),
-    [refreshWallets, refreshBudgets, refreshAnalytics, refreshTransactions],
+    [
+      refreshWallets,
+      refreshBudgets,
+      refreshAnalytics,
+      refreshTransactions,
+      refreshSavings,
+    ],
   );
   const { refreshing, onRefresh } = usePullRefresh(refreshDashboard);
 
@@ -148,6 +163,7 @@ export default function DashboardScreen() {
     profile?.displayName,
     session?.user.email,
   );
+  const savingsGoal = pickDashboardGoal(savingsGoals);
 
   // The history list is the screen's outer scroller (a SectionList — nesting
   // it in a ScrollView would mount every row and defeat virtualization), so
@@ -231,6 +247,16 @@ export default function DashboardScreen() {
             })}
           </Text>
         ) : null}
+      </View>
+
+      <View style={styles.section}>
+        <SavingsSummaryCard
+          goal={savingsGoal}
+          otherCount={Math.max(savingsGoals.length - 1, 0)}
+          loading={savingsLoading}
+          error={savingsError}
+          onRetry={() => void refreshSavings()}
+        />
       </View>
 
       <View style={styles.section}>

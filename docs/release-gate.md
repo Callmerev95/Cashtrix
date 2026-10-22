@@ -97,6 +97,8 @@ Stitch hanya referensi **layout**; warna selalu dari token kanonik
 5. `verify-t11` penuh, hanya di push ke `main`: membuat satu user uji,
    me-replay happy path via API, lalu menghapus dirinya via
    `delete-account` (tanpa secret, tanpa residu).
+6. Matriks `live` lain di push ke `main` (urutan §8.2): `verify-t5/t6/t7/t8/t9`,
+   `verify-v2-transfer/v3-recurring/v4/savings/a5/d5/s2/s3/ai-voice/ai6/insight`.
 
 Yang tetap manual (butuh perangkat): run Maestro hijau + checklist §4 +
 sesi crash-free.
@@ -223,9 +225,9 @@ semua bukti di bawah terlampir; #1 tidak disentuh.
   komposisi runtime `DeleteConfirmSheet`, sejajar aturan `-action` yang
   sudah ada, base (`delete-confirm`) tetap statis.
 - **CI `live` = matriks penuh** (`.github/workflows/release-gate.yml`):
-  `verify-t5/t6/t7/t8/t9/v2-transfer/v3-recurring/v4/t11` berurutan,
-  tiap skrip self-cleanup (tanpa residu, tanpa secret tambahan selain dua
-  yang sudah ada).
+  `verify-t5/t6/t7/t8/t9/v2-transfer/v3-recurring/v4/savings/a5/d5/s2/s3/ai-voice/ai6/insight/t11`
+  berurutan, tiap skrip self-cleanup (tanpa residu, tanpa secret tambahan
+  selain dua yang sudah ada).
 - **`provision-e2e.mjs`**: memastikan dompet `Bank`, buka-arsip bila perlu,
   dan membersihkan recurring rules e2e (titik reset antar-run; tiap run
   menambah tepat satu aturan, plafon 20 aktif).
@@ -255,3 +257,18 @@ semua bukti di bawah terlampir; #1 tidak disentuh.
 - `v1.1.0` di commit gerbang ini (HEAD setelah merge PR V6):
   `git tag -a v1.1.0 <sha> -m "Cashtrix v1.1.0 (rilis store)"`.
 - Push tag hanya saat rilis disetujui pemilik: `git push origin v1.0.0 v1.1.0`.
+
+## 9. Gerbang 2.1.x: Savings v1
+
+Rilis OTA 2.1.x (tanpa bump versi, tanpa modul native). Gate di commit final
+Savings v1 (`main`):
+
+| Gate | Bukti |
+|---|---|
+| Unit + statis | lint, typecheck, Jest 1046/1046 (70 suite), kontrak `verify-t11.mjs --static-only` 112 id / 10 teks / 3 KPI (+4 cek quick-action), `verify-legal.mjs` 36/36, `expo export` Android |
+| SQL | pgTAP 21 file / 500 assertion — `21_savings_goals.sql` 29/29 (constraint, unique, FK RESTRICT, RLS 4 policy, cross-user) |
+| Live | `scripts/verify-savings.mjs` 44/44 (create/list, duplicate 23505, CHECK, update, progress via `v_wallet_balances` setelah Transfer, guard hapus Dompet, cross-user, anon, cleanup) + matriks penuh §8.2 hijau |
+| Device | OTA final `718599fe` (runtime 2.1.0); device gate LULUS — pill status di pojok kanan atas, tone per status, no-truncate 360dp, eye-hidden, EN |
+
+Sisa: PRD R16 (approval per-baris pemilik). Tanpa tag baru (OTA berjalan di
+runtime 2.1.0).

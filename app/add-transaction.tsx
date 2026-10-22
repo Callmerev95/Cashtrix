@@ -90,7 +90,14 @@ export default function AddTransactionScreen() {
   // `cashtrix://add-transaction?type=expense|income` and `cashtrix://scan`
   // (via the `/scan` alias as `scan=1`). `type` only preselects the segment —
   // `transfer` and unknown values fall through to the remembered preference.
-  const params = useLocalSearchParams<{ id?: string; type?: string; scan?: string; voice?: string; source?: string }>();
+  const params = useLocalSearchParams<{
+    id?: string;
+    type?: string;
+    scan?: string;
+    voice?: string;
+    source?: string;
+    to?: string;
+  }>();
   const isEdit = Boolean(params.id);
   const insets = useSafeAreaInsets();
   // C6: copy + validation follow the OS language (ADR-0008).
@@ -176,6 +183,12 @@ export default function AddTransactionScreen() {
   // scan mode can force the expense segment.
   const scanMode = !isEdit && parseScanFlag(params.scan);
 
+  // SV3: the savings card's "Tambah dana" opens a transfer seeded with the
+  // target wallet. This is a prefill, not a lock — the user can toggle the
+  // segment away (explicit toggle still wins below).
+  const savingsTargetWalletId =
+    !isEdit && params.to && params.to.trim() !== '' ? params.to : null;
+
   // S1: a shortcut `?type=` seeds the segment below an explicit toggle but
   // above the remembered preference; edit mode (`?id=`) ignores it so a
   // shared link can never retarget a row being edited. S3: scan mode forces
@@ -187,6 +200,7 @@ export default function AddTransactionScreen() {
   const shortcutType = isEdit ? null : parseShortcutType(params.type);
   const type: TransactionType =
     typeOverride ??
+    (savingsTargetWalletId ? 'transfer' : null) ??
     shortcutType ??
     scanForcedType(scanMode) ??
     voiceType ??
@@ -215,8 +229,18 @@ export default function AddTransactionScreen() {
 
   // Wallet: explicit choice > the row being edited > the remembered last-used
   // wallet > the first available (so an empty picker can never block Save).
-  const walletId =
+  const preferredWalletId =
     walletChoice ?? loaded?.walletId ?? lastWalletId ?? wallets[0]?.id ?? null;
+  // A savings transfer must not default its source to the target wallet; pick
+  // the first other active wallet instead (the destination chain has the same
+  // guard for the opposite direction).
+  const walletId =
+    savingsTargetWalletId &&
+    preferredWalletId === savingsTargetWalletId &&
+    !walletChoice
+      ? (wallets.find((wallet) => wallet.id !== savingsTargetWalletId)?.id ??
+        preferredWalletId)
+      : preferredWalletId;
 
   // Transfer destination: explicit choice > the row being edited > the first
   // wallet that is not the source (never default to the source itself —
@@ -224,6 +248,9 @@ export default function AddTransactionScreen() {
   const destinationWalletId = isTransfer
     ? (destinationChoice ??
       loaded?.counterpartyWalletId ??
+      (savingsTargetWalletId && savingsTargetWalletId !== walletId
+        ? savingsTargetWalletId
+        : null) ??
       wallets.find((wallet) => wallet.id !== walletId)?.id ??
       null)
     : null;

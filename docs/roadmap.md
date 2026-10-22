@@ -243,6 +243,7 @@ kegagalan tidak menahan yang lain).
 | **2.0.0** ✅ 2026-09-29 | Widget + fast-lane: tiga tombol home screen (suara/tambah/pindai) → deep-link existing → sheet yang sama, split-N maks 3 sejenis, notifikasi lokal khusus save-dari-widget, gate penuh, tanpa label AI | `specs/cashtrix-v2.0-widget.md` + ADR-0011, WG1 (#70) → WG2 (#71) → WG3 (#72), spec #69, tag `v2.0.0` |
 | **2.1.0** ✅ | Analytics Overhaul: chart svg crisp-edge (PR1/PR2) + kartu tren + tap-select + Insight AI L1–L3 + L4c custom range (commit `f9b5557`; OTA grup `2b2981e9`, device gate HP LULUS 2026-10-18) | ADR-0017, L1 → L2 → L3 → L4c, tag `v2.1.0` |
 | **2.1.x** (OTA) | Trek L4 lanjutan: L4a drill-down → `/search` (COMMITTED `3dc29b0`, OTA `b9a7e1ac`, device gate LULUS 2026-10-19) + L4b multi-wallet compare (COMMITTED `46e505c`, OTA `8747fefd` + polish `69f45c8c`, gate LULUS 2026-10-20) | `specs/tickets.md` trek L4 |
+| **2.1.x** (OTA) | **Savings v1 — Target Tabungan**: satu target per Dompet, progress = Saldo Dompet (`v_wallet_balances`), ring gold, estimasi bulanan, Tambah dana via Transfer. Spec + ADR-0018 disetujui 2026-10-21; SV1–SV4 selesai + commit di `main` + gate statis hijau + live `verify-savings` 44/44 + OTA `7394b00f` + device gate LULUS (pre-polish) + OTA polish `3f3ab134` disuperseded OTA pill `434704d6` lalu revisi pill pojok kanan atas `718599fe` (menyupersede); device re-cek LULUS | `specs/cashtrix-savings.md` + ADR-0018, `specs/tickets.md` SV1–SV4 |
 | Berikutnya | Offline outbox + read cache = satu pekerjaan konsistensi (LWW buta + hapus-menang, FIFO sekuensial, coalesce, antrean eksplisit, baca terdegradasi), didahului spec + grill seperti v1.1 | `specs/cashtrix-v2.x-outbox.md` + ADR-0003/0012, OB1 (#74) → OB2 (#75) → OB3 (#76), spec #73 |
 
 Bank sync, multi-currency (parkir OPEN-4), AI insight lanjutan antre di belakangnya
@@ -330,7 +331,8 @@ hero obsidian + eye toggle, katalog 76 ikon, fix refresh opsi dompet (#81).
 Keputusan terkunci: Android hand-rolled (tanpa dep runtime), iOS tunda,
 tanpa label AI, tanpa angka/statistik fiktif di widget maupun kartu.
 
-Berikutnya (urutan pasca-2.1.0): OB1–OB3 outbox + read cache.
+Berikutnya (urutan pasca-2.1.0): Savings v1 Target Tabungan (SV1–SV4
+selesai + commit, device gate LULUS) lalu OB1–OB3 outbox + read cache.
 
 ### 6.10 Batch B1 + AI6 (satu rebuild hemat kuota, grill 2026-10-03)
 
@@ -352,5 +354,45 @@ gate di HP 2026-10-18; akar OTA macet = sourcemap `.hbc.map` ikut payload —
 fix `--skip-bundler --input-dir` tanpa sourcemap) → L4a drill-down **LULUS**
 (commit `3dc29b0`, OTA `b9a7e1ac`, gate 2026-10-19) → L4b multi-wallet
 compare **LULUS** (commit `46e505c`, OTA `8747fefd` + polish `69f45c8c`,
-gate 2026-10-20) → OB1–OB3 outbox + read cache. Gate hijau per rilis
+gate 2026-10-20) → **Savings v1 Target Tabungan** (spec + ADR-0018 disetujui
+2026-10-21; SV1–SV4) → OB1–OB3 outbox + read cache. Gate hijau per rilis
 (pola Q10).
+
+### 6.12 Savings v1: Target Tabungan (grill 2026-10-21)
+
+Satu target per Dompet; progress = Saldo Dompet dari `v_wallet_balances`,
+bukan ledger/alokasi kedua. Menabung = Transfer ke Dompet itu ("Tambah dana"
+membuka form Transfer dengan tujuan terisi). Ring gold statis (bukan
+`BudgetRing` yang membawa warna state anggaran), estimasi `≈ Rp X/bulan`
+hanya bila tenggat ≥30 hari dan belum tercapai. Dashboard menaruh kartu
+setelah section Dompet; `/savings` + `/savings-form` jadi permukaan kelola.
+
+Keputusan owner: saldo lama langsung dihitung; expense dari Dompet tabungan
+menurunkan progress; target tercapai hanya badge (tanpa auto-archive/alert);
+target di Dompet arsip disembunyikan + dihitung; Dompet bertarget tidak bisa
+dihapus sebelum targetnya dihapus (guard sebelum reassign). Eye-hidden ikut
+menyamarkan nominal, persen, ring, estimasi, dan status target.
+
+Rilis **2.1.x OTA** (tanpa modul native/DDL besar; satu tabel + RLS).
+Spec `specs/cashtrix-savings.md` + ADR-0018; tiket SV1 (DB/RLS/pgTAP) →
+SV2 (domain/API/provider) → SV3 (layar/wiring) → SV4 (gate/OTA). PRD R16
+disiapkan setelah spec dan tetap approval per-baris.
+
+Status 2026-10-21: **SV1–SV4 selesai + commit di `main`**. SV1 pgTAP 29/29 +
+migrasi hosted; SV2 domain/API/provider + Jest; SV3 ring/kartu/layar/form/
+wiring + guard hapus Dompet. Gate statis hijau: lint, typecheck, Jest
+1046/1046 (70 suite), kontrak 112/10/3, legal 36/36, export Android. Live
+`verify-savings.mjs` **44/44** (create/list, duplicate 23505, CHECK, update,
+progress dari `v_wallet_balances` setelah Transfer, guard hapus Dompet,
+cross-user, anon, cleanup). OTA preview terkirim 2026-10-21 (grup
+`7394b00f-af57-4a54-8da6-b578beae6c59`, runtime 2.1.0, Android); **device gate
+LULUS** (owner, pre-polish). Polish kartu savings (hapus `numberOfLines` teks
+dinamis + pecah baris summary + pill status `SavingsStatusPill`) + Jest
+1046/1046; OTA polish grup `3f3ab134-cafe-4c0d-9433-8b392c3d110a` disuperseded
+OTA pill grup `434704d6-9273-481d-9205-941156dc7b71` (memuat kedua fix).
+Revisi penempatan pill status ke pojok kanan atas kartu Dashboard (absolute di
+`Pressable`, kicker tetap satu baris) dikirim OTA grup
+`718599fe-481b-41e7-b246-cd92570524e2` (Android
+`01a160fd-6328-72bc-bf37-8b13fdd2b2f7`), menyupersede `434704d6`. Device re-cek LULUS (pill pojok,
+tone per status, no-truncate, eye); commit + push ke `main`, #105–#108 ditutup. Sisa:
+PRD R16 (approval per-baris).

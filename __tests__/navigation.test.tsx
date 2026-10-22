@@ -107,6 +107,8 @@ async function renderSignedInApp(initialUrl = '/') {
       'add-transaction': require('../app/add-transaction').default,
       wallets: require('../app/wallets').default,
       'wallet-form': require('../app/wallet-form').default,
+      savings: require('../app/savings').default,
+      'savings-form': require('../app/savings-form').default,
       '(auth)/_layout': require('../app/(auth)/_layout').default,
       '(auth)/login': require('../app/(auth)/login').default,
       '(auth)/register': require('../app/(auth)/register').default,

@@ -154,6 +154,10 @@ jest.mock('@/features/budgets', () => {
     __testEvaluate: evaluateAndAlert,
   };
 });
+jest.mock('@/features/savings', () => {
+  const refresh = jest.fn().mockResolvedValue(undefined);
+  return { useSavings: () => ({ refresh }), __testRefresh: refresh };
+});
 jest.mock('@/features/analytics', () => {
   const refresh = jest.fn().mockResolvedValue(undefined);
   return { useAnalytics: () => ({ refresh }), __testRefresh: refresh };
@@ -207,6 +211,9 @@ describe('ReconnectRefresh', () => {
         testMock('@/features/wallets', '__testRefresh'),
       ).toHaveBeenCalledTimes(1),
     );
+    expect(
+      testMock('@/features/savings', '__testRefresh'),
+    ).toHaveBeenCalledTimes(1);
     expect(
       testMock('@/features/transactions', '__testRefresh'),
     ).toHaveBeenCalledTimes(1);

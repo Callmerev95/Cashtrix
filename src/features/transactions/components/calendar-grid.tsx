@@ -36,6 +36,8 @@ export function CalendarGrid({
   onChange,
   testID = 'date-calendar',
   framed = true,
+  disablePast = false,
+  disableFuture = true,
 }: {
   value: Date;
   onChange: (next: Date) => void;
@@ -46,6 +48,17 @@ export function CalendarGrid({
    * path is byte-identical.
    */
   framed?: boolean;
+  /**
+   * SV3: a target date may be today or later. Default `false` keeps the Add
+   * form's existing today-or-earlier rule byte-identical.
+   */
+  disablePast?: boolean;
+  /**
+   * `false` opens future days too — the savings edit path must be able to
+   * move a target forward as well as keep an old date. Default `true` keeps
+   * every existing surface unchanged.
+   */
+  disableFuture?: boolean;
 }) {
   const [visibleKey, setVisibleKey] = useState(() => monthKey(value));
   const [lastValueKey, setLastValueKey] = useState(() => monthKey(value));
@@ -123,6 +136,9 @@ export function CalendarGrid({
         <View key={`week-${weekIndex}`} style={styles.weekRow}>
           {week.map((day) => {
             const key = toDateKey(day.date);
+            const disabled =
+              (disablePast && day.isPast) ||
+              (disableFuture && day.isFuture);
             return (
               <Pressable
                 key={key}
@@ -131,9 +147,9 @@ export function CalendarGrid({
                 accessibilityLabel={`${day.day}`}
                 accessibilityState={{
                   selected: day.isSelected,
-                  disabled: day.isFuture,
+                  disabled,
                 }}
-                disabled={day.isFuture}
+                disabled={disabled}
                 onPress={() => {
                   onChange(day.date);
                   if (monthKey(day.date) !== visibleKey) {
@@ -152,7 +168,7 @@ export function CalendarGrid({
                     typography.bodyMd,
                     styles.day,
                     !day.inMonth && styles.dayOutside,
-                    day.isFuture && styles.dayFuture,
+                    disabled && styles.dayDisabled,
                     day.isSelected && styles.daySelected,
                   ]}
                 >
@@ -223,7 +239,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     opacity: 0.5,
   },
-  dayFuture: {
+  dayDisabled: {
     color: colors.textSecondary,
     opacity: 0.35,
   },

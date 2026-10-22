@@ -27,6 +27,7 @@ import { reanimatedUsable } from '../../../components/reanimated-cap';
 
 import {
   budgetStateLabel,
+  formatRingPercent,
   ringFillFor,
   type BudgetState,
 } from '../domain';
@@ -200,11 +201,8 @@ export function BudgetRing({
   );
 }
 
-/** Integer percent for the ring centre (`80%`, `120%`) — never `NaN`. */
-export function formatRingPercent(percent: number): string {
-  if (!Number.isFinite(percent) || percent <= 0) return '0%';
-  return `${Math.round(percent)}%`;
-}
+// Backwards-compatible seam: the pure formatter lives in `domain.ts`.
+export { formatRingPercent };
 
 const styles = StyleSheet.create({
   wrap: {

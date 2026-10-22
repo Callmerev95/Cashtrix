@@ -232,6 +232,12 @@ export function inboxAlertTitle(
     : fill(copy.exceededTitle, { categoryName });
 }
 
+/** Integer percent for a ring centre (`80%`, `120%`) — never `NaN`. */
+export function formatRingPercent(percent: number): string {
+  if (!Number.isFinite(percent) || percent <= 0) return '0%';
+  return `${Math.round(percent)}%`;
+}
+
 /** One inbox month group, newest month first (input already newest-first). */
 export type InboxMonthGroup = {
   month: string;

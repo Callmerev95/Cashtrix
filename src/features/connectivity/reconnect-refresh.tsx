@@ -16,6 +16,7 @@ import { useAnalytics } from '@/features/analytics';
 import { useAuth } from '@/features/auth';
 import { useBudgets } from '@/features/budgets';
 import { useRecurring } from '@/features/recurring';
+import { useSavings } from '@/features/savings';
 import { useTransactions } from '@/features/transactions';
 import { useWallets } from '@/features/wallets';
 
@@ -27,6 +28,7 @@ export function ReconnectRefresh() {
   const { refresh: refreshTransactions } = useTransactions();
   const { refresh: refreshBudgets, evaluateAndAlert } = useBudgets();
   const { refresh: refreshAnalytics } = useAnalytics();
+  const { refresh: refreshSavings } = useSavings();
   const { runCatchUp } = useRecurring();
   const { session } = useAuth();
   const userId = session?.user.id;
@@ -50,6 +52,7 @@ export function ReconnectRefresh() {
           refreshTransactions(),
           refreshBudgets(),
           refreshAnalytics(),
+          refreshSavings(),
         ]),
       )
       .then(() => evaluateAndAlert({ userId: userId ?? '' }))
@@ -60,6 +63,7 @@ export function ReconnectRefresh() {
     refreshTransactions,
     refreshBudgets,
     refreshAnalytics,
+    refreshSavings,
     runCatchUp,
     evaluateAndAlert,
     userId,

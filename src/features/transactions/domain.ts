@@ -538,6 +538,8 @@ export type CalendarDay = {
   isToday: boolean;
   /** After today — the grid renders these disabled and never selects them. */
   isFuture: boolean;
+  /** Before today — disabled only in a future-only calendar (`disablePast`). */
+  isPast: boolean;
   isSelected: boolean;
 };
 
@@ -574,6 +576,7 @@ export function buildMonthGrid(
       inMonth: date.getMonth() === monthIndex,
       isToday: key === todayKey,
       isFuture: key > todayKey,
+      isPast: key < todayKey,
       isSelected: key === selectedKey,
     });
     if (week.length === 7) {
@@ -599,6 +602,7 @@ export function buildMonthGrid(
         inMonth: false,
         isToday: key === todayKey,
         isFuture: key > todayKey,
+        isPast: key < todayKey,
         isSelected: key === selectedKey,
       });
     }

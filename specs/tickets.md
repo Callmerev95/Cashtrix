@@ -261,8 +261,8 @@ terkunci: tulis = transaksi + receipts tertunda; LWW buta single-device +
 hapus-menang; baca terdegradasi (agregasi online-only); antrean eksplisit;
 FIFO sekuensial; kunci idempotency saat baris dibuat; tolak-server bertahan
 beralasan; foto di sandbox (yatim 7 hari disapu); cap 200 + purge sign-out.
-Dikerjakan setelah WG3 hijau (O4). Semua ticket `ready-for-agent`. Urutan
-mengikat: OB1 → OB2 → OB3.
+Dikerjakan setelah Savings v1 selesai (spec 2026-10-21), sebelum trek lain.
+Semua ticket `ready-for-agent`. Urutan mengikat: OB1 → OB2 → OB3.
 
 | Ticket | Issue | Blocked by | Deliverable |
 |---|---|---|---|
@@ -271,13 +271,13 @@ mengikat: OB1 → OB2 → OB3.
 | OB3, Indikator + gerbang | #76 | #74, #75 | Strip + badge + buang-per-baris; Jest + live + kontrak statis Maestro; device mode-pesawat |
 
 ```
-OB1 ── OB2 ── OB3 (rilis berikut, setelah WG3)
+OB1 ── OB2 ── OB3 (setelah Savings v1)
 ```
 
 ### Frontier
 
-OB1 (#74) terbuka setelah WG3 hijau (tiket boleh dibuat sekarang, eksekusi antre).
-OB2 (#75) blocked by #74. OB3 (#76) blocked by #74 + #75.
+OB1 (#74) terbuka setelah Savings v1 (SV4) selesai. OB2 (#75) blocked by #74.
+OB3 (#76) blocked by #74 + #75.
 
 ---
 
@@ -647,3 +647,45 @@ OTA `69f45c8c` (runtime 2.1.0). COMMITTED `46e505c`.
 
 PRD R15 (drill-down L4a + L4b) dicatat 2026-10-20 setelah approval
 per-baris pemilik — satu revisi untuk seluruh trek L4.
+
+## Savings v1: Target Tabungan (2.1.x OTA)
+
+Spec: `specs/cashtrix-savings.md` · ADR-0018 · grill 2026-10-21. Model A:
+satu target per Dompet, progress = Saldo Dompet dari `v_wallet_balances`;
+tanpa ledger/alokasi kedua. Menabung = Transfer ("Tambah dana" membuka form
+Transfer dengan tujuan terisi). Ring gold statis, estimasi bulanan hanya bila
+tenggat ≥30 hari. Rilis 2.1.x OTA (tanpa modul native, tanpa bump versi).
+Urutan mengikat SV1 → SV2 → SV3 → SV4; SV1–SV4 selesai + commit di `main`.
+
+| Ticket | Issue | Blocked by | Status | Deliverable |
+|---|---|---|---|---|
+| SV1, Skema + RLS + pgTAP | #105 | — | selesai — pgTAP 29/29 + hosted | Tabel `savings_goals` + constraint + index + trigger + RLS 4 policy + grant/revoke + pgTAP 21 |
+| SV2, Domain + API + provider | #106 | #105 | selesai | `features/savings/domain.ts` + `api.ts` + `savings-context.tsx` + barrel + `SavingsProvider` di `_layout` + Jest |
+| SV3, Layar + wiring | #107 | #106 | selesai, Jest 1046/1046 | `SavingsRing`, Dashboard card, `/savings`, `/savings-form`, Add `?to=`, guard hapus Dompet, `CalendarGrid.disablePast`, i18n |
+| SV4, Live + gate | #108 | #107 | selesai — live 44/44, device gate LULUS (pill pojok), OTA final `718599fe`, #108 closed | `verify-savings.mjs` + CI matriks + gate penuh + OTA + device gate + `AGENTS.md` |
+
+```
+SV1 ── SV2 ── SV3 ── SV4 (2.1.x OTA)
+```
+
+### Frontier
+
+SV1 (#105) selesai: migrasi `20261021090000_savings_goals.sql`
+applied hosted, pgTAP `21_savings_goals.sql` 29/29. SV2 (#106) selesai:
+domain/API/provider + `savings-domain`/`savings-context` Jest. SV3 (#107)
+selesai: ring/kartu/layar/form/wiring + guard hapus Dompet; gate statis hijau
+(lint, typecheck, Jest 1046/1046, kontrak 112/10/3, legal 36/36, export
+Android). SV4 (#108) selesai: `scripts/verify-savings.mjs` masuk matriks CI
+`live` setelah `verify-v4` dan lulus live **44/44** (create/list, duplicate,
+CHECK, update, progress via `v_wallet_balances` setelah Transfer, guard hapus
+Dompet, cross-user, anon, cleanup). OTA preview terkirim 2026-10-21 (grup
+`7394b00f-af57-4a54-8da6-b578beae6c59`, runtime 2.1.0) + **device gate LULUS**
+(pre-polish, owner). Polish kartu savings (2026-10-21, tanpa ticket): hapus
+`numberOfLines` teks dinamis di kedua kartu + pecah baris summary + pill status
+`SavingsStatusPill` (kicker & status tak lagi terbaca satu frasa); Jest
+1046/1046; OTA polish grup `3f3ab134-cafe-4c0d-9433-8b392c3d110a` disuperseded
+OTA pill grup `434704d6-9273-481d-9205-941156dc7b71` (memuat kedua fix).
+Revisi penempatan (pill status ke pojok kanan atas kartu Dashboard, `titleRow`
+tanpa wrap) dikirim OTA grup `718599fe-481b-41e7-b246-cd92570524e2` (Android
+`01a160fd-6328-72bc-bf37-8b13fdd2b2f7`), menyupersede `434704d6`.
+Commit + push ke `main` 2026-10-21; #105–#108 ditutup. Sisa: PRD R16 (approval per-baris pemilik).

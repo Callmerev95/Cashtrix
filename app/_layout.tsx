@@ -30,6 +30,7 @@ import {
 } from '@/features/observability';
 import { ProfileProvider } from '@/features/profile';
 import { RecurringProvider } from '@/features/recurring';
+import { SavingsProvider } from '@/features/savings';
 import { TransactionsProvider } from '@/features/transactions';
 import { WalletsProvider } from '@/features/wallets';
 import { useReducedMotion } from '@/components/skeleton';
@@ -207,6 +208,8 @@ function RootNavigator() {
             <Stack.Screen name="budget-form" options={{ presentation: 'modal' }} />
             <Stack.Screen name="wallets" />
             <Stack.Screen name="wallet-form" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="savings" />
+            <Stack.Screen name="savings-form" options={{ presentation: 'modal' }} />
             <Stack.Screen name="categories" />
             <Stack.Screen name="category-form" options={{ presentation: 'modal' }} />
             <Stack.Screen name="recurring" />
@@ -255,20 +258,22 @@ export function DataProviders({ children }: { children: ReactNode }) {
   return (
     <ConnectivityProvider>
       <WalletsProvider key={userKey}>
-        <TransactionsProvider>
-          <BudgetsProvider>
-            <AnalyticsProvider>
-              <RecurringProvider>
-                <ProfileProvider>
-                  <MfaProvider>
-                    <ReconnectRefresh />
-                    {children}
-                  </MfaProvider>
-                </ProfileProvider>
-              </RecurringProvider>
-            </AnalyticsProvider>
-          </BudgetsProvider>
-        </TransactionsProvider>
+        <SavingsProvider>
+          <TransactionsProvider>
+            <BudgetsProvider>
+              <AnalyticsProvider>
+                <RecurringProvider>
+                  <ProfileProvider>
+                    <MfaProvider>
+                      <ReconnectRefresh />
+                      {children}
+                    </MfaProvider>
+                  </ProfileProvider>
+                </RecurringProvider>
+              </AnalyticsProvider>
+            </BudgetsProvider>
+          </TransactionsProvider>
+        </SavingsProvider>
       </WalletsProvider>
     </ConnectivityProvider>
   );
