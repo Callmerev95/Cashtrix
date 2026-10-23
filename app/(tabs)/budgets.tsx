@@ -24,7 +24,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { EmptyStateCard, AppHeader, Card, ErrorStateCard, Screen, SectionHeader, Skeleton, SkeletonBlock } from '@/components';
+import { EmptyStateCard, AppHeader, Card, ErrorStateCard, OfflineGate, Screen, SectionHeader, Skeleton, SkeletonBlock } from '@/components';
 import { showQuickActions } from '@/components/quick-actions';
 import { PullGesture, PullHeader, usePullRefresh } from '@/components/pull-refresh';
 import { Stagger } from '@/components/stagger';
@@ -36,6 +36,7 @@ import {
   type FiredAlert,
 } from '@/features/budgets';
 import { BudgetRing } from '@/features/budgets/components/budget-ring';
+import { useConnectivity } from '@/features/connectivity';
 import { useProfile } from '@/features/profile';
 import { formatGrouped } from '@/features/transactions/domain';
 import { dictionaryFor, fill, localeTagFor, useLanguage } from '@/i18n';
@@ -68,6 +69,7 @@ export default function BudgetsScreen() {
     unreadCount,
   } = useBudgets();
   const { avatarSignedUrl } = useProfile();
+  const { isOnline } = useConnectivity();
   const insets = useSafeAreaInsets();
   // C6: copy + month format follow the OS language (ADR-0008, R10).
   const language = useLanguage();
@@ -162,7 +164,9 @@ export default function BudgetsScreen() {
         contentContainerStyle={styles.content}
       >
         <PullHeader gap={spacing.md} testID="budgets-pull-header" />
-        {loading ? (
+        {!isOnline ? (
+          <OfflineGate testID="budgets-offline" />
+        ) : loading ? (
           <Skeleton testID="budgets-loading" style={styles.skeleton}>
             <View style={styles.card}>
               <View style={styles.cardPress}>

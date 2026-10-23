@@ -36,6 +36,10 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 
+jest.mock('@/features/connectivity/connectivity-context', () => ({
+  useConnectivity: () => ({ isOnline: true }),
+}));
+
 // The pull wrapper is a reanimated twin; its static passthrough is enough for
 // a wiring test and keeps the native module out of Jest.
 jest.mock('@/components/pull-refresh', () => ({

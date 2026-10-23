@@ -563,7 +563,7 @@ export default function AddTransactionScreen() {
     setBusy(true);
 
     try {
-      await save({
+      const result = await save({
         id: params.id,
         userId: session?.user.id ?? '',
         walletId,
@@ -574,7 +574,17 @@ export default function AddTransactionScreen() {
         occurredAt,
         note: normalizeNote(note),
         idempotencyKey,
-        receiptIds: receipts.map((attachment) => attachment.id),
+        // OB1: uploaded rows link by id; offline captures link by local path
+        // and upload on flush (OB2). A pending photo must never send an empty
+        // storage id to `linkReceiptsToTransaction`.
+        receiptIds: receipts
+          .filter((attachment) => !attachment.pending)
+          .map((attachment) => attachment.id),
+        receiptPaths: receipts
+          .filter((attachment) => attachment.pending)
+          .flatMap((attachment) =>
+            attachment.localPath ? [attachment.localPath] : [],
+          ),
       });
 
       // B1: the commit landed — buzz before the proof (snackbar / widget
@@ -595,32 +605,38 @@ export default function AddTransactionScreen() {
         // Analytics never blocks a save.
       }
 
-      // Balances are a separate view owned by the wallet context; the save
-      // changed the aggregate, so it must re-read before the Dashboard paints.
-      // Budgets re-read too: a committed expense can push a category past its
-      // threshold, and the alert must fire within seconds of the commit
-      // (PRD §2.3 Epic E). Analytics re-reads as well: the Insight screen
-      // would otherwise show the pre-save overview until the range changes.
-      //
-      // Opsi B (S1 follow-up): these re-reads are fire-and-forget — each
-      // context applies its result when it lands, but none of them may trap
-      // the form. A stalled network settles neither resolve nor reject, and
-      // awaiting it left the submit spinner spinning forever on a committed
-      // save (device finding: shortcut save, cold start AND background).
-      // The success snackbar on the Dashboard is the save's proof, not this
-      // screen staying open.
-      void refreshWallets();
-      void (async () => {
-        try {
-          await refreshBudgets();
-          await refreshAnalytics();
-          // Fresh server read inside (V6) — the cached list is still pre-save
-          // truth here, so evaluating it would miss this commit's crossing.
-          await evaluateAndAlert({ userId: session?.user.id ?? '' });
-        } catch {
-          // Non-fatal; the next save re-evaluates (dedup-safe).
-        }
-      })();
+      // OB1: a queued save never touched the server, so every read below
+      // would still return pre-save truth. The pending row is already in the
+      // provider (merged into History); OB2's flush performs the refreshes
+      // when it actually commits.
+      if (!result.queued) {
+        // Balances are a separate view owned by the wallet context; the save
+        // changed the aggregate, so it must re-read before the Dashboard paints.
+        // Budgets re-read too: a committed expense can push a category past its
+        // threshold, and the alert must fire within seconds of the commit
+        // (PRD §2.3 Epic E). Analytics re-reads as well: the Insight screen
+        // would otherwise show the pre-save overview until the range changes.
+        //
+        // Opsi B (S1 follow-up): these re-reads are fire-and-forget — each
+        // context applies its result when it lands, but none of them may trap
+        // the form. A stalled network settles neither resolve nor reject, and
+        // awaiting it left the submit spinner spinning forever on a committed
+        // save (device finding: shortcut save, cold start AND background).
+        // The success snackbar on the Dashboard is the save's proof, not this
+        // screen staying open.
+        void refreshWallets();
+        void (async () => {
+          try {
+            await refreshBudgets();
+            await refreshAnalytics();
+            // Fresh server read inside (V6) — the cached list is still pre-save
+            // truth here, so evaluating it would miss this commit's crossing.
+            await evaluateAndAlert({ userId: session?.user.id ?? '' });
+          } catch {
+            // Non-fatal; the next save re-evaluates (dedup-safe).
+          }
+        })();
+      }
       // AI-first prefill sessions (AI4) and widget saves alike post the same
       // local notification: the home screen cannot see the Dashboard
       // snackbar, so a widget save posts "N transaksi, Total RpX" instead.
@@ -630,10 +646,16 @@ export default function AddTransactionScreen() {
       if (widgetSource) {
         try {
           await requestPushPermission();
-          const copy = widgetSaveCopy(
-            { count: 1, total: formatGrouped(amount.value, language) },
-            language,
-          );
+          const total = formatGrouped(amount.value, language);
+          const copy = result.queued
+            ? {
+                title: t.outbox.widgetQueuedTitle,
+                body: fill(t.outbox.widgetQueuedBody, {
+                  count: '1',
+                  total,
+                }),
+              }
+            : widgetSaveCopy({ count: 1, total }, language);
           await sendBudgetAlert({ title: copy.title, body: copy.body });
         } catch {
           // Notification never blocks the save proof.
@@ -686,9 +708,11 @@ export default function AddTransactionScreen() {
 
     try {
       const occurred = occurredAt;
+      let queuedCount = 0;
+      let queuedTotal = 0;
       for (const item of planned) {
         const rowNote = normalizeNote(item.row.note);
-        await save({
+        const result = await save({
           userId,
           walletId: item.rowWalletId ?? '',
           categoryId: item.rowCategoryId,
@@ -698,7 +722,12 @@ export default function AddTransactionScreen() {
           note: rowNote,
           idempotencyKey: splitKeyFor(item.index, item.row.note),
           receiptIds: [],
+          receiptPaths: [],
         });
+        if (result.queued) {
+          queuedCount += 1;
+          queuedTotal += item.row.amount;
+        }
         // Boolean-only per row (PRD §4.4 — never text or amounts).
         try {
           trackEvent(
@@ -714,18 +743,20 @@ export default function AddTransactionScreen() {
       // B1: all rows committed — one buzz for the whole split (cf. submit()).
       void tapSave();
 
-      // Same post-save pattern as `submit()`: fire-and-forget re-reads plus
-      // a fresh-server alert evaluation (V6 — the cache is pre-commit here).
-      void refreshWallets();
-      void (async () => {
-        try {
-          await refreshBudgets();
-          await refreshAnalytics();
-          await evaluateAndAlert({ userId });
-        } catch {
-          // Non-fatal; the next save re-evaluates (dedup-safe).
-        }
-      })();
+      // Same post-save pattern as `submit()`, but only for rows that really
+      // committed: queued rows are not server truth yet (OB2 flushes them).
+      if (queuedCount < planned.length) {
+        void refreshWallets();
+        void (async () => {
+          try {
+            await refreshBudgets();
+            await refreshAnalytics();
+            await evaluateAndAlert({ userId });
+          } catch {
+            // Non-fatal; the next save re-evaluates (dedup-safe).
+          }
+        })();
+      }
 
       // Widget-only (ADR-0011): the home screen cannot see the Dashboard
       // snackbar, so a widget save posts "N transaksi, Total RpX" instead.
@@ -736,11 +767,25 @@ export default function AddTransactionScreen() {
       if (widgetSource) {
         try {
           await requestPushPermission();
-          const total = planned.reduce((sum, item) => sum + item.row.amount, 0);
-          const copy = widgetSaveCopy(
-            { count: planned.length, total: formatGrouped(total, language) },
-            language,
-          );
+          const copy =
+            queuedCount > 0
+              ? {
+                  title: t.outbox.widgetQueuedTitle,
+                  body: fill(t.outbox.widgetQueuedBody, {
+                    count: String(queuedCount),
+                    total: formatGrouped(queuedTotal, language),
+                  }),
+                }
+              : widgetSaveCopy(
+                  {
+                    count: planned.length,
+                    total: formatGrouped(
+                      planned.reduce((sum, item) => sum + item.row.amount, 0),
+                      language,
+                    ),
+                  },
+                  language,
+                );
           await sendBudgetAlert({ title: copy.title, body: copy.body });
         } catch {
           // Notification never blocks the save proof.

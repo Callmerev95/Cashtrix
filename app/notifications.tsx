@@ -18,13 +18,14 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { EmptyStateCard, ErrorStateCard, Screen, SkeletonList } from '@/components';
+import { EmptyStateCard, ErrorStateCard, OfflineGate, Screen, SkeletonList } from '@/components';
 import {
   groupAlertsByMonth,
   inboxAlertTitle,
   useBudgets,
   type InboxAlert,
 } from '@/features/budgets';
+import { useConnectivity } from '@/features/connectivity';
 import { formatMonthLabel, formatTime } from '@/features/transactions';
 import { dictionaryFor, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
@@ -33,6 +34,7 @@ import { PRESS_FEEDBACK_DELAY_MS, pressedFeedback } from '@/components/pressed';
 type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
 
 export default function NotificationsScreen() {
+  const { isOnline } = useConnectivity();
   const {
     alerts,
     unreadCount,
@@ -128,6 +130,10 @@ export default function NotificationsScreen() {
           ) : null}
         </View>
 
+        {!isOnline ? (
+          <OfflineGate testID="notifications-offline" />
+        ) : (
+          <>
         {alertsError ? (
           <ErrorStateCard
             testID="notifications-error"
@@ -206,6 +212,8 @@ export default function NotificationsScreen() {
               </Pressable>
             )}
           />
+        )}
+          </>
         )}
       </View>
     </Screen>

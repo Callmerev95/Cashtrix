@@ -21,7 +21,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Card, PrimaryButton, Screen, SkeletonList } from '@/components';
+import { Card, OfflineGate, PrimaryButton, Screen, SkeletonList } from '@/components';
 import {
   dueLabel,
   formatRuleWindow,
@@ -29,6 +29,7 @@ import {
   useRecurring,
   type RecurringRule,
 } from '@/features/recurring';
+import { useConnectivity } from '@/features/connectivity';
 import { formatGrouped } from '@/features/transactions';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
@@ -36,6 +37,7 @@ import { pressedFeedback } from '@/components/pressed';
 
 export default function RecurringScreen() {
   const { rules, loading, error, refresh, setPaused, remove } = useRecurring();
+  const { isOnline } = useConnectivity();
   const insets = useSafeAreaInsets();
   const [busyId, setBusyId] = useState<string | null>(null);
   // C6: copy follows the OS language (ADR-0008).
@@ -111,7 +113,9 @@ export default function RecurringScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-        {loading ? (
+        {!isOnline ? (
+          <OfflineGate testID="recurring-offline" />
+        ) : loading ? (
           <SkeletonList testID="recurring-loading" rows={3} />
         ) : error ? (
           <View style={styles.center}>

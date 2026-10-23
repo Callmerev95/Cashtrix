@@ -14,10 +14,11 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
-import { ErrorStateCard, Screen, TextField } from '@/components';
+import { ErrorStateCard, OfflineGate, Screen, TextField } from '@/components';
 import { useAnalytics } from '@/features/analytics';
 import { useAuth } from '@/features/auth';
 import { useBudgets } from '@/features/budgets';
+import { useConnectivity } from '@/features/connectivity';
 import {
   CategoryGrid,
   EMPTY_SEARCH_FILTERS,
@@ -53,6 +54,7 @@ import { pressedFeedback } from '@/components/pressed';
 
 export default function SearchScreen() {
   const params = useLocalSearchParams();
+  const { isOnline } = useConnectivity();
   const [query, setQuery] = useState('');
   // L4a: a drill-down from Analytics seeds the structured filters (and the
   // kind) once; they then live in state so the chip can remove them.
@@ -356,14 +358,16 @@ export default function SearchScreen() {
             />
           </Pressable>
         ) : null}
-        {error ? (
+        {!isOnline ? (
+          <OfflineGate testID="search-offline" />
+        ) : error ? (
           <ErrorStateCard
             testID="search-error"
             message={error}
             onRetry={() => void runSearch(query, kind)}
           />
         ) : null}
-        {!active ? (
+        {!isOnline ? null : !active ? (
           <>
             {recent.length > 0 ? (
               <View style={styles.recent} testID="search-recent">

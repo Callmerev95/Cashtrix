@@ -38,8 +38,8 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
 
 /**
  * Storage keys owned by the app. Sign out clears all of them (PRD §2.3 Epic A
- * / R2). T5 registers its persistent cache (`expo-sqlite`) name here once the
- * cache exists — the purge already walks this list.
+ * / R2). SQLite-backed caches (OB1 outbox + read cache) cannot live in
+ * AsyncStorage; they register a cleanup callback through `onLocalDataPurge`.
  */
 export const LOCAL_STORAGE_KEYS = [
   'cashtrix:last-transaction-type',

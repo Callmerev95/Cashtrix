@@ -21,7 +21,11 @@ import {
   receiptExpiryCutoff,
   receiptStoragePath,
   validateReceiptFile,
-} from '@/features/transactions';
+} from '@/features/transactions/domain';
+import {
+  deleteOutboxPhoto,
+  persistOutboxPhoto,
+} from '@/features/outbox/files';
 import type { Language } from '@/i18n/locale';
 import { supabase } from '@/supabase';
 
@@ -31,6 +35,10 @@ export type ReceiptAttachment = {
   /** Local preview right after capture, signed URL once re-listed. */
   previewUrl: string;
   createdAt: string;
+  /** OB1: persisted locally because the capture happened offline. */
+  pending?: boolean;
+  /** OB1: local outbox photo URI (also used as the preview). */
+  localPath?: string;
 };
 
 type ReceiptRow = {
@@ -78,6 +86,64 @@ export async function getReceiptSignedUrl(
 }
 
 /**
+ * Shared capture pipeline: resize to a legible 1600px JPEG and enforce the
+ * bucket cap before either the network upload or the local outbox write.
+ */
+async function renderReceiptPhoto(input: {
+  sourceUri: string;
+  mime: string | null;
+  lang: Language;
+}): Promise<{ id: string; renderedUri: string; buffer: ArrayBuffer }> {
+  const rendered = await manipulateAsync(
+    input.sourceUri,
+    [{ resize: { width: 1600 } }],
+    { compress: 0.8, format: SaveFormat.JPEG },
+  );
+
+  // Native file read, never `fetch(file://)` (pelajaran avatar T8: React
+  // Native fetch only speaks http(s), producing a silent empty body).
+  const buffer = await new File(rendered.uri).arrayBuffer();
+  const checked = validateReceiptFile(
+    { bytes: buffer.byteLength, mime: input.mime },
+    input.lang,
+  );
+  if (!checked.ok) throw new Error(checked.error);
+
+  return { id: newReceiptId(), renderedUri: rendered.uri, buffer };
+}
+
+/**
+ * OB1: the same resize/validation pipeline, but the photo stays on the
+ * device inside `outbox/{userId}`. No Storage call, no pre-save row — OB2
+ * uploads it when the queued save flushes.
+ */
+export async function saveReceiptPhotoLocally(input: {
+  userId: string;
+  sourceUri: string;
+  mime: string | null;
+  lang?: Language;
+}): Promise<ReceiptAttachment> {
+  const rendered = await renderReceiptPhoto({
+    sourceUri: input.sourceUri,
+    mime: input.mime,
+    lang: input.lang ?? 'id',
+  });
+  const localPath = persistOutboxPhoto({
+    userId: input.userId,
+    id: rendered.id,
+    bytes: new Uint8Array(rendered.buffer),
+  });
+  return {
+    id: rendered.id,
+    storagePath: '',
+    previewUrl: localPath,
+    createdAt: new Date().toISOString(),
+    pending: true,
+    localPath,
+  };
+}
+
+/**
  * Resizes (readable struk, still small), uploads, and inserts the pre-save
  * row (`transaction_id NULL`). Returns the attachment for the form's local
  * state. Throws when the resized file still exceeds the 2MB bucket cap.
@@ -90,29 +156,17 @@ export async function uploadReceiptPhoto(input: {
   lang?: Language;
 }): Promise<ReceiptAttachment> {
   const lang = input.lang ?? 'id';
-  const receiptId = newReceiptId();
-  const path = receiptStoragePath(input.userId, receiptId);
-
-  // Receipts stay legible (unlike the 512px avatar square): cap the long
-  // edge at 1600px, keep aspect, JPEG.
-  const rendered = await manipulateAsync(
-    input.sourceUri,
-    [{ resize: { width: 1600 } }],
-    { compress: 0.8, format: SaveFormat.JPEG },
-  );
-
-  // Native file read, never `fetch(file://)` (pelajaran avatar T8: React
-  // Native fetch only speaks http(s), producing a silent empty body).
-  const buffer = await new File(rendered.uri).arrayBuffer();
-  const checked = validateReceiptFile(
-    { bytes: buffer.byteLength, mime: input.mime },
+  const rendered = await renderReceiptPhoto({
+    sourceUri: input.sourceUri,
+    mime: input.mime,
     lang,
-  );
-  if (!checked.ok) throw new Error(checked.error);
+  });
+  const receiptId = rendered.id;
+  const path = receiptStoragePath(input.userId, receiptId);
 
   const { error: uploadError } = await supabase.storage
     .from('receipts')
-    .upload(path, buffer, { contentType: 'image/jpeg' });
+    .upload(path, rendered.buffer, { contentType: 'image/jpeg' });
   if (uploadError) throw uploadError;
 
   const { data, error: rowError } = await supabase
@@ -133,7 +187,7 @@ export async function uploadReceiptPhoto(input: {
     throw rowError ?? new Error('Gagal menyimpan lampiran');
   }
   const row = data as ReceiptRow;
-  return toAttachment(row, rendered.uri);
+  return toAttachment(row, rendered.renderedUri);
 }
 
 /**
@@ -197,7 +251,15 @@ export async function deleteReceiptAttachment(input: {
   userId: string;
   id: string;
   storagePath: string;
+  pending?: boolean;
+  localPath?: string;
 }): Promise<void> {
+  // A pending attachment never reached Storage; deleting its local file is
+  // the whole cleanup (object-first discipline is about bucket objects).
+  if (input.pending) {
+    if (input.localPath) deleteOutboxPhoto(input.localPath);
+    return;
+  }
   await supabase.storage.from('receipts').remove([input.storagePath]);
   const { error } = await supabase
     .from('transaction_receipts')

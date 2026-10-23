@@ -96,6 +96,12 @@ export type Transaction = {
   /** Destination wallet — set only for `transfer`, null otherwise. */
   counterpartyWalletId: string | null;
   counterpartyWalletName: string | null;
+  /**
+   * True for a row that exists only in the offline outbox (OB1). Such a row
+   * is rendered with a queue badge and cannot be opened/deleted until the
+   * flush engine lands (OB2/OB3).
+   */
+  pending?: boolean;
 };
 
 /** A category option in the picker grid. */

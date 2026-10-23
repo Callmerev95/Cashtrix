@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   EmptyStateCard,
   ErrorStateCard,
+  OfflineGate,
   Screen,
   SectionHeader,
   SkeletonList,
@@ -25,6 +26,7 @@ import {
   usePullRefresh,
 } from '@/components/pull-refresh';
 import { pressedFeedback } from '@/components/pressed';
+import { useConnectivity } from '@/features/connectivity';
 import { useSavings } from '@/features/savings';
 import { SavingsGoalCard } from '@/features/savings/components/savings-goal-card';
 import { useWallets } from '@/features/wallets';
@@ -32,6 +34,7 @@ import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 
 export default function SavingsScreen() {
+  const { isOnline } = useConnectivity();
   const {
     goals,
     hiddenGoalCount,
@@ -91,7 +94,9 @@ export default function SavingsScreen() {
           </View>
 
           <PullHeader gap={spacing.md} testID="savings-pull-header" />
-          {loading ? (
+          {!isOnline ? (
+            <OfflineGate testID="savings-offline" />
+          ) : loading ? (
             <SkeletonList testID="savings-loading" rows={3} />
           ) : error ? (
             <ErrorStateCard

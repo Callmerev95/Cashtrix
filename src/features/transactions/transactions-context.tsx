@@ -25,9 +25,21 @@ import {
 } from 'react';
 
 import { onLocalDataPurge } from '@/supabase';
-import { dictionaryFor, useLanguage } from '@/i18n';
+import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { tapUndo } from '@/features/haptics';
-import { linkReceiptsToTransaction } from '@/features/receipts';
+import { useAuth } from '@/features/auth';
+import { useConnectivity } from '@/features/connectivity/connectivity-context';
+import {
+  OutboxFullError,
+  OutboxUnavailableError,
+  mergePendingRows,
+  shouldQueueSaveError,
+  toPendingTransaction,
+  useOutbox,
+  writeCache,
+  readCache,
+} from '@/features/outbox';
+import { linkReceiptsToTransaction } from '@/features/receipts/api';
 
 import {
   createTransaction,
@@ -45,9 +57,11 @@ import {
   DEFAULT_TRANSACTION_TYPE,
   PAGE_SIZE,
   deletedTransactionLabel,
+  formatGrouped,
   hasMoreAfter,
   isTransactionType,
   savedTransactionLabel,
+  transferFeedLabel,
   type Category,
   type Transaction,
   type TransactionType,
@@ -76,10 +90,14 @@ type TransactionsContextValue = {
    * landed before the form closed.
    */
   lastSaved: SavedNotice | null;
+  /** The feed came from the device cache, not a live server read (OB1). */
+  cacheUsed: boolean;
+  /** ISO timestamp of the cached feed, null when live. */
+  cachedAt: string | null;
   refresh: () => Promise<void>;
   loadMore: () => Promise<void>;
   loadTransaction: (id: string) => Promise<Transaction | null>;
-  save: (input: SaveInput) => Promise<void>;
+  save: (input: SaveInput) => Promise<SaveResult>;
   remove: (id: string) => Promise<void>;
   undoDelete: () => Promise<void>;
   dismissUndo: () => void;
@@ -102,7 +120,12 @@ export type SavedNotice = {
   label: string;
   /** When the save landed; the snackbar hides itself after 6 s. */
   createdAt: number;
+  /** True when the row entered the offline outbox instead of the server. */
+  queued?: boolean;
 };
+
+/** What `save()` actually did — callers use `queued` to pick the proof copy. */
+export type SaveResult = { queued: boolean };
 
 export type SaveInput = {
   /** Present = edit, absent = create. */
@@ -121,6 +144,8 @@ export type SaveInput = {
   idempotencyKey: string;
   /** Pre-save receipt rows to link once the save commits (S2, Opsi A). */
   receiptIds: string[];
+  /** Offline photos persisted locally; OB2 uploads them on flush. */
+  receiptPaths?: string[];
 };
 
 const TransactionsContext = createContext<TransactionsContextValue | null>(
@@ -128,6 +153,10 @@ const TransactionsContext = createContext<TransactionsContextValue | null>(
 );
 
 export function TransactionsProvider({ children }: { children: ReactNode }) {
+  const { session } = useAuth();
+  const userId = session?.user.id ?? null;
+  const { isOnline } = useConnectivity();
+  const { pendingRows, enqueue } = useOutbox();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [wallets, setWallets] = useState<WalletOption[]>([]);
@@ -143,12 +172,27 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     null,
   );
   const [lastSaved, setLastSaved] = useState<SavedNotice | null>(null);
+  const [cacheUsed, setCacheUsed] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
 
   const mounted = useRef(true);
+  const onlineRef = useRef(isOnline);
+  useEffect(() => {
+    onlineRef.current = isOnline;
+  }, [isOnline]);
   const inflight = useRef<Promise<void> | null>(null);
   // C6: load-error + undo copy follow the OS language (ADR-0008).
   const language = useLanguage();
-  const loadError = dictionaryFor(language).transactions.loadError;
+  const copy = dictionaryFor(language);
+  const loadError = copy.transactions.loadError;
+  const pendingTransactions = useMemo(
+    () => pendingRows.map((row) => toPendingTransaction(row, language)),
+    [pendingRows, language],
+  );
+  const mergedTransactions = useMemo(
+    () => mergePendingRows(transactions, pendingTransactions),
+    [transactions, pendingTransactions],
+  );
   // Guards `loadMore` against a double-fire from `onEndReached` while a page
   // is already in flight — appending twice would duplicate rows.
   const fetchingPage = useRef(false);
@@ -177,11 +221,43 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
           setWallets(nextWallets);
           setHasMore(hasMoreAfter(PAGE_SIZE, page.length));
           setError(null);
+          setCacheUsed(false);
+          setCachedAt(null);
+          if (userId) {
+            void writeCache(userId, 'feed', page.slice(0, 100));
+            void writeCache(userId, 'categories', nextCategories);
+            void writeCache(userId, 'wallet-options', nextWallets);
+          }
         } catch (cause) {
           if (!mounted.current) return;
-          setError(
-            cause instanceof Error ? cause.message : loadError,
-          );
+          // OB1: a failed live read falls back to the last successful one.
+          // Only replace an empty server feed so a post-save refresh blip
+          // cannot erase the row that just landed.
+          const [feed, cachedCategories, cachedWallets] = userId
+            ? await Promise.all([
+                readCache<Transaction[]>(userId, 'feed'),
+                readCache<Category[]>(userId, 'categories'),
+                readCache<WalletOption[]>(userId, 'wallet-options'),
+              ])
+            : [null, null, null];
+          if (!mounted.current) return;
+          if (feed && transactions.length === 0) {
+            setTransactions(feed.data.slice(0, 100));
+            setHasMore(false);
+            setCacheUsed(true);
+            setCachedAt(feed.fetchedAt);
+            setError(null);
+          } else if (!feed) {
+            setError(
+              onlineRef.current
+                ? cause instanceof Error
+                  ? cause.message
+                  : loadError
+                : copy.outbox.offlineNoData,
+            );
+          }
+          if (cachedCategories) setCategories(cachedCategories.data);
+          if (cachedWallets) setWallets(cachedWallets.data);
         } finally {
           if (mounted.current) setLoading(false);
         }
@@ -190,19 +266,21 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       });
     }
     return inflight.current;
-  }, [loadError]);
+  }, [copy.outbox.offlineNoData, loadError, transactions.length, userId]);
 
   useEffect(() => {
     let cancelled = false;
 
-    Promise.all([
-      listTransactions({ offset: 0 }),
-      listCategories(),
-      listWalletOptions(),
-      lastUsedWalletId(),
-      readStoredType(),
-    ])
-      .then(([page, nextCategories, nextWallets, walletId, storedType]) => {
+    (async () => {
+      try {
+        const [page, nextCategories, nextWallets, walletId, storedType] =
+          await Promise.all([
+            listTransactions({ offset: 0 }),
+            listCategories(),
+            listWalletOptions(),
+            lastUsedWalletId(),
+            readStoredType(),
+          ]);
         if (cancelled || !mounted.current) return;
         setTransactions(page);
         setCategories(nextCategories);
@@ -211,19 +289,49 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
         setLastWalletId(walletId);
         if (storedType) setLastType(storedType);
         setError(null);
-      })
-      .catch((cause: unknown) => {
+        setCacheUsed(false);
+        setCachedAt(null);
+        if (userId) {
+          void writeCache(userId, 'feed', page.slice(0, 100));
+          void writeCache(userId, 'categories', nextCategories);
+          void writeCache(userId, 'wallet-options', nextWallets);
+        }
+      } catch (cause) {
         if (cancelled || !mounted.current) return;
-        setError(cause instanceof Error ? cause.message : loadError);
-      })
-      .finally(() => {
+        const [feed, cachedCategories, cachedWallets] = userId
+          ? await Promise.all([
+              readCache<Transaction[]>(userId, 'feed'),
+              readCache<Category[]>(userId, 'categories'),
+              readCache<WalletOption[]>(userId, 'wallet-options'),
+            ])
+          : [null, null, null];
+        if (cancelled || !mounted.current) return;
+        if (feed) {
+          setTransactions(feed.data.slice(0, 100));
+          setHasMore(false);
+          setCacheUsed(true);
+          setCachedAt(feed.fetchedAt);
+          setError(null);
+        } else {
+          setError(
+            onlineRef.current
+              ? cause instanceof Error
+                ? cause.message
+                : loadError
+              : copy.outbox.offlineNoData,
+          );
+        }
+        if (cachedCategories) setCategories(cachedCategories.data);
+        if (cachedWallets) setWallets(cachedWallets.data);
+      } finally {
         if (!cancelled && mounted.current) setLoading(false);
-      });
+      }
+    })();
 
     return () => {
       cancelled = true;
     };
-  }, [loadError]);
+  }, [copy.outbox.offlineNoData, loadError, userId]);
 
   // Sign out drops the cached history and every remembered preference.
   useEffect(
@@ -237,12 +345,16 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
         setLastType(DEFAULT_TRANSACTION_TYPE);
         setLastDeleted(null);
         setError(null);
+        setCacheUsed(false);
+        setCachedAt(null);
       }),
     [],
   );
 
   const loadMore = useCallback(async () => {
-    if (fetchingPage.current || !mounted.current) return;
+    // OB1: paging is a server read; offline the list ends honestly at the
+    // cached window instead of pretending there is more.
+    if (!isOnline || fetchingPage.current || !mounted.current) return;
     fetchingPage.current = true;
     setLoadingMore(true);
 
@@ -251,8 +363,10 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       // total order; appended rows can never interleave with an earlier page.
       const next = await listTransactions({ offset: transactions.length });
       if (!mounted.current) return;
-      setTransactions((current) => mergePages(current, next));
+      const merged = mergePages(transactions, next);
+      setTransactions(merged);
       setHasMore(hasMoreAfter(PAGE_SIZE, next.length));
+      if (userId) void writeCache(userId, 'feed', merged.slice(0, 100));
     } catch (cause) {
       if (!mounted.current) return;
       setError(cause instanceof Error ? cause.message : loadError);
@@ -260,7 +374,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       fetchingPage.current = false;
       if (mounted.current) setLoadingMore(false);
     }
-  }, [transactions.length, loadError]);
+  }, [isOnline, transactions, loadError, userId]);
 
   const loadTransaction = useCallback(
     async (id: string) => getTransaction(id),
@@ -278,7 +392,81 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const save = useCallback(
-    async (input: SaveInput) => {
+    async (input: SaveInput): Promise<SaveResult> => {
+      const savedCategory = input.categoryId
+        ? (categories.find((item) => item.id === input.categoryId)?.name ??
+          null)
+        : null;
+      const savedCategoryIcon = input.categoryId
+        ? (categories.find((item) => item.id === input.categoryId)?.icon ??
+          null)
+        : null;
+      const savedCounterparty = input.counterpartyWalletId
+        ? (wallets.find((item) => item.id === input.counterpartyWalletId)
+            ?.name ?? null)
+        : null;
+      const savedWallet = wallets.find((item) => item.id === input.walletId);
+      const savedName =
+        input.type === 'transfer'
+          ? transferFeedLabel(savedCounterparty, language)
+          : (savedCategory ?? copy.transactions.saved.fallback);
+
+      const enqueueOffline = async (): Promise<SaveResult> => {
+        try {
+          await enqueue({
+            userId: input.userId,
+            walletId: input.walletId,
+            categoryId: input.categoryId,
+            counterpartyWalletId: input.counterpartyWalletId ?? null,
+            type: input.type,
+            amount: input.amount,
+            occurredAt: input.occurredAt.toISOString(),
+            note: input.note,
+            idempotencyKey: input.idempotencyKey,
+            receiptIds: input.receiptIds,
+            receiptPaths: input.receiptPaths ?? [],
+            display: {
+              type: input.type,
+              amount: input.amount,
+              note: input.note,
+              occurredAt: input.occurredAt.toISOString(),
+              walletName: savedWallet?.name ?? '',
+              categoryName: savedCategory,
+              categoryIcon: savedCategoryIcon,
+              counterpartyWalletName: savedCounterparty,
+            },
+          });
+        } catch (cause) {
+          if (cause instanceof OutboxFullError) {
+            throw new Error(copy.outbox.queueFull);
+          }
+          if (cause instanceof OutboxUnavailableError) {
+            throw new Error(copy.outbox.unavailable);
+          }
+          throw cause;
+        }
+
+        setLastSaved({
+          label: fill(copy.outbox.queuedSaved, {
+            name: savedName,
+            amount: formatGrouped(input.amount, language),
+          }),
+          createdAt: Date.now(),
+          queued: true,
+        });
+        void rememberType(input.type);
+        void rememberWallet(input.walletId);
+        return { queued: true };
+      };
+
+      // Known-offline creates go straight to the outbox: inserting an
+      // optimistic "server" row first would flash a row the server never saw.
+      // Edits still target a server row, so they stay blocked until OB2/OB3.
+      if (!isOnline) {
+        if (input.id) throw new Error(copy.outbox.editRequiresConnection);
+        return enqueueOffline();
+      }
+
       // Optimistic insert: the row shows immediately, then `refresh()` replaces
       // the page with server truth (which also fills in the joined names).
       const optimistic = toOptimistic(input, categories, wallets);
@@ -323,20 +511,19 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
             current.filter((row) => row.id !== optimistic.id),
           );
         }
+        // A transport/5xx failure is retryable; a validation/RLS refusal is
+        // not and must surface to the form.
+        // OB1 queues creates only: a failed edit has no target id in the
+        // outbox payload yet, so queueing it would later create a duplicate.
+        if (!input.id && shouldQueueSaveError(cause, true)) {
+          return enqueueOffline();
+        }
         throw cause;
       }
 
       // The success window opens only once the save is committed, so the
       // snackbar never claims an uncommitted write (S1 follow-up — the form
       // closes on this same resolution, and the snackbar is its proof).
-      const savedCategory = input.categoryId
-        ? (categories.find((item) => item.id === input.categoryId)?.name ??
-          null)
-        : null;
-      const savedCounterparty = input.counterpartyWalletId
-        ? (wallets.find((item) => item.id === input.counterpartyWalletId)
-            ?.name ?? null)
-        : null;
       setLastSaved({
         label: savedTransactionLabel(
           {
@@ -368,12 +555,30 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
           transactionId: committedId,
         }).catch(() => 0),
       ]);
+      return { queued: false };
     },
-    [categories, language, refresh, rememberType, rememberWallet, wallets],
+    [
+      categories,
+      copy.outbox.editRequiresConnection,
+      copy.outbox.queueFull,
+      copy.outbox.queuedSaved,
+      copy.outbox.unavailable,
+      copy.transactions.saved.fallback,
+      enqueue,
+      isOnline,
+      language,
+      refresh,
+      rememberType,
+      rememberWallet,
+      wallets,
+    ],
   );
 
   const remove = useCallback(
     async (id: string) => {
+      // Deleting is a server soft-delete; queued rows are not server rows and
+      // OB1 has no offline-delete path (only the queue drop in OB3).
+      if (!isOnline) throw new Error(copy.outbox.deleteRequiresConnection);
       const previous = transactions;
       const deleted = transactions.find((row) => row.id === id) ?? null;
       setTransactions((current) => current.filter((row) => row.id !== id));
@@ -402,7 +607,13 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
 
       await refresh();
     },
-    [refresh, transactions, language],
+    [
+      copy.outbox.deleteRequiresConnection,
+      isOnline,
+      refresh,
+      transactions,
+      language,
+    ],
   );
 
   /**
@@ -426,7 +637,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({
-      transactions,
+      transactions: mergedTransactions,
       categories,
       wallets,
       loading,
@@ -437,6 +648,8 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       lastWalletId,
       lastDeleted,
       lastSaved,
+      cacheUsed,
+      cachedAt,
       refresh,
       loadMore,
       loadTransaction,
@@ -449,7 +662,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       rememberWallet,
     }),
     [
-      transactions,
+      mergedTransactions,
       categories,
       wallets,
       loading,
@@ -460,6 +673,8 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       lastWalletId,
       lastDeleted,
       lastSaved,
+      cacheUsed,
+      cachedAt,
       refresh,
       loadMore,
       loadTransaction,

@@ -27,12 +27,14 @@ import {
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useConnectivity } from '@/features/connectivity/connectivity-context';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 import { pressedFeedback } from '@/components/pressed';
 
 import {
   deleteReceiptAttachment,
+  saveReceiptPhotoLocally,
   uploadReceiptPhoto,
   type ReceiptAttachment,
 } from '../api';
@@ -74,6 +76,7 @@ export function ReceiptAttachmentSection({
   testID?: string;
 }) {
   const language = useLanguage();
+  const { isOnline } = useConnectivity();
   const insets = useSafeAreaInsets();
   const t = dictionaryFor(language).transactions.receipt;
   const commonCancel = dictionaryFor(language).common.cancel;
@@ -100,10 +103,24 @@ export function ReceiptAttachmentSection({
     return () => clearTimeout(timer);
   });
 
+  /** `true` only when the photo reached Storage (so OCR can start). */
   async function uploadUri(uri: string, mime: string | null) {
-    if (!userId || uploading) return;
+    if (!userId || uploading) return false;
     setUploading(true);
     try {
+      if (!isOnline) {
+        // OB1: offline captures stay on the device and ride the queued save.
+        // No Storage call, no scan — OCR is a server feature.
+        const attachment = await saveReceiptPhotoLocally({
+          userId,
+          sourceUri: uri,
+          mime,
+          lang: language,
+        });
+        onAttachmentsChange([...attachments, attachment]);
+        return false;
+      }
+
       const attachment = await uploadReceiptPhoto({
         userId,
         sourceUri: uri,
@@ -112,10 +129,12 @@ export function ReceiptAttachmentSection({
       });
       onAttachmentsChange([...attachments, attachment]);
       onPhotoUploaded?.(attachment);
+      return true;
     } catch {
       // Friendly copy + Foto ulang / Isi manual live in the parent (failure
       // package); the raw error stays here (see `onUploadError` contract).
       onUploadError?.();
+      return false;
     } finally {
       setUploading(false);
     }
@@ -133,9 +152,15 @@ export function ReceiptAttachmentSection({
 
   async function handleViewfinderCaptured(uri: string) {
     // Stay open: the viewfinder shows the frozen capture + laser while the
-    // parent scans; it closes when the run settles (effect below).
+    // parent scans; it closes when the run settles (effect below). An offline
+    // capture has no scan to wait for, so it closes as soon as the local file
+    // lands.
     setCapturedUri(uri);
-    await uploadUri(uri, null);
+    const uploaded = await uploadUri(uri, null);
+    if (!uploaded) {
+      setCapturedUri(null);
+      setViewfinderVisible(false);
+    }
   }
 
   async function addPhoto(source: 'camera' | 'gallery') {
@@ -170,11 +195,14 @@ export function ReceiptAttachmentSection({
     // server delete restores it so the save can still link it.
     onAttachmentsChange(
       attachments.filter((item) => item.id !== attachment.id),
-    );    try {
+    );
+    try {
       await deleteReceiptAttachment({
         userId,
         id: attachment.id,
         storagePath: attachment.storagePath,
+        pending: attachment.pending,
+        localPath: attachment.localPath,
       });
     } catch {
       onAttachmentsChange([...attachments]);

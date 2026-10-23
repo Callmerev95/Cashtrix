@@ -12,7 +12,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, layout, radius, spacing, typography } from '@/theme';
 import { PRESS_FEEDBACK_DELAY_MS, pressedFeedback } from '@/components/pressed';
-import { useLanguage } from '@/i18n';
+import { dictionaryFor, useLanguage } from '@/i18n';
 
 import { formatSignedAmount, formatTime, transferFeedLabel, type Transaction } from '../domain';
 
@@ -51,6 +51,10 @@ export function TransactionRow({
     'Rp',
     language,
   );
+  const queued = transaction.pending === true;
+  const queuedLabel = queued
+    ? dictionaryFor(language).outbox.pending
+    : null;
 
   const content = (
     <>
@@ -76,9 +80,18 @@ export function TransactionRow({
       )}
 
       <View style={styles.center}>
-        <Text style={[typography.bodyMd, styles.name]} numberOfLines={1}>
-          {title}
-        </Text>
+        <View style={styles.nameRow}>
+          <Text style={[typography.bodyMd, styles.name]} numberOfLines={1}>
+            {title}
+          </Text>
+          {queued ? (
+            <View testID="pending-badge" style={styles.pendingBadge}>
+              <Text style={[typography.bodySm, styles.pendingText]}>
+                {queuedLabel}
+              </Text>
+            </View>
+          ) : null}
+        </View>
         <Text style={[typography.bodySm, styles.meta]} numberOfLines={1}>
           {formatTime(transaction.occurredAt)} · {transaction.walletName}
           {transaction.note ? ` · ${transaction.note}` : ''}
@@ -98,9 +111,17 @@ export function TransactionRow({
     </>
   );
 
-  if (!onPress) {
+  if (!onPress || queued) {
     return (
-      <View testID={testID} style={[styles.row, dimmed && styles.dimmed]}>
+      <View
+        testID={testID}
+        accessibilityLabel={
+          queued
+            ? `${accessibilityName}, ${amountText}, ${transaction.walletName}, ${queuedLabel}`
+            : undefined
+        }
+        style={[styles.row, dimmed && styles.dimmed]}
+      >
         {content}
       </View>
     );
@@ -160,8 +181,25 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
   name: {
     color: colors.textPrimary,
+    flexShrink: 1,
+  },
+  pendingBadge: {
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 1,
+    borderRadius: radius.full,
+    backgroundColor: colors.surfaceElevated,
+  },
+  pendingText: {
+    color: colors.accent,
+    fontSize: 10,
+    lineHeight: 14,
   },
   meta: {
     color: colors.textSecondary,

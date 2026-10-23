@@ -247,7 +247,7 @@ kegagalan tidak menahan yang lain).
 | **2.1.0** ✅ | Analytics Overhaul: chart svg crisp-edge (PR1/PR2) + kartu tren + tap-select + Insight AI L1–L3 + L4c custom range (commit `f9b5557`; OTA grup `2b2981e9`, device gate HP LULUS 2026-10-18) | ADR-0017, L1 → L2 → L3 → L4c, tag `v2.1.0` |
 | **2.1.x** (OTA) | Trek L4 lanjutan: L4a drill-down → `/search` (COMMITTED `3dc29b0`, OTA `b9a7e1ac`, device gate LULUS 2026-10-19) + L4b multi-wallet compare (COMMITTED `46e505c`, OTA `8747fefd` + polish `69f45c8c`, gate LULUS 2026-10-20) | `specs/tickets.md` trek L4 |
 | **2.1.x** (OTA) | **Savings v1 — Target Tabungan**: satu target per Dompet, progress = Saldo Dompet (`v_wallet_balances`), ring gold, estimasi bulanan, Tambah dana via Transfer. Spec + ADR-0018 disetujui 2026-10-21; SV1–SV4 selesai + commit di `main` + gate statis hijau + live `verify-savings` 44/44 + OTA `7394b00f` + device gate LULUS (pre-polish) + OTA polish `3f3ab134` disuperseded OTA pill `434704d6` lalu revisi pill pojok kanan atas `718599fe` (menyupersede); device re-cek LULUS | `specs/cashtrix-savings.md` + ADR-0018, `specs/tickets.md` SV1–SV4 |
-| Berikutnya | Offline outbox + read cache = satu pekerjaan konsistensi (LWW buta + hapus-menang, FIFO sekuensial, coalesce, antrean eksplisit, baca terdegradasi), didahului spec + grill seperti v1.1 | `specs/cashtrix-v2.x-outbox.md` + ADR-0003/0012, OB1 (#74) → OB2 (#75) → OB3 (#76), spec #73 |
+| **2.1.x** (main) · berikutnya | Offline outbox + read cache = satu pekerjaan konsistensi (LWW buta + hapus-menang, FIFO sekuensial, coalesce, antrean eksplisit, baca terdegradasi). OB1 selesai + commit/push 2026-10-23 (gate lokal hijau); OB2/OB3 menyusul | `specs/cashtrix-v2.x-outbox.md` + ADR-0003/0012, OB1 (#74) → OB2 (#75) → OB3 (#76), spec #73 |
 
 Bank sync, multi-currency (parkir OPEN-4), AI insight lanjutan antre di belakangnya
 per PRD. TanStack gugur permanen untuk trek ini ("banyak user" = urusan
@@ -414,3 +414,29 @@ Android. OTA terkirim 2026-10-22 (grup
 `57952132-1d7f-4d8e-815e-2200cf04a153`, runtime 2.1.0, Android);
 device gate LULUS (owner, 2026-10-22). Sisa trek native (OB1–OB3 outbox + read cache,
 widget iOS, billing scan) dikerjakan di akhir per keputusan pemilik.
+
+### 6.14 OB1: store antrean + baca offline (selesai 2026-10-23)
+
+Trek outbox + read cache dimulai setelah Savings v1 dan batch JS-only.
+Urutan mengikat **OB1 (#74) → OB2 (#75) → OB3 (#76)**, satu ticket per
+sesi; tidak ada OTA ke HP pemilik sebelum OB3 hijau.
+
+OB1 menambah `expo-sqlite@~57.0.3` (satu modul native → satu rebuild
+preview) dan `src/features/outbox/`: antrean tulis (cap 200, kunci
+idempotency, status, path foto) + cache baca (feed maks 100 baris yang
+sudah dimuat, kategori, opsi dompet, daftar dompet). Provider chain
+`Connectivity > Outbox > Wallets > Savings > Transactions > …`; sign-out
+purge mengosongkan SQLite lewat `onLocalDataPurge`. Save offline menjadi
+baris `pending` di Riwayat (tidak menghitung saldo/anggaran/analitik);
+edit/hapus offline ditolak sampai OB2. Analytics/Budgets/Search/
+Notifications/Recurring/Savings memakai `OfflineGate`; Monthly Summary
+Dashboard memakai catatan offline; cache stamp “Data terakhir · HH:MM”
+tampil saat cache dipakai. Receipts offline disimpan di sandbox (JPEG
+1600px), OCR dilewati, flush/upload + retry menyusul di OB2.
+
+Gate lokal OB1: lint + typecheck + Jest 76 suite / 1092 test, kontrak
+statis 112/10/3, legal 36/36, export Android + iOS. Edge cache pasca-save
+sudah diputuskan dan dikunci test. Commit/push 2026-10-23; APK preview
+sudah dipasang/diuji pemilik. Device check airplane-mode ditunda ke build
+OB3 sesuai keputusan pemilik. Sisa: `graphify update .`. OB2 = flush FIFO,
+coalesce edit/hapus/undo, LWW/hapus-menang, upload foto pasca-commit + retry OCR.

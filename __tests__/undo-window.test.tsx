@@ -33,6 +33,25 @@ jest.mock('@/features/transactions/api', () => {
 
 const api = jest.requireMock('@/features/transactions/api');
 
+jest.mock('@/features/connectivity/connectivity-context', () => ({
+  useConnectivity: () => ({ isOnline: true }),
+}));
+
+jest.mock('@/features/outbox', () => {
+  const actual = jest.requireActual('@/features/outbox');
+  return {
+    ...actual,
+    useOutbox: () => ({
+      pendingRows: [],
+      pendingCount: 0,
+      available: false,
+      refreshPending: jest.fn(),
+      enqueue: jest.fn(),
+      drop: jest.fn(),
+    }),
+  };
+});
+
 const ROW: Transaction = {
   id: 'tx-undo-1',
   type: 'expense',

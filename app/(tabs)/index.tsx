@@ -15,12 +15,13 @@ import { useCallback } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { EmptyStateCard, AppHeader, ErrorStateCard, Screen, SectionHeader, SkeletonList } from '@/components';
+import { CacheStamp, EmptyStateCard, AppHeader, ErrorStateCard, Screen, SectionHeader, SkeletonList } from '@/components';
 import { showQuickActions } from '@/components/quick-actions';
 import { PullGesture, PullHeader, usePullRefresh } from '@/components/pull-refresh';
 import { MonthlySummaryCard, useAnalytics } from '@/features/analytics';
 import { useAuth } from '@/features/auth';
 import { useBudgets } from '@/features/budgets';
+import { useConnectivity } from '@/features/connectivity';
 import { displayNameOrEmail, useProfile } from '@/features/profile';
 import { pickDashboardGoal, useSavings } from '@/features/savings';
 import { SavingsSummaryCard } from '@/features/savings/components/savings-summary-card';
@@ -87,8 +88,11 @@ export default function DashboardScreen() {
     dismissUndo,
     dismissSaved,
     error: transactionsError,
+    cacheUsed,
+    cachedAt,
     refresh: refreshTransactions,
   } = useTransactions();
+  const { isOnline } = useConnectivity();
   const insets = useSafeAreaInsets();
   // C6: copy + date format follow the OS language (ADR-0008, R10).
   const language = useLanguage();
@@ -260,11 +264,20 @@ export default function DashboardScreen() {
       </View>
 
       <View style={styles.section}>
-        <MonthlySummaryCard
-          summary={monthly}
-          loading={monthlyLoading}
-          onPress={() => router.push('/(tabs)/analytics')}
-        />
+        {isOnline ? (
+          <MonthlySummaryCard
+            summary={monthly}
+            loading={monthlyLoading}
+            onPress={() => router.push('/(tabs)/analytics')}
+          />
+        ) : (
+          <Text
+            testID="monthly-summary-offline"
+            style={[typography.bodySm, styles.offlineNote]}
+          >
+            {t.outbox.monthlyOffline}
+          </Text>
+        )}
       </View>
 
       <View style={styles.rule} />
@@ -276,6 +289,7 @@ export default function DashboardScreen() {
           actionLabel={t.dashboard.history.search}
           onAction={() => router.push('/search')}
         />
+        <CacheStamp fetchedAt={cacheUsed ? cachedAt : null} />
       </View>
     </View>
   );
@@ -318,12 +332,15 @@ export default function DashboardScreen() {
           contentContainerStyle={styles.body}
           ListHeaderComponent={header}
           headerExtra={<PullHeader gap={0} testID="dashboard-pull-header" />}
-          onPressTransaction={(transaction) =>
+          onPressTransaction={(transaction) => {
+            // OB1: a queued row has no server id yet — opening the edit form
+            // would fetch a row that does not exist.
+            if (transaction.pending) return;
             router.push({
               pathname: '/add-transaction',
               params: { id: transaction.id },
-            })
-          }
+            });
+          }}
         />
         </PullGesture>
       </View>
@@ -363,6 +380,9 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   body: {
     // paddingBottom delegated to Screen
+  },
+  offlineNote: {
+    color: colors.textSecondary,
   },
   // Fixed opaque bar above the history scroller: rows slide underneath it,
   // never into the translucent status-bar zone (device review).

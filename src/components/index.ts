@@ -1,5 +1,7 @@
 export { EmptyStateCard } from './empty-state-card';
 export { ErrorStateCard } from './error-state-card';
+export { OfflineGate } from './offline-gate';
+export { CacheStamp } from './cache-stamp';
 export {
   Skeleton,
   SkeletonBlock,

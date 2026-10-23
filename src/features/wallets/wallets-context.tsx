@@ -20,6 +20,9 @@ import {
 
 import { onLocalDataPurge } from '@/supabase';
 import { dictionaryFor, useLanguage } from '@/i18n';
+import { useAuth } from '@/features/auth';
+import { useConnectivity } from '@/features/connectivity/connectivity-context';
+import { readCache, writeCache } from '@/features/outbox';
 
 import { listWallets } from './api';
 import {
@@ -38,6 +41,9 @@ type WalletsContextValue = {
   summary: WalletSummary;
   loading: boolean;
   error: string | null;
+  /** The balance list came from the device cache (OB1). */
+  cacheUsed: boolean;
+  cachedAt: string | null;
   refresh: () => Promise<void>;
 };
 
@@ -50,14 +56,25 @@ const EMPTY_SUMMARY: WalletSummary = {
 const WalletsContext = createContext<WalletsContextValue | null>(null);
 
 export function WalletsProvider({ children }: { children: ReactNode }) {
+  const { session } = useAuth();
+  const userId = session?.user.id ?? null;
+  const { isOnline } = useConnectivity();
   const [allWallets, setAllWallets] = useState<Wallet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [cacheUsed, setCacheUsed] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
   const mounted = useRef(true);
+  const onlineRef = useRef(isOnline);
   const inflight = useRef<Promise<void> | null>(null);
   // C6: load-error copy follows the OS language (ADR-0008).
   const language = useLanguage();
-  const loadError = dictionaryFor(language).wallets.loadError;
+  const copy = dictionaryFor(language);
+  const loadError = copy.wallets.loadError;
+
+  useEffect(() => {
+    onlineRef.current = isOnline;
+  }, [isOnline]);
 
   useEffect(() => {
     mounted.current = true;
@@ -77,11 +94,32 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
           if (!mounted.current) return;
           setAllWallets(next);
           setError(null);
+          setCacheUsed(false);
+          setCachedAt(null);
+          if (userId) void writeCache(userId, 'wallets', next);
         } catch (cause) {
           if (!mounted.current) return;
-          setError(
-            cause instanceof Error ? cause.message : loadError,
-          );
+          const cached = userId
+            ? await readCache<Wallet[]>(userId, 'wallets')
+            : null;
+          if (!mounted.current) return;
+          // OB1: only replace an empty live list. A failed refresh after a
+          // write must not resurrect the cached list over the rows already
+          // on screen (the transactions feed follows the same rule).
+          if (cached && allWallets.length === 0) {
+            setAllWallets(cached.data);
+            setCacheUsed(true);
+            setCachedAt(cached.fetchedAt);
+            setError(null);
+          } else if (!cached) {
+            setError(
+              onlineRef.current
+                ? cause instanceof Error
+                  ? cause.message
+                  : loadError
+                : copy.outbox.offlineNoData,
+            );
+          }
         } finally {
           if (mounted.current) setLoading(false);
         }
@@ -90,31 +128,51 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
       });
     }
     return inflight.current;
-  }, [loadError]);
+  }, [allWallets.length, copy.outbox.offlineNoData, loadError, userId]);
 
   useEffect(() => {
     let cancelled = false;
 
     // Kicked off here (not called synchronously) so the state update lands in
     // the promise callback — the same shape as the auth context's restore.
-    listWallets()
-      .then((next) => {
+    (async () => {
+      try {
+        const next = await listWallets();
         if (cancelled || !mounted.current) return;
         setAllWallets(next);
         setError(null);
-      })
-      .catch((cause: unknown) => {
+        setCacheUsed(false);
+        setCachedAt(null);
+        if (userId) void writeCache(userId, 'wallets', next);
+      } catch (cause) {
         if (cancelled || !mounted.current) return;
-        setError(cause instanceof Error ? cause.message : loadError);
-      })
-      .finally(() => {
+        const cached = userId
+          ? await readCache<Wallet[]>(userId, 'wallets')
+          : null;
+        if (cancelled || !mounted.current) return;
+        if (cached) {
+          setAllWallets(cached.data);
+          setCacheUsed(true);
+          setCachedAt(cached.fetchedAt);
+          setError(null);
+        } else {
+          setError(
+            onlineRef.current
+              ? cause instanceof Error
+                ? cause.message
+                : loadError
+              : copy.outbox.offlineNoData,
+          );
+        }
+      } finally {
         if (!cancelled && mounted.current) setLoading(false);
-      });
+      }
+    })();
 
     return () => {
       cancelled = true;
     };
-  }, [loadError]);
+  }, [copy.outbox.offlineNoData, loadError, userId]);
 
   // Sign out clears the in-memory copy along with the persisted cache.
   useEffect(
@@ -123,6 +181,8 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
         if (!mounted.current) return;
         setAllWallets([]);
         setError(null);
+        setCacheUsed(false);
+        setCachedAt(null);
       }),
     [],
   );
@@ -132,8 +192,17 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
   const summary = useMemo(() => summarizeWallets(wallets), [wallets]);
 
   const value = useMemo(
-    () => ({ wallets, archivedWallets: archived, summary, loading, error, refresh }),
-    [wallets, archived, summary, loading, error, refresh],
+    () => ({
+      wallets,
+      archivedWallets: archived,
+      summary,
+      loading,
+      error,
+      cacheUsed,
+      cachedAt,
+      refresh,
+    }),
+    [wallets, archived, summary, loading, error, cacheUsed, cachedAt, refresh],
   );
 
   return (

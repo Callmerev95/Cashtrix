@@ -66,10 +66,11 @@ import {
 } from '@/features/analytics';
 import { drillParams, type TransactionKindFilter } from '@/features/transactions';
 import { insightAiEvent, trackEvent } from '@/features/observability';
-import { Screen, AppHeader, ErrorStateCard, Skeleton, SkeletonBlock } from '@/components';
+import { Screen, AppHeader, ErrorStateCard, OfflineGate, Skeleton, SkeletonBlock } from '@/components';
 import { pressedFeedback } from '@/components/pressed';
 import { PullGesture, PullHeader, usePullRefresh } from '@/components/pull-refresh';
 import { useBudgets } from '@/features/budgets';
+import { useConnectivity } from '@/features/connectivity';
 import { useProfile } from '@/features/profile';
 import { dictionaryFor, fill, useLanguage } from '@/i18n';
 import { colors, gradients, layout, radius, spacing, typography } from '@/theme';
@@ -96,6 +97,7 @@ export default function AnalyticsScreen() {
   } = useAnalytics();
   const { avatarSignedUrl, profile } = useProfile();
   const { unreadCount, budgets, month: budgetMonth } = useBudgets();
+  const { isOnline } = useConnectivity();
   const insets = useSafeAreaInsets();
   // C6: section copy + bar labels follow the OS language (ADR-0008, R10).
   const language = useLanguage();
@@ -489,7 +491,9 @@ export default function AnalyticsScreen() {
         contentContainerStyle={styles.content}
       >
         <PullHeader gap={spacing.md} testID="analytics-pull-header" />
-        {loading && !overview ? (
+        {!isOnline ? (
+          <OfflineGate testID="analytics-offline" />
+        ) : loading && !overview ? (
           <Skeleton testID="analytics-loading" style={styles.skeleton}>
             <View style={styles.skeletonKpiRow}>
               <SkeletonBlock width="30%" height={32} />

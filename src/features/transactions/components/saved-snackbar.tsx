@@ -24,7 +24,7 @@ export function SavedSnackbar({
   durationMs = SAVED_SNACKBAR_MS,
 }: {
   /** Null = hidden. A new save re-arms the window. */
-  snack: { label: string; createdAt: number } | null;
+  snack: { label: string; createdAt: number; queued?: boolean } | null;
   onDismiss: () => void;
   durationMs?: number;
 }) {
@@ -42,7 +42,11 @@ export function SavedSnackbar({
       style={styles.wrap}
       accessibilityLiveRegion="polite"
     >
-      <MaterialIcons name="check-circle" size={18} color={colors.accent} />
+      <MaterialIcons
+        name={snack.queued ? 'cloud-upload' : 'check-circle'}
+        size={18}
+        color={colors.accent}
+      />
       <Text style={[typography.bodySm, styles.label]} numberOfLines={1}>
         {snack.label}
       </Text>

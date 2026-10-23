@@ -27,6 +27,10 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
 }));
 
+jest.mock('@/features/connectivity/connectivity-context', () => ({
+  useConnectivity: () => ({ isOnline: true }),
+}));
+
 // The pull-to-refresh wrapper is a reanimated twin; its static fallback is
 // enough for a wiring test, and stubbing it keeps reanimated out of Jest
 // (P1b lesson: the module loads but its hooks are undefined).

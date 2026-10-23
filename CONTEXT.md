@@ -390,6 +390,8 @@ _Avoid_: merge, conflict resolution, versi-vektor
 
 **Cache baca**:
 Salinan baca di perangkat untuk Dashboard, Riwayat, dan form saat offline,
-berlabel data terakhir. Layar agregasi (Analytics, Budget) tetap butuh
-koneksi dan tidak dikloning ke cache.
+berlabel data terakhir (hanya baris yang sudah pernah dimuat, bukan
+prefetch). Baris antrean ikut tampil di Riwayat sebagai menunggu, tetapi
+tidak dihitung ke saldo, anggaran, atau agregasi. Layar agregasi
+(Analytics, Budget) tetap butuh koneksi dan tidak dikloning ke cache.
 _Avoid_: full offline, read replica, duplikat agregasi

@@ -427,6 +427,24 @@ export const en: Dictionary = {
   connectivity: {
     offline: 'No connection',
   },
+  outbox: {
+    queuedSaved: '{name} · Rp {amount} waiting to send',
+    pending: 'Waiting',
+    pendingA11y: 'Waiting to send, cannot be opened yet',
+    cacheStamp: 'Last data · {time}',
+    monthlyOffline: 'This month’s summary needs a connection.',
+    offlineNoData: 'No saved data yet. Connect to the internet to load it.',
+    gateTitle: 'Connection needed',
+    gateBody:
+      'This data is computed on the server to stay accurate. Connect to the internet to load it.',
+    queueFull: 'Queue is full (200). Send the older queue first.',
+    unavailable: 'The offline queue is unavailable on this device.',
+    editRequiresConnection: 'Editing a transaction needs a connection.',
+    deleteRequiresConnection: 'Deleting a transaction needs a connection.',
+    widgetQueuedTitle: 'Saved on device',
+    widgetQueuedBody:
+      '{count} transactions · Total Rp {total} · Waiting to send',
+  },
   mfa: {
     validation: {
       codeRequired: 'Verification code is required',

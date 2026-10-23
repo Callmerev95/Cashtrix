@@ -3,6 +3,7 @@ export {
   getReceiptSignedUrl,
   linkReceiptsToTransaction,
   listReceiptsForTransaction,
+  saveReceiptPhotoLocally,
   sweepExpiredReceipts,
   uploadReceiptPhoto,
 } from './api';

@@ -52,6 +52,14 @@ jest.mock(
   () => require('./mocks/expo-camera'),
 );
 
+// OB1 (#74): expo-sqlite is a native module absent in Jest. Default
+// stand-in makes opening the outbox database throw (fail-open queue);
+// outbox tests inject an in-memory adapter via `setOutboxDatabaseForTests`.
+jest.mock(
+  require.resolve('expo-sqlite'),
+  () => require('./mocks/expo-sqlite'),
+);
+
 // V1 (issue #30): the observability sink imports `@sentry/react-native`
 // statically and `app/_layout.tsx` calls `initSentry()` on mount, which the
 // navigation tests exercise. The native module cannot load in Jest, so it is

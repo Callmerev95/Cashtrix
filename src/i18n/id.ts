@@ -428,6 +428,25 @@ export const id = {
   connectivity: {
     offline: 'Tidak ada koneksi',
   },
+  outbox: {
+    queuedSaved: '{name} · Rp {amount} menunggu terkirim',
+    pending: 'Menunggu',
+    pendingA11y: 'Menunggu terkirim, belum bisa dibuka',
+    cacheStamp: 'Data terakhir · {time}',
+    monthlyOffline: 'Ringkasan bulan ini butuh koneksi.',
+    offlineNoData:
+      'Belum ada data tersimpan. Sambungkan internet untuk memuat.',
+    gateTitle: 'Butuh koneksi',
+    gateBody:
+      'Data ini dihitung di server agar tetap akurat. Sambungkan internet untuk memuatnya.',
+    queueFull: 'Antrean penuh (200). Kirim antrean lama dulu.',
+    unavailable: 'Antrean offline tidak tersedia di perangkat ini.',
+    editRequiresConnection: 'Ubah transaksi butuh koneksi.',
+    deleteRequiresConnection: 'Hapus transaksi butuh koneksi.',
+    widgetQueuedTitle: 'Tersimpan di perangkat',
+    widgetQueuedBody:
+      '{count} transaksi · Total Rp {total} · Menunggu terkirim',
+  },
   mfa: {
     validation: {
       codeRequired: 'Kode verifikasi wajib diisi',

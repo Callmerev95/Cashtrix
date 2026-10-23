@@ -21,6 +21,7 @@ import { BudgetsProvider } from '@/features/budgets';
 import { ConnectivityProvider, ReconnectRefresh } from '@/features/connectivity';
 import { LockOverlay, LockProvider, useLock } from '@/features/lock';
 import { MfaProvider } from '@/features/mfa';
+import { OutboxProvider } from '@/features/outbox';
 import {
   initObservability,
   initSentry,
@@ -257,24 +258,29 @@ export function DataProviders({ children }: { children: ReactNode }) {
 
   return (
     <ConnectivityProvider>
-      <WalletsProvider key={userKey}>
-        <SavingsProvider>
-          <TransactionsProvider>
-            <BudgetsProvider>
-              <AnalyticsProvider>
-                <RecurringProvider>
-                  <ProfileProvider>
-                    <MfaProvider>
-                      <ReconnectRefresh />
-                      {children}
-                    </MfaProvider>
-                  </ProfileProvider>
-                </RecurringProvider>
-              </AnalyticsProvider>
-            </BudgetsProvider>
-          </TransactionsProvider>
-        </SavingsProvider>
-      </WalletsProvider>
+      {/* OB1 (#74): inside connectivity (queueing reads `isOnline`) and
+          outside the per-user wallet key — the provider reacts to auth and
+          purges its own DB rows on sign-out. */}
+      <OutboxProvider>
+        <WalletsProvider key={userKey}>
+          <SavingsProvider>
+            <TransactionsProvider>
+              <BudgetsProvider>
+                <AnalyticsProvider>
+                  <RecurringProvider>
+                    <ProfileProvider>
+                      <MfaProvider>
+                        <ReconnectRefresh />
+                        {children}
+                      </MfaProvider>
+                    </ProfileProvider>
+                  </RecurringProvider>
+                </AnalyticsProvider>
+              </BudgetsProvider>
+            </TransactionsProvider>
+          </SavingsProvider>
+        </WalletsProvider>
+      </OutboxProvider>
     </ConnectivityProvider>
   );
 }
