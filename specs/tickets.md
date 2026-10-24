@@ -265,7 +265,7 @@ Semua ticket `ready-for-agent`. Urutan mengikat: OB1 → OB2 → OB3.
 | Ticket | Issue | Blocked by | Deliverable |
 |---|---|---|---|
 | OB1, Store antrean + baca offline | #74 | — | `expo-sqlite` (satu rebuild) + tabel antrean (baris + kunci + status + path foto, cap 200) + cache Dashboard/Riwayat/form + gate koneksi agregasi + Profil offline identitas-read-only (`profile-offline`) + purge sign-out. **Selesai 2026-10-23**: gate lokal hijau (Jest 76/1093, kontrak 112/10/3, legal 36/36, export Android+iOS), edge cache pasca-save dikunci test, commit/push, APK preview dipasang/diuji pemilik; device check airplane-mode ditunda ke build OB3 |
-| OB2, Flush + coalesce + konflik | #75 | #74 | Flush FIFO sekuensial (catch-up → flush → evaluasi-sekali); coalesce edit/hapus/undo; LWW + hapus-menang; tolak-server bertahan beralasan; upload foto pasca-commit + retry OCR |
+| OB2, Flush + coalesce + konflik | #75 | #74 | Flush FIFO sekuensial (catch-up → flush → evaluasi-sekali); coalesce edit/hapus/undo; LWW + hapus-menang; tolak-server bertahan beralasan; upload foto pasca-commit + retry OCR. **Selesai + commit/push 2026-10-25**: Jest 77/1116, kontrak 112/10/3, legal 36/36, export Android+iOS; device check ditunda ke OB3 |
 | OB3, Indikator + gerbang | #76 | #74, #75 | Strip + badge + buang-per-baris; Jest + live + kontrak statis Maestro; device mode-pesawat |
 
 ```
@@ -276,8 +276,8 @@ OB1 ── OB2 ── OB3 (setelah Savings v1)
 
 OB1 (#74) selesai setelah Savings v1 (SV4): implementasi + commit/push
 2026-10-23; APK preview dipasang/diuji pemilik, device check airplane-mode
-ditunda ke build OB3. OB2 (#75) blocked by #74. OB3 (#76) blocked by
-#74 + #75.
+ditunda ke build OB3. OB2 (#75) selesai + commit/push 2026-10-25; device
+check tetap ditunda ke build OB3. OB3 (#76) blocked by #74 + #75.
 
 ---
 

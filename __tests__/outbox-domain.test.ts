@@ -5,7 +5,9 @@ import {
   coalesceOnEdit,
   dropOnDelete,
   isQueueFull,
+  isRetryableOutboxRow,
   mergePendingRows,
+  outboxFailureFor,
   referencedReceiptPaths,
   shouldQueueSaveError,
   sortFifo,
@@ -111,6 +113,46 @@ describe('shouldQueueSaveError', () => {
   });
 });
 
+describe('flush failure classification', () => {
+  it('separates transport failures from terminal server refusals', () => {
+    expect(outboxFailureFor({ status: 503 })).toEqual({
+      kind: 'network',
+      code: 'network',
+    });
+    expect(outboxFailureFor({ code: '23503' })).toEqual({
+      kind: 'server',
+      code: 'missing_reference',
+    });
+    expect(outboxFailureFor({ code: '23514' })).toEqual({
+      kind: 'server',
+      code: 'invalid_data',
+    });
+    expect(outboxFailureFor({ code: '42501' })).toEqual({
+      kind: 'server',
+      code: 'permission',
+    });
+    expect(outboxFailureFor({ code: '23505' })).toEqual({
+      kind: 'server',
+      code: 'rejected',
+    });
+  });
+
+  it('retries waiting, crash-stale sending, and network failures only', () => {
+    expect(isRetryableOutboxRow(row({ status: 'waiting' }))).toBe(true);
+    expect(isRetryableOutboxRow(row({ status: 'sending' }))).toBe(true);
+    expect(
+      isRetryableOutboxRow(
+        row({ status: 'failed', errorKind: 'network', errorMessage: 'network' }),
+      ),
+    ).toBe(true);
+    expect(
+      isRetryableOutboxRow(
+        row({ status: 'failed', errorKind: 'server', errorMessage: 'rejected' }),
+      ),
+    ).toBe(false);
+  });
+});
+
 describe('toPendingTransaction', () => {
   it('maps an expense with the frozen display labels', () => {
     const pending = toPendingTransaction(row());
@@ -123,6 +165,24 @@ describe('toPendingTransaction', () => {
       categoryIcon: 'restaurant',
       pending: true,
     });
+  });
+
+  it('carries the failure code and local photo paths for the form', () => {
+    const pending = toPendingTransaction(
+      row({
+        status: 'failed',
+        errorKind: 'server',
+        errorMessage: 'invalid_data',
+        payload: {
+          ...row().payload,
+          receiptIds: ['receipt-1'],
+          receiptPaths: ['file:///proof.jpg'],
+        },
+      }),
+    );
+    expect(pending.pendingError).toBe('invalid_data');
+    expect(pending.pendingReceiptIds).toEqual(['receipt-1']);
+    expect(pending.pendingReceiptPaths).toEqual(['file:///proof.jpg']);
   });
 
   it('maps a transfer with the feed label/icon fallbacks', () => {

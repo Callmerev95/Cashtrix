@@ -56,6 +56,17 @@ function toAttachment(row: ReceiptRow, previewUrl: string): ReceiptAttachment {
   };
 }
 
+/** Per-row tolerant signed URL (one dead object must not blank the list). */
+async function toAttachmentWithUrl(
+  row: ReceiptRow,
+): Promise<ReceiptAttachment> {
+  try {
+    return toAttachment(row, await getReceiptSignedUrl(row.storage_path));
+  } catch {
+    return toAttachment(row, '');
+  }
+}
+
 /**
  * UUID per receipt (storage path + row id share it, so orphans stay
  * traceable). Same guard as `newIdempotencyKey`: Hermes-safe fallback.
@@ -229,16 +240,27 @@ export async function listReceiptsForTransaction(input: {
   // must not blank the whole thumbnail list, and the row must survive so
   // retry/retake still work, as scanning it yields a clean `{ ok: false }`.
   // `Promise.all` without this would drop every thumbnail on one failure.
-  const settled = await Promise.all(
-    rows.map(async (row) => {
-      try {
-        return toAttachment(row, await getReceiptSignedUrl(row.storage_path));
-      } catch {
-        return toAttachment(row, '');
-      }
-    }),
-  );
-  return settled;
+  return Promise.all(rows.map(toAttachmentWithUrl));
+}
+
+/**
+ * Attachments by id (OB2): a queued row may already have uploaded photos from
+ * a failed online attempt. Loading them keeps the pending edit honest and
+ * stops the next enqueue from silently dropping the links.
+ */
+export async function listReceiptsByIds(input: {
+  userId: string;
+  receiptIds: string[];
+}): Promise<ReceiptAttachment[]> {
+  if (input.receiptIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from('transaction_receipts')
+    .select('id, storage_path, created_at')
+    .eq('user_id', input.userId)
+    .in('id', input.receiptIds)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return Promise.all(((data ?? []) as ReceiptRow[]).map(toAttachmentWithUrl));
 }
 
 /**

@@ -1,7 +1,7 @@
 /**
- * Outbox store (OB1, issue #74) — persistence only. The flush engine is OB2;
- * this module deliberately exposes status transitions without running them,
- * so OB1 can queue and display rows while every live path stays unchanged.
+ * Outbox store (OB1/OB2, issues #74/#75) — persistence only. Status
+ * transitions are exposed without running them; `flush.ts` owns the network
+ * pass so the queue can be tested and inspected without a server.
  */
 import { openOutboxDb } from './db';
 import {
@@ -88,6 +88,18 @@ export async function listOutbox(userId: string): Promise<OutboxRow[]> {
     [userId],
   );
   return rows.map(parseRow).filter((row): row is OutboxRow => row !== null);
+}
+
+export async function getOutboxRow(
+  userId: string,
+  id: string,
+): Promise<OutboxRow | null> {
+  const db = await openOutboxDb();
+  const row = await db.getFirstAsync<OutboxSqlRow>(
+    `SELECT ${COLUMNS} FROM outbox WHERE user_id = ? AND id = ?`,
+    [userId, id],
+  );
+  return row ? parseRow(row) : null;
 }
 
 export async function countOutbox(userId: string): Promise<number> {

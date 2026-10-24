@@ -431,7 +431,7 @@ export const id = {
   outbox: {
     queuedSaved: '{name} · Rp {amount} menunggu terkirim',
     pending: 'Menunggu',
-    pendingA11y: 'Menunggu terkirim, belum bisa dibuka',
+    pendingA11y: 'Menunggu terkirim. Ketuk untuk mengubah.',
     cacheStamp: 'Data terakhir · {time}',
     monthlyOffline: 'Ringkasan bulan ini butuh koneksi.',
     offlineNoData:
@@ -446,6 +446,14 @@ export const id = {
     widgetQueuedTitle: 'Tersimpan di perangkat',
     widgetQueuedBody:
       '{count} transaksi · Total Rp {total} · Menunggu terkirim',
+    alreadySent: 'Transaksi ini sudah terkirim. Muat ulang riwayat.',
+    reasons: {
+      network: 'Koneksi terputus saat mengirim. Antrean dicoba lagi otomatis.',
+      missing_reference: 'Dompet atau kategori sudah tidak ada. Perbaiki lalu simpan.',
+      invalid_data: 'Server menolak data ini. Perbaiki lalu simpan.',
+      permission: 'Tidak diizinkan mengirim transaksi ini. Masuk ulang lalu coba lagi.',
+      rejected: 'Server menolak transaksi ini. Perbaiki lalu simpan.',
+    },
   },
   mfa: {
     validation: {
@@ -616,6 +624,7 @@ export const id = {
       fallback: 'Transaksi',
       action: 'Urungkan',
       actionA11y: 'Urungkan penghapusan',
+      cancelQueuedA11y: 'Batalkan pengiriman transaksi',
     },
     saved: {
       label: '{name} · Rp {amount} tersimpan',
@@ -697,6 +706,10 @@ export const id = {
     sheet: {
       title: 'Hapus transaksi ini?',
       body: 'Transaksi dipindahkan ke sampah dan dihapus permanen setelah 30 hari.',
+      pendingTitle: 'Buang transaksi menunggu?',
+      pendingBody:
+        'Transaksi ini belum terkirim. Membuangnya menghapus antrean di perangkat ini.',
+      pendingConfirm: 'Buang',
       confirm: 'Hapus',
       close: 'Tutup',
     },

@@ -111,7 +111,7 @@ export function TransactionRow({
     </>
   );
 
-  if (!onPress || queued) {
+  if (!onPress) {
     return (
       <View
         testID={testID}
@@ -131,7 +131,11 @@ export function TransactionRow({
     <Pressable
       testID={testID}
       accessibilityRole="button"
-      accessibilityLabel={`${accessibilityName}, ${amountText}, ${transaction.walletName}`}
+      accessibilityLabel={
+        queued
+          ? `${accessibilityName}, ${amountText}, ${transaction.walletName}, ${queuedLabel}`
+          : `${accessibilityName}, ${amountText}, ${transaction.walletName}`
+      }
       onPress={onPress}
       unstable_pressDelay={PRESS_FEEDBACK_DELAY_MS}
       style={({ pressed }) => [

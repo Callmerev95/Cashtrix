@@ -247,7 +247,7 @@ kegagalan tidak menahan yang lain).
 | **2.1.0** ✅ | Analytics Overhaul: chart svg crisp-edge (PR1/PR2) + kartu tren + tap-select + Insight AI L1–L3 + L4c custom range (commit `f9b5557`; OTA grup `2b2981e9`, device gate HP LULUS 2026-10-18) | ADR-0017, L1 → L2 → L3 → L4c, tag `v2.1.0` |
 | **2.1.x** (OTA) | Trek L4 lanjutan: L4a drill-down → `/search` (COMMITTED `3dc29b0`, OTA `b9a7e1ac`, device gate LULUS 2026-10-19) + L4b multi-wallet compare (COMMITTED `46e505c`, OTA `8747fefd` + polish `69f45c8c`, gate LULUS 2026-10-20) | `specs/tickets.md` trek L4 |
 | **2.1.x** (OTA) | **Savings v1 — Target Tabungan**: satu target per Dompet, progress = Saldo Dompet (`v_wallet_balances`), ring gold, estimasi bulanan, Tambah dana via Transfer. Spec + ADR-0018 disetujui 2026-10-21; SV1–SV4 selesai + commit di `main` + gate statis hijau + live `verify-savings` 44/44 + OTA `7394b00f` + device gate LULUS (pre-polish) + OTA polish `3f3ab134` disuperseded OTA pill `434704d6` lalu revisi pill pojok kanan atas `718599fe` (menyupersede); device re-cek LULUS | `specs/cashtrix-savings.md` + ADR-0018, `specs/tickets.md` SV1–SV4 |
-| **2.1.x** (main) · berikutnya | Offline outbox + read cache = satu pekerjaan konsistensi (LWW buta + hapus-menang, FIFO sekuensial, coalesce, antrean eksplisit, baca terdegradasi). OB1 selesai + commit/push 2026-10-23 (gate lokal hijau); OB2/OB3 menyusul | `specs/cashtrix-v2.x-outbox.md` + ADR-0003/0012, OB1 (#74) → OB2 (#75) → OB3 (#76), spec #73 |
+| **2.1.x** (main) · berikutnya | Offline outbox + read cache = satu pekerjaan konsistensi (LWW buta + hapus-menang, FIFO sekuensial, coalesce, antrean eksplisit, baca terdegradasi). OB1 selesai + commit/push 2026-10-23; OB2 selesai + commit/push 2026-10-25; OB3 menyusul | `specs/cashtrix-v2.x-outbox.md` + ADR-0003/0012, OB1 (#74) → OB2 (#75) → OB3 (#76), spec #73 |
 
 Bank sync, multi-currency (parkir OPEN-4), AI insight lanjutan antre di belakangnya
 per PRD. TanStack gugur permanen untuk trek ini ("banyak user" = urusan
@@ -441,5 +441,32 @@ Gate lokal OB1: lint + typecheck + Jest 76 suite / 1093 test, kontrak
 statis 112/10/3, legal 36/36, export Android + iOS. Edge cache pasca-save
 sudah diputuskan dan dikunci test. Commit/push 2026-10-23; APK preview
 sudah dipasang/diuji pemilik. Device check airplane-mode ditunda ke build
-OB3 sesuai keputusan pemilik. Sisa: `graphify update .`. OB2 = flush FIFO,
-coalesce edit/hapus/undo, LWW/hapus-menang, upload foto pasca-commit + retry OCR.
+OB3 sesuai keputusan pemilik. Sisa: `graphify update .`.
+
+### 6.15 OB2: flush + coalesce + konflik (selesai + commit/push 2026-10-25)
+
+`src/features/outbox/flush.ts` menjalankan antrean FIFO sekuensial satu
+baris per `createTransaction` (id antrean = idempotency key; `23505`
+berarti sudah tersimpan). Baris `sending` yang tertinggal dari proses mati
+dikembalikan ke `waiting`. Kegagalan jaringan/5xx menandai
+`failed/network` dan menghentikan pass; 4xx menandai `failed/server` dan
+pass lanjut ke baris berikutnya. Baris `failed/network` dicoba lagi,
+`failed/server` bertahan dengan alasan sampai diedit (coalesce) atau
+dibuang.
+
+Edit baris antrean memakai ulang idempotency key dan posisi FIFO; hapus
+dan undo membuang baris secara lokal. Baris yang sudah `sending` tidak
+bisa diedit/dihapus. Setelah transaksi commit, flush mengunggah foto
+lokal, menautkan `receiptIds` (termasuk yang sudah terunggah sebelum baris
+diantre), menghapus file lokal, lalu retry OCR best-effort dengan
+consent. Kegagalan upload/taut/OCR tidak menggagalkan baris yang sudah
+commit.
+
+Reconnect menjalankan `runCatchUp({ deferEvaluation: true })` → flush →
+refresh semua → `evaluateAndAlert` sekali. Mount online hanya flush dan
+hanya refresh/evaluasi bila ada baris terkirim. Queued save punya jendela
+undo 10 detik (`undoQueuedSave`) yang juga menghapus foto lokal.
+
+Gate lokal: lint + typecheck + Jest 77 suite / 1116 test, kontrak statis
+112/10/3, legal 36/36, export Android + iOS. Commit/push 2026-10-25; OTA
+dan device gate tetap ditunda sampai OB3 hijau.

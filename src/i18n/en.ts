@@ -430,7 +430,7 @@ export const en: Dictionary = {
   outbox: {
     queuedSaved: '{name} · Rp {amount} waiting to send',
     pending: 'Waiting',
-    pendingA11y: 'Waiting to send, cannot be opened yet',
+    pendingA11y: 'Waiting to send. Tap to edit.',
     cacheStamp: 'Last data · {time}',
     monthlyOffline: 'This month’s summary needs a connection.',
     offlineNoData: 'No saved data yet. Connect to the internet to load it.',
@@ -444,6 +444,14 @@ export const en: Dictionary = {
     widgetQueuedTitle: 'Saved on device',
     widgetQueuedBody:
       '{count} transactions · Total Rp {total} · Waiting to send',
+    alreadySent: 'This transaction has already been sent. Reload history.',
+    reasons: {
+      network: 'The connection dropped while sending. The queue retries automatically.',
+      missing_reference: 'The wallet or category no longer exists. Fix it and save again.',
+      invalid_data: 'The server rejected this data. Fix it and save again.',
+      permission: 'Not allowed to send this transaction. Sign in again and retry.',
+      rejected: 'The server rejected this transaction. Fix it and save again.',
+    },
   },
   mfa: {
     validation: {
@@ -613,6 +621,7 @@ export const en: Dictionary = {
       fallback: 'Transaction',
       action: 'Undo',
       actionA11y: 'Undo delete',
+      cancelQueuedA11y: 'Cancel sending transaction',
     },
     saved: {
       label: '{name} · Rp {amount} saved',
@@ -694,6 +703,10 @@ export const en: Dictionary = {
     sheet: {
       title: 'Delete this transaction?',
       body: 'The transaction moves to trash and is permanently deleted after 30 days.',
+      pendingTitle: 'Discard this waiting transaction?',
+      pendingBody:
+        'This transaction has not been sent. Discarding removes it from this device’s queue.',
+      pendingConfirm: 'Discard',
       confirm: 'Delete',
       close: 'Close',
     },

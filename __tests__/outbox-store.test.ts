@@ -6,6 +6,7 @@ import {
   deleteOutboxRow,
   deleteOutboxRows,
   enqueueOutbox,
+  getOutboxRow,
   listOutbox,
   listOutboxReceiptPaths,
   updateOutboxStatus,
@@ -70,6 +71,20 @@ describe('outbox store', () => {
       status: 'waiting',
       payload: { amount: 25_000, idempotencyKey: 'key-1' },
       display: { walletName: 'BCA' },
+    });
+  });
+
+  it('reads one row by owner and id, hiding other users', async () => {
+    await enqueueOutbox(input());
+    await enqueueOutbox(input({ idempotencyKey: 'other', userId: 'user-2' }));
+
+    await expect(getOutboxRow(USER, 'key-1')).resolves.toMatchObject({
+      id: 'key-1',
+      userId: USER,
+    });
+    await expect(getOutboxRow(USER, 'other')).resolves.toBeNull();
+    await expect(getOutboxRow('user-2', 'other')).resolves.toMatchObject({
+      id: 'other',
     });
   });
 

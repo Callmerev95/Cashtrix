@@ -5,9 +5,10 @@
  * derive from `SAVED_SNACKBAR_MS` so the test locks the contract, not a
  * magic number.
  */
-import { act, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import {
+  QUEUED_SAVE_SNACKBAR_MS,
   SAVED_SNACKBAR_MS,
   SavedSnackbar,
   savedTransactionLabel,
@@ -83,7 +84,7 @@ describe('SavedSnackbar', () => {
 
     expect(screen.getByTestId('saved-snackbar')).toBeTruthy();
     expect(screen.getByText(SNACK.label)).toBeTruthy();
-    expect(screen.queryByTestId('undo-button')).toBeNull();
+    expect(screen.queryByTestId('saved-undo-button')).toBeNull();
   });
 
   it('dismisses itself exactly at 6 s', () => {
@@ -107,5 +108,30 @@ describe('SavedSnackbar', () => {
     expect(
       screen.getByTestId('saved-snackbar').props.onPress,
     ).toBeUndefined();
+  });
+
+  it('offers undo for a queued save and hands back its queue id', () => {
+    const onUndo = jest.fn();
+    render(
+      <SavedSnackbar
+        snack={{ ...SNACK, queued: true, queuedId: 'key-1' }}
+        onDismiss={jest.fn()}
+        onUndo={onUndo}
+        durationMs={QUEUED_SAVE_SNACKBAR_MS}
+      />,
+    );
+
+    fireEvent.press(screen.getByTestId('saved-undo-button'));
+    expect(onUndo).toHaveBeenCalledWith('key-1');
+  });
+
+  it('hides undo for a queued snack without a handler', () => {
+    render(
+      <SavedSnackbar
+        snack={{ ...SNACK, queued: true, queuedId: 'key-1' }}
+        onDismiss={jest.fn()}
+      />,
+    );
+    expect(screen.queryByTestId('saved-undo-button')).toBeNull();
   });
 });

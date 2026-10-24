@@ -123,4 +123,8 @@ export { AmountField } from './components/amount-field';
 export { DeleteConfirmSheet } from './components/delete-confirm-sheet';
 export { TransactionHistoryList } from './components/transaction-history-list';
 export { UndoSnackbar, UNDO_SNACKBAR_MS } from './components/undo-snackbar';
-export { SavedSnackbar, SAVED_SNACKBAR_MS } from './components/saved-snackbar';
+export {
+  QUEUED_SAVE_SNACKBAR_MS,
+  SAVED_SNACKBAR_MS,
+  SavedSnackbar,
+} from './components/saved-snackbar';

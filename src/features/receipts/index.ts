@@ -2,6 +2,7 @@ export {
   deleteReceiptAttachment,
   getReceiptSignedUrl,
   linkReceiptsToTransaction,
+  listReceiptsByIds,
   listReceiptsForTransaction,
   saveReceiptPhotoLocally,
   sweepExpiredReceipts,

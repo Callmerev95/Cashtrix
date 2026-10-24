@@ -26,6 +26,7 @@ import { displayNameOrEmail, useProfile } from '@/features/profile';
 import { pickDashboardGoal, useSavings } from '@/features/savings';
 import { SavingsSummaryCard } from '@/features/savings/components/savings-summary-card';
 import {
+  QUEUED_SAVE_SNACKBAR_MS,
   SavedSnackbar,
   TransactionHistoryList,
   UndoSnackbar,
@@ -85,6 +86,7 @@ export default function DashboardScreen() {
     lastDeleted,
     lastSaved,
     undoDelete,
+    undoQueuedSave,
     dismissUndo,
     dismissSaved,
     error: transactionsError,
@@ -333,9 +335,8 @@ export default function DashboardScreen() {
           ListHeaderComponent={header}
           headerExtra={<PullHeader gap={0} testID="dashboard-pull-header" />}
           onPressTransaction={(transaction) => {
-            // OB1: a queued row has no server id yet — opening the edit form
-            // would fetch a row that does not exist.
-            if (transaction.pending) return;
+            // OB2: a queued row opens the same form, but the form loads it
+            // from the outbox and rewrites the queue row instead of the server.
             router.push({
               pathname: '/add-transaction',
               params: { id: transaction.id },
@@ -371,7 +372,14 @@ export default function DashboardScreen() {
           Yields to an open undo window: both bars float at the same offset,
           and a delete's 10 s `Urungkan` must never be stolen. */}
       {!lastDeleted ? (
-        <SavedSnackbar snack={lastSaved} onDismiss={dismissSaved} />
+        <SavedSnackbar
+          snack={lastSaved}
+          onDismiss={dismissSaved}
+          onUndo={(id) => void undoQueuedSave(id)}
+          durationMs={
+            lastSaved?.queuedId ? QUEUED_SAVE_SNACKBAR_MS : undefined
+          }
+        />
       ) : null}
     </Screen>
   );

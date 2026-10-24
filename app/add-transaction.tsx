@@ -47,6 +47,7 @@ import { tapPrefill, tapSave } from '@/features/haptics';
 import { trackEvent, txCreatedEvent } from '@/features/observability';
 import {
   hasScanConsent,
+  listReceiptsByIds,
   listReceiptsForTransaction,
   ReceiptAttachmentSection,
   resolveCategorySuggestion,
@@ -123,7 +124,10 @@ export default function AddTransactionScreen() {
 
   // Minted once per form session (AC #22). A `useRef` (not state) so a re-render
   // never regenerates it, and `refresh()` after a save cannot change it.
-  const idempotencyKey = useRef(newIdempotencyKey()).current;
+  // Editing a queued row reuses the queue row id — that is the idempotency key
+  // the flush engine will send, so the local rewrite and the eventual insert
+  // stay one logical write (OB2).
+  const idempotencyKey = useRef(params.id ?? newIdempotencyKey()).current;
 
   // Split-save keys (WG2): one idempotency key per row per sheet session, so
   // a retry after a dropped connection resumes without double-posting any
@@ -213,6 +217,10 @@ export default function AddTransactionScreen() {
   // seeds them from the server row list on load (same load pattern as the
   // edited row itself, never a render-sync).
   const [receipts, setReceipts] = useState<ReceiptAttachment[]>([]);
+  // Uploaded receipt ids we could not re-list (signed URL/network failure).
+  // They stay attached to the queued save even though the form cannot paint
+  // them; dropping them here would silently unlink a proof the user kept.
+  const [hiddenReceiptIds, setHiddenReceiptIds] = useState<string[]>([]);
 
   // S3 (issue #57): scan state. Prefill writes form fields from event
   // handlers (user taps, upload callbacks), never from an effect — the lint
@@ -284,7 +292,57 @@ export default function AddTransactionScreen() {
           setAmountRaw(formatAmountInput(String(transaction.amount)));
           setOccurredAt(new Date(transaction.occurredAt));
           setNote(transaction.note ?? '');
-          if (sessionUserId) {
+          setHiddenReceiptIds([]);
+          if (transaction.pending) {
+            // A queued row has local photos, not server receipt rows. Map the
+            // paths back to pending attachments so save/remove keep operating
+            // on the same files the outbox will upload after commit.
+            const local = (transaction.pendingReceiptPaths ?? []).map(
+              (path, index) => ({
+                id: `outbox-${index}`,
+                storagePath: '',
+                previewUrl: path,
+                createdAt: new Date().toISOString(),
+                pending: true,
+                localPath: path,
+              }),
+            );
+            setReceipts(local);
+            // A failed online create may already have uploaded photos before
+            // it queued. Re-list them so the edit shows and keeps them; if the
+            // list cannot load, preserve the ids invisibly rather than
+            // dropping the links on the next save.
+            const uploadedIds = transaction.pendingReceiptIds ?? [];
+            // Hold the ids from the first render: a save racing the re-list
+            // must still carry them.
+            setHiddenReceiptIds(uploadedIds);
+            if (uploadedIds.length > 0 && sessionUserId) {
+              listReceiptsByIds({
+                userId: sessionUserId,
+                receiptIds: uploadedIds,
+              })
+                .then((rows) => {
+                  if (cancelled) return;
+                  // Merge instead of replacing: the user may have attached
+                  // another photo while the re-list was in flight.
+                  setReceipts((current) => {
+                    const known = new Set(current.map((item) => item.id));
+                    return [
+                      ...current,
+                      ...rows.filter((item) => !known.has(item.id)),
+                    ];
+                  });
+                  setHiddenReceiptIds([]);
+                })
+                .catch(() => undefined);
+            }
+            const reason = transaction.pendingError
+              ? (t.outbox.reasons as Record<string, string>)[
+                  transaction.pendingError
+                ] ?? t.outbox.reasons.rejected
+              : null;
+            setFormError(reason);
+          } else if (sessionUserId) {
             listReceiptsForTransaction({
               userId: sessionUserId,
               transactionId: transaction.id,
@@ -309,7 +367,13 @@ export default function AddTransactionScreen() {
     return () => {
       cancelled = true;
     };
-  }, [loadTransaction, params.id, sessionUserId, tf.loadFail]);
+  }, [
+    loadTransaction,
+    params.id,
+    sessionUserId,
+    t.outbox.reasons,
+    tf.loadFail,
+  ]);
 
   function onToggleType(next: TransactionType) {
     setTypeOverride(next);
@@ -564,7 +628,8 @@ export default function AddTransactionScreen() {
 
     try {
       const result = await save({
-        id: params.id,
+        id: loaded?.pending ? undefined : params.id,
+        queuedId: loaded?.pending ? params.id : undefined,
         userId: session?.user.id ?? '',
         walletId,
         categoryId: isTransfer ? null : categoryId,
@@ -577,9 +642,14 @@ export default function AddTransactionScreen() {
         // OB1: uploaded rows link by id; offline captures link by local path
         // and upload on flush (OB2). A pending photo must never send an empty
         // storage id to `linkReceiptsToTransaction`.
-        receiptIds: receipts
-          .filter((attachment) => !attachment.pending)
-          .map((attachment) => attachment.id),
+        receiptIds: [
+          ...new Set([
+            ...receipts
+              .filter((attachment) => !attachment.pending)
+              .map((attachment) => attachment.id),
+            ...hiddenReceiptIds,
+          ]),
+        ],
         receiptPaths: receipts
           .filter((attachment) => attachment.pending)
           .flatMap((attachment) =>
@@ -809,21 +879,24 @@ export default function AddTransactionScreen() {
     setBusy(true);
     try {
       await remove(params.id);
-      // Fire-and-forget like the save path (see `submit`): a stalled re-read
-      // must never trap this sheet on a committed delete.
-      void refreshWallets();
-      void (async () => {
-        // Spent dropped — re-read budgets so rings fall back immediately.
-        // Analytics drops with it, or Insight keeps the deleted row's amounts.
-        // No alert evaluation: a lower percent can never cross a threshold
-        // upward, and fired alerts are never cleared by edits/deletes.
-        try {
-          await refreshBudgets();
-          await refreshAnalytics();
-        } catch {
-          // Non-fatal; the Budgets tab refreshes on its own.
-        }
-      })();
+      // A queued delete is local-only; there is no server aggregate to refresh.
+      if (!loaded?.pending) {
+        // Fire-and-forget like the save path (see `submit`): a stalled re-read
+        // must never trap this sheet on a committed delete.
+        void refreshWallets();
+        void (async () => {
+          // Spent dropped — re-read budgets so rings fall back immediately.
+          // Analytics drops with it, or Insight keeps the deleted row's amounts.
+          // No alert evaluation: a lower percent can never cross a threshold
+          // upward, and fired alerts are never cleared by edits/deletes.
+          try {
+            await refreshBudgets();
+            await refreshAnalytics();
+          } catch {
+            // Non-fatal; the Budgets tab refreshes on its own.
+          }
+        })();
+      }
       setConfirmingDelete(false);
       // V6: biarkan jendela undo tetap terbuka. `remove()` sudah membuka
       // `lastDeleted` setelah commit — sheet konfirmasi mencegah salah tekan,
@@ -1185,9 +1258,21 @@ export default function AddTransactionScreen() {
       <DeleteConfirmSheet
         visible={confirmingDelete}
         loading={busy}
-        title={t.transactions.sheet.title}
-        body={t.transactions.sheet.body}
-        confirmLabel={t.transactions.sheet.confirm}
+        title={
+          loaded?.pending
+            ? t.transactions.sheet.pendingTitle
+            : t.transactions.sheet.title
+        }
+        body={
+          loaded?.pending
+            ? t.transactions.sheet.pendingBody
+            : t.transactions.sheet.body
+        }
+        confirmLabel={
+          loaded?.pending
+            ? t.transactions.sheet.pendingConfirm
+            : t.transactions.sheet.confirm
+        }
         cancelLabel={t.common.cancel}
         closeLabel={t.transactions.sheet.close}
         onCancel={() => setConfirmingDelete(false)}

@@ -7,7 +7,9 @@ export {
   coalesceOnEdit,
   dropOnDelete,
   isQueueFull,
+  isRetryableOutboxRow,
   mergePendingRows,
+  outboxFailureFor,
   referencedReceiptPaths,
   shouldQueueSaveError,
   sortFifo,
@@ -17,6 +19,8 @@ export type {
   OutboxDisplay,
   OutboxEnqueueInput,
   OutboxErrorKind,
+  OutboxFailure,
+  OutboxFailureCode,
   OutboxPayload,
   OutboxRow,
   OutboxStatus,
@@ -28,10 +32,13 @@ export {
   deleteOutboxRow,
   deleteOutboxRows,
   enqueueOutbox,
+  getOutboxRow,
   listOutbox,
   listOutboxReceiptPaths,
   updateOutboxStatus,
 } from './outbox';
+export { flushOutbox } from './flush';
+export type { FlushResult } from './flush';
 export type { CacheKey, CachedPayload } from './cache';
 export { clearAllCache, clearCache, readCache, writeCache } from './cache';
 export { deleteOutboxPhoto, persistOutboxPhoto, sweepOrphanOutboxPhotos } from './files';

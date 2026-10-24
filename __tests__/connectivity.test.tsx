@@ -170,6 +170,14 @@ jest.mock('@/features/profile', () => {
   const refresh = jest.fn().mockResolvedValue(undefined);
   return { useProfile: () => ({ refresh }), __testRefresh: refresh };
 });
+jest.mock('@/features/outbox', () => {
+  const flush = jest.fn().mockResolvedValue({
+    sent: 0,
+    failed: 0,
+    stopped: false,
+  });
+  return { useOutbox: () => ({ flush }), __testFlush: flush };
+});
 jest.mock('@/features/auth', () => ({
   useAuth: () => ({ session: { user: { id: 'u-1' } } }),
 }));
@@ -195,6 +203,7 @@ describe('ReconnectRefresh', () => {
       expect(netinfo.addEventListener).toHaveBeenCalled(),
     );
     expect(testMock('@/features/recurring', '__testCatchUp')).not.toHaveBeenCalled();
+    expect(testMock('@/features/outbox', '__testFlush')).toHaveBeenCalledTimes(1);
 
     act(() => {
       listener()({ isConnected: false, isInternetReachable: false });
@@ -210,6 +219,10 @@ describe('ReconnectRefresh', () => {
         testMock('@/features/recurring', '__testCatchUp'),
       ).toHaveBeenCalledTimes(1),
     );
+    expect(
+      testMock('@/features/recurring', '__testCatchUp'),
+    ).toHaveBeenCalledWith({ deferEvaluation: true });
+    expect(testMock('@/features/outbox', '__testFlush')).toHaveBeenCalledTimes(2);
     await waitFor(() =>
       expect(
         testMock('@/features/wallets', '__testRefresh'),
@@ -232,7 +245,22 @@ describe('ReconnectRefresh', () => {
     ).toHaveBeenCalledTimes(1);
     expect(
       testMock('@/features/budgets', '__testEvaluate'),
+    ).toHaveBeenCalledTimes(1);
+    expect(
+      testMock('@/features/budgets', '__testEvaluate'),
     ).toHaveBeenCalledWith({ userId: 'u-1' });
+
+    const catchUp =
+      testMock('@/features/recurring', '__testCatchUp').mock.invocationCallOrder[0];
+    const flush = testMock('@/features/outbox', '__testFlush').mock
+      .invocationCallOrder[1];
+    const walletRefresh =
+      testMock('@/features/wallets', '__testRefresh').mock.invocationCallOrder[0];
+    const evaluate =
+      testMock('@/features/budgets', '__testEvaluate').mock.invocationCallOrder[0];
+    expect(catchUp).toBeLessThan(flush);
+    expect(flush).toBeLessThan(walletRefresh);
+    expect(walletRefresh).toBeLessThan(evaluate);
   });
 });
 

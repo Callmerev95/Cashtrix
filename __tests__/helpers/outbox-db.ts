@@ -180,6 +180,15 @@ export function createMemoryOutboxDb(): OutboxDatabase {
         return (row?.user_id === userId ? { id } : null) as T | null;
       }
 
+      if (
+        sql.startsWith('SELECT id, user_id, status') &&
+        sql.includes('WHERE user_id = ? AND id = ?')
+      ) {
+        const [userId, id] = params as [string, string];
+        const row = outbox.get(id);
+        return (row?.user_id === userId ? row : null) as T | null;
+      }
+
       if (sql.startsWith('SELECT COUNT(*) AS count FROM outbox')) {
         const [userId] = params as [string];
         const count = [...outbox.values()].filter(

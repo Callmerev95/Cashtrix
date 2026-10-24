@@ -1,10 +1,10 @@
 /**
- * Outbox provider (OB1, issue #74).
+ * Outbox provider (OB1/OB2, issues #74/#75).
  *
  * Owns the queue rows so the History list can merge them into the feed and
- * the form can enqueue a save when the network is gone. The provider never
- * flushes — OB2 adds the engine; OB1 only proves the queue survives, renders,
- * and is purged on sign-out.
+ * the form can enqueue or edit a save when the network is gone. The flush
+ * engine lives in `flush.ts`; this provider serializes calls to it and keeps
+ * the rendered rows in sync as each attempt lands.
  */
 import {
   createContext,
@@ -27,11 +27,13 @@ import {
   type OutboxEnqueueInput,
   type OutboxRow,
 } from './domain';
+import { flushOutbox, type FlushResult } from './flush';
 import { sweepOrphanOutboxPhotos } from './files';
 import {
   clearAllOutbox,
   deleteOutboxRow,
   enqueueOutbox,
+  getOutboxRow,
   listOutbox,
 } from './outbox';
 
@@ -43,6 +45,9 @@ type OutboxContextValue = {
   refreshPending: () => Promise<void>;
   enqueue: (input: OutboxEnqueueInput) => Promise<OutboxRow>;
   drop: (id: string) => Promise<void>;
+  getRow: (id: string) => Promise<OutboxRow | null>;
+  restore: (row: OutboxRow) => Promise<void>;
+  flush: () => Promise<FlushResult>;
 };
 
 const OutboxContext = createContext<OutboxContextValue | null>(null);
@@ -54,6 +59,7 @@ export function OutboxProvider({ children }: { children: ReactNode }) {
   const [available, setAvailable] = useState(true);
   const mounted = useRef(true);
   const sweptFor = useRef<string | null>(null);
+  const flushing = useRef<Promise<FlushResult> | null>(null);
 
   useEffect(() => {
     mounted.current = true;
@@ -121,6 +127,49 @@ export function OutboxProvider({ children }: { children: ReactNode }) {
     [refreshPending, userId],
   );
 
+  const getRow = useCallback(
+    async (id: string) => {
+      if (!userId) return null;
+      try {
+        return await getOutboxRow(userId, id);
+      } catch {
+        // Fail open like every other queue read: a binary without SQLite (or
+        // a transient open failure) must not break server edits/deletes.
+        return null;
+      }
+    },
+    [userId],
+  );
+
+  const restore = useCallback(
+    async (row: OutboxRow) => {
+      if (!userId || row.userId !== userId) {
+        throw new OutboxUnavailableError();
+      }
+      await enqueueOutbox({
+        ...row.payload,
+        display: row.display,
+      });
+      await refreshPending();
+    },
+    [refreshPending, userId],
+  );
+
+  const flush = useCallback(() => {
+    if (!userId || !available) {
+      return Promise.resolve({ sent: 0, failed: 0, stopped: false });
+    }
+    if (!flushing.current) {
+      flushing.current = flushOutbox({
+        userId,
+        onProgress: refreshPending,
+      }).finally(() => {
+        flushing.current = null;
+      });
+    }
+    return flushing.current;
+  }, [available, refreshPending, userId]);
+
   useEffect(
     () =>
       onLocalDataPurge(() => {
@@ -142,8 +191,11 @@ export function OutboxProvider({ children }: { children: ReactNode }) {
       refreshPending,
       enqueue,
       drop,
+      getRow,
+      restore,
+      flush,
     }),
-    [pendingRows, available, refreshPending, enqueue, drop],
+    [pendingRows, available, refreshPending, enqueue, drop, getRow, restore, flush],
   );
 
   return (

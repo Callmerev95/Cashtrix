@@ -1,5 +1,5 @@
 /**
- * Outbox domain (OB1, issue #74) — pure logic for the offline queue.
+ * Outbox domain (OB1/OB2, issues #74/#75) — pure logic for the offline queue.
  *
  * The queue stores a complete save payload plus the labels the History list
  * needs while the server is unreachable. Nothing here talks to SQLite, React,
@@ -25,6 +25,23 @@ export const OUTBOX_PHOTO_TTL_MS = 7 * 24 * 3600 * 1000;
 
 export type OutboxStatus = 'waiting' | 'sending' | 'failed';
 export type OutboxErrorKind = 'network' | 'server' | null;
+
+/**
+ * Stable failure codes persisted in `error_message`. The UI maps them to
+ * localized copy — raw server text is never shown and a language change must
+ * not freeze the reason in the old language.
+ */
+export type OutboxFailureCode =
+  | 'network'
+  | 'missing_reference'
+  | 'invalid_data'
+  | 'permission'
+  | 'rejected';
+
+export type OutboxFailure = {
+  kind: Exclude<OutboxErrorKind, null>;
+  code: OutboxFailureCode;
+};
 
 /**
  * Everything `createTransaction` needs, persisted as JSON. `userId` is part
@@ -113,6 +130,44 @@ function readMessage(error: unknown): string {
   return error instanceof Error ? error.message : '';
 }
 
+function readCode(error: unknown): string | null {
+  if (!error || typeof error !== 'object') return null;
+  const value = (error as { code?: unknown }).code;
+  return typeof value === 'string' ? value : null;
+}
+
+/**
+ * Classifies a failed flush attempt. Transport/5xx failures stay retryable on
+ * the next reconnect; a 4xx/constraint refusal is terminal until the user
+ * repairs or discards the row (T3).
+ */
+export function outboxFailureFor(error: unknown): OutboxFailure {
+  if (shouldQueueSaveError(error, true)) {
+    return { kind: 'network', code: 'network' };
+  }
+
+  const code = readCode(error);
+  if (code === '23503') {
+    return { kind: 'server', code: 'missing_reference' };
+  }
+  if (code === '23514') {
+    return { kind: 'server', code: 'invalid_data' };
+  }
+  if (code === '42501') {
+    return { kind: 'server', code: 'permission' };
+  }
+  return { kind: 'server', code: 'rejected' };
+}
+
+/** Waiting rows, crash-stale `sending` rows, and retryable network failures. */
+export function isRetryableOutboxRow(row: OutboxRow): boolean {
+  return (
+    row.status === 'waiting' ||
+    row.status === 'sending' ||
+    (row.status === 'failed' && row.errorKind === 'network')
+  );
+}
+
 /**
  * Whether a failed save is safe to queue. Offline is always queueable; online
  * only transport/5xx failures are (a 4xx is a validation/RLS refusal that a
@@ -144,8 +199,8 @@ export function shouldQueueSaveError(
 
 /**
  * A queued row as a History row. `id` is the idempotency key, so a tap can
- * address the queue entry once editing is wired (OB2/OB3); OB1 keeps it
- * non-tappable. The transfer label/icon fallbacks mirror the feed view.
+ * address the queue entry (OB2). The transfer label/icon fallbacks mirror the
+ * feed view.
  */
 export function toPendingTransaction(
   row: OutboxRow,
@@ -171,6 +226,9 @@ export function toPendingTransaction(
     counterpartyWalletId: row.payload.counterpartyWalletId,
     counterpartyWalletName: row.display.counterpartyWalletName,
     pending: true,
+    pendingError: row.status === 'failed' ? row.errorMessage : null,
+    pendingReceiptIds: row.payload.receiptIds,
+    pendingReceiptPaths: row.payload.receiptPaths,
   };
 }
 

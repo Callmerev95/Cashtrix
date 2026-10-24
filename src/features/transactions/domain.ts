@@ -97,11 +97,16 @@ export type Transaction = {
   counterpartyWalletId: string | null;
   counterpartyWalletName: string | null;
   /**
-   * True for a row that exists only in the offline outbox (OB1). Such a row
-   * is rendered with a queue badge and cannot be opened/deleted until the
-   * flush engine lands (OB2/OB3).
+   * True for a row that exists only in the offline outbox (OB1). OB2 makes it
+   * editable: tapping opens the form backed by the queue row, not the server.
    */
   pending?: boolean;
+  /** Stable outbox failure code, rendered through the i18n reason table. */
+  pendingError?: string | null;
+  /** Receipt rows already in Storage from an online attempt that queued. */
+  pendingReceiptIds?: string[];
+  /** Local photo URIs captured offline; uploaded after the flush commits. */
+  pendingReceiptPaths?: string[];
 };
 
 /** A category option in the picker grid. */

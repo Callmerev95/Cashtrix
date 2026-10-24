@@ -32,12 +32,14 @@ import { useConnectivity } from '@/features/connectivity/connectivity-context';
 import {
   OutboxFullError,
   OutboxUnavailableError,
+  deleteOutboxPhoto,
   mergePendingRows,
   shouldQueueSaveError,
   toPendingTransaction,
   useOutbox,
   writeCache,
   readCache,
+  type OutboxRow,
 } from '@/features/outbox';
 import { linkReceiptsToTransaction } from '@/features/receipts/api';
 
@@ -100,6 +102,8 @@ type TransactionsContextValue = {
   save: (input: SaveInput) => Promise<SaveResult>;
   remove: (id: string) => Promise<void>;
   undoDelete: () => Promise<void>;
+  /** Cancel an offline save inside its 10 s proof window (story 8). */
+  undoQueuedSave: (id: string) => Promise<void>;
   dismissUndo: () => void;
   dismissSaved: () => void;
   rememberType: (type: TransactionType) => Promise<void>;
@@ -111,8 +115,10 @@ export type LatestTransaction = {
   id: string;
   /** The snackbar's copy, built from the row that left the list. */
   label: string;
-  /** When the delete landed; the snackbar hides itself after 5 s. */
+  /** When the delete landed; the snackbar hides itself after 10 s. */
   createdAt: number;
+  /** Present when the deleted row lived only in the outbox (no server RPC). */
+  pendingRow?: OutboxRow;
 };
 
 export type SavedNotice = {
@@ -122,14 +128,18 @@ export type SavedNotice = {
   createdAt: number;
   /** True when the row entered the offline outbox instead of the server. */
   queued?: boolean;
+  /** Queue row id; present only for a queued save (enables undo). */
+  queuedId?: string;
 };
 
 /** What `save()` actually did — callers use `queued` to pick the proof copy. */
-export type SaveResult = { queued: boolean };
+export type SaveResult = { queued: boolean; queuedId?: string };
 
 export type SaveInput = {
   /** Present = edit, absent = create. */
   id?: string;
+  /** Present = editing an outbox row; the queue row id is the idempotency key. */
+  queuedId?: string;
   userId: string;
   walletId: string;
   /** Null for `transfer`. */
@@ -156,7 +166,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
   const { session } = useAuth();
   const userId = session?.user.id ?? null;
   const { isOnline } = useConnectivity();
-  const { pendingRows, enqueue } = useOutbox();
+  const { pendingRows, enqueue, drop, getRow, restore } = useOutbox();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [wallets, setWallets] = useState<WalletOption[]>([]);
@@ -377,8 +387,12 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
   }, [isOnline, transactions, loadError, userId]);
 
   const loadTransaction = useCallback(
-    async (id: string) => getTransaction(id),
-    [],
+    async (id: string) => {
+      const queued = await getRow(id);
+      if (queued) return toPendingTransaction(queued, language);
+      return getTransaction(id);
+    },
+    [getRow, language],
   );
 
   const rememberType = useCallback(async (value: TransactionType) => {
@@ -411,9 +425,11 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
           ? transferFeedLabel(savedCounterparty, language)
           : (savedCategory ?? copy.transactions.saved.fallback);
 
-      const enqueueOffline = async (): Promise<SaveResult> => {
+      const enqueueOffline = async (queuedId?: string): Promise<SaveResult> => {
+        const key = queuedId ?? input.idempotencyKey;
+        let row: OutboxRow;
         try {
-          await enqueue({
+          row = await enqueue({
             userId: input.userId,
             walletId: input.walletId,
             categoryId: input.categoryId,
@@ -422,7 +438,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
             amount: input.amount,
             occurredAt: input.occurredAt.toISOString(),
             note: input.note,
-            idempotencyKey: input.idempotencyKey,
+            idempotencyKey: key,
             receiptIds: input.receiptIds,
             receiptPaths: input.receiptPaths ?? [],
             display: {
@@ -453,15 +469,28 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
           }),
           createdAt: Date.now(),
           queued: true,
+          queuedId: row.id,
         });
         void rememberType(input.type);
         void rememberWallet(input.walletId);
-        return { queued: true };
+        return { queued: true, queuedId: row.id };
       };
+
+      // A queued edit never touches the server: it rewrites the row that is
+      // still in the queue, preserving its idempotency key and FIFO position.
+      // If the row was flushed while this form was open, refusing is honest —
+      // recreating the key would silently drop the user's correction.
+      if (input.queuedId) {
+        const queued = await getRow(input.queuedId);
+        if (!queued || queued.status === 'sending') {
+          throw new Error(copy.outbox.alreadySent);
+        }
+        return enqueueOffline(input.queuedId);
+      }
 
       // Known-offline creates go straight to the outbox: inserting an
       // optimistic "server" row first would flash a row the server never saw.
-      // Edits still target a server row, so they stay blocked until OB2/OB3.
+      // A server edit still needs a target row and stays blocked offline.
       if (!isOnline) {
         if (input.id) throw new Error(copy.outbox.editRequiresConnection);
         return enqueueOffline();
@@ -559,12 +588,14 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     },
     [
       categories,
+      copy.outbox.alreadySent,
       copy.outbox.editRequiresConnection,
       copy.outbox.queueFull,
       copy.outbox.queuedSaved,
       copy.outbox.unavailable,
       copy.transactions.saved.fallback,
       enqueue,
+      getRow,
       isOnline,
       language,
       refresh,
@@ -576,8 +607,28 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
 
   const remove = useCallback(
     async (id: string) => {
-      // Deleting is a server soft-delete; queued rows are not server rows and
-      // OB1 has no offline-delete path (only the queue drop in OB3).
+      // A queued row has no server row yet: deleting it is a local drop, and
+      // undo restores the exact queue row. A `sending` row may already have
+      // committed, so it cannot be cancelled safely.
+      const queued = await getRow(id);
+      if (queued) {
+        if (queued.status === 'sending') {
+          throw new Error(copy.outbox.alreadySent);
+        }
+        await drop(id);
+        setLastDeleted({
+          id,
+          label: deletedTransactionLabel(
+            toPendingTransaction(queued, language),
+            language,
+          ),
+          createdAt: Date.now(),
+          pendingRow: queued,
+        });
+        void tapUndo();
+        return;
+      }
+
       if (!isOnline) throw new Error(copy.outbox.deleteRequiresConnection);
       const previous = transactions;
       const deleted = transactions.find((row) => row.id === id) ?? null;
@@ -608,7 +659,10 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       await refresh();
     },
     [
+      copy.outbox.alreadySent,
       copy.outbox.deleteRequiresConnection,
+      drop,
+      getRow,
       isOnline,
       refresh,
       transactions,
@@ -627,11 +681,39 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     setLastDeleted(null);
     if (!target) return;
 
+    if (target.pendingRow) {
+      await restore(target.pendingRow);
+      return;
+    }
+
     const restored = await restoreTransaction(target.id);
     if (restored) await refresh();
-  }, [lastDeleted, refresh]);
+  }, [lastDeleted, refresh, restore]);
 
-  const dismissUndo = useCallback(() => setLastDeleted(null), []);
+  const undoQueuedSave = useCallback(
+    async (id: string) => {
+      setLastSaved(null);
+      const row = await getRow(id);
+      if (!row || row.status === 'sending') return;
+      await drop(id);
+      // Cancelling the save also discards the proof photo; no undo window
+      // remains for it. The sweep would eventually catch it, but immediate
+      // cleanup keeps the sandbox honest.
+      for (const path of row.payload.receiptPaths) deleteOutboxPhoto(path);
+    },
+    [drop, getRow],
+  );
+
+  const dismissUndo = useCallback(() => {
+    const pending = lastDeleted?.pendingRow;
+    setLastDeleted(null);
+    if (pending) {
+      // The undo window closed without a restore: the queue row is already
+      // gone, so its local photos are orphans. Drop them now instead of
+      // waiting for the 7-day sweep.
+      for (const path of pending.payload.receiptPaths) deleteOutboxPhoto(path);
+    }
+  }, [lastDeleted]);
 
   const dismissSaved = useCallback(() => setLastSaved(null), []);
 
@@ -656,6 +738,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       save,
       remove,
       undoDelete,
+      undoQueuedSave,
       dismissUndo,
       dismissSaved,
       rememberType,
@@ -681,6 +764,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       save,
       remove,
       undoDelete,
+      undoQueuedSave,
       dismissUndo,
       dismissSaved,
       rememberType,

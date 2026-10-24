@@ -56,8 +56,9 @@ type RecurringContextValue = {
   /**
    * Runs catch-up now. Returns occurrences written (0 = nothing due, or a
    * swallowed failure — the next foreground retries). Never throws.
+   * `deferEvaluation` lets the reconnect pipeline evaluate once at the end.
    */
-  runCatchUp: () => Promise<number>;
+  runCatchUp: (options?: { deferEvaluation?: boolean }) => Promise<number>;
 };
 
 export type SaveRecurringInput = {
@@ -85,8 +86,9 @@ export function RecurringProvider({ children }: { children: ReactNode }) {
   // Guards catch-up against concurrent runs (mount racing a foreground
   // event): without it the same dues could be attempted twice before either
   // RPC lands (the unique key would still save us, but the refresh storm
-  // would not).
-  const catching = useRef(false);
+  // would not). A second caller joins the in-flight run instead of getting 0,
+  // so the reconnect chain still waits for catch-up before flushing.
+  const catchUpRun = useRef<Promise<number> | null>(null);
 
   const { session, status } = useAuth();
   const { refresh: refreshWallets } = useWallets();
@@ -127,35 +129,44 @@ export function RecurringProvider({ children }: { children: ReactNode }) {
       });
   }, [loadError]);
 
-  const runCatchUp = useCallback(async (): Promise<number> => {
+  const runCatchUp = useCallback((options?: {
+    deferEvaluation?: boolean;
+  }): Promise<number> => {
     const userId = session?.user.id;
-    if (!userId || catching.current) return 0;
-    catching.current = true;
+    if (!userId) return Promise.resolve(0);
+    if (catchUpRun.current) return catchUpRun.current;
 
-    try {
-      const wrote = await runCatchUpRpc();
-      // Rules may have self-healed (archived wallet → paused), so re-read
-      // even when nothing was born.
-      await refresh().catch(() => undefined);
-      if (wrote > 0) {
-        await Promise.all([
-          refreshWallets().catch(() => undefined),
-          refreshTransactions().catch(() => undefined),
-          refreshBudgets().catch(() => undefined),
-          refreshAnalytics().catch(() => undefined),
-        ]);
-        try {
-          await evaluateAndAlert({ userId });
-        } catch {
-          // In-app banner on the Budgets tab retries on its own refresh.
+    const run = (async () => {
+      try {
+        const wrote = await runCatchUpRpc();
+        // Rules may have self-healed (archived wallet → paused), so re-read
+        // even when nothing was born.
+        await refresh().catch(() => undefined);
+        if (wrote > 0) {
+          await Promise.all([
+            refreshWallets().catch(() => undefined),
+            refreshTransactions().catch(() => undefined),
+            refreshBudgets().catch(() => undefined),
+            refreshAnalytics().catch(() => undefined),
+          ]);
+          if (!options?.deferEvaluation) {
+            try {
+              await evaluateAndAlert({ userId });
+            } catch {
+              // In-app banner on the Budgets tab retries on its own refresh.
+            }
+          }
         }
+        return wrote;
+      } catch {
+        return 0;
       }
-      return wrote;
-    } catch {
-      return 0;
-    } finally {
-      catching.current = false;
-    }
+    })();
+
+    catchUpRun.current = run.finally(() => {
+      catchUpRun.current = null;
+    });
+    return catchUpRun.current;
   }, [
     session?.user.id,
     refresh,

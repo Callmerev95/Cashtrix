@@ -47,7 +47,10 @@ jest.mock('@/features/outbox', () => {
       available: false,
       refreshPending: jest.fn(),
       enqueue: jest.fn(),
+      getRow: jest.fn(async () => null),
+      restore: jest.fn(),
       drop: jest.fn(),
+      flush: jest.fn(async () => ({ sent: 0, failed: 0, stopped: false })),
     }),
   };
 });
