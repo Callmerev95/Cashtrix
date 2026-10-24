@@ -431,10 +431,13 @@ baris `pending` di Riwayat (tidak menghitung saldo/anggaran/analitik);
 edit/hapus offline ditolak sampai OB2. Analytics/Budgets/Search/
 Notifications/Recurring/Savings memakai `OfflineGate`; Monthly Summary
 Dashboard memakai catatan offline; cache stamp “Data terakhir · HH:MM”
-tampil saat cache dipakai. Receipts offline disimpan di sandbox (JPEG
+tampil saat cache dipakai. Profil offline mempertahankan identitas dari
+sesi (avatar, nama, email) tetapi mengganti editor nama/foto, currency,
+keamanan, pengaturan, dan Keluar dengan `OfflineGate` (`profile-offline`);
+reconnect menyegarkan profil. Receipts offline disimpan di sandbox (JPEG
 1600px), OCR dilewati, flush/upload + retry menyusul di OB2.
 
-Gate lokal OB1: lint + typecheck + Jest 76 suite / 1092 test, kontrak
+Gate lokal OB1: lint + typecheck + Jest 76 suite / 1093 test, kontrak
 statis 112/10/3, legal 36/36, export Android + iOS. Edge cache pasca-save
 sudah diputuskan dan dikunci test. Commit/push 2026-10-23; APK preview
 sudah dipasang/diuji pemilik. Device check airplane-mode ditunda ke build

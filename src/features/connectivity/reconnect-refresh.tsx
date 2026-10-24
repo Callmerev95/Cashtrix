@@ -15,6 +15,7 @@ import { useEffect, useRef } from 'react';
 import { useAnalytics } from '@/features/analytics';
 import { useAuth } from '@/features/auth';
 import { useBudgets } from '@/features/budgets';
+import { useProfile } from '@/features/profile';
 import { useRecurring } from '@/features/recurring';
 import { useSavings } from '@/features/savings';
 import { useTransactions } from '@/features/transactions';
@@ -29,6 +30,7 @@ export function ReconnectRefresh() {
   const { refresh: refreshBudgets, evaluateAndAlert } = useBudgets();
   const { refresh: refreshAnalytics } = useAnalytics();
   const { refresh: refreshSavings } = useSavings();
+  const { refresh: refreshProfile } = useProfile();
   const { runCatchUp } = useRecurring();
   const { session } = useAuth();
   const userId = session?.user.id;
@@ -53,6 +55,7 @@ export function ReconnectRefresh() {
           refreshBudgets(),
           refreshAnalytics(),
           refreshSavings(),
+          refreshProfile(),
         ]),
       )
       .then(() => evaluateAndAlert({ userId: userId ?? '' }))
@@ -64,6 +67,7 @@ export function ReconnectRefresh() {
     refreshBudgets,
     refreshAnalytics,
     refreshSavings,
+    refreshProfile,
     runCatchUp,
     evaluateAndAlert,
     userId,

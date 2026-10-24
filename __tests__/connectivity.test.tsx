@@ -166,6 +166,10 @@ jest.mock('@/features/recurring', () => {
   const runCatchUp = jest.fn().mockResolvedValue(0);
   return { useRecurring: () => ({ runCatchUp }), __testCatchUp: runCatchUp };
 });
+jest.mock('@/features/profile', () => {
+  const refresh = jest.fn().mockResolvedValue(undefined);
+  return { useProfile: () => ({ refresh }), __testRefresh: refresh };
+});
 jest.mock('@/features/auth', () => ({
   useAuth: () => ({ session: { user: { id: 'u-1' } } }),
 }));
@@ -222,6 +226,9 @@ describe('ReconnectRefresh', () => {
     ).toHaveBeenCalledTimes(1);
     expect(
       testMock('@/features/analytics', '__testRefresh'),
+    ).toHaveBeenCalledTimes(1);
+    expect(
+      testMock('@/features/profile', '__testRefresh'),
     ).toHaveBeenCalledTimes(1);
     expect(
       testMock('@/features/budgets', '__testEvaluate'),

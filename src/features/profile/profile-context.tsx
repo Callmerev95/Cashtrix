@@ -96,6 +96,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refresh = useCallback(async () => {
+    setError(null);
+    setLoading(true);
     try {
       const next = await getProfile();
       const nextCategories = await listManagedCategories();

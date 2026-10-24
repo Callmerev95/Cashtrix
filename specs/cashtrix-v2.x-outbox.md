@@ -99,7 +99,9 @@ ticket. Tanpa bump versi di spec ini (diputuskan saat eksekusi).
   lebih dari 7 hari = sapu (T4).
 - Cache baca: Dashboard + Riwayat + form dari SQLite; Analytics/Budget/KPI =
   gate koneksi eksplisit (bukan angka cache). Label "data terakhir" + banner
-  D4 tetap.
+  D4 tetap. Profil = identitas dari sesi tetap terlihat; editor nama/foto,
+  currency, keamanan, pengaturan, dan Keluar diganti gate `profile-offline`
+  (tanpa cache profil); reconnect menyegarkan profil.
 
 **Flush + konflik (OB2):**
 - Flush FIFO sekuensial (T1), satu baris satu hasil. Urutan reconnect:

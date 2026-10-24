@@ -27,13 +27,22 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Card, GhostButton, PrimaryButton, Screen, SkeletonList, TextField } from '@/components';
+import {
+  Card,
+  GhostButton,
+  OfflineGate,
+  PrimaryButton,
+  Screen,
+  SkeletonList,
+  TextField,
+} from '@/components';
 import {
   getInsightConsentSnapshot,
   setInsightConsented,
   subscribeInsightConsent,
 } from '@/features/analytics';
 import { signOut, useAuth } from '@/features/auth';
+import { useConnectivity } from '@/features/connectivity/connectivity-context';
 import { exportAndShareTransactions } from '@/features/data-ownership';
 import { tapToggle } from '@/features/haptics';
 import { useLock } from '@/features/lock';
@@ -60,6 +69,7 @@ const LEGAL = {
 
 export default function ProfileScreen() {
   const { session } = useAuth();
+  const { isOnline } = useConnectivity();
   const insets = useSafeAreaInsets();
   const {
     profile,
@@ -281,10 +291,13 @@ export default function ProfileScreen() {
             >
               <Pressable
                 testID="profile-avatar"
-                accessibilityRole="button"
-                accessibilityLabel={ts.changeAvatarA11y}
-                onPress={onChangeAvatar}
-                disabled={uploadingAvatar}
+                accessible={isOnline}
+                accessibilityRole={isOnline ? 'button' : undefined}
+                accessibilityLabel={
+                  isOnline ? ts.changeAvatarA11y : undefined
+                }
+                onPress={isOnline ? onChangeAvatar : undefined}
+                disabled={!isOnline || uploadingAvatar}
                 style={({ pressed }) => [
                   styles.avatarPress,
                   pressed && pressedFeedback,
@@ -319,14 +332,16 @@ export default function ProfileScreen() {
             <Text style={[typography.bodySm, styles.email]} numberOfLines={1}>
               {session?.user.email ?? ''}
             </Text>
-            <GhostButton
-              testID="profile-change-avatar"
-              label={uploadingAvatar ? ts.uploading : ts.changeAvatar}
-              onPress={onChangeAvatar}
-              disabled={uploadingAvatar}
-            />
+            {isOnline ? (
+              <GhostButton
+                testID="profile-change-avatar"
+                label={uploadingAvatar ? ts.uploading : ts.changeAvatar}
+                onPress={onChangeAvatar}
+                disabled={uploadingAvatar}
+              />
+            ) : null}
           </View>
-          {!loading && !error ? (
+          {isOnline && !loading && !error ? (
             <View style={styles.editor}>
               <TextField
                 testID="profile-name"
@@ -359,7 +374,9 @@ export default function ProfileScreen() {
           ) : null}
         </Card>
 
-        {loading ? (
+        {!isOnline ? (
+          <OfflineGate testID="profile-offline" />
+        ) : loading ? (
           <SkeletonList testID="profile-loading" rows={4} />
         ) : error ? (
           <View style={styles.center}>

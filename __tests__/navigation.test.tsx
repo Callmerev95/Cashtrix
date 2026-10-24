@@ -338,6 +338,35 @@ describe('MFA challenge gate (C2)', () => {
   });
 });
 
+describe('profile offline (OB1)', () => {
+  it('keeps identity visible and gates the rest of Profile when offline', async () => {
+    await renderSignedInApp();
+
+    fireEvent.press(await screen.findByLabelText('Profile'));
+    expect(await screen.findByTestId('profile-currency-well')).toBeTruthy();
+    expect(screen.getByTestId('profile-change-avatar')).toBeTruthy();
+
+    const netinfo = jest.requireMock('@react-native-community/netinfo') as {
+      __emit: (state: {
+        isConnected: boolean | null;
+        isInternetReachable: boolean | null;
+      }) => void;
+    };
+    act(() => {
+      netinfo.__emit({ isConnected: false, isInternetReachable: false });
+    });
+
+    expect(await screen.findByTestId('profile-offline')).toBeTruthy();
+    expect(screen.getByTestId('profile-avatar')).toBeTruthy();
+    expect(screen.getByText('Evelyn')).toBeTruthy();
+    expect(screen.getByText('evelyn@cashtrix.app')).toBeTruthy();
+    expect(screen.queryByTestId('profile-currency-well')).toBeNull();
+    expect(screen.queryByTestId('profile-name')).toBeNull();
+    expect(screen.queryByTestId('profile-change-avatar')).toBeNull();
+    expect(screen.queryByTestId('sign-out')).toBeNull();
+  });
+});
+
 describe('secondary routes (D3)', () => {
   it('reaches Search from the Dashboard history action', async () => {
     const { getPathname } = await renderSignedInApp();
