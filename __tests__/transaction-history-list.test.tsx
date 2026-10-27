@@ -89,4 +89,45 @@ describe('TransactionHistoryList (SectionList)', () => {
       expect.objectContaining({ id: 't1' }),
     );
   });
+
+  it('tidak merender aksi buang eksplisit; tap baris antrean tetap mengedit (OB3)', () => {
+    const onPressTransaction = jest.fn();
+    render(
+      <TransactionHistoryList
+        transactions={[
+          transaction({ id: 'server' }),
+          transaction({ id: 'queued', pending: true }),
+        ]}
+        onPressTransaction={onPressTransaction}
+      />,
+    );
+
+    expect(screen.queryByTestId('outbox-discard-action')).toBeNull();
+
+    fireEvent.press(screen.getByTestId('transaction-queued'));
+    expect(onPressTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'queued', pending: true }),
+    );
+  });
+
+  it('long-press hanya berlaku untuk baris antrean (OB3)', () => {
+    const onLongPressTransaction = jest.fn();
+    render(
+      <TransactionHistoryList
+        transactions={[
+          transaction({ id: 'server' }),
+          transaction({ id: 'queued', pending: true }),
+        ]}
+        onLongPressTransaction={onLongPressTransaction}
+      />,
+    );
+
+    fireEvent(screen.getByTestId('transaction-server'), 'longPress');
+    expect(onLongPressTransaction).not.toHaveBeenCalled();
+
+    fireEvent(screen.getByTestId('transaction-queued'), 'longPress');
+    expect(onLongPressTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'queued', pending: true }),
+    );
+  });
 });

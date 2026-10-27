@@ -6,17 +6,27 @@
  * Mounted once, innermost in the provider chain so every refresh hook is in
  * scope. Mount only flushes a queue left by a previous session (and refreshes
  * only if something was actually sent); the full catch-up chain runs on an
- * offline→online transition. Like the providers' own mount effects, the
- * effect only *starts* async work — every refresh lands its state in promise
- * callbacks, so `react-hooks/set-state-in-effect` stays quiet. Everything is
- * best-effort: a failed reconnect refresh must not break the session.
+ * offline→online transition. Retryable rows also get a bounded online retry
+ * loop, so a pass that stopped on a flaky connection is not stranded until the
+ * next reconnect or manual tap. Foregrounding the app flushes the queue too
+ * (the recurring provider already owns its own AppState catch-up).
+ *
+ * Like the providers' own mount effects, the effects only *start* async work —
+ * every refresh lands its state in promise callbacks, so
+ * `react-hooks/set-state-in-effect` stays quiet. Everything is best-effort: a
+ * failed reconnect refresh must not break the session.
  */
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import { AppState } from 'react-native';
 
 import { useAnalytics } from '@/features/analytics';
 import { useAuth } from '@/features/auth';
 import { useBudgets } from '@/features/budgets';
-import { useOutbox } from '@/features/outbox';
+import {
+  isRetryableOutboxRow,
+  outboxRetryDelay,
+  useOutbox,
+} from '@/features/outbox';
 import { useProfile } from '@/features/profile';
 import { useRecurring } from '@/features/recurring';
 import { useSavings } from '@/features/savings';
@@ -34,20 +44,17 @@ export function ReconnectRefresh() {
   const { refresh: refreshSavings } = useSavings();
   const { refresh: refreshProfile } = useProfile();
   const { runCatchUp } = useRecurring();
-  const { flush } = useOutbox();
+  const { flush, pendingRows, flushing } = useOutbox();
   const { session } = useAuth();
   const userId = session?.user.id;
 
   const wasOnline = useRef<boolean | null>(null);
   const started = useRef(false);
+  const running = useRef<Promise<void> | null>(null);
+  const retryAttempt = useRef(0);
 
-  useEffect(() => {
-    if (!userId) {
-      wasOnline.current = isOnline;
-      return;
-    }
-
-    const refreshAll = () =>
+  const refreshAll = useCallback(
+    () =>
       Promise.all([
         refreshWallets(),
         refreshTransactions(),
@@ -55,49 +62,95 @@ export function ReconnectRefresh() {
         refreshAnalytics(),
         refreshSavings(),
         refreshProfile(),
-      ]);
+      ]),
+    [
+      refreshWallets,
+      refreshTransactions,
+      refreshBudgets,
+      refreshAnalytics,
+      refreshSavings,
+      refreshProfile,
+    ],
+  );
 
-    // Reconnect is the contract (story 12): catch-up first, then flush, then
-    // one refresh pass, then one alert evaluation. Mount only flushes a queue
-    // that survived a previous session — RecurringProvider owns mount
-    // catch-up, so doing it again here would double-run the RPC.
+  const flushAndRefresh = useCallback(
+    (catchUp: boolean) => {
+      if (!userId) return Promise.resolve();
+      if (running.current) return running.current;
+
+      const run = (async () => {
+        try {
+          // Reconnect is the contract (story 12): catch-up first, then flush,
+          // then one refresh pass, then one alert evaluation. Mount/foreground
+          // only flush; RecurringProvider owns its own catch-up there.
+          if (catchUp) {
+            await runCatchUp({ deferEvaluation: true }).catch(() => 0);
+          }
+          const result = await flush().catch(() => null);
+          const sent = result?.sent ?? 0;
+          if (catchUp || sent > 0) {
+            await refreshAll().catch(() => undefined);
+            await evaluateAndAlert({ userId }).catch(() => undefined);
+          }
+          if (result && !result.stopped) retryAttempt.current = 0;
+        } catch {
+          // Best-effort: the next retry/reconnect will try again.
+        }
+      })();
+
+      running.current = run;
+      void run.finally(() => {
+        if (running.current === run) running.current = null;
+      });
+      return run;
+    },
+    [evaluateAndAlert, flush, refreshAll, runCatchUp, userId],
+  );
+
+  useEffect(() => {
+    if (!userId) {
+      wasOnline.current = isOnline;
+      return;
+    }
+
     if (!started.current) {
       started.current = true;
       wasOnline.current = isOnline;
-      if (!isOnline) return;
-      void flush()
-        .then((result) =>
-          result.sent > 0
-            ? refreshAll().then(() => evaluateAndAlert({ userId }))
-            : undefined,
-        )
-        .catch(() => undefined);
+      if (isOnline) void flushAndRefresh(false);
       return;
     }
 
     const reconnected = !wasOnline.current && isOnline;
     wasOnline.current = isOnline;
-    if (!reconnected) return;
+    if (reconnected) void flushAndRefresh(true);
+  }, [isOnline, userId, flushAndRefresh]);
 
-    void runCatchUp({ deferEvaluation: true })
-      .catch(() => 0)
-      .then(() => flush().catch(() => undefined))
-      .then(refreshAll)
-      .then(() => evaluateAndAlert({ userId }))
-      .catch(() => undefined);
-  }, [
-    isOnline,
-    refreshWallets,
-    refreshTransactions,
-    refreshBudgets,
-    refreshAnalytics,
-    refreshSavings,
-    refreshProfile,
-    runCatchUp,
-    flush,
-    evaluateAndAlert,
-    userId,
-  ]);
+  useEffect(() => {
+    if (!userId) return;
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && isOnline) void flushAndRefresh(false);
+    });
+    return () => subscription.remove();
+  }, [isOnline, userId, flushAndRefresh]);
+
+  useEffect(() => {
+    if (!isOnline) {
+      retryAttempt.current = 0;
+      return;
+    }
+    if (!userId || flushing) return;
+    if (!pendingRows.some(isRetryableOutboxRow)) {
+      retryAttempt.current = 0;
+      return;
+    }
+
+    const delay = outboxRetryDelay(retryAttempt.current);
+    const timer = setTimeout(() => {
+      retryAttempt.current += 1;
+      void flushAndRefresh(false);
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [isOnline, userId, flushing, pendingRows, flushAndRefresh]);
 
   return null;
 }

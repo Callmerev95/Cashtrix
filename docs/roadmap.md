@@ -247,7 +247,7 @@ kegagalan tidak menahan yang lain).
 | **2.1.0** ✅ | Analytics Overhaul: chart svg crisp-edge (PR1/PR2) + kartu tren + tap-select + Insight AI L1–L3 + L4c custom range (commit `f9b5557`; OTA grup `2b2981e9`, device gate HP LULUS 2026-10-18) | ADR-0017, L1 → L2 → L3 → L4c, tag `v2.1.0` |
 | **2.1.x** (OTA) | Trek L4 lanjutan: L4a drill-down → `/search` (COMMITTED `3dc29b0`, OTA `b9a7e1ac`, device gate LULUS 2026-10-19) + L4b multi-wallet compare (COMMITTED `46e505c`, OTA `8747fefd` + polish `69f45c8c`, gate LULUS 2026-10-20) | `specs/tickets.md` trek L4 |
 | **2.1.x** (OTA) | **Savings v1 — Target Tabungan**: satu target per Dompet, progress = Saldo Dompet (`v_wallet_balances`), ring gold, estimasi bulanan, Tambah dana via Transfer. Spec + ADR-0018 disetujui 2026-10-21; SV1–SV4 selesai + commit di `main` + gate statis hijau + live `verify-savings` 44/44 + OTA `7394b00f` + device gate LULUS (pre-polish) + OTA polish `3f3ab134` disuperseded OTA pill `434704d6` lalu revisi pill pojok kanan atas `718599fe` (menyupersede); device re-cek LULUS | `specs/cashtrix-savings.md` + ADR-0018, `specs/tickets.md` SV1–SV4 |
-| **2.1.x** (main) · berikutnya | Offline outbox + read cache = satu pekerjaan konsistensi (LWW buta + hapus-menang, FIFO sekuensial, coalesce, antrean eksplisit, baca terdegradasi). OB1 selesai + commit/push 2026-10-23; OB2 selesai + commit/push 2026-10-25; OB3 menyusul | `specs/cashtrix-v2.x-outbox.md` + ADR-0003/0012, OB1 (#74) → OB2 (#75) → OB3 (#76), spec #73 |
+| **2.1.x** (main) · berikutnya | Offline outbox + read cache = satu pekerjaan konsistensi (LWW buta + hapus-menang, FIFO sekuensial, coalesce, antrean eksplisit, baca terdegradasi). OB1 selesai + commit/push 2026-10-23; OB2 selesai + commit/push 2026-10-25; OB3 selesai 2026-10-27 (gate lokal hijau, device gate LULUS, OTA long-press-only terkirim) | `specs/cashtrix-v2.x-outbox.md` + ADR-0003/0012, OB1 (#74) → OB2 (#75) → OB3 (#76), spec #73 |
 
 Bank sync, multi-currency (parkir OPEN-4), AI insight lanjutan antre di belakangnya
 per PRD. TanStack gugur permanen untuk trek ini ("banyak user" = urusan
@@ -335,7 +335,8 @@ Keputusan terkunci: Android hand-rolled (tanpa dep runtime), iOS tunda,
 tanpa label AI, tanpa angka/statistik fiktif di widget maupun kartu.
 
 Berikutnya (urutan pasca-2.1.0): Savings v1 Target Tabungan (SV1–SV4
-selesai + commit, device gate LULUS) lalu OB1–OB3 outbox + read cache.
+selesai + commit, device gate LULUS) lalu OB1–OB3 outbox + read cache
+(OB1/OB2/OB3 selesai).
 
 ### 6.10 Batch B1 + AI6 (satu rebuild hemat kuota, grill 2026-10-03)
 
@@ -360,7 +361,7 @@ fix `--skip-bundler --input-dir` tanpa sourcemap) → L4a drill-down **LULUS**
 compare **LULUS** (commit `46e505c`, OTA `8747fefd` + polish `69f45c8c`,
 gate 2026-10-20) → **Savings v1 Target Tabungan LULUS** (spec + ADR-0018;
 SV1–SV4, OTA final `718599fe`, gate 2026-10-21) → OB1–OB3 outbox + read
-cache. Gate hijau per rilis (pola Q10).
+cache (OB3 selesai 2026-10-27). Gate hijau per rilis (pola Q10).
 
 ### 6.12 Savings v1: Target Tabungan (grill 2026-10-21)
 
@@ -470,3 +471,31 @@ undo 10 detik (`undoQueuedSave`) yang juga menghapus foto lokal.
 Gate lokal: lint + typecheck + Jest 77 suite / 1116 test, kontrak statis
 112/10/3, legal 36/36, export Android + iOS. Commit/push 2026-10-25; OTA
 dan device gate tetap ditunda sampai OB3 hijau.
+
+### 6.16 OB3: indikator + buang per baris (selesai 2026-10-27)
+
+`OutboxStrip` duduk fixed di Dashboard tepat di bawah `AppHeader`, di luar
+`SectionList`, dengan varian menunggu / menunggu+gagal / gagal / selesai.
+Tombol `Kirim sekarang` hanya muncul saat ada baris menunggu dan disabled
+selama flush. `summarizeOutbox` menghitung `N gagal` hanya dari status
+`failed` non-network; kegagalan jaringan tetap “Menunggu” dan dicoba lagi.
+Badge baris pending memakai `pending-badge` dengan warna
+`budgetWarning`, bukan `error`. `lastFlush` hanya diisi oleh pass bersih
+(`sent > 0 && failed === 0 && !stopped`) dan tampil sebagai `outbox-done`
+selama 4 detik.
+
+Buang per baris memakai long-press pada baris pending → `DeleteConfirmSheet`
+(`outbox-discard`) → `remove(id)` + snackbar undo 10 detik. Ikon trash
+eksplisit dihapus setelah device gate long-press hijau; tidak ada hint
+visual tambahan. Helper `outboxDiscardDecision` menolak baris
+`missing`/`sending` sebelum sheet dan sebelum commit; tidak ada
+discard-all. `.maestro/flows/outbox.yaml` menguji strip, send-now, badge,
+dan sheet batal secara manual dalam mode pesawat (notifikasi done yang
+berumur pendek dikunci Jest; mode pesawat tetap di-set owner).
+
+Gate lokal: lint + typecheck + Jest 79 suite / 1138 test, kontrak statis
+117/10/3, legal 36/36, export Android + iOS. Device gate OTA
+`d040b704-7f77-4cb4-ac72-bdc0fd54d5fe` LULUS (owner; strip, badge,
+long-press, discard, send-now, auto-flush). OTA long-press-only terkirim
+2026-10-27 (grup `17fb595e-5ec2-4505-969c-e4beafcf2e6b`, runtime 2.1.0);
+commit/push 2026-10-27; device check visual final menyusul.

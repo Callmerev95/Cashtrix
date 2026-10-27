@@ -1,16 +1,23 @@
 import {
   OUTBOX_CAP,
+  OUTBOX_DONE_MS,
   OUTBOX_PHOTO_TTL_MS,
+  OUTBOX_RETRY_DELAYS_MS,
   READ_CACHE_LIMIT,
   coalesceOnEdit,
   dropOnDelete,
+  isFailedOutboxRow,
+  isPendingTransactionFailed,
   isQueueFull,
+  outboxDiscardDecision,
   isRetryableOutboxRow,
   mergePendingRows,
   outboxFailureFor,
+  outboxRetryDelay,
   referencedReceiptPaths,
   shouldQueueSaveError,
   sortFifo,
+  summarizeOutbox,
   toPendingTransaction,
   type OutboxDisplay,
   type OutboxRow,
@@ -85,6 +92,14 @@ describe('outbox constants', () => {
     expect(OUTBOX_PHOTO_TTL_MS).toBe(7 * 24 * 3600 * 1000);
     expect(isQueueFull(199)).toBe(false);
     expect(isQueueFull(200)).toBe(true);
+  });
+
+  it('backs retryable rows off in bounded steps', () => {
+    expect(OUTBOX_RETRY_DELAYS_MS).toEqual([5_000, 15_000, 60_000]);
+    expect(outboxRetryDelay(0)).toBe(5_000);
+    expect(outboxRetryDelay(1)).toBe(15_000);
+    expect(outboxRetryDelay(2)).toBe(60_000);
+    expect(outboxRetryDelay(9)).toBe(60_000);
   });
 });
 
@@ -309,5 +324,54 @@ describe('queue editing helpers', () => {
         }),
       ]),
     ).toEqual(['file:///photo.jpg', 'file:///b.jpg']);
+  });
+});
+
+describe('outbox summary (OB3)', () => {
+  it('counts retryable rows as waiting and only terminal refusals as failed', () => {
+    const rows = [
+      row({ id: 'waiting' }),
+      row({ id: 'sending', status: 'sending' }),
+      row({ id: 'network', status: 'failed', errorKind: 'network' }),
+      row({ id: 'server', status: 'failed', errorKind: 'server' }),
+    ];
+
+    expect(summarizeOutbox(rows)).toEqual({ waiting: 3, failed: 1 });
+    expect(isFailedOutboxRow(rows[3])).toBe(true);
+    expect(isFailedOutboxRow(rows[2])).toBe(false);
+  });
+
+  it('treats an empty queue as zero of both', () => {
+    expect(summarizeOutbox([])).toEqual({ waiting: 0, failed: 0 });
+  });
+
+  it('marks a pending feed row failed only for non-network errors', () => {
+    expect(
+      isPendingTransactionFailed(
+        transaction({ pending: true, pendingError: 'invalid_data' }),
+      ),
+    ).toBe(true);
+    expect(
+      isPendingTransactionFailed(
+        transaction({ pending: true, pendingError: 'network' }),
+      ),
+    ).toBe(false);
+    expect(isPendingTransactionFailed(transaction())).toBe(false);
+  });
+
+  it('keeps the done confirmation short and explicit', () => {
+    expect(OUTBOX_DONE_MS).toBe(4_000);
+  });
+
+  it('allows discard only for rows still in the queue and not sending', () => {
+    const rows = [
+      row({ id: 'waiting' }),
+      row({ id: 'failed', status: 'failed', errorKind: 'server' }),
+      row({ id: 'sending', status: 'sending' }),
+    ];
+    expect(outboxDiscardDecision(rows, 'waiting')).toBe('discard');
+    expect(outboxDiscardDecision(rows, 'failed')).toBe('discard');
+    expect(outboxDiscardDecision(rows, 'sending')).toBe('sending');
+    expect(outboxDiscardDecision(rows, 'gone')).toBe('missing');
   });
 });

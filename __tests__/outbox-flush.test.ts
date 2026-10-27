@@ -95,6 +95,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  jest.useRealTimers();
   resetOutboxDatabaseForTests();
 });
 
@@ -125,6 +126,7 @@ describe('outbox flush', () => {
     });
     expect(api.createTransaction).toHaveBeenCalledWith(
       expect.objectContaining({ idempotencyKey: 'a' }),
+      expect.objectContaining({ signal: expect.anything() }),
     );
   });
 
@@ -166,6 +168,7 @@ describe('outbox flush', () => {
     expect(api.createTransaction).toHaveBeenCalledTimes(1);
     expect(api.createTransaction).toHaveBeenCalledWith(
       expect.objectContaining({ idempotencyKey: 'good' }),
+      expect.objectContaining({ signal: expect.anything() }),
     );
     expect((await listOutbox(USER)).map((row) => row.id)).toEqual(['bad']);
   });
@@ -291,6 +294,47 @@ describe('outbox flush', () => {
     await flushOutbox({ userId: USER });
 
     expect(scan.scanReceipt).not.toHaveBeenCalled();
+  });
+
+  it('times out a hanging commit and keeps the row retryable', async () => {
+    jest.useFakeTimers();
+    await enqueueOutbox(input({ idempotencyKey: 'a' }));
+    api.createTransaction.mockImplementation(() => new Promise(() => undefined));
+
+    const pending = flushOutbox({ userId: USER });
+    await Promise.resolve();
+    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(20_000);
+    const result = await pending;
+
+    expect(result).toEqual({ sent: 0, failed: 1, stopped: true });
+    expect(await listOutbox(USER)).toMatchObject([
+      { id: 'a', status: 'failed', errorKind: 'network' },
+    ]);
+  });
+
+  it('keeps the committed save when a photo upload hangs', async () => {
+    jest.useFakeTimers();
+    await enqueueOutbox(
+      input({
+        idempotencyKey: 'a',
+        receiptPaths: ['file:///proof.jpg'],
+      }),
+    );
+    api.createTransaction.mockResolvedValue('tx-a');
+    receipts.uploadReceiptPhoto.mockImplementation(
+      () => new Promise(() => undefined),
+    );
+
+    const pending = flushOutbox({ userId: USER });
+    await Promise.resolve();
+    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(15_000);
+    const result = await pending;
+
+    expect(result).toEqual({ sent: 1, failed: 0, stopped: false });
+    expect(files.deleteOutboxPhoto).not.toHaveBeenCalled();
+    expect(await listOutbox(USER)).toEqual([]);
   });
 
   it('isolates users', async () => {

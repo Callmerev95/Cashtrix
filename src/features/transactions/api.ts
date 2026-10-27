@@ -216,8 +216,9 @@ export type TransactionDraft = {
  */
 export async function createTransaction(
   draft: TransactionDraft,
+  options?: { signal?: AbortSignal },
 ): Promise<string> {
-  const { data, error } = await supabase
+  const insert = supabase
     .from('transactions')
     .insert({
       user_id: draft.userId,
@@ -230,14 +231,19 @@ export async function createTransaction(
       note: draft.note,
       idempotency_key: draft.idempotencyKey,
     })
-    .select('id')
-    .single();
+    .select('id');
+  const request = options?.signal
+    ? insert.abortSignal(options.signal).single()
+    : insert.single();
+
+  const { data, error } = await request;
 
   if (error) {
     if (error.code === '23505') {
       const existing = await findByIdempotencyKey(
         draft.userId,
         draft.idempotencyKey,
+        options,
       );
       if (existing) return existing;
     }
@@ -250,13 +256,18 @@ export async function createTransaction(
 async function findByIdempotencyKey(
   userId: string,
   key: string,
+  options?: { signal?: AbortSignal },
 ): Promise<string | null> {
-  const { data, error } = await supabase
+  const lookup = supabase
     .from('transactions')
     .select('id')
     .eq('user_id', userId)
-    .eq('idempotency_key', key)
-    .maybeSingle();
+    .eq('idempotency_key', key);
+  const request = options?.signal
+    ? lookup.abortSignal(options.signal).maybeSingle()
+    : lookup.maybeSingle();
+
+  const { data, error } = await request;
 
   if (error) throw error;
   return (data as { id: string } | null)?.id ?? null;

@@ -13,6 +13,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, layout, radius, spacing, typography } from '@/theme';
 import { PRESS_FEEDBACK_DELAY_MS, pressedFeedback } from '@/components/pressed';
 import { dictionaryFor, useLanguage } from '@/i18n';
+import { isPendingTransactionFailed } from '@/features/outbox/domain';
 
 import { formatSignedAmount, formatTime, transferFeedLabel, type Transaction } from '../domain';
 
@@ -21,6 +22,7 @@ type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
 export function TransactionRow({
   transaction,
   onPress,
+  onLongPress,
   testID,
   selecting = false,
   selected = false,
@@ -28,6 +30,7 @@ export function TransactionRow({
 }: {
   transaction: Transaction;
   onPress?: () => void;
+  onLongPress?: () => void;
   testID?: string;
   /** A4 select mode: the icon well becomes a check circle. */
   selecting?: boolean;
@@ -52,9 +55,18 @@ export function TransactionRow({
     language,
   );
   const queued = transaction.pending === true;
+  const queuedFailed = queued && isPendingTransactionFailed(transaction);
+  const t = dictionaryFor(language);
   const queuedLabel = queued
-    ? dictionaryFor(language).outbox.pending
+    ? queuedFailed
+      ? t.outbox.failed
+      : t.outbox.pending
     : null;
+  const queuedHint = queued
+    ? queuedFailed
+      ? t.outbox.failedA11y
+      : t.outbox.pendingA11y
+    : undefined;
 
   const content = (
     <>
@@ -85,8 +97,20 @@ export function TransactionRow({
             {title}
           </Text>
           {queued ? (
-            <View testID="pending-badge" style={styles.pendingBadge}>
-              <Text style={[typography.bodySm, styles.pendingText]}>
+            <View
+              testID="pending-badge"
+              style={[
+                styles.pendingBadge,
+                queuedFailed && styles.failedBadge,
+              ]}
+            >
+              <Text
+                style={[
+                  typography.bodySm,
+                  styles.pendingText,
+                  queuedFailed && styles.failedText,
+                ]}
+              >
                 {queuedLabel}
               </Text>
             </View>
@@ -111,15 +135,16 @@ export function TransactionRow({
     </>
   );
 
-  if (!onPress) {
+  const accessibilityLabel = queued
+    ? `${accessibilityName}, ${amountText}, ${transaction.walletName}, ${queuedLabel}`
+    : `${accessibilityName}, ${amountText}, ${transaction.walletName}`;
+
+  if (!onPress && !onLongPress) {
     return (
       <View
         testID={testID}
-        accessibilityLabel={
-          queued
-            ? `${accessibilityName}, ${amountText}, ${transaction.walletName}, ${queuedLabel}`
-            : undefined
-        }
+        accessibilityLabel={queued ? accessibilityLabel : undefined}
+        accessibilityHint={queuedHint}
         style={[styles.row, dimmed && styles.dimmed]}
       >
         {content}
@@ -131,12 +156,10 @@ export function TransactionRow({
     <Pressable
       testID={testID}
       accessibilityRole="button"
-      accessibilityLabel={
-        queued
-          ? `${accessibilityName}, ${amountText}, ${transaction.walletName}, ${queuedLabel}`
-          : `${accessibilityName}, ${amountText}, ${transaction.walletName}`
-      }
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={queuedHint}
       onPress={onPress}
+      onLongPress={onLongPress}
       unstable_pressDelay={PRESS_FEEDBACK_DELAY_MS}
       style={({ pressed }) => [
         styles.row,
@@ -204,6 +227,13 @@ const styles = StyleSheet.create({
     color: colors.accent,
     fontSize: 10,
     lineHeight: 14,
+  },
+  failedBadge: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.budgetWarning,
+  },
+  failedText: {
+    color: colors.budgetWarning,
   },
   meta: {
     color: colors.textSecondary,

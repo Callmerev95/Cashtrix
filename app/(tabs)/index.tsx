@@ -11,7 +11,7 @@
  * client aggregation of money.
  */
 import { router } from 'expo-router';
-import { useCallback } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -22,15 +22,23 @@ import { MonthlySummaryCard, useAnalytics } from '@/features/analytics';
 import { useAuth } from '@/features/auth';
 import { useBudgets } from '@/features/budgets';
 import { useConnectivity } from '@/features/connectivity';
+import {
+  outboxDiscardDecision,
+  summarizeOutbox,
+  useOutbox,
+} from '@/features/outbox';
+import { OutboxStrip } from '@/features/outbox/components/outbox-strip';
 import { displayNameOrEmail, useProfile } from '@/features/profile';
 import { pickDashboardGoal, useSavings } from '@/features/savings';
 import { SavingsSummaryCard } from '@/features/savings/components/savings-summary-card';
 import {
+  DeleteConfirmSheet,
   QUEUED_SAVE_SNACKBAR_MS,
   SavedSnackbar,
   TransactionHistoryList,
   UndoSnackbar,
   useTransactions,
+  type Transaction,
 } from '@/features/transactions';
 import {
   formatCurrency,
@@ -85,6 +93,7 @@ export default function DashboardScreen() {
     loadMore,
     lastDeleted,
     lastSaved,
+    remove: removeTransaction,
     undoDelete,
     undoQueuedSave,
     dismissUndo,
@@ -95,6 +104,17 @@ export default function DashboardScreen() {
     refresh: refreshTransactions,
   } = useTransactions();
   const { isOnline } = useConnectivity();
+  const {
+    pendingRows,
+    available: outboxAvailable,
+    flushing: outboxFlushing,
+    lastFlush,
+    flush: flushOutboxNow,
+  } = useOutbox();
+  const outbox = summarizeOutbox(pendingRows);
+  const [discardTarget, setDiscardTarget] = useState<Transaction | null>(null);
+  const [discardBusy, setDiscardBusy] = useState(false);
+  const discardBusyRef = useRef(false);
   const insets = useSafeAreaInsets();
   // C6: copy + date format follow the OS language (ADR-0008, R10).
   const language = useLanguage();
@@ -121,6 +141,58 @@ export default function DashboardScreen() {
     ],
   );
   const { refreshing, onRefresh } = usePullRefresh(refreshDashboard);
+
+  const openDiscard = useCallback(
+    (transaction: Transaction) => {
+      if (!transaction.pending) return;
+      const decision = outboxDiscardDecision(pendingRows, transaction.id);
+      if (decision === 'missing') return;
+      if (decision === 'sending') {
+        Alert.alert(t.outbox.alreadySent);
+        return;
+      }
+      setDiscardTarget(transaction);
+    },
+    [pendingRows, t.outbox.alreadySent],
+  );
+
+  const confirmDiscard = useCallback(() => {
+    if (discardBusyRef.current) return;
+    const target = discardTarget;
+    if (!target) return;
+    const decision = outboxDiscardDecision(pendingRows, target.id);
+    if (decision === 'missing') {
+      setDiscardTarget(null);
+      return;
+    }
+    if (decision === 'sending') {
+      setDiscardTarget(null);
+      Alert.alert(t.outbox.alreadySent);
+      return;
+    }
+
+    discardBusyRef.current = true;
+    setDiscardBusy(true);
+    void removeTransaction(target.id)
+      .then(() => setDiscardTarget(null))
+      .catch((cause) => {
+        Alert.alert(
+          t.outbox.discardFail,
+          cause instanceof Error ? cause.message : t.common.retry,
+        );
+      })
+      .finally(() => {
+        discardBusyRef.current = false;
+        setDiscardBusy(false);
+      });
+  }, [
+    discardTarget,
+    pendingRows,
+    removeTransaction,
+    t.common.retry,
+    t.outbox.alreadySent,
+    t.outbox.discardFail,
+  ]);
 
   /** P3b-1: Dashboard long-press — Ubah reuses the card tap, Arsipkan reuses
    * the manage screen's archive path incl. the dual refresh (#81). */
@@ -312,6 +384,15 @@ export default function DashboardScreen() {
             onPress: () => router.push('/notifications'),
           }}
         />
+        {outboxAvailable ? (
+          <OutboxStrip
+            waiting={outbox.waiting}
+            failed={outbox.failed}
+            done={lastFlush?.sent ?? 0}
+            flushing={outboxFlushing}
+            onSendNow={() => void flushOutboxNow().catch(() => undefined)}
+          />
+        ) : null}
       </View>
       <View style={styles.listWrap}>
         <PullGesture refreshing={refreshing} onRefresh={onRefresh}>
@@ -342,6 +423,7 @@ export default function DashboardScreen() {
               params: { id: transaction.id },
             });
           }}
+          onLongPressTransaction={openDiscard}
         />
         </PullGesture>
       </View>
@@ -381,6 +463,20 @@ export default function DashboardScreen() {
           }
         />
       ) : null}
+      <DeleteConfirmSheet
+        visible={discardTarget !== null}
+        title={t.transactions.sheet.pendingTitle}
+        body={t.transactions.sheet.pendingBody}
+        confirmLabel={t.transactions.sheet.pendingConfirm}
+        cancelLabel={t.common.cancel}
+        closeLabel={t.transactions.sheet.close}
+        loading={discardBusy}
+        onCancel={() => {
+          if (!discardBusy) setDiscardTarget(null);
+        }}
+        onConfirm={confirmDiscard}
+        testID="outbox-discard"
+      />
     </Screen>
   );
 }

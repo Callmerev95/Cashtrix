@@ -15,7 +15,7 @@ import {
   toOnlineStatus,
   useConnectivity,
 } from '@/features/connectivity';
-import { Text } from 'react-native';
+import { AppState, Text } from 'react-native';
 import { useEffect } from 'react';
 
 jest.mock('@react-native-community/netinfo', () => ({
@@ -176,7 +176,22 @@ jest.mock('@/features/outbox', () => {
     failed: 0,
     stopped: false,
   });
-  return { useOutbox: () => ({ flush }), __testFlush: flush };
+  let pendingRows: unknown[] = [];
+  return {
+    useOutbox: () => ({ flush, pendingRows, flushing: false }),
+    isRetryableOutboxRow: (row: {
+      status?: string;
+      errorKind?: string | null;
+    }) =>
+      row.status === 'waiting' ||
+      row.status === 'sending' ||
+      (row.status === 'failed' && row.errorKind === 'network'),
+    outboxRetryDelay: () => 5_000,
+    __testFlush: flush,
+    __setPendingRows: (rows: unknown[]) => {
+      pendingRows = rows;
+    },
+  };
 });
 jest.mock('@/features/auth', () => ({
   useAuth: () => ({ session: { user: { id: 'u-1' } } }),
@@ -191,6 +206,12 @@ describe('ReconnectRefresh', () => {
     jest.clearAllMocks();
     netinfo.addEventListener.mockReturnValue(jest.fn());
     netinfo.fetch.mockResolvedValue(ONLINE);
+    testMock('@/features/outbox', '__setPendingRows')([]);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+    jest.restoreAllMocks();
   });
 
   it('mount tidak refresh; reconnect menyegarkan semua + catch-up', async () => {
@@ -261,6 +282,56 @@ describe('ReconnectRefresh', () => {
     expect(catchUp).toBeLessThan(flush);
     expect(flush).toBeLessThan(walletRefresh);
     expect(walletRefresh).toBeLessThan(evaluate);
+  });
+
+  it('flush saat app kembali foreground tanpa catch-up', async () => {
+    const appState = jest.spyOn(AppState, 'addEventListener');
+    render(
+      <ConnectivityProvider>
+        <ReconnectRefresh />
+      </ConnectivityProvider>,
+    );
+    await waitFor(() =>
+      expect(testMock('@/features/outbox', '__testFlush')).toHaveBeenCalledTimes(1),
+    );
+
+    const handler = appState.mock.calls.find(
+      ([event]) => event === 'change',
+    )?.[1] as ((state: string) => void) | undefined;
+    expect(handler).toBeDefined();
+
+    act(() => {
+      handler?.('active');
+    });
+
+    await waitFor(() =>
+      expect(testMock('@/features/outbox', '__testFlush')).toHaveBeenCalledTimes(2),
+    );
+    expect(testMock('@/features/recurring', '__testCatchUp')).not.toHaveBeenCalled();
+  });
+
+  it('mencoba ulang baris network yang berhenti selama online', async () => {
+    jest.useFakeTimers();
+    const flush = testMock('@/features/outbox', '__testFlush');
+    flush.mockResolvedValue({ sent: 0, failed: 1, stopped: true });
+    testMock('@/features/outbox', '__setPendingRows')([
+      { id: 'q1', status: 'failed', errorKind: 'network' },
+    ]);
+
+    render(
+      <ConnectivityProvider>
+        <ReconnectRefresh />
+      </ConnectivityProvider>,
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(flush).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(5_000);
+    });
+    expect(flush).toHaveBeenCalledTimes(2);
   });
 });
 

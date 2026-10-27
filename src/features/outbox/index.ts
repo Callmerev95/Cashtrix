@@ -1,21 +1,29 @@
 export {
   OUTBOX_CAP,
+  OUTBOX_DONE_MS,
   OUTBOX_PHOTO_TTL_MS,
+  OUTBOX_RETRY_DELAYS_MS,
   READ_CACHE_LIMIT,
   OutboxFullError,
   OutboxUnavailableError,
   coalesceOnEdit,
   dropOnDelete,
+  isFailedOutboxRow,
+  isPendingTransactionFailed,
   isQueueFull,
   isRetryableOutboxRow,
   mergePendingRows,
   outboxFailureFor,
+  outboxRetryDelay,
   referencedReceiptPaths,
   shouldQueueSaveError,
   sortFifo,
+  outboxDiscardDecision,
+  summarizeOutbox,
   toPendingTransaction,
 } from './domain';
 export type {
+  OutboxDiscardDecision,
   OutboxDisplay,
   OutboxEnqueueInput,
   OutboxErrorKind,
@@ -24,6 +32,7 @@ export type {
   OutboxPayload,
   OutboxRow,
   OutboxStatus,
+  OutboxSummary,
 } from './domain';
 export { OutboxProvider, useOutbox } from './outbox-context';
 export {

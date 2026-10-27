@@ -431,7 +431,17 @@ export const id = {
   outbox: {
     queuedSaved: '{name} · Rp {amount} menunggu terkirim',
     pending: 'Menunggu',
-    pendingA11y: 'Menunggu terkirim. Ketuk untuk mengubah.',
+    pendingA11y:
+      'Menunggu terkirim. Ketuk untuk mengubah, tahan untuk membuang.',
+    failed: 'Gagal',
+    failedA11y:
+      'Gagal terkirim. Ketuk untuk memperbaiki, tahan untuk membuang.',
+    stripWaiting: '{count} menunggu terkirim',
+    stripFailed: '{count} gagal terkirim',
+    stripDone: '{count} transaksi terkirim',
+    sendNow: 'Kirim sekarang',
+    sending: 'Mengirim…',
+    discardFail: 'Gagal membuang antrean',
     cacheStamp: 'Data terakhir · {time}',
     monthlyOffline: 'Ringkasan bulan ini butuh koneksi.',
     offlineNoData:

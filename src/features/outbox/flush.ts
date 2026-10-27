@@ -21,6 +21,9 @@ import { hasScanConsent, scanReceipt } from '@/features/receipts/scan';
 import {
   isRetryableOutboxRow,
   outboxFailureFor,
+  OUTBOX_ATTACHMENT_TIMEOUT_MS,
+  OUTBOX_LINK_TIMEOUT_MS,
+  OUTBOX_SEND_TIMEOUT_MS,
   sortFifo,
   type OutboxRow,
 } from './domain';
@@ -38,6 +41,29 @@ export type FlushResult = {
   stopped: boolean;
 };
 
+async function withTimeout<T>(
+  work: Promise<T>,
+  ms: number,
+  onTimeout?: () => void,
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      work,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          onTimeout?.();
+          const error = new Error('outbox_timeout');
+          error.name = 'AbortError';
+          reject(error);
+        }, ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 async function uploadReceipts(
   userId: string,
   row: OutboxRow,
@@ -46,11 +72,14 @@ async function uploadReceipts(
   const scanPaths: string[] = [];
   for (const path of row.payload.receiptPaths) {
     try {
-      const uploaded = await uploadReceiptPhoto({
-        userId,
-        sourceUri: path,
-        mime: 'image/jpeg',
-      });
+      const uploaded = await withTimeout(
+        uploadReceiptPhoto({
+          userId,
+          sourceUri: path,
+          mime: 'image/jpeg',
+        }),
+        OUTBOX_ATTACHMENT_TIMEOUT_MS,
+      );
       ids.push(uploaded.id);
       scanPaths.push(uploaded.storagePath);
       deleteOutboxPhoto(path);
@@ -74,7 +103,10 @@ async function retryScans(storagePaths: string[]): Promise<void> {
     if (!(await hasScanConsent())) return;
     await Promise.all(
       storagePaths.map((storagePath) =>
-        scanReceipt({ storagePath }).catch(() => undefined),
+        withTimeout(
+          scanReceipt({ storagePath }),
+          OUTBOX_ATTACHMENT_TIMEOUT_MS,
+        ).catch(() => undefined),
       ),
     );
   } catch {
@@ -101,25 +133,36 @@ export async function flushOutbox(input: {
     await input.onProgress?.();
 
     try {
-      const transactionId = await createTransaction({
-        userId: input.userId,
-        walletId: row.payload.walletId,
-        categoryId: row.payload.categoryId,
-        counterpartyWalletId: row.payload.counterpartyWalletId,
-        type: row.payload.type,
-        amount: row.payload.amount,
-        occurredAt: row.payload.occurredAt,
-        note: row.payload.note,
-        idempotencyKey: row.id,
-      });
+      const controller = new AbortController();
+      const transactionId = await withTimeout(
+        createTransaction(
+          {
+            userId: input.userId,
+            walletId: row.payload.walletId,
+            categoryId: row.payload.categoryId,
+            counterpartyWalletId: row.payload.counterpartyWalletId,
+            type: row.payload.type,
+            amount: row.payload.amount,
+            occurredAt: row.payload.occurredAt,
+            note: row.payload.note,
+            idempotencyKey: row.id,
+          },
+          { signal: controller.signal },
+        ),
+        OUTBOX_SEND_TIMEOUT_MS,
+        () => controller.abort(),
+      );
 
       const uploaded = await uploadReceipts(input.userId, row);
       if (uploaded.ids.length > 0) {
-        await linkReceiptsToTransaction({
-          userId: input.userId,
-          receiptIds: uploaded.ids,
-          transactionId,
-        }).catch(() => 0);
+        await withTimeout(
+          linkReceiptsToTransaction({
+            userId: input.userId,
+            receiptIds: uploaded.ids,
+            transactionId,
+          }),
+          OUTBOX_LINK_TIMEOUT_MS,
+        ).catch(() => 0);
       }
       await retryScans(uploaded.scanPaths);
 

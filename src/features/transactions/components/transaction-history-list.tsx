@@ -47,6 +47,7 @@ export function TransactionHistoryList({
   hasMore,
   onEndReached,
   onPressTransaction,
+  onLongPressTransaction,
   ListHeaderComponent,
   contentContainerStyle,
   emptyLabel,
@@ -67,6 +68,8 @@ export function TransactionHistoryList({
   hasMore?: boolean;
   onEndReached?: () => void;
   onPressTransaction?: (transaction: Transaction) => void;
+  /** OB3: long-press only applies to queued rows (discard affordance). */
+  onLongPressTransaction?: (transaction: Transaction) => void;
   ListHeaderComponent?: React.ComponentType | React.ReactElement | null;
   contentContainerStyle?: StyleProp<ViewStyle>;
   emptyLabel?: string;
@@ -115,6 +118,11 @@ export function TransactionHistoryList({
             dimmed={selecting && item.type === 'transfer'}
             onPress={
               onPressTransaction ? () => onPressTransaction(item) : undefined
+            }
+            onLongPress={
+              item.pending && onLongPressTransaction
+                ? () => onLongPressTransaction(item)
+                : undefined
             }
           />
         </Stagger>

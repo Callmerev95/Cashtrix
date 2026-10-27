@@ -86,6 +86,32 @@ describe('toggleBulkRow', () => {
   });
 });
 
+describe('TransactionRow pending badge (OB3)', () => {
+  it('shows Menunggu for network retries and Gagal for terminal refusals', () => {
+    const { rerender } = render(
+      <TransactionRow
+        testID="row-1"
+        transaction={row({ pending: true, pendingError: 'network' })}
+      />,
+    );
+    expect(screen.getByText('Menunggu')).toBeTruthy();
+    expect(screen.getByTestId('row-1').props.accessibilityHint).toContain(
+      'tahan',
+    );
+
+    rerender(
+      <TransactionRow
+        testID="row-1"
+        transaction={row({ pending: true, pendingError: 'invalid_data' })}
+      />,
+    );
+    expect(screen.getByText('Gagal')).toBeTruthy();
+    expect(screen.getByTestId('row-1').props.accessibilityHint).toContain(
+      'Gagal',
+    );
+  });
+});
+
 describe('TransactionRow select mode', () => {
   it('tanpa selecting: well ikon, tanpa centang', () => {
     render(<TransactionRow testID="row-1" transaction={row()} />);

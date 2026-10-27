@@ -1,0 +1,41 @@
+# OB3 outbox strip (issue #76) — manual device run.
+# Setup: go offline and save at least one transaction, then run this flow
+# while still offline. Maestro cannot toggle airplane mode, so the setup is
+# manual; the flow proves the strip, the per-row discard confirmation, and
+# that a network-failed manual send keeps the row waiting.
+# The clean-flush “outbox-done” notice is covered by Jest (it is short-lived
+# and the mount-time auto flush would clear the queue before Maestro sees it).
+appId: com.callmerev95.cashtrix
+---
+- launchApp:
+    clearState: false
+
+- extendedWaitUntil:
+    visible:
+      id: "dashboard-history"
+    timeout: 30000
+- assertVisible:
+    id: "outbox-strip"
+- assertVisible:
+    id: "outbox-send-now"
+
+# Long-press the queued row's badge; the badge lives inside the row Pressable.
+- longPressOn:
+    id: "pending-badge"
+- extendedWaitUntil:
+    visible:
+      id: "outbox-discard"
+    timeout: 5000
+- tapOn:
+    id: "outbox-discard-cancel"
+- assertVisible:
+    id: "outbox-strip"
+
+# Still offline: the manual pass fails as a network retry, so the row stays
+# in the waiting bucket and the strip never claims a successful send.
+- tapOn:
+    id: "outbox-send-now"
+- extendedWaitUntil:
+    visible:
+      id: "outbox-send-now"
+    timeout: 15000

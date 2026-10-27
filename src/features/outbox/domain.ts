@@ -23,8 +23,38 @@ export const READ_CACHE_LIMIT = 100;
 /** Local photos are swept after this window when no queue row references them. */
 export const OUTBOX_PHOTO_TTL_MS = 7 * 24 * 3600 * 1000;
 
+/** How long the strip keeps the “sent” confirmation after a clean flush. */
+export const OUTBOX_DONE_MS = 4_000;
+
+/** A committed save must not hold the queue in `sending` forever. */
+export const OUTBOX_SEND_TIMEOUT_MS = 20_000;
+
+/** Photos/OCR are proof, not the save; cap their best-effort tail. */
+export const OUTBOX_ATTACHMENT_TIMEOUT_MS = 15_000;
+
+/** Linking an already-uploaded photo is a fast DB write, not an upload. */
+export const OUTBOX_LINK_TIMEOUT_MS = 10_000;
+
+/** Bounded backoff for retryable rows while the app stays online. */
+export const OUTBOX_RETRY_DELAYS_MS = [5_000, 15_000, 60_000] as const;
+
+export function outboxRetryDelay(attempt: number): number {
+  const index = Math.min(
+    Math.max(attempt, 0),
+    OUTBOX_RETRY_DELAYS_MS.length - 1,
+  );
+  return OUTBOX_RETRY_DELAYS_MS[index];
+}
+
 export type OutboxStatus = 'waiting' | 'sending' | 'failed';
 export type OutboxErrorKind = 'network' | 'server' | null;
+
+export type OutboxSummary = {
+  /** Rows still eligible for the next flush (waiting + network failures). */
+  waiting: number;
+  /** Rows the server refused; only repair or discard clears them. */
+  failed: number;
+};
 
 /**
  * Stable failure codes persisted in `error_message`. The UI maps them to
@@ -168,6 +198,36 @@ export function isRetryableOutboxRow(row: OutboxRow): boolean {
   );
 }
 
+/** A terminal server refusal — not something the next reconnect can fix. */
+export function isFailedOutboxRow(row: OutboxRow): boolean {
+  return row.status === 'failed' && row.errorKind !== 'network';
+}
+
+/**
+ * The strip’s two honest buckets: retryable rows are “waiting”, terminal
+ * refusals are “failed”. No third “sending” bucket — it is a waiting row.
+ */
+export function summarizeOutbox(rows: OutboxRow[]): OutboxSummary {
+  const failed = rows.filter(isFailedOutboxRow).length;
+  return { waiting: rows.length - failed, failed };
+}
+
+export type OutboxDiscardDecision = 'discard' | 'missing' | 'sending';
+
+/**
+ * Long-press discard guard: a row that already left for the server must
+ * finish (the server is the source of truth), and a row that vanished while
+ * the sheet was open must not turn into an online delete.
+ */
+export function outboxDiscardDecision(
+  rows: OutboxRow[],
+  id: string,
+): OutboxDiscardDecision {
+  const row = rows.find((item) => item.id === id);
+  if (!row) return 'missing';
+  return row.status === 'sending' ? 'sending' : 'discard';
+}
+
 /**
  * Whether a failed save is safe to queue. Offline is always queueable; online
  * only transport/5xx failures are (a 4xx is a validation/RLS refusal that a
@@ -194,6 +254,16 @@ export function shouldQueueSaveError(
 
   return /network request failed|failed to fetch|fetch failed|networkerror|timeout|timed out|load failed/i.test(
     readMessage(error),
+  );
+}
+
+/** True only when the queued row needs repair — network failures still wait. */
+export function isPendingTransactionFailed(transaction: Transaction): boolean {
+  return (
+    transaction.pending === true &&
+    typeof transaction.pendingError === 'string' &&
+    transaction.pendingError.length > 0 &&
+    transaction.pendingError !== 'network'
   );
 }
 
