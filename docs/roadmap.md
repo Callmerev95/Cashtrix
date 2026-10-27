@@ -498,4 +498,4 @@ Gate lokal: lint + typecheck + Jest 79 suite / 1138 test, kontrak statis
 `d040b704-7f77-4cb4-ac72-bdc0fd54d5fe` LULUS (owner; strip, badge,
 long-press, discard, send-now, auto-flush). OTA long-press-only terkirim
 2026-10-27 (grup `17fb595e-5ec2-4505-969c-e4beafcf2e6b`, runtime 2.1.0);
-commit/push 2026-10-27; device check visual final menyusul.
+commit/push `55f2f79` 2026-10-27; device check visual final menyusul.
