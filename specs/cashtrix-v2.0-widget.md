@@ -8,7 +8,8 @@ Istilah mengikuti `CONTEXT.md`. Jangan drift ke daftar `_Avoid_`.
 
 Rilis sebagai **`2.0.0`**: item pertama payung v2.x. Multi-currency parkir
 (OPEN-4, default perilaku hari ini), TanStack gugur (keputusan lama bertahan),
-outbox + read cache tetap paket utuh untuk rilis berikut (ADR-0003).
+outbox + read cache tetap paket utuh untuk rilis berikut (ADR-0003); paket itu
+selesai 2026-10-27 sebagai OB1–OB3 di 2.1.x (R17).
 
 ## Problem Statement
 

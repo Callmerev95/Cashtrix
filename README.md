@@ -9,8 +9,11 @@ riwayat, inbox notifikasi, dan widget home screen. Saran AI selalu prefill yang 
 diketuk Simpan manual. Satu pengguna, satu perangkat; semua agregasi
 uang dihitung di Postgres, tidak pernah di klien.
 
-> **Status: 2.1.x (OTA) stabil — Savings v1 (Target Tabungan) di `main`.**
-> R16 SV1–SV4 selesai: `verify-savings` 44/44, OTA final `718599fe`
+> **Status: 2.1.x (OTA) stabil — Savings v1 + offline outbox (OB1–OB3) di `main`.**
+> R17 OB1–OB3 selesai 2026-10-27: antrean tulis SQLite + cache baca, flush
+> FIFO/coalesce, strip Dashboard + badge + buang long-press; OTA long-press-only
+> `17fb595e` (Android, runtime 2.1.0), device gate OTA sebelumnya `d040b704`
+> LULUS. R16 SV1–SV4 selesai: `verify-savings` 44/44, OTA final `718599fe`
 > (Android, runtime 2.1.0), device gate LULUS 2026-10-21. R15: L4a drill-down
 > Analytics → `/search` (`3dc29b0`, OTA `b9a7e1ac`, gate 2026-10-19) + L4b
 > multi-wallet compare (`46e505c`, OTA `8747fefd` + polish `69f45c8c`, gate
@@ -27,14 +30,14 @@ uang dihitung di Postgres, tidak pernah di klien.
 
 | Dokumen | Isi |
 |---|---|
-| [PRD.md](PRD.md) | Keputusan produk terkunci (D1–D11), KPI, Epic A–F, AI Fase 1 (§3), risiko, revisi R1–R16 |
+| [PRD.md](PRD.md) | Keputusan produk terkunci (D1–D11), KPI, Epic A–F, AI Fase 1 (§3), risiko, revisi R1–R17 |
 | [DESIGN.md](DESIGN.md) | Design system kanonik "Minimalist Obsidian" (sumber kebenaran visual) |
 | [specs/cashtrix-mvp.md](specs/cashtrix-mvp.md) | Spec MVP v1.0 |
 | [specs/cashtrix-v1.1.md](specs/cashtrix-v1.1.md) | Spec v1.1 (V0–V6) |
 | [specs/cashtrix-v1.2.md](specs/cashtrix-v1.2.md) | Spec v1.2 (S1–S3 pintasan + scan, gerbang `1.2.0`) |
 | [specs/cashtrix-voice-capture.md](specs/cashtrix-voice-capture.md) | Spec voice capture / Catat Suara (VC1–VC3, device lolos, tanpa bump versi) |
 | [specs/cashtrix-savings.md](specs/cashtrix-savings.md) | Spec Savings v1 — Target Tabungan (SV1–SV4, OTA 2.1.x, device lolos) |
-| [specs/tickets.md](specs/tickets.md) | Peta ticket: T1–T11, V0–V6, A3–A6, D4, B4, C6, C2/D5/D3, S1–S3 + RLS, VC1–VC3, WG1–WG3, OB1–OB3, AU1/AU2, AI1–AI6 + B1, PR1–PR2, P1–P3, L1–L4 (L4a drill-down, L4b compare, L4c custom range), SV1–SV4 |
+| [specs/tickets.md](specs/tickets.md) | Peta ticket: T1–T11, V0–V6, A3–A6, D4, B4, C6, C2/D5/D3, S1–S3 + RLS, VC1–VC3, WG1–WG3, OB1–OB3 (selesai), AU1/AU2, AI1–AI6 + B1, PR1–PR2, P1–P3, L1–L4 (L4a drill-down, L4b compare, L4c custom range), SV1–SV4 |
 | [docs/roadmap.md](docs/roadmap.md) | Katalog ide + urutan rilis + keputusan OPEN |
 | [docs/adr/](docs/adr/) | ADR-0001..0018 (scope, dev-client, transfer, recurring, legal, lock, i18n, shortcut/scan, voice, widget, outbox, SMTP, OAuth, audio Fase 2, batch haptics, analytics-svg-widget, savings-target) |
 | [docs/release-gate.md](docs/release-gate.md) | Gerbang rilis: bukti E2E, KPI, checklist visual, pra-store |
@@ -275,8 +278,8 @@ uang dihitung di Postgres, tidak pernah di klien.
 
 ### 2FA TOTP (C2)
 
-- Opt-in via Profile: enroll satu faktor TOTP (tautan `otpauth://` + secret
-  manual, tanpa gambar QR), verifikasi 6 digit.
+- Opt-in via Profile: enroll satu faktor TOTP (QR + fallback tautan
+  `otpauth://` + secret manual), verifikasi 6 digit.
 - Login dengan 2FA aktif: password → layar challenge → tabs. Batal = sign-out
   (sesi setengah jalan tidak dibiarkan linger).
 - Unenroll via konfirmasi dari Profile. Recovery = reset password via email
@@ -290,10 +293,31 @@ uang dihitung di Postgres, tidak pernah di klien.
 - Tanpa JWT = 401 sebelum rate check; limit tercapai = 429 + `Retry-After`.
 - Fail-open: gangguan guard tidak pernah membrick login.
 
+### Offline outbox + cache baca (OB1–OB3, R17)
+
+- **Tulis offline = antrean, bukan retry buta.** Create saat offline/5xx masuk
+  antrean SQLite (cap 200, idempotency key = id antrean); edit/hapus offline
+  ditolak dengan pesan jelas karena target server belum tentu ada. Baris antre
+  tampil di Riwayat dengan badge **Menunggu/Gagal**, tidak dihitung ke saldo,
+  anggaran, atau Analytics.
+- **Flush FIFO saat koneksi kembali/app open:** satu baris per satu baris,
+  edit/hapus/undo di antrean di-coalesce (niat terakhir menang; hapus menang),
+  `23505` dianggap sudah tersimpan. Gagal jaringan menghentikan pass; gagal
+  server 4xx bertahan beralasan sampai diedit/dibuang.
+- **Foto struk offline** disimpan di sandbox (resize 1600px JPEG), diunggah
+  pasca-commit, lalu OCR dicoba ulang best-effort; file yatim disapu 7 hari.
+- **Strip Dashboard** (`outbox-strip`) menunjukkan `N menunggu` / `N menunggu ·
+  M gagal` / `N transaksi terkirim`, dengan `Kirim sekarang`; buang per baris
+  lewat **long-press** + konfirmasi + snackbar Urungkan. Tidak ada hapus semua.
+- **Cache baca** (maks 100 baris yang sudah dimuat) untuk Dashboard, Riwayat,
+  dan opsi form; label `Data terakhir · HH:MM` saat cache dipakai. Layar
+  agregasi (Analytics, Budgets, Search, Notifikasi, Recurring, Savings) memakai
+  `OfflineGate` dan tidak mengkloning agregasi ke perangkat.
+
 ### Ketahanan & status (D4)
 
 - Banner offline in-flow (NetInfo) + **refresh otomatis** semua data +
-  catch-up saat koneksi kembali, tanpa memblokir app open.
+  catch-up + flush outbox saat koneksi kembali, tanpa memblokir app open.
 - `ErrorStateCard` seragam dengan retry di 6 permukaan: Analytics, Budgets,
   Search, Notifikasi, section Dompet & Riwayat Dashboard.
 
@@ -325,7 +349,7 @@ uang dihitung di Postgres, tidak pernah di klien.
 | Widget | Plugin config hand-rolled (`plugins/`, tanpa dep runtime, Android-only) |
 | Unit test | Jest (preset `jest-expo`), fungsi domain murni |
 | DB test | pgTAP (`supabase/tests/database/`, 21 file, 500 assertion) |
-| E2E | Maestro (`happy-path` + `smoke` + `voice` + `widget`) + cermin API `verify-t11` |
+| E2E | Maestro (`happy-path` + `smoke` + `voice` + `widget` + `outbox`) + cermin API `verify-t11` |
 | CI | GitHub Actions, `release-gate.yml` (lint → typecheck → Jest → kontrak statis → export → `verify-legal`; matriks live termasuk `verify-savings` saat push `main`) |
 | Distribusi | EAS (profil `development` / `preview` / `production`), `expo-dev-client`, OTA `expo-updates` (`runtimeVersion: appVersion`) |
 
@@ -345,11 +369,11 @@ font dari `DESIGN.md`, bukan dari layar Stitch.
   Profile → Mfa), dibungkus `DataProviders` dengan
   `key={user.id}` sehingga tiap login me-remount dan fetch segar; refresh
   berpasangan memakai ulang promise in-flight (tanpa query ganda).
-- **16 modul fitur** = `domain.ts` (murni, seam Jest) + `api.ts` (Supabase)
+- **17 modul fitur** = `domain.ts` (murni, seam Jest) + `api.ts` (Supabase)
   + `*-context.tsx` + `components/`. Modul: `auth`, `wallets`, `savings`,
   `transactions`, `analytics`, `budgets`, `profile`, `recurring`, `voice`,
-  `receipts`, `lock`, `mfa`, `haptics`, `connectivity`, `data-ownership`,
-  `observability`.
+  `receipts`, `lock`, `mfa`, `haptics`, `connectivity`, `outbox`,
+  `data-ownership`, `observability`.
 - **Aturan yang mudah dilanggar (PRD §4):** tidak ada kolom saldo mutable;
   semua agregasi finansial di Postgres; bulan budget dari timezone user;
   RLS 100% tabel deny-by-default; dedup alert via unique constraint.
@@ -430,7 +454,7 @@ Cashtrix/
 │   ├── mfa-enroll.tsx          #   enroll TOTP (modal)
 │   └── delete-account.tsx      #   hapus akun (gerbang ketik HAPUS)
 ├── src/
-│   ├── features/               # 16 modul (domain + api + context + components)
+│   ├── features/               # 17 modul (domain + api + context + components)
 │   │   ├── auth/               #   validation, api, auth-context, deep-link
 │   │   ├── wallets/            #   domain, api, context, total-balance-card…
 │   │   ├── savings/            #   domain, api, context, savings-ring/card…
@@ -450,6 +474,7 @@ Cashtrix/
 │   │   ├── haptics/            #   domain, api (6 tap best-effort)
 │   │   ├── connectivity/       #   domain, context, offline-banner,
 │   │   │                       #   reconnect-refresh
+│   │   ├── outbox/             #   domain, db, flush, cache, context, strip
 │   │   ├── data-ownership/     #   export CSV, share
 │   │   └── observability/      #   sink event, transport Sentry
 │   ├── components/             # bersama: Screen, Card, Button, Skeleton,
@@ -469,7 +494,7 @@ Cashtrix/
 │   ├── templates/              # template email konfirmasi/recovery (sumber ID;
 │   │                           # EN ditempel langsung di Dashboard, bukan repo)
 │   └── tests/database/         # pgTAP 00_setup + 01–21
-├── __tests__/                 # 70 suite Jest (hapus .session-seed.json bila stale)
+├── __tests__/                 # 79 suite Jest (hapus .session-seed.json bila stale)
 │   ├── mocks/                  #   stand-in modul native
 │   └── fixtures/               #   golden set AI (voice + receipt)
 ├── scripts/                    # verify-t5..t9, verify-t11, verify-v2/v3/v4,
@@ -608,10 +633,10 @@ Empat lapis; setiap ticket menjalankan ulang seluruh suite (tanpa regresi):
 
 | Lapis | Tool | Cakupan | Status |
 |---|---|---|---|
-| Unit domain | Jest, 70 suite | Format id-ID, validasi amount, threshold 79.9/80/99.9/100, boundary bulan tz, dedup alert, kalender, search, bulk, undo-window, reload pasca-login, tone warna, konektivitas, recurring, inbox, haptics, waveform, voice/record, AI (parse/validasi/wiring/golden/transcribe), insight, custom range, savings, wallet compare | **1046/1046 hijau** |
+| Unit domain | Jest, 79 suite | Format id-ID, validasi amount, threshold 79.9/80/99.9/100, boundary bulan tz, dedup alert, kalender, search, bulk, undo-window, reload pasca-login, tone warna, konektivitas, recurring, inbox, haptics, waveform, voice/record, AI (parse/validasi/wiring/golden/transcribe), insight, custom range, savings, wallet compare, outbox/cache/flush | **1138/1138 hijau** |
 | Unit RLS/SQL | pgTAP, 21 file | Isolasi antar-user semua tabel, constraint, limit 10 wallet, storage, trigger profil, kategori sistem, saldo, reassign, transaksi, analytics, budget, mutes, transfer, recurring, arsip, alert-read, rate-limit, receipts, category-series, wallet compare, savings | **500 assertion hijau** |
 | Live per fitur | `scripts/verify-*.mjs` | Alur nyata via anon client + Admin API (`provisionTestUser`): T5/T6/T7/T8/T9, transfer (V2), recurring (V3), arsip+undo (V4), savings (SV1–SV4), inbox (A5), rate-limit (D5), lampiran (S2), OCR (S3), AI voice (AI1), audio (AI6), insight (L1–L3), legal (AI5), kontrak statis + mirror E2E (T11) | Hijau, self-cleanup |
-| E2E device | Maestro | Login → 3 txn + alert → transfer → rule + catch-up → hapus + urungkan (`happy-path`); `smoke` read-only; `voice` (dikte + split); `widget` (3 pintu) | Manual per gerbang |
+| E2E device | Maestro | Login → 3 txn + alert → transfer → rule + catch-up → hapus + urungkan (`happy-path`); `smoke` read-only; `voice` (dikte + split); `widget` (3 pintu); `outbox` (strip, kirim, badge, long-press discard) | Manual per gerbang |
 
 Konvensi: skrip live butuh `SUPABASE_SERVICE_ROLE_KEY` via env sekali pakai
 (konfirmasi email aktif di hosted membuat signup anon domain `.test`
@@ -708,7 +733,8 @@ Penuhnya di PRD §6.1 dan [docs/adr/](docs/adr/); yang paling memengaruhi kode:
 - **R5**, Riwayat hanya dari `v_transactions_feed`; hapus/pulih via RPC
   berperilaku hitung-baris; retensi 30 hari via `pg_cron`.
 - **R6**, Scope v1.1 dibekukan (distribusi + transfer + recurring +
-  kalender + undo + arsip); outbox offline & read cache ditunda ke v2.0.
+  kalender + undo + arsip); outbox offline & read cache ditunda ke v2.0
+  (kemudian dikerjakan 2.1.x, R17).
 - **R7/R8**, Transfer = satu baris tanpa kategori; recurring = catch-up RPC
   bulanan (bukan cron/pengingat); privasi di Pages; reset via deep link.
 - **R9**, App lock device-local, grace 60 dtk, cold start selalu kunci
@@ -728,6 +754,10 @@ Penuhnya di PRD §6.1 dan [docs/adr/](docs/adr/); yang paling memengaruhi kode:
   (L4b, RPC `analytics_wallet_compare`); jendela drill sama dengan angka layar.
 - **R16**, Savings v1: target = metadata Dompet, progress dari saldo; tanpa
   ledger/alokasi kedua; badge status, bukan penguncian dana.
+- **R17**, Offline outbox + cache baca (OB1–OB3): create offline masuk antrean
+  SQLite (edit/hapus offline ditolak), flush FIFO + coalesce + LWW, foto struk
+  sandbox lalu upload pasca-commit, strip/badge/long-press discard, cache baca
+  maks 100 baris; agregasi tetap server-only.
 - Pola yang hanya boleh dilanggar dengan revisi PRD dulu: D1–D11.
 
 ---
@@ -776,10 +806,12 @@ Katalog lengkap hidup di **[docs/roadmap.md](docs/roadmap.md)**.
   dari saldo, Dashboard summary + `/savings` + form, tambah dana via
   transfer, eye-hidden, guard hapus; live 44/44, pgTAP 29/29, OTA
   `718599fe`, gate LULUS 2026-10-21.
-- **Berikutnya:** OB1–OB3 outbox + read cache paket utuh (spec sync
-  mencakup `transaction_receipts` sebagai tipe antrean), lalu bank sync,
-  multi-currency (parkir OPEN-4, mungkin IDR-saja) + kurs, AI insight
-  lanjutan.
+- **Offline outbox + cache baca (OB1–OB3, R17)** ✅ di `main` (2026-10-27):
+  antrean tulis SQLite + cache baca, flush FIFO/coalesce, strip Dashboard +
+  badge + buang long-press; Jest 1138/1138, kontrak 117/10/3, OTA
+  long-press-only `17fb595e`, device gate OTA `d040b704` LULUS.
+- **Berikutnya:** bank sync, multi-currency (parkir OPEN-4, mungkin IDR-saja)
+  + kurs, AI insight lanjutan, widget iOS, billing scan.
 
 Prinsip urutan (§6.4): menutup lubang > menambah permukaan; fondasi ada >
 butuh keputusan (grill dulu, pola ADR); satu pass lintas-layar dikerjakan

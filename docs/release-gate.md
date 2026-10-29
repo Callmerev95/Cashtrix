@@ -279,3 +279,18 @@ Savings v1 (`main`):
 
 PRD R16 tercatat 2026-10-21 (approval per-baris pemilik). Tanpa tag baru (OTA
 berjalan di runtime 2.1.0).
+
+## 10. Gerbang 2.1.x: offline outbox OB1–OB3
+
+Rilis OTA 2.1.x (tanpa bump versi, satu modul native `expo-sqlite` sehingga
+butuh rebuild preview sebelum uji airplane-mode). Gate di commit final
+`55f2f79`:
+
+| Gate | Bukti |
+|---|---|
+| Unit + statis | lint, typecheck, Jest 1138/1138 (79 suite), kontrak `verify-t11.mjs --static-only` 117 id / 10 teks / 3 KPI (+4 cek quick-action), `verify-legal.mjs` 36/36, `expo export` Android + iOS |
+| SQL | Tanpa DDL server baru; pgTAP 21 file / 500 assertion tetap hijau dari gate terakhir (outbox/read cache = SQLite klien) |
+| Live | Matriks live §5 tidak berubah; OB1–OB3 tidak menambah verify script (alur perangkat diuji Maestro `outbox.yaml`) |
+| Device | OTA `d040b704` gate alur LULUS 2026-10-27 (strip, badge, long-press discard, send-now, auto-flush); OTA long-press-only `17fb595e` terkirim setelah ikon trash eksplisit dihapus — cek visual final menyusul |
+
+PRD R17 tercatat 2026-10-27. Tanpa tag baru (OTA berjalan di runtime 2.1.0).

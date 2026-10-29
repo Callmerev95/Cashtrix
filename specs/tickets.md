@@ -162,10 +162,10 @@ Semua ticket `ready-for-agent`. Urutan mengikat: S1 → S2 → S3 (tiap fase bis
 
 - `1.2.0` = akumulasi pasca-1.1.0 (A3–A6, B4, C2, C6, D3–D5, skeleton) + S1–S3.
   Satu bump minor di akhir, bukan per fase.
-- `2.0.0` = widget + fast-lane (WG1–WG3, item pertama payung v2.x). Rilis
-  berikut = outbox + read cache paket utuh (OB1–OB3, setelah WG3 hijau).
-  Tiap rilis gate hijau sendiri (pola Q10). Bank sync / multi-currency / AI
-  menyusul di payung 2.x.
+- `2.0.0` = widget + fast-lane (WG1–WG3, item pertama payung v2.x). Outbox +
+  read cache paket utuh (OB1–OB3) dikerjakan setelah WG3, selesai di 2.1.x
+  (2026-10-27). Tiap rilis gate hijau sendiri (pola Q10). Bank sync /
+  multi-currency / AI menyusul di payung 2.x.
 - `1.2.x` = lubang tanpa ubah perilaku (pola `v1.1.x`).
 
 ### Frontier
@@ -243,7 +243,8 @@ WG1 ── WG2 ── WG3 (2.0.0)
 - `2.0.0` = widget + fast-lane (item pertama payung v2.x). Bump minor/major
   sekali di akhir WG3 (runtimeVersion appVersion, pola RLS 1.2.0).
 - Berikutnya (di luar scope ini): multi-currency (OPEN-4, parkir) →
-  outbox + read cache paket utuh (ADR-0003).
+  outbox + read cache paket utuh (ADR-0003); paket itu selesai 2026-10-27
+  sebagai OB1–OB3 (R17).
 
 ### Frontier
 
@@ -251,7 +252,7 @@ WG1 ── WG2 ── WG3 (2.0.0)
 
 ---
 
-## Outbox + read cache (rilis berikut setelah WG3 hijau)
+## Outbox + read cache (selesai 2026-10-27)
 
 Spec: `specs/cashtrix-v2.x-outbox.md` (issue **#73**) · Sumber: grill
 outbox 2026-09-27 (O1-O5 + R1-R6 + T1-T4) + ADR-0003 + ADR-0012. Keputusan
@@ -260,7 +261,7 @@ hapus-menang; baca terdegradasi (agregasi online-only); antrean eksplisit;
 FIFO sekuensial; kunci idempotency saat baris dibuat; tolak-server bertahan
 beralasan; foto di sandbox (yatim 7 hari disapu); cap 200 + purge sign-out.
 Dikerjakan setelah Savings v1 selesai (spec 2026-10-21), sebelum trek lain.
-Semua ticket `ready-for-agent`. Urutan mengikat: OB1 → OB2 → OB3.
+Ketiga ticket selesai 2026-10-27. Urutan mengikat: OB1 → OB2 → OB3.
 
 | Ticket | Issue | Blocked by | Deliverable |
 |---|---|---|---|
@@ -372,7 +373,7 @@ search/notifications/voice + `VoiceWaveform` + haptic-prefill +
 pasca-rebase: lint + typecheck + Jest 807/807 + kontrak 111/10/3 + export
 hijau; branch dihapus; preview build `0c8b2fc2` FINISHED (app 2.0.0 vc 1).
 Sisa: device re-gate Redmi. Berikutnya: 2.1.0 Analytics Overhaul, lalu
-OB1–OB3.
+OB1–OB3 (selesai 2026-10-27).
 
 ```
 AI1 #90 ── AI2 #91 (kontrak beku dulu, baru benteng drift)
@@ -598,7 +599,6 @@ tak dirender sama sekali (bukan disabled). Helper `pressGridDay`
 5 detik untuk exit-animation 200ms agar tak flake saat CI loaded.
 | L5 | QR svg opsional (default tetap link+secret) | bila ada alasan baru |
 | LW | Widget bitmap (waveform/watermark/grafik struk/glow) + density + gate launcher | bila diminta |
-| OB1–OB3 | Outbox + read cache (urutan roadmap tidak berubah) | setelah trek Analytics |
 
 ### Frontier
 

@@ -15,10 +15,10 @@ If any of these files don't exist, **proceed silently**. Don't flag their absenc
 ## Binding documents in this repo
 
 - **`CONTEXT.md`**, glossary. Use these terms; do not drift to the `_Avoid_` list.
-- **`docs/adr/`**, hard-to-reverse decisions (0001 v1.1 scope, 0002 dev-client, 0003 outbox deferred, 0004 transfer single-row, 0005 recurring catch-up, 0006 legal on GitHub Pages, 0016 haptics/batch, 0017 analytics SVG/widget, 0018 Savings target = wallet metadata; full set ADR-0001–0018).
-- **`PRD.md`**, product decisions, locked decisions §0 (D1–D11), user stories, data model, risks, revisi R1–R16.
+- **`docs/adr/`**, hard-to-reverse decisions (0001 v1.1 scope, 0002 dev-client, 0003 outbox deferred — superseded by ADR-0012, 0004 transfer single-row, 0005 recurring catch-up, 0006 legal on GitHub Pages, 0016 haptics/batch, 0017 analytics SVG/widget, 0018 Savings target = wallet metadata; full set ADR-0001–0018).
+- **`PRD.md`**, product decisions, locked decisions §0 (D1–D11), user stories, data model, risks, revisi R1–R17.
 - **`DESIGN.md`**, canonical design system ("Minimalist Obsidian"): tokens, type scale, spacing, components, Savings (R16) and Wallet compare (L4b) patterns.
-- **`docs/roadmap.md`**, full idea catalogue and release slices (v1.1 / v1.2 / v2.0 / 2.1.x + Savings), with next slice OB1–OB3 outbox.
+- **`docs/roadmap.md`**, full idea catalogue and release slices (v1.1 / v1.2 / v2.0 / 2.1.x + Savings + OB1–OB3 outbox), with next slice AI insight lanjutan / bank sync.
 - **`specs/`**, technical specs per release/trek: `cashtrix-mvp.md` (issue #1), `cashtrix-v1.1.md`, `cashtrix-v1.2.md`, `cashtrix-voice-capture.md`, `cashtrix-savings.md`.
 
 ## File structure

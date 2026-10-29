@@ -2,8 +2,9 @@
 
 Dokumen ini menampung **semua** kandidat pengembangan beserta alasan, bukti kondisi
 kode saat ini (`v2.1.0` + L4c custom range + L4a drill-down + L4b multi-wallet
-compare + Savings v1 di `main`; OTA `2b2981e9`/`b9a7e1ac`/`8747fefd`/`69f45c8c`/
-`718599fe`, gate 2026-10-18 s.d. 2026-10-21), dan urutan usul. `PRD.md` tetap
+compare + Savings v1 + offline outbox OB1–OB3 di `main`; OTA
+`2b2981e9`/`b9a7e1ac`/`8747fefd`/`69f45c8c`/`718599fe`/`17fb595e`, gate
+2026-10-18 s.d. 2026-10-27), dan urutan usul. `PRD.md` tetap
 sumber keputusan produk; dokumen ini sumber *antrean* pekerjaan.
 
 Aturan: ide boleh masuk katalog tanpa komitmen rilis. Setiap rilis mengambil
@@ -63,8 +64,8 @@ Prinsip yang dipakai:
 | B3 | **Kalender penuh** | stepper hari saja (ditunda di R5.4 karena date picker native) | Polish; bisa tanpa modul native dengan grid kalender dari `View` | 🎯 v1.1 |
 | B4 | **Biometric app lock** | belum ada; butuh modul native → dev-client | Q6 sudah disetujui: boleh pindah dev-client | 📦 v1.2 |
 | B5 | **CSV import** | belum ada; ekspor sudah ada (`src/features/data-ownership/`) | Nilai rendah vs effort, dan butuh pemetaan kategori | 📦 v1.2 |
-| B6 | **Offline outbox (tulis saat offline)** | Spec beku `specs/cashtrix-v2.x-outbox.md` + ADR-0012 (LWW buta, FIFO, antrean eksplisit) | Membalik keputusan MVP "tulis ditolak, bukan antrian buta" → lapisan sync + resolusi konflik | 🧊 rilis berikut (OB1–OB3, #74–#76, spec #73, eksekusi setelah WG3 hijau) |
-| B7 | **Offline read cache** | Spec beku yang sama (baca terdegradasi: list/form cache, agregasi online-only) | Menyentuh semua screen; digabung dengan outbox agar satu model konsistensi | 🧊 rilis berikut (ikut OB1–OB3) |
+| B6 | **Offline outbox (tulis saat offline)** | `src/features/outbox/` + spec `specs/cashtrix-v2.x-outbox.md` + ADR-0012 (LWW buta, FIFO, antrean eksplisit) | Membalik keputusan MVP "tulis ditolak, bukan antrian buta" → antrean eksplisit + flush FIFO | ✅ selesai 2026-10-27 (OB1–OB3 #74–#76, OTA `17fb595e`) |
+| B7 | **Offline read cache** | `src/features/outbox/cache.ts` (baca terdegradasi: list/form cache maks 100 baris, agregasi online-only) | Menyentuh semua screen; digabung dengan outbox agar satu model konsistensi | ✅ selesai 2026-10-27 (ikut OB1–OB3) |
 
 ### C. Kesiapan rilis / store
 
@@ -97,7 +98,7 @@ Prinsip yang dipakai:
 |---|---|---|
 | E1 | Bank sync / Open Finance | v2.0 (PRD D3); butuh compliance review |
 | E2 | Multi-currency + kurs historis | Parkir (OPEN-4): default perilaku hari ini, mungkin IDR-saja permanen | Diputuskan ulang sebelum trek currency; TanStack gugur (bukan obat banyak-user) | 🚫/🧊 parkir |
-| E3 | Smart insight / AI lanjutan | Insight rephrase L1–L3 rilis (deterministik-dulu, figure-preservation); auto-kategori terkunci + auto-save tetap ditolak | 🧊 antre di belakang outbox |
+| E3 | Smart insight / AI lanjutan | Insight rephrase L1–L3 rilis (deterministik-dulu, figure-preservation); auto-kategori terkunci + auto-save tetap ditolak | 🧊 antre setelah outbox selesai (R17) |
 | E4 | Shared/household budget | Non-goal PRD §2.4 |
 | E5 | Server push notification | v1.0 sengaja local-only; baru berguna bersama recurring |
 | E6 | Widget, email digest, import bank statement | Widget Android selesai 2.0.0; iOS widget, email digest, dan import statement tetap non-goal |
@@ -180,9 +181,6 @@ Transfer, Recurring, Undo, Archive, V0 auth/legal: **tertutup** (R7–R8, ADR-00
 
 ## 5. Yang sengaja tidak dikerjakan
 
-- Offline outbox & read cache di v1.1, menyentuh semua screen dan melawan
-  keputusan MVP "tulis ditolak, bukan antrian buta"; digabung jadi satu pekerjaan
-  konsistensi di v2.0.
 - CSV import di v1.1, nilai rendah dibanding biaya pemetaan kategori.
 - Multi-bahasa di v1.1, dikerjakan bersama pass terminologi v1.2 supaya string
   tidak diaudit dua kali.
@@ -336,7 +334,8 @@ tanpa label AI, tanpa angka/statistik fiktif di widget maupun kartu.
 
 Berikutnya (urutan pasca-2.1.0): Savings v1 Target Tabungan (SV1–SV4
 selesai + commit, device gate LULUS) lalu OB1–OB3 outbox + read cache
-(OB1/OB2/OB3 selesai).
+(selesai 2026-10-27, OTA `17fb595e`). Antrean berikutnya: AI insight
+lanjutan, bank sync, multi-currency (OPEN-4), widget iOS, billing scan.
 
 ### 6.10 Batch B1 + AI6 (satu rebuild hemat kuota, grill 2026-10-03)
 
@@ -413,8 +412,9 @@ deviasi C2 "tanpa gambar QR"). Gate statis hijau: lint, typecheck,
 Jest 1061/1061 (71 suite), kontrak 112/10/3, legal 36/36, export
 Android. OTA terkirim 2026-10-22 (grup
 `57952132-1d7f-4d8e-815e-2200cf04a153`, runtime 2.1.0, Android);
-device gate LULUS (owner, 2026-10-22). Sisa trek native (OB1–OB3 outbox + read cache,
-widget iOS, billing scan) dikerjakan di akhir per keputusan pemilik.
+device gate LULUS (owner, 2026-10-22). OB1–OB3 outbox + read cache
+selesai 2026-10-27; sisa trek native (widget iOS, billing scan)
+dikerjakan di akhir per keputusan pemilik.
 
 ### 6.14 OB1: store antrean + baca offline (selesai 2026-10-23)
 
